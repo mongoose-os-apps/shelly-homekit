@@ -35,9 +35,13 @@ config_schema:
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
+  # We don't need the cryptochip support. Saves approx 12K flash.
+  MGOS_MBEDTLS_ENABLE_ATCA: 0
 
 libs:
   - origin: https://github.com/mongoose-os-libs/homekit-adk
+  - origin: https://github.com/mongoose-os-libs/mbedtls
+    variant: esp8266-noatca
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
   - origin: https://github.com/mongoose-os-libs/rpc-uart
