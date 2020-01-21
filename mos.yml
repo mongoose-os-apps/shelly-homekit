@@ -1,0 +1,75 @@
+author: 'Deomid "rojer" Ryabkov'
+description: A HomeKit firmware for Shelly switches
+version: 0.0.1
+platform: esp8266
+
+libs_version: ${mos.version}
+modules_version: ${mos.version}
+mongoose_os_version: ${mos.version}
+
+sources:
+  - src
+
+filesystem:
+  - fs
+
+cdefs:
+  PRODUCT_VENDOR: '"Allterco"'
+  SERVICE_NAME: '"Switch"'
+
+config_schema:
+  # Serial number. This can be later set in the field but HomeKit requires at least 2 bytes.
+  - ["device.sn", "000000"]
+  - ["wifi.ap.pass", ""]
+  - ["wifi.ap.keep_enabled", false]
+
+  - ["sw", "o", {"Switch settings"}]
+  - ["sw.id", "i", 0, {"ID of the switch"}]
+  - ["sw.name", "s", "", {"Name of the switch"}]
+  - ["sw.enable", "b", true, {"Enable this switch in the accessory"}]
+  - ["sw.out_gpio", "i", -1, {"Output pin"}]
+  - ["sw.in_gpio", "i", -1, {"Input sensing pin"}]
+  - ["sw.state", "b", false, {"State of the switch"}]
+
+
+build_vars:
+  # Enables storing setup info in the config and a simple RPC service to configure it.
+  MGOS_HAP_SIMPLE_CONFIG: 1
+
+libs:
+  - origin: https://github.com/mongoose-os-libs/homekit-adk
+  - origin: https://github.com/mongoose-os-libs/rpc-service-config
+  - origin: https://github.com/mongoose-os-libs/rpc-service-fs
+  - origin: https://github.com/mongoose-os-libs/rpc-uart
+  - origin: https://github.com/mongoose-os-libs/http-server
+  - origin: https://github.com/mongoose-os-libs/rpc-ws
+
+conds:
+  - when: build_vars.MODEL == "Shelly1"
+    apply:
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 65536
+        MGOS_ROOT_FS_TYPE: LFS
+      cdefs:
+        PRODUCT_MODEL: '"Shelly1"'
+        PRODUCT_HW_REV: '"3.0"'
+        NUM_SWITCHES: 1
+        # This saves quite a bit of space but disables all HAP debug output.
+        # HAP_LOG_LEVEL: 0
+      config_schema:
+        - ["device.id", "Shelly1-????"]
+        - ["wifi.ap.ssid", "Shelly1-????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.name", "SW"]
+        - ["sw1.out_gpio", 4]
+        - ["sw1.in_gpio",  5]
+
+  - when: mos.platform != "ubuntu"
+    apply:
+      libs:
+        - origin: https://github.com/mongoose-os-libs/ota-http-server
+        - origin: https://github.com/mongoose-os-libs/rpc-service-ota
+        - origin: https://github.com/mongoose-os-libs/wifi
+
+manifest_version: 2017-05-18
