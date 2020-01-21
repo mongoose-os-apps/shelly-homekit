@@ -35,30 +35,40 @@ config_schema:
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
-  # We don't need the cryptochip support. Saves approx 12K flash.
-  MGOS_MBEDTLS_ENABLE_ATCA: 0
 
 libs:
+  - origin: https://github.com/mongoose-os-libs/core
   - origin: https://github.com/mongoose-os-libs/homekit-adk
-  - origin: https://github.com/mongoose-os-libs/mbedtls
-    variant: esp8266-noatca
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
   - origin: https://github.com/mongoose-os-libs/rpc-uart
   - origin: https://github.com/mongoose-os-libs/http-server
   - origin: https://github.com/mongoose-os-libs/rpc-ws
+  # While mongoose-os/mos@61481fa propagates.
+  - origin: https://github.com/mongoose-os-libs/mbedtls
+    variant: esp8266-noatca
+  - origin: https://github.com/mongoose-os-libs/mongoose
+    variant: esp8266-nossl
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
     apply:
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: esp8266-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
-        FS_SIZE: 65536
         MGOS_ROOT_FS_TYPE: LFS
+        # We don't need the cryptochip support. Saves approx 12K flash.
+        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         PRODUCT_MODEL: '"Shelly1"'
         PRODUCT_HW_REV: '"3.0"'
         NUM_SWITCHES: 1
+        # We don't use TLS, HomeKit uses its own crypto. This saves ~120K.
+        MG_ENABLE_SSL: 0
         # This saves quite a bit of space but disables all HAP debug output.
         # HAP_LOG_LEVEL: 0
       config_schema:
@@ -76,4 +86,24 @@ conds:
         - origin: https://github.com/mongoose-os-libs/rpc-service-ota
         - origin: https://github.com/mongoose-os-libs/wifi
 
+  - when: mos.platform == "ubuntu"
+    apply:
+      cdefs:
+        PRODUCT_MODEL: '"ShellyU"'
+        PRODUCT_HW_REV: '"1.0"'
+        NUM_SWITCHES: 1
+        MG_ENABLE_SSL: 0
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: ubuntu-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: ubuntu-nossl
+      config_schema:
+        - ["device.id", "ShellyU-????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.name", "SW"]
+        - ["sw1.out_gpio", 4]
+        - ["sw1.in_gpio",  5]
+
 manifest_version: 2017-05-18
+#manifest_version: 2020-01-21
