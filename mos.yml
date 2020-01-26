@@ -44,11 +44,6 @@ libs:
   - origin: https://github.com/mongoose-os-libs/rpc-uart
   - origin: https://github.com/mongoose-os-libs/http-server
   - origin: https://github.com/mongoose-os-libs/rpc-ws
-  # While mongoose-os/mos@61481fa propagates.
-  - origin: https://github.com/mongoose-os-libs/mbedtls
-    variant: esp8266-noatca
-  - origin: https://github.com/mongoose-os-libs/mongoose
-    variant: esp8266-nossl
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
@@ -105,5 +100,4 @@ conds:
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio",  5]
 
-manifest_version: 2017-05-18
-#manifest_version: 2020-01-21
+manifest_version: 2020-01-21
