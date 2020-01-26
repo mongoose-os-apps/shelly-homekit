@@ -30,14 +30,11 @@
 #define KVS_FILE_NAME "kvs.json"
 #define NUM_SESSIONS 3
 #define IO_BUF_SIZE 2048
-#define kAttributeCount 50
 
 static HAPIPSession sessions[NUM_SESSIONS];
 static uint8_t in_bufs[NUM_SESSIONS][IO_BUF_SIZE];
 static uint8_t out_bufs[NUM_SESSIONS][IO_BUF_SIZE];
 static uint8_t scratch_buf[IO_BUF_SIZE];
-static HAPIPEventNotificationRef
-    notifications[NUM_SESSIONS][kAttributeCount];  // TODO: make dynamic
 static HAPIPAccessoryServerStorage s_ip_storage = {
     .sessions = sessions,
     .numSessions = ARRAY_SIZE(sessions),
@@ -150,8 +147,6 @@ enum mgos_app_init_result mgos_app_init(void) {
     sessions[i].inboundBuffer.numBytes = sizeof(in_bufs[i]);
     sessions[i].outboundBuffer.bytes = out_bufs[i];
     sessions[i].outboundBuffer.numBytes = sizeof(out_bufs[i]);
-    sessions[i].eventNotifications = notifications[i];
-    sessions[i].numEventNotifications = ARRAY_SIZE(notifications[i]);
   }
 
   s_server_options.maxPairings = kHAPPairingStorage_MinElements;
