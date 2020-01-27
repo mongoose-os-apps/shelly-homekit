@@ -20,8 +20,6 @@ cdefs:
 config_schema:
   # Serial number. This can be later set in the field but HomeKit requires at least 2 bytes.
   - ["device.sn", "000000"]
-  - ["wifi.ap.pass", ""]
-  - ["wifi.ap.keep_enabled", false]
 
   - ["sw", "o", {"Switch settings"}]
   - ["sw.id", "i", 0, {"ID of the switch"}]
@@ -48,6 +46,7 @@ libs:
 conds:
   - when: build_vars.MODEL == "Shelly1"
     apply:
+      name: switch1 # To allow OTA from stock fw.
       libs:
         - origin: https://github.com/mongoose-os-libs/mbedtls
           variant: esp8266-noatca
@@ -55,6 +54,8 @@ conds:
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: LFS
         # We don't need the cryptochip support. Saves approx 12K flash.
         MGOS_MBEDTLS_ENABLE_ATCA: 0
@@ -76,6 +77,13 @@ conds:
 
   - when: mos.platform != "ubuntu"
     apply:
+      config_schema:
+        - ["wifi.ap.pass", ""]
+        - ["wifi.ap.keep_enabled", true]
+        - ["wifi.ap.ip", "192.168.33.1"]
+        - ["wifi.ap.gw", ""]
+        - ["wifi.ap.dhcp_start", "192.168.33.2"]
+        - ["wifi.ap.dhcp_end", "192.168.33.100"]
       libs:
         - origin: https://github.com/mongoose-os-libs/ota-http-server
         - origin: https://github.com/mongoose-os-libs/rpc-service-ota
