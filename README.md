@@ -4,7 +4,7 @@
 
  * Build and flash the firmware
 
-   * When building, specify `MODEL=Shelly1` (the only one supported for now)
+   * When building, specify `MODEL=Shelly1` or `MODEL=Shelly25`
 
 ```
 mos build --verbose --local --platform esp8266 --build-var MODEL=Shelly1
