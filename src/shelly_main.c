@@ -86,11 +86,23 @@ static HAPAccessory s_accessory = {
     .callbacks = {.identify = shelly_identify_cb},
 };
 
+#ifdef LED_GPIO
+static void stop_blinking(void *arg) {
+  mgos_gpio_blink(LED_GPIO, 0, 0);
+  mgos_gpio_setup_input(LED_GPIO, MGOS_GPIO_PULL_NONE);
+  (void) arg;
+}
+#endif
+
 HAPError shelly_identify_cb(HAPAccessoryServerRef *server,
                             const HAPAccessoryIdentifyRequest *request,
                             void *context) {
-  // TODO: Can we do something better here?
   LOG(LL_INFO, ("=== IDENTIFY ==="));
+#ifdef LED_GPIO
+  mgos_gpio_setup_output(LED_GPIO, 0);
+  mgos_gpio_blink(LED_GPIO, 100, 100);
+  mgos_set_timer(500, 0, stop_blinking, NULL);
+#endif
   (void) server;
   (void) request;
   (void) context;
@@ -154,8 +166,12 @@ enum mgos_app_init_result mgos_app_init(void) {
   services[2] = &mgos_hap_pairing_service;
   int i = 3;
   if (mgos_sys_config_get_sw1_enable()) {
-    const struct mgos_config_sw *cfg = mgos_sys_config_get_sw1();
-    services[i++] = shelly_sw_service_create(cfg);
+#ifdef MGOS_CONFIG_HAVE_SW1
+    services[i++] = shelly_sw_service_create(mgos_sys_config_get_sw1());
+#endif
+#ifdef MGOS_CONFIG_HAVE_SW2
+    services[i++] = shelly_sw_service_create(mgos_sys_config_get_sw2());
+#endif
   }
   s_accessory.services = services;
   LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
@@ -177,6 +193,12 @@ enum mgos_app_init_result mgos_app_init(void) {
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
 
   mgos_hap_add_rpc_service();
+
+#ifdef LED_GPIO
+  mgos_gpio_setup_output(LED_GPIO, 0);
+  mgos_gpio_blink(LED_GPIO, 100, 100);
+  mgos_set_timer(500, 0, stop_blinking, NULL);
+#endif
 
   return MGOS_APP_INIT_SUCCESS;
 }

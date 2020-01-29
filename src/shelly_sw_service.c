@@ -36,8 +36,10 @@ static void shelly_sw_set_state(struct shelly_sw_service_ctx *ctx,
                                 bool new_state, const char *source) {
   const struct mgos_config_sw *cfg = ctx->cfg;
   if (new_state == ctx->state) return;
-  mgos_gpio_write(cfg->out_gpio, new_state);
-  LOG(LL_INFO, ("%s: %d -> %d (%s)", cfg->name, ctx->state, new_state, source));
+  int out_value = (new_state ? cfg->out_on_value : !cfg->out_on_value);
+  mgos_gpio_write(cfg->out_gpio, out_value);
+  LOG(LL_INFO, ("%s: %d -> %d (%s) %d", cfg->name, ctx->state, new_state,
+                source, out_value));
   ctx->state = new_state;
   if (ctx->hap_server != NULL) {
     HAPAccessoryServerRaiseEvent(ctx->hap_server,
@@ -100,8 +102,8 @@ HAPError shelly_sw_handle_on_read(
     void *context) {
   struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
   const struct mgos_config_sw *cfg = ctx->cfg;
-  LOG(LL_INFO, ("%s: READ -> %d", cfg->name, cfg->state));
   *value = ctx->state;
+  LOG(LL_INFO, ("%s: READ -> %d", cfg->name, ctx->state));
   ctx->hap_server = server;
   ctx->hap_accessory = request->accessory;
   (void) context;
@@ -157,7 +159,8 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
 
 static void shelly_sw_in_cb(int pin, void *arg) {
   struct shelly_sw_service_ctx *ctx = arg;
-  shelly_sw_set_state(ctx, (mgos_gpio_read(pin) == 0), "input");
+  bool in_state = (mgos_gpio_read(pin) == ctx->cfg->in_on_value);
+  shelly_sw_set_state(ctx, in_state, "input");
   (void) pin;
 }
 
@@ -184,11 +187,13 @@ HAPService *shelly_sw_service_create(const struct mgos_config_sw *cfg) {
   ctx->hap_service = svc;
   if (cfg->persist_state) {
     ctx->state = cfg->state;
+  } else {
+    ctx->state = 0;
   }
-  LOG(LL_INFO, ("Exporting '%s' (GPIO out: %d, in: %d, state: %d) %p %p %p",
-                cfg->name, cfg->out_gpio, cfg->in_gpio, ctx->state, &chars[0],
-                &chars[1], &chars[2]));
-  mgos_gpio_setup_output(cfg->out_gpio, ctx->state);
+  LOG(LL_INFO, ("Exporting '%s' (GPIO out: %d, in: %d, state: %d)", cfg->name,
+                cfg->out_gpio, cfg->in_gpio, ctx->state));
+  mgos_gpio_setup_output(cfg->out_gpio,
+                         (ctx->state ? cfg->out_on_value : !cfg->out_on_value));
   mgos_gpio_set_button_handler(cfg->in_gpio, MGOS_GPIO_PULL_NONE,
                                MGOS_GPIO_INT_EDGE_ANY, 20, shelly_sw_in_cb,
                                ctx);
