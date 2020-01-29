@@ -117,7 +117,7 @@ static void shelly_hap_server_state_update_cb(HAPAccessoryServerRef *server,
   (void) context;
 }
 
-static void shelly_start_hap_server(bool quiet) {
+static bool shelly_start_hap_server(bool quiet) {
   HAPSetupInfo setupInfo;
   if (mgos_hap_setup_info_from_string(&setupInfo,
                                       mgos_sys_config_get_hap_salt(),
@@ -125,9 +125,14 @@ static void shelly_start_hap_server(bool quiet) {
     LOG(LL_INFO, ("=== Accessory provisioned, starting HAP server"));
     HAPAccessoryServerStart(&s_accessory_server, &s_accessory);
     s_server_started = true;
+#ifdef LED_GPIO
+    stop_blinking(NULL);
+#endif
+    return true;
   } else if (!quiet) {
     LOG(LL_INFO, ("=== Accessory not provisioned"));
   }
+  return false;
 }
 
 static void shelly_status_timer_cb(void *arg) {
@@ -197,18 +202,17 @@ enum mgos_app_init_result mgos_app_init(void) {
   HAPAccessoryServerCreate(&s_accessory_server, &s_server_options, &s_platform,
                            &s_callbacks, NULL /* context */);
 
-  shelly_start_hap_server(false /* quiet */);
+  if (!shelly_start_hap_server(false /* quiet */)) {
+#ifdef LED_GPIO
+    mgos_gpio_setup_output(LED_GPIO, 0);
+    mgos_gpio_blink(LED_GPIO, 875, 125);
+#endif
+  }
 
   // Timer for periodic status.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
 
   mgos_hap_add_rpc_service();
-
-#ifdef LED_GPIO
-  mgos_gpio_setup_output(LED_GPIO, 0);
-  mgos_gpio_blink(LED_GPIO, 100, 100);
-  mgos_set_timer(500, 0, stop_blinking, NULL);
-#endif
 
   return MGOS_APP_INIT_SUCCESS;
 }
