@@ -108,21 +108,12 @@ static void shelly_status_timer_cb(void *arg) {
   LOG(LL_INFO,
       ("%s uptime: %.2lf, RAM: %lu, %lu free", (s_tick_tock ? "Tick" : "Tock"),
        mgos_uptime(), (unsigned long) mgos_get_heap_size(),
-       (unsigned long) mgos_get_free_heap_size()));
+       (unsigned long) mgos_get_free_heap_size(), mgos_gpio_read(5)));
   s_tick_tock = !s_tick_tock;
   (void) arg;
 }
 
 enum mgos_app_init_result mgos_app_init(void) {
-  HAPSetupInfo setupInfo;
-  if (!mgos_hap_setup_info_from_string(&setupInfo,
-                                       mgos_sys_config_get_hap_salt(),
-                                       mgos_sys_config_get_hap_verifier())) {
-    LOG(LL_ERROR, ("=== Accessory not provisioned"));
-    mgos_hap_add_rpc_service();
-    return MGOS_APP_INIT_SUCCESS;
-  }
-
   // Key-value store.
   HAPPlatformKeyValueStoreCreate(
       &s_kvs,
@@ -173,10 +164,19 @@ enum mgos_app_init_result mgos_app_init(void) {
   HAPAccessoryServerCreate(&s_accessory_server, &s_server_options, &s_platform,
                            &s_callbacks, NULL /* context */);
 
-  HAPAccessoryServerStart(&s_accessory_server, &s_accessory);
+  HAPSetupInfo setupInfo;
+  if (mgos_hap_setup_info_from_string(&setupInfo,
+                                      mgos_sys_config_get_hap_salt(),
+                                      mgos_sys_config_get_hap_verifier())) {
+    HAPAccessoryServerStart(&s_accessory_server, &s_accessory);
+  } else {
+    LOG(LL_ERROR, ("=== Accessory not provisioned"));
+  }
 
   // Timer for periodic status.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
+
+  mgos_hap_add_rpc_service();
 
   return MGOS_APP_INIT_SUCCESS;
 }

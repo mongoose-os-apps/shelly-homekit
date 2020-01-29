@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 0.1.0
+version: 0.2.0
 platform: esp8266
 
 libs_version: ${mos.version}
@@ -28,6 +28,7 @@ config_schema:
   - ["sw.out_gpio", "i", -1, {"Output pin"}]
   - ["sw.in_gpio", "i", -1, {"Input sensing pin"}]
   - ["sw.state", "b", false, {"State of the switch"}]
+  - ["sw.persist_state", "b", false, {"Whether state of the switch should be persisted across reboots."}]
 
 
 build_vars:
@@ -63,15 +64,15 @@ conds:
         PRODUCT_MODEL: '"Shelly1"'
         PRODUCT_HW_REV: '"3.0"'
         NUM_SWITCHES: 1
-        # We don't use TLS, HomeKit uses its own crypto. This saves ~120K.
+        # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
         # This saves quite a bit of space but disables all HAP debug output.
         # HAP_LOG_LEVEL: 0
       config_schema:
-        - ["device.id", "Shelly1-????"]
-        - ["wifi.ap.ssid", "Shelly1-????"]
-        - ["sw1", "sw", {"title": "SW settings"}]
-        - ["sw1.name", "SW"]
+        - ["device.id", "shelly1-??????"]
+        - ["wifi.ap.ssid", "shelly1-??????"]
+        - ["sw1", "sw", {"title": "Switch settings"}]
+        - ["sw1.name", "Shelly SW1"]
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio",  5]
 
@@ -108,4 +109,4 @@ conds:
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio",  5]
 
-manifest_version: 2020-01-21
+manifest_version: 2020-01-29
