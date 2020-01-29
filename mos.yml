@@ -56,7 +56,7 @@ conds:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
-        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_TYPE: SPIFFS
         # We don't need the cryptochip support. Saves approx 12K flash.
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
