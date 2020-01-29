@@ -86,6 +86,8 @@ static HAPAccessory s_accessory = {
     .callbacks = {.identify = shelly_identify_cb},
 };
 
+static bool s_server_started = false;
+
 #ifdef LED_GPIO
 static void stop_blinking(void *arg) {
   mgos_gpio_blink(LED_GPIO, 0, 0);
@@ -115,6 +117,19 @@ static void shelly_hap_server_state_update_cb(HAPAccessoryServerRef *server,
   (void) context;
 }
 
+static void shelly_start_hap_server(bool quiet) {
+  HAPSetupInfo setupInfo;
+  if (mgos_hap_setup_info_from_string(&setupInfo,
+                                      mgos_sys_config_get_hap_salt(),
+                                      mgos_sys_config_get_hap_verifier())) {
+    LOG(LL_INFO, ("=== Accessory provisioned, starting HAP server"));
+    HAPAccessoryServerStart(&s_accessory_server, &s_accessory);
+    s_server_started = true;
+  } else if (!quiet) {
+    LOG(LL_INFO, ("=== Accessory not provisioned"));
+  }
+}
+
 static void shelly_status_timer_cb(void *arg) {
   static bool s_tick_tock = false;
   LOG(LL_INFO,
@@ -122,6 +137,8 @@ static void shelly_status_timer_cb(void *arg) {
        mgos_uptime(), (unsigned long) mgos_get_heap_size(),
        (unsigned long) mgos_get_free_heap_size(), mgos_gpio_read(5)));
   s_tick_tock = !s_tick_tock;
+  /* If provisioning information has been provided, start the server. */
+  if (!s_server_started) shelly_start_hap_server(true /* quiet */);
   (void) arg;
 }
 
@@ -180,14 +197,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   HAPAccessoryServerCreate(&s_accessory_server, &s_server_options, &s_platform,
                            &s_callbacks, NULL /* context */);
 
-  HAPSetupInfo setupInfo;
-  if (mgos_hap_setup_info_from_string(&setupInfo,
-                                      mgos_sys_config_get_hap_salt(),
-                                      mgos_sys_config_get_hap_verifier())) {
-    HAPAccessoryServerStart(&s_accessory_server, &s_accessory);
-  } else {
-    LOG(LL_ERROR, ("=== Accessory not provisioned"));
-  }
+  shelly_start_hap_server(false /* quiet */);
 
   // Timer for periodic status.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
