@@ -18,6 +18,7 @@
 #include "mgos.h"
 #include "mgos_app.h"
 #include "mgos_hap.h"
+#include "mgos_ota.h"
 
 #include "HAPPlatform+Init.h"
 #include "HAPPlatformAccessorySetup+Init.h"
@@ -213,6 +214,17 @@ enum mgos_app_init_result mgos_app_init(void) {
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
 
   mgos_hap_add_rpc_service();
+
+  if (mgos_ota_is_first_boot()) {
+    LOG(LL_INFO, ("Performing cleanup"));
+    // In case we're uograding from stock fw, remove its files
+    // with the exception of hwinfo_struct.json.
+    remove("cert.pem");
+    remove("index.html.gz");
+    remove("passwd");
+    remove("relaydata");
+    remove("self_test");
+  }
 
   return MGOS_APP_INIT_SUCCESS;
 }
