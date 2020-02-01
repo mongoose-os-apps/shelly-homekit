@@ -17,8 +17,12 @@
 
 #include "mgos.h"
 #include "mgos_app.h"
+#include "mgos_dns_sd.h"
 #include "mgos_hap.h"
+#ifdef MGOS_HAVE_OTA_COMMON
 #include "mgos_ota.h"
+#endif
+#include "mgos_rpc.h"
 
 #include "HAPPlatform+Init.h"
 #include "HAPPlatformAccessorySetup+Init.h"
@@ -141,14 +145,58 @@ static void shelly_status_timer_cb(void *arg) {
   LOG(LL_INFO,
       ("%s uptime: %.2lf, RAM: %lu, %lu free", (s_tick_tock ? "Tick" : "Tock"),
        mgos_uptime(), (unsigned long) mgos_get_heap_size(),
-       (unsigned long) mgos_get_free_heap_size(), mgos_gpio_read(5)));
+       (unsigned long) mgos_get_free_heap_size()));
   s_tick_tock = !s_tick_tock;
   /* If provisioning information has been provided, start the server. */
   if (!s_server_started) shelly_start_hap_server(true /* quiet */);
   (void) arg;
 }
 
+#ifndef MGOS_HAVE_WIFI
+const char *mgos_sys_config_get_wifi_sta_ssid(void) {
+  return "";
+}
+const char *mgos_sys_config_get_wifi_sta_pass(void) {
+  return "";
+}
+bool mgos_sys_config_get_wifi_sta_enable(void) {
+  return false;
+}
+#endif
+
+static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
+                                    void *cb_arg, struct mg_rpc_frame_info *fi,
+                                    struct mg_str args) {
+  const char *ssid = mgos_sys_config_get_wifi_sta_ssid();
+  const char *pass = mgos_sys_config_get_wifi_sta_pass();
+  bool hap_provisioned = !mgos_conf_str_empty(mgos_sys_config_get_hap_salt());
+  mg_rpc_send_responsef(
+      ri,
+      "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, "
+      "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, hap_ok: %B}",
+      mgos_sys_config_get_device_id(), MGOS_APP, mgos_dns_sd_get_host_name(),
+      mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
+      mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
+      (pass ? pass : ""), hap_provisioned);
+  (void) cb_arg;
+  (void) fi;
+  (void) args;
+}
+
 enum mgos_app_init_result mgos_app_init(void) {
+#ifdef MGOS_HAVE_OTA_COMMON
+  if (mgos_ota_is_first_boot()) {
+    LOG(LL_INFO, ("Performing cleanup"));
+    // In case we're uograding from stock fw, remove its files
+    // with the exception of hwinfo_struct.json.
+    remove("cert.pem");
+    remove("index.html.gz");
+    remove("passwd");
+    remove("relaydata");
+    remove("self_test");
+  }
+#endif
+
   // Key-value store.
   HAPPlatformKeyValueStoreCreate(
       &s_kvs,
@@ -215,16 +263,8 @@ enum mgos_app_init_result mgos_app_init(void) {
 
   mgos_hap_add_rpc_service();
 
-  if (mgos_ota_is_first_boot()) {
-    LOG(LL_INFO, ("Performing cleanup"));
-    // In case we're uograding from stock fw, remove its files
-    // with the exception of hwinfo_struct.json.
-    remove("cert.pem");
-    remove("index.html.gz");
-    remove("passwd");
-    remove("relaydata");
-    remove("self_test");
-  }
+  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
+                     shelly_get_info_handler, NULL);
 
   return MGOS_APP_INIT_SUCCESS;
 }
