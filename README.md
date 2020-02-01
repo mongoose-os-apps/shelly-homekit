@@ -25,7 +25,11 @@ Reverting to stock firmware is also supported (see below).
 
 ## Setup
 
- * First, set a HAP setup code. Pick any code. Note that some obvious combinations like 111-11-111 are explicitly disallowed by Apple and will not be accepted.
+ * First, set a HAP setup code. Pick any code.
+
+   * Some obvious combinations like 111-11-111 are explicitly disallowed by Apple and will not be accepted.
+
+   * Note that code is not stored on the device in plain text and it is not possible what the current setting is.
 
  * Provision WiFi station (if not yet).
 

@@ -45,6 +45,37 @@
     </div>
 
     <div class="container">
+      <h1 class="">HomeKit Settings</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Paired:</label>
+            <span id="hap_paired"></span>
+          </div>
+          <div class="form-control">
+            <label>Provisioned:</label>
+            <span id="hap_provisioned"></span>
+          </div>
+          <div class="form-control">
+            <label>Setup code:</label>
+            <input type="text" id="hap_setup_code" placeholder="111-22-333">
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="hap_save_btn">
+              <span id="hap_save_spinner"></span>
+              Save
+            </button>
+            <button class="btn" id="hap_reset_btn">
+              <span id="hap_reset_spinner"></span>
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
       <h1 class="">WiFi setup</h1>
       <div class="form">
         <div class="">
@@ -64,30 +95,7 @@
             <label></label>
             <button class="btn" id="wifi_save_btn">
               <span id="wifi_spinner"></span>
-              Save WiFi settings
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="container">
-      <h1 class="">HomeKit Settings</h1>
-      <div class="form">
-        <div class="">
-          <div class="form-control">
-            <label>Provisioned:</label>
-            <span id="hap_provisioned"></span>
-          </div>
-          <div class="form-control">
-            <label>Setup code:</label>
-            <input type="text" id="hap_setup_code" placeholder="111-22-333">
-          </div>
-          <div class="form-control">
-            <label></label>
-            <button class="btn" id="hap_save_btn">
-              <span id="hap_spinner"></span>
-              Setup Code
+              Save
             </button>
           </div>
         </div>
@@ -124,7 +132,7 @@
 <script>
 
 var host = "";
-//var host = "http://192.168.11.101";
+var host = "http://192.168.11.101";
 //var host = "http://192.168.11.30:8080";
 
 var spinner = document.getElementById("spinner");
@@ -134,9 +142,52 @@ var wifiSSID = document.getElementById("wifi_ssid");
 var wifiPass = document.getElementById("wifi_pass");
 var wifiSpinner = document.getElementById("wifi_spinner");
 
-var hapSpinner = document.getElementById("hap_spinner");
 var hapProvisioned = document.getElementById("hap_provisioned");
 var hapSetupCode = document.getElementById("hap_setup_code");
+var hapSaveSpinner = document.getElementById("hap_save_spinner");
+var hapResetSpinner = document.getElementById("hap_reset_spinner");
+
+document.getElementById("hap_save_btn").onclick = function() {
+  var code = hapSetupCode.value;
+  if (!code.match(/^\d\d\d-\d\d-\d\d\d$/)) {
+    if (code.match(/^\d\d\d\d\d\d\d\d$/)) {
+      code = code.substr(0, 3) + "-" + code.substr(3, 2) + "-" + code.substr(5, 3);
+    } else {
+      alert("Invalid code '" + code + "', must be xxxyyzzz or xxx-yy-zzz.");
+      return;
+    }
+  }
+  hapSaveSpinner.className = "spin";
+  axios.post(host + "/rpc/HAP.Setup", {"code": code}).then(function(res) {
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  }).then(function() {
+    hapSaveSpinner.className = "";
+    getInfo();
+  });
+};
+
+document.getElementById("hap_reset_btn").onclick = function() {
+  hapResetSpinner.className = "spin";
+  axios.post(host + "/rpc/HAP.Reset", {"reset_server": true, "reset_code": true}).then(function(res) {
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  }).then(function() {
+    hapResetSpinner.className = "";
+    getInfo();
+  });
+};
+
+document.getElementById("fw_upload_form").onsubmit = function() {
+  document.getElementById("fw_spinner").className = "spin";
+  return true;
+};
 
 document.getElementById("wifi_save_btn").onclick = function() {
   wifiSpinner.className = "spin";
@@ -167,34 +218,6 @@ document.getElementById("wifi_save_btn").onclick = function() {
   });
 };
 
-document.getElementById("hap_save_btn").onclick = function() {
-  var code = hapSetupCode.value;
-  if (!code.match(/^\d\d\d-\d\d-\d\d\d$/)) {
-    if (code.match(/^\d\d\d\d\d\d\d\d$/)) {
-      code = code.substr(0, 3) + "-" + code.substr(3, 2) + "-" + code.substr(5, 3);
-    } else {
-      alert("Invalid code '" + code + "', must be xxxyyzzz or xxx-yy-zzz.");
-      return;
-    }
-  }
-  hapSpinner.className = "spin";
-  axios.post(host + "/rpc/HAP.SetupInfo", {"code": code}).then(function(res) {
-  }).catch(function(err) {
-    if (err.response) {
-      err = err.response.data.message;
-    }
-    alert(err);
-  }).then(function() {
-    hapSpinner.className = "";
-    getInfo();
-  });
-};
-
-document.getElementById("fw_upload_form").onsubmit = function() {
-  document.getElementById("fw_spinner").className = "spin";
-  return true;
-};
-
 function getInfo() {
   spinner.className = "spin";
   axios.get(host + "/rpc/Shelly.GetInfo").then(function(res) {
@@ -202,13 +225,14 @@ function getInfo() {
     wifiSSID.value = res.data.wifi_ssid;
     wifiPass.value = res.data.wifi_pass;
     document.getElementById("device_id").innerText = res.data.id;
-    if (res.data.hap_ok) {
+    if (res.data.hap_provisioned) {
       hapProvisioned.innerText = "yes";
       hapSetupCode.value = "***-**-***";
     } else {
       hapProvisioned.innerText = "no";
       hapSetupCode.value = "";
     }
+    document.getElementById("hap_paired").innerText = (res.data.hap_paired ? "yes" : "no");
     document.getElementById("app_name").innerText = res.data.app;
     document.getElementById("app_version").innerText = res.data.version;
     document.getElementById("app_build").innerText = res.data.fw_build;

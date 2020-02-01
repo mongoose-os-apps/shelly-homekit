@@ -69,7 +69,7 @@ static HAPAccessoryServerOptions s_server_options = {
 static HAPAccessoryServerCallbacks s_callbacks;
 static HAPPlatformTCPStreamManager s_tcp_stream_manager;
 static HAPPlatformServiceDiscovery s_service_discovery;
-static HAPAccessoryServerRef s_accessory_server;
+static HAPAccessoryServerRef s_server;
 
 static HAPPlatform s_platform = {
     .keyValueStore = &s_kvs,
@@ -98,7 +98,6 @@ static HAPAccessory s_accessory = {
     .callbacks = {.identify = shelly_identify_cb},
 };
 
-static bool s_server_started = false;
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
 
@@ -123,13 +122,12 @@ static void shelly_hap_server_state_update_cb(HAPAccessoryServerRef *server,
 }
 
 static bool shelly_start_hap_server(bool quiet) {
-  HAPSetupInfo setupInfo;
-  if (mgos_hap_setup_info_from_string(&setupInfo,
-                                      mgos_sys_config_get_hap_salt(),
-                                      mgos_sys_config_get_hap_verifier())) {
+  if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
+    return true;
+  }
+  if (mgos_hap_config_valid()) {
     LOG(LL_INFO, ("=== Accessory provisioned, starting HAP server"));
-    HAPAccessoryServerStart(&s_accessory_server, &s_accessory);
-    s_server_started = true;
+    HAPAccessoryServerStart(&s_server, &s_accessory);
     return true;
   } else if (!quiet) {
     LOG(LL_INFO, ("=== Accessory not provisioned"));
@@ -200,7 +198,7 @@ static void check_led(int pin, bool led_act) {
   }
 #endif
   // HAP server status (if WiFi is provisioned).
-  if (!s_server_started) {
+  if (HAPAccessoryServerGetState(&s_server) == kHAPAccessoryServerState_Idle) {
     off_ms = 875;
     on_ms = 25;
     LOG(LL_DEBUG, ("LED: HAP provisioning"));
@@ -213,7 +211,7 @@ static void check_led(int pin, bool led_act) {
       on_ms = 875;
     }
 #endif
-    if (on_ms == 0 && !HAPAccessoryServerIsPaired(&s_accessory_server)) {
+    if (on_ms == 0 && !HAPAccessoryServerIsPaired(&s_server)) {
       LOG(LL_DEBUG, ("LED: Pairing"));
       off_ms = 500;
       on_ms = 500;
@@ -250,7 +248,7 @@ static void shelly_status_timer_cb(void *arg) {
        (unsigned long) mgos_get_free_heap_size()));
   s_tick_tock = !s_tick_tock;
   /* If provisioning information has been provided, start the server. */
-  if (!s_server_started) shelly_start_hap_server(true /* quiet */);
+  shelly_start_hap_server(true /* quiet */);
   check_btn(BTN_GPIO, BTN_DOWN);
   check_led(LED_GPIO, LED_ON);
   (void) arg;
@@ -274,14 +272,16 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
   const char *ssid = mgos_sys_config_get_wifi_sta_ssid();
   const char *pass = mgos_sys_config_get_wifi_sta_pass();
   bool hap_provisioned = !mgos_conf_str_empty(mgos_sys_config_get_hap_salt());
+  bool hap_paired = HAPAccessoryServerIsPaired(&s_server);
   mg_rpc_send_responsef(
       ri,
       "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, "
-      "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, hap_ok: %B}",
+      "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
+      "hap_provisioned: %B, hap_paired: %B}",
       mgos_sys_config_get_device_id(), MGOS_APP, mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
-      (pass ? pass : ""), hap_provisioned);
+      (pass ? pass : ""), hap_provisioned, hap_paired);
   (void) cb_arg;
   (void) fi;
   (void) args;
@@ -352,7 +352,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
 
   // Initialize accessory server.
-  HAPAccessoryServerCreate(&s_accessory_server, &s_server_options, &s_platform,
+  HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
                            &s_callbacks, NULL /* context */);
 
   shelly_start_hap_server(false /* quiet */);
@@ -360,7 +360,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   // Timer for periodic status.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
 
-  mgos_hap_add_rpc_service();
+  mgos_hap_add_rpc_service(&s_server, &s_accessory, &s_kvs);
 
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                      shelly_get_info_handler, NULL);
