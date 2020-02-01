@@ -36,6 +36,13 @@
 #define NUM_SESSIONS 3
 #define IO_BUF_SIZE 2048
 
+#ifndef LED_ON
+#define LED_ON 0
+#endif
+#ifndef BTN_DOWN
+#define BTN_DOWN 0
+#endif
+
 static HAPIPSession sessions[NUM_SESSIONS];
 static uint8_t in_bufs[NUM_SESSIONS][IO_BUF_SIZE];
 static uint8_t out_bufs[NUM_SESSIONS][IO_BUF_SIZE];
@@ -92,24 +99,17 @@ static HAPAccessory s_accessory = {
 };
 
 static bool s_server_started = false;
+static int16_t s_btn_pressed_count = 0;
+static int16_t s_identify_count = 0;
 
-#ifdef LED_GPIO
-static void stop_blinking(void *arg) {
-  mgos_gpio_blink(LED_GPIO, 0, 0);
-  mgos_gpio_setup_input(LED_GPIO, MGOS_GPIO_PULL_NONE);
-  (void) arg;
-}
-#endif
+static void check_led(int pin, bool led_on);
 
 HAPError shelly_identify_cb(HAPAccessoryServerRef *server,
                             const HAPAccessoryIdentifyRequest *request,
                             void *context) {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
-#ifdef LED_GPIO
-  mgos_gpio_setup_output(LED_GPIO, 0);
-  mgos_gpio_blink(LED_GPIO, 100, 100);
-  mgos_set_timer(500, 0, stop_blinking, NULL);
-#endif
+  s_identify_count = 3;
+  check_led(LED_GPIO, LED_ON);
   (void) server;
   (void) request;
   (void) context;
@@ -130,14 +130,116 @@ static bool shelly_start_hap_server(bool quiet) {
     LOG(LL_INFO, ("=== Accessory provisioned, starting HAP server"));
     HAPAccessoryServerStart(&s_accessory_server, &s_accessory);
     s_server_started = true;
-#ifdef LED_GPIO
-    stop_blinking(NULL);
-#endif
     return true;
   } else if (!quiet) {
     LOG(LL_INFO, ("=== Accessory not provisioned"));
   }
   return false;
+}
+
+static void check_btn(int pin, bool btn_down) {
+  if (pin < 0) return;
+  bool pressed = (mgos_gpio_read(pin) == btn_down);
+  if (!pressed) {
+    if (s_btn_pressed_count > 0) {
+      s_btn_pressed_count = 0;
+    }
+    return;
+  }
+  s_btn_pressed_count++;
+  LOG(LL_INFO, ("Button pressed, %d", s_btn_pressed_count));
+  if (s_btn_pressed_count == 10) {
+    LOG(LL_INFO, ("Re-enabling AP"));
+#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
+    mgos_sys_config_set_wifi_sta_enable(false);
+    mgos_sys_config_set_wifi_ap_enable(true);
+    mgos_sys_config_save(&mgos_sys_config, false, NULL);
+    mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
+#endif
+  }
+}
+
+static void check_led(int pin, bool led_act) {
+  if (pin < 0) return;
+  int on_ms = 0, off_ms = 0;
+  static int s_on_ms = 0, s_off_ms = 0;
+  // If user is currently holding the button, acknowledge it.
+  if (s_btn_pressed_count > 0 && s_btn_pressed_count < 10) {
+    LOG(LL_DEBUG, ("LED: btn (%d)", s_btn_pressed_count));
+    on_ms = 1;
+    off_ms = 0;
+    goto out;
+  }
+  // Identify sequence requested by controller.
+  if (s_identify_count > 0) {
+    LOG(LL_DEBUG, ("LED: identify (%d)", s_identify_count));
+    on_ms = 100;
+    off_ms = 100;
+    s_identify_count--;
+    goto out;
+  }
+#if MGOS_HAVE_WIFI
+  // Are we connecting to wifi right now?
+  switch (mgos_wifi_get_status()) {
+    case MGOS_WIFI_CONNECTING:
+    case MGOS_WIFI_CONNECTED:
+      LOG(LL_DEBUG, ("LED: WiFi"));
+      on_ms = 200;
+      off_ms = 200;
+      goto out;
+    default:
+      break;
+  }
+#endif
+#ifdef MGOS_HAVE_OTA_COMMON
+  if (mgos_ota_is_in_progress()) {
+    LOG(LL_DEBUG, ("LED: OTA"));
+    on_ms = 250;
+    off_ms = 250;
+    goto out;
+  }
+#endif
+  // HAP server status (if WiFi is provisioned).
+  if (!s_server_started) {
+    off_ms = 875;
+    on_ms = 25;
+    LOG(LL_DEBUG, ("LED: HAP provisioning"));
+  } else {
+#if MGOS_HAVE_WIFI
+    // Indicate WiFi provisioning status.
+    if (mgos_sys_config_get_wifi_ap_enable()) {
+      LOG(LL_DEBUG, ("LED: WiFi provisioning"));
+      off_ms = 25;
+      on_ms = 875;
+    }
+#endif
+    if (on_ms == 0 && !HAPAccessoryServerIsPaired(&s_accessory_server)) {
+      LOG(LL_DEBUG, ("LED: Pairing"));
+      off_ms = 500;
+      on_ms = 500;
+    }
+  }
+out:
+  if (on_ms > 0) {
+    if (on_ms > 1) {
+      mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
+      if (on_ms != s_on_ms || off_ms != s_off_ms) {
+        if (led_act) {
+          mgos_gpio_blink(pin, on_ms, off_ms);
+        } else {
+          mgos_gpio_blink(pin, off_ms, on_ms);
+        }
+        s_on_ms = on_ms;
+        s_off_ms = off_ms;
+      }
+    } else {
+      s_on_ms = s_off_ms = 0;
+      mgos_gpio_blink(pin, 0, 0);
+      mgos_gpio_setup_output(pin, led_act);
+    }
+  } else {
+    mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_INPUT);
+  }
 }
 
 static void shelly_status_timer_cb(void *arg) {
@@ -149,6 +251,8 @@ static void shelly_status_timer_cb(void *arg) {
   s_tick_tock = !s_tick_tock;
   /* If provisioning information has been provided, start the server. */
   if (!s_server_started) shelly_start_hap_server(true /* quiet */);
+  check_btn(BTN_GPIO, BTN_DOWN);
+  check_led(LED_GPIO, LED_ON);
   (void) arg;
 }
 
@@ -251,12 +355,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   HAPAccessoryServerCreate(&s_accessory_server, &s_server_options, &s_platform,
                            &s_callbacks, NULL /* context */);
 
-  if (!shelly_start_hap_server(false /* quiet */)) {
-#ifdef LED_GPIO
-    mgos_gpio_setup_output(LED_GPIO, 0);
-    mgos_gpio_blink(LED_GPIO, 875, 125);
-#endif
-  }
+  shelly_start_hap_server(false /* quiet */);
 
   // Timer for periodic status.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
@@ -265,6 +364,10 @@ enum mgos_app_init_result mgos_app_init(void) {
 
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                      shelly_get_info_handler, NULL);
+
+  if (BTN_GPIO > 0) {
+    mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);
+  }
 
   return MGOS_APP_INIT_SUCCESS;
 }

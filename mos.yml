@@ -13,10 +13,6 @@ sources:
 filesystem:
   - fs
 
-cdefs:
-  PRODUCT_VENDOR: '"Allterco"'
-  SERVICE_NAME: '"Switch"'
-
 config_schema:
   # Serial number. This can be later set in the field but HomeKit requires at least 2 bytes.
   - ["device.sn", "000000"]
@@ -36,6 +32,12 @@ config_schema:
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
+
+cdefs:
+  PRODUCT_VENDOR: '"Allterco"'
+  SERVICE_NAME: '"Switch"'
+  LED_GPIO: -1
+  BTN_GPIO: -1
 
 libs:
   - origin: https://github.com/mongoose-os-libs/core
@@ -95,6 +97,9 @@ conds:
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 2
+        BTN_DOWN: 0
         PRODUCT_MODEL: '"Shelly2.5"'
         PRODUCT_HW_REV: '"2.5"'
         NUM_SWITCHES: 2
