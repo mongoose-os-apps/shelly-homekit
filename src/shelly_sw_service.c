@@ -28,9 +28,23 @@ struct shelly_sw_service_ctx {
   const HAPAccessory *hap_accessory;
   const HAPService *hap_service;
   bool state;
+  int change_cnt;         // State change counter for reset.
+  double last_change_ts;  // Timestamp of last change (uptime).
 };
 
 static struct shelly_sw_service_ctx s_ctx[NUM_SWITCHES];
+
+static void do_reset(void *arg) {
+  struct shelly_sw_service_ctx *ctx = arg;
+  mgos_gpio_blink(ctx->cfg->out_gpio, 0, 0);
+  LOG(LL_INFO, ("Performing reset"));
+#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
+  mgos_sys_config_set_wifi_sta_enable(false);
+  mgos_sys_config_set_wifi_ap_enable(true);
+  mgos_sys_config_save(&mgos_sys_config, false, NULL);
+  mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
+#endif
+}
 
 static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
                                     bool new_state, const char *source) {
@@ -50,6 +64,20 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
     ((struct mgos_config_sw *) cfg)->state = new_state;
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          NULL /* msg */);
+  }
+  double now = mgos_uptime();
+  if (now < 60) {
+    if (now - ctx->last_change_ts > 10) {
+      ctx->change_cnt = 0;
+    }
+    ctx->change_cnt++;
+    ctx->last_change_ts = now;
+    if (ctx->change_cnt >= 10) {
+      LOG(LL_INFO, ("Reset sequence detected"));
+      ctx->change_cnt = 0;
+      mgos_gpio_blink(cfg->out_gpio, 100, 100);
+      mgos_set_timer(600, 0, do_reset, ctx);
+    }
   }
 }
 
