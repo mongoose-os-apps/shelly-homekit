@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 0.4.0
+version: 0.5.0
 platform: esp8266
 
 libs_version: ${mos.version}
@@ -16,6 +16,8 @@ filesystem:
 config_schema:
   # Serial number. This can be later set in the field but HomeKit requires at least 2 bytes.
   - ["device.sn", "000000"]
+  # Try .gz-compressed html.
+  - ["http.index_files", "index.html.gz"]
 
   - ["sw", "o", {"Switch settings"}]
   - ["sw.id", "i", 0, {"ID of the switch"}]

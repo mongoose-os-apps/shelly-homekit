@@ -32,8 +32,8 @@ struct shelly_sw_service_ctx {
 
 static struct shelly_sw_service_ctx s_ctx[NUM_SWITCHES];
 
-static void shelly_sw_set_state(struct shelly_sw_service_ctx *ctx,
-                                bool new_state, const char *source) {
+static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
+                                    bool new_state, const char *source) {
   const struct mgos_config_sw *cfg = ctx->cfg;
   if (new_state == ctx->state) return;
   int out_value = (new_state ? cfg->out_on_value : !cfg->out_on_value);
@@ -51,6 +51,22 @@ static void shelly_sw_set_state(struct shelly_sw_service_ctx *ctx,
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          NULL /* msg */);
   }
+}
+
+bool shelly_sw_set_state(int id, bool new_state, const char *source) {
+  if (id < 0 || id >= NUM_SWITCHES) return false;
+  struct shelly_sw_service_ctx *ctx = &s_ctx[id];
+  if (ctx == NULL) return false;
+  shelly_sw_set_state_ctx(ctx, new_state, source);
+  return true;
+}
+
+bool shelly_sw_get_info(int id, struct shelly_sw_info *info) {
+  if (id < 0 || id >= NUM_SWITCHES) return false;
+  struct shelly_sw_service_ctx *ctx = &s_ctx[id];
+  if (ctx == NULL) return false;
+  info->state = ctx->state;
+  return true;
 }
 
 static const HAPCharacteristic *shelly_sw_name_char(uint16_t iid) {
@@ -117,7 +133,7 @@ HAPError shelly_sw_handle_on_write(
   struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
   ctx->hap_server = server;
   ctx->hap_accessory = request->accessory;
-  shelly_sw_set_state(ctx, value, "HAP");
+  shelly_sw_set_state_ctx(ctx, value, "HAP");
   (void) context;
   return kHAPError_None;
 }
@@ -160,7 +176,7 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
 static void shelly_sw_in_cb(int pin, void *arg) {
   struct shelly_sw_service_ctx *ctx = arg;
   bool in_state = (mgos_gpio_read(pin) == ctx->cfg->in_on_value);
-  shelly_sw_set_state(ctx, in_state, "input");
+  shelly_sw_set_state_ctx(ctx, in_state, "input");
   (void) pin;
 }
 

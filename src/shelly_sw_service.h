@@ -19,3 +19,10 @@
 #include "mgos_sys_config.h"
 
 HAPService *shelly_sw_service_create(const struct mgos_config_sw *cfg);
+
+struct shelly_sw_info {
+  bool state;  // On/off
+};
+bool shelly_sw_get_info(int id, struct shelly_sw_info *info);
+
+bool shelly_sw_set_state(int id, bool new_state, const char *source);
