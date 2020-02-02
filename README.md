@@ -52,6 +52,8 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
  Both of these methods will make device go int AP mode where they can be reconfigured.
 
+ If the device does not appear in the list of accessories when adding, try resetting the HomeKit status from the web interface.
+
 ## LED indication
 
  Shelly2.5 has an LED that is used to indicate current status of the device
