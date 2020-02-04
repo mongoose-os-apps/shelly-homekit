@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <script src="axios.min.js.gz"></script>
+  <style>
+    html, body { height: 100vh; padding: 0; margin: 0;}
+    * { outline: none !important; }
+    body { color: #454955; font: 15px/1.5 Verdana, Helvetica, Arial, sans-serif; }
+    h1, h2, h3, h4, h5, h6, b, th, strong, .nav-link { color: #777; }
+    input, button, div, pre, p { font: inherit; }
+    button {
+      color: white; padding: 0.4em 1em; border-radius: 0.3em;
+      border: none; cursor: pointer;
+    }
+    input[type=text] {
+      padding: 0.2em 0.7em; position: relative;
+      border: 1px solid #cdcdcd; border-color: rgba(0, 0, 0, .15);
+      background-color: white; font-size: 16px;
+    }
+    h1 { margin: 0; padding-top: 0.5em; text-align: center; }
+    .container { padding: 0 1em; margin: 1em auto; max-width: 640px; background: #fafafa; }
+    .form-control { margin: 0.5em 0; }
+    .form-control input, .form-control button { min-width: 15em; }
+    .form label { min-width: 8em; display: inline-block; }
+    .form { padding: 1em 0; }
+    .btn { background: #2079b0; }
+    .spin {
+      display: inline-block; width: 0.9em; height: 0.9em;
+      margin-bottom: -0.2em; 
+      border: 0.15em solid rgba(255,255,255,.5);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s linear infinite;
+      -webkit-animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
+  </style>
+  </head>
+  <body onLoad="onLoad()">
+
+    <div class="container">
+      <h1 class="" id="device_id" style="visibility: hidden">shellyswitch25-XXXXXX</h1>
+      <button class="btn" id="refresh_btn">
+        <span id="spinner"></span>
+        Refresh
+      </button>
+    </div>
+
+    <div class="container" id="sw1_container" style="display: none">
+      <h1 class="" id="sw1_name">SW1 Name</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>State:</label>
+            <span id="sw1_state">off</span>
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="sw1_set_btn">
+              <span id="sw1_set_spinner"></span>
+              <label id="sw1_btn_label">Turn On</label>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="sw2_container" style="display: none">
+      <h1 class="" id="sw2_name">SW2 Name</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>State:</label>
+            <span id="sw2_state">off</span>
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="sw2_set_btn">
+              <span id="sw2_set_spinner"></span>
+              <label id="sw2_btn_label">Turn On</label>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="homekit_container" style="visibility: hidden">
+      <h1 class="">HomeKit Settings</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Paired:</label>
+            <span id="hap_paired"></span>
+          </div>
+          <div class="form-control">
+            <label>Provisioned:</label>
+            <span id="hap_provisioned"></span>
+          </div>
+          <div class="form-control">
+            <label>Setup code:</label>
+            <input type="text" id="hap_setup_code" placeholder="111-22-333">
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="hap_save_btn">
+              <span id="hap_save_spinner"></span>
+              Save
+            </button>
+            <button class="btn" id="hap_reset_btn">
+              <span id="hap_reset_spinner"></span>
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="wifi_container" style="visibility: hidden">
+      <h1 class="">WiFi setup</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Enable:</label>
+            <input type="checkbox" id="wifi_en">
+          </div>
+          <div class="form-control">
+            <label>WiFi network:</label>
+            <input type="text" id="wifi_ssid">
+          </div>
+          <div class="form-control">
+            <label>WiFi password:</label>
+            <input type="text" id="wifi_pass">
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="wifi_save_btn">
+              <span id="wifi_spinner"></span>
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="fw_container" style="visibility: hidden">
+      <h1 class="">Firmware</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>App:</label>
+            <span id="app_name"></span>
+          </div>
+          <div class="form-control">
+            <label>Version:</label>
+            <span id="app_version"></span>
+          </div>
+          <div class="form-control">
+            <label>Build ID:</label>
+            <span id="app_build"></span>
+          </div>
+          <div class="form-control">
+            <label>Update (<a href="https://github.com/mongoose-os-apps/shelly-homekit">GitHub</a>):</label>
+            <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data">
+              <input type="file" id="fw_select_file" name="file" accept=".zip" />
+              <button class="btn" id="fw_upload_btn"><span id="fw_spinner"></span> Upload</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<script>
+
+var host = "";
+
+var spinner = document.getElementById("spinner");
+
+var wifiEn = document.getElementById("wifi_en");
+var wifiSSID = document.getElementById("wifi_ssid");
+var wifiPass = document.getElementById("wifi_pass");
+var wifiSpinner = document.getElementById("wifi_spinner");
+
+var hapProvisioned = document.getElementById("hap_provisioned");
+var hapSetupCode = document.getElementById("hap_setup_code");
+var hapSaveSpinner = document.getElementById("hap_save_spinner");
+var hapResetSpinner = document.getElementById("hap_reset_spinner");
+
+document.getElementById("hap_save_btn").onclick = function() {
+  var code = hapSetupCode.value;
+  if (!code.match(/^\d\d\d-\d\d-\d\d\d$/)) {
+    if (code.match(/^\d\d\d\d\d\d\d\d$/)) {
+      code = code.substr(0, 3) + "-" + code.substr(3, 2) + "-" + code.substr(5, 3);
+    } else {
+      alert("Invalid code '" + code + "', must be xxxyyzzz or xxx-yy-zzz.");
+      return;
+    }
+  }
+  hapSaveSpinner.className = "spin";
+  axios.post(host + "/rpc/HAP.Setup", {"code": code}).then(function(res) {
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  }).then(function() {
+    hapSaveSpinner.className = "";
+    getInfo();
+  });
+};
+
+document.getElementById("hap_reset_btn").onclick = function() {
+  hapResetSpinner.className = "spin";
+  axios.post(host + "/rpc/HAP.Reset", {"reset_server": true, "reset_code": true}).then(function(res) {
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  }).then(function() {
+    hapResetSpinner.className = "";
+    getInfo();
+  });
+};
+
+document.getElementById("fw_upload_form").onsubmit = function() {
+  document.getElementById("fw_spinner").className = "spin";
+  return true;
+};
+
+document.getElementById("wifi_save_btn").onclick = function() {
+  wifiSpinner.className = "spin";
+  var data = {
+    config: {
+      wifi: {
+        sta: { enable: wifiEn.checked, ssid: wifiSSID.value, pass: wifiPass.value},
+        ap: { enable: !wifiEn.checked },
+      },
+    },
+    save: true,
+    reboot: true,
+  };
+  axios.post(host + "/rpc/Config.Set", data).then(function(res) {
+    document.body.innerHTML =
+      "<div class='container'><h1>Rebooting...</h1>" +
+      "<p>Device is rebooting and connecting to " + wifiSSID.value + "." +
+      "<p>Connect to the same network and visit " +
+      "<a href='http://" + document.getElementById("device_id").innerText + ".local/'>" +
+      document.getElementById("device_id").innerText + ".local.</a></div>.";
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  }).then(function() {
+    wifiSpinner.className = "";
+  });
+};
+
+function sw_set_common(id, state, spinner) {
+  spinner.className = "spin";
+  axios.post(host + "/rpc/Shelly.SetSwitch", {id: id, state: state}).then(function(res) {
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  }).then(function() {
+    spinner.className = "";
+    getInfo();
+  });
+}
+
+document.getElementById("sw1_set_btn").onclick = function() {
+  sw_set_common(
+      document.getElementById("sw1_container").sw_id,
+      !document.getElementById("sw1_container").sw_state,
+      !document.getElementById("sw1_set_spinner"),
+  );
+}
+
+document.getElementById("sw2_set_btn").onclick = function() {
+  sw_set_common(
+      document.getElementById("sw2_container").sw_id,
+      !document.getElementById("sw2_container").sw_state,
+      !document.getElementById("sw2_set_spinner"),
+  );
+}
+
+function getInfo() {
+  spinner.className = "spin";
+  axios.get(host + "/rpc/Shelly.GetInfo").then(function(res) {
+    wifiEn.checked = res.data.wifi_en;
+    wifiSSID.value = res.data.wifi_ssid;
+    wifiPass.value = res.data.wifi_pass;
+    document.getElementById("device_id").innerText = res.data.id;
+    if (res.data.hap_provisioned) {
+      hapProvisioned.innerText = "yes";
+      hapSetupCode.value = "***-**-***";
+    } else {
+      hapProvisioned.innerText = "no";
+      hapSetupCode.value = "";
+    }
+    document.getElementById("hap_paired").innerText = (res.data.hap_paired ? "yes" : "no");
+    document.getElementById("app_name").innerText = res.data.app;
+    document.getElementById("app_version").innerText = res.data.version;
+    document.getElementById("app_build").innerText = res.data.fw_build;
+    if (res.data.sw1) {
+      document.getElementById("sw1_name").innerText = res.data.sw1.name;
+      document.getElementById("sw1_state").innerText = (res.data.sw1.state ? "on" : "off");
+      document.getElementById("sw1_btn_label").innerText = "Turn " + (res.data.sw1.state ? "Off" : "On");
+      document.getElementById("sw1_container").sw_id = res.data.sw1.id;
+      document.getElementById("sw1_container").sw_state = res.data.sw1.state;
+      document.getElementById("sw1_container").style.display = "block";
+    }
+    if (res.data.sw2) {
+      document.getElementById("sw2_name").innerText = res.data.sw2.name;
+      document.getElementById("sw2_state").innerText = (res.data.sw2.state ? "on" : "off");
+      document.getElementById("sw2_btn_label").innerText = "Turn " + (res.data.sw2.state ? "Off" : "On");
+      document.getElementById("sw2_container").sw_id = res.data.sw2.id;
+      document.getElementById("sw2_container").sw_state = res.data.sw2.state;
+      document.getElementById("sw2_container").style.display = "block";
+    }
+    document.getElementById("homekit_container").style.visibility = "visible";
+    document.getElementById("wifi_container").style.visibility = "visible";
+    document.getElementById("fw_container").style.visibility = "visible";
+    document.getElementById("device_id").style.visibility = "visible";
+  }).catch(function(err) {
+    alert(err);
+  }).then(function() {
+    spinner.className = "";
+  });
+}
+
+document.getElementById("refresh_btn").onclick = getInfo;
+
+function onLoad() {
+  getInfo();
+}
+
+</script>
+
+  </body>
+</html>
