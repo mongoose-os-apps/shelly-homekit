@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 1.0.0
+version: 1.1.0
 platform: esp8266
 
 libs_version: ${mos.version}
@@ -26,7 +26,7 @@ config_schema:
   - ["sw.out_gpio", "i", -1, {"Output pin"}]
   - ["sw.out_on_value", "i", 1, {"Active (ON) output for gpio, 1 or 0"}]
   - ["sw.in_gpio", "i", -1, {"Input sensing pin"}]
-  - ["sw.in_on_value", "i", 1, {"Input pin active (ON) value, 1 or 0"}]
+  - ["sw.in_push_button", "b", false, {"If true, every transition causes output to be toggled, otherwise output = input"}]
   - ["sw.state", "b", false, {"State of the switch"}]
   - ["sw.persist_state", "b", false, {"Whether state of the switch should be persisted across reboots."}]
 
@@ -149,6 +149,7 @@ conds:
           variant: ubuntu-nossl
       config_schema:
         - ["device.id", "ShellyU-????"]
+        - ["http.document_root", "."]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.id", 0]
         - ["sw1.name", "SW"]

@@ -20,8 +20,8 @@
     h1 { margin: 0; padding-top: 0.5em; text-align: center; }
     .container { padding: 0 1em; margin: 1em auto; max-width: 640px; background: #fafafa; }
     .form-control { margin: 0.5em 0; }
-    .form-control input, .form-control button { min-width: 15em; }
-    .form label { min-width: 8em; display: inline-block; }
+    .form-control input, .form-control button { Xmin-width: 15em; }
+    .form label { min-width: 10em; display: inline-block; }
     .form { padding: 1em 0; }
     .btn { background: #2079b0; }
     .spin {
@@ -64,6 +64,25 @@
           </div>
         </div>
       </div>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Push-button:</label>
+            <input type="checkbox" id="sw1_pushbutton">
+          </div>
+          <div class="form-control">
+            <label>Persist state:</label>
+            <input type="checkbox" id="sw1_persist">
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="sw1_save_btn">
+              <span id="sw1_save_spinner"></span>
+              <label>Save</label>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="container" id="sw2_container" style="display: none">
@@ -79,6 +98,25 @@
             <button class="btn" id="sw2_set_btn">
               <span id="sw2_set_spinner"></span>
               <label id="sw2_btn_label">Turn On</label>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Push-button:</label>
+            <input type="checkbox" id="sw2_pushbutton">
+          </div>
+          <div class="form-control">
+            <label>Persist state:</label>
+            <input type="checkbox" id="sw2_persist">
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="sw2_save_btn">
+              <span id="sw2_save_spinner"></span>
+              <label>Save</label>
             </button>
           </div>
         </div>
@@ -275,7 +313,7 @@ document.getElementById("sw1_set_btn").onclick = function() {
   sw_set_common(
       document.getElementById("sw1_container").sw_id,
       !document.getElementById("sw1_container").sw_state,
-      !document.getElementById("sw1_set_spinner"),
+      document.getElementById("sw1_set_spinner"),
   );
 }
 
@@ -283,7 +321,48 @@ document.getElementById("sw2_set_btn").onclick = function() {
   sw_set_common(
       document.getElementById("sw2_container").sw_id,
       !document.getElementById("sw2_container").sw_state,
-      !document.getElementById("sw2_set_spinner"),
+      document.getElementById("sw2_set_spinner"),
+  );
+}
+
+function sw_save_common(cfg_key, pb, persist, spinner) {
+  spinner.className = "spin";
+  var data = {
+    config: {},
+    save: true,
+    reboot: false,
+  };
+  data.config[cfg_key] = {
+    in_push_button: pb,
+    persist_state: persist,
+  };
+  axios.post(host + "/rpc/Config.Set", data).then(function(res) {
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  }).then(function() {
+    spinner.className = "";
+    getInfo();
+  });
+}
+
+document.getElementById("sw1_save_btn").onclick = function() {
+  sw_save_common(
+      "sw1",
+      document.getElementById("sw1_pushbutton").checked,
+      document.getElementById("sw1_persist").checked,
+      document.getElementById("sw1_save_spinner"),
+  );
+}
+
+document.getElementById("sw2_save_btn").onclick = function() {
+  sw_save_common(
+      "sw2",
+      document.getElementById("sw2_pushbutton").checked,
+      document.getElementById("sw2_persist").checked,
+      document.getElementById("sw2_save_spinner"),
   );
 }
 
@@ -309,6 +388,8 @@ function getInfo() {
       document.getElementById("sw1_name").innerText = res.data.sw1.name;
       document.getElementById("sw1_state").innerText = (res.data.sw1.state ? "on" : "off");
       document.getElementById("sw1_btn_label").innerText = "Turn " + (res.data.sw1.state ? "Off" : "On");
+      document.getElementById("sw1_pushbutton").checked = res.data.sw1.pb;
+      document.getElementById("sw1_persist").checked = res.data.sw1.persist;
       document.getElementById("sw1_container").sw_id = res.data.sw1.id;
       document.getElementById("sw1_container").sw_state = res.data.sw1.state;
       document.getElementById("sw1_container").style.display = "block";
@@ -317,6 +398,8 @@ function getInfo() {
       document.getElementById("sw2_name").innerText = res.data.sw2.name;
       document.getElementById("sw2_state").innerText = (res.data.sw2.state ? "on" : "off");
       document.getElementById("sw2_btn_label").innerText = "Turn " + (res.data.sw2.state ? "Off" : "On");
+      document.getElementById("sw2_pushbutton").checked = res.data.sw2.pb;
+      document.getElementById("sw2_persist").checked = res.data.sw2.persist;
       document.getElementById("sw2_container").sw_id = res.data.sw2.id;
       document.getElementById("sw2_container").sw_state = res.data.sw2.state;
       document.getElementById("sw2_container").style.display = "block";

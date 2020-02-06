@@ -12,7 +12,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ *limitations under the License.
  */
 
 #include "shelly_sw_service.h"
@@ -28,6 +28,7 @@ struct shelly_sw_service_ctx {
   const HAPAccessory *hap_accessory;
   const HAPService *hap_service;
   bool state;
+  bool pb_state;
   int change_cnt;         // State change counter for reset.
   double last_change_ts;  // Timestamp of last change (uptime).
 };
@@ -203,8 +204,14 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
 
 static void shelly_sw_in_cb(int pin, void *arg) {
   struct shelly_sw_service_ctx *ctx = arg;
-  bool in_state = (mgos_gpio_read(pin) == ctx->cfg->in_on_value);
-  shelly_sw_set_state_ctx(ctx, in_state, "input");
+  bool in_state = mgos_gpio_read(pin);
+  if (ctx->cfg->in_push_button) {
+    if (in_state) {  // Only on 0 -> 1 transitions.
+      shelly_sw_set_state_ctx(ctx, !ctx->state, "button");
+    }
+  } else {
+    shelly_sw_set_state_ctx(ctx, in_state, "switch");
+  }
   (void) pin;
 }
 
@@ -241,6 +248,8 @@ HAPService *shelly_sw_service_create(const struct mgos_config_sw *cfg) {
   mgos_gpio_set_button_handler(cfg->in_gpio, MGOS_GPIO_PULL_NONE,
                                MGOS_GPIO_INT_EDGE_ANY, 20, shelly_sw_in_cb,
                                ctx);
-  shelly_sw_in_cb(cfg->in_gpio, ctx);
+  if (!ctx->cfg->in_push_button) {
+    shelly_sw_in_cb(cfg->in_gpio, ctx);
+  }
   return svc;
 }
