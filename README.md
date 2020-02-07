@@ -12,6 +12,10 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
+    * Shelly1 URL: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
+
+    * Shelly25 URL: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip`
+
   * See [here](docs/setup-ota.md) for detailed instructions.
 
 ## Setup
