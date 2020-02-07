@@ -10,7 +10,7 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
 ## Updating from stock firmware
 
-  * Watch a 3 minute [video](https://www.youtube.com/watch?v=ZQWHxj-uoME).
+  * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
   * See [here](doce/setup-ota.md) for detailed instructions.
 
