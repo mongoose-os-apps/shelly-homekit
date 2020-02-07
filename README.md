@@ -1,8 +1,8 @@
 # Apple HomeKit firmware for Shelly switches
 
-This firmware exposes Shelly1 and Shelly25 as Apple HomeKi accessories.
+This firmware exposes Shelly1 and Shelly25 as Apple HomeKit accessories.
 
-Firmware is compatible with stock and can be uploaded via OTA.
+Firmware is compatible with stock and can be uploaded via OTA (see below) or [flashed via serial connection](docs/flashing.md).
 
 Reverting to stock firmware is also supported (see below).
 
