@@ -12,7 +12,7 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
-  * See [here](doce/setup-ota.md) for detailed instructions.
+  * See [here](docs/setup-ota.md) for detailed instructions.
 
 ## Setup
 
