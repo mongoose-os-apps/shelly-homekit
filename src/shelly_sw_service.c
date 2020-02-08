@@ -22,6 +22,13 @@
 #define IID_BASE 0x100
 #define IID_STEP 4
 
+enum shelly_sw_in_mode {
+  SHELLY_SW_IN_MODE_MOMENTARY = 0,
+  SHELLY_SW_IN_MODE_TOGGLE = 1,
+  SHELLY_SW_IN_MODE_EDGE = 2,
+  SHELLY_SW_IN_MODE_DETACHED = 3,
+};
+
 struct shelly_sw_service_ctx {
   const struct mgos_config_sw *cfg;
   HAPAccessoryServerRef *hap_server;
@@ -205,12 +212,21 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
 static void shelly_sw_in_cb(int pin, void *arg) {
   struct shelly_sw_service_ctx *ctx = arg;
   bool in_state = mgos_gpio_read(pin);
-  if (ctx->cfg->in_push_button) {
-    if (in_state) {  // Only on 0 -> 1 transitions.
+  switch ((enum shelly_sw_in_mode) ctx->cfg->in_mode) {
+    case SHELLY_SW_IN_MODE_MOMENTARY:
+      if (in_state) {  // Only on 0 -> 1 transitions.
+        shelly_sw_set_state_ctx(ctx, !ctx->state, "button");
+      }
+      break;
+    case SHELLY_SW_IN_MODE_TOGGLE:
+      shelly_sw_set_state_ctx(ctx, in_state, "switch");
+      break;
+    case SHELLY_SW_IN_MODE_EDGE:
       shelly_sw_set_state_ctx(ctx, !ctx->state, "button");
-    }
-  } else {
-    shelly_sw_set_state_ctx(ctx, in_state, "switch");
+      break;
+    case SHELLY_SW_IN_MODE_DETACHED:
+      // Nothing to do
+      break;
   }
   (void) pin;
 }
@@ -248,7 +264,7 @@ HAPService *shelly_sw_service_create(const struct mgos_config_sw *cfg) {
   mgos_gpio_set_button_handler(cfg->in_gpio, MGOS_GPIO_PULL_NONE,
                                MGOS_GPIO_INT_EDGE_ANY, 20, shelly_sw_in_cb,
                                ctx);
-  if (!ctx->cfg->in_push_button) {
+  if (ctx->cfg->in_mode == SHELLY_SW_IN_MODE_TOGGLE) {
     shelly_sw_in_cb(cfg->in_gpio, ctx);
   }
   return svc;
