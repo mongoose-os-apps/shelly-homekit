@@ -68,7 +68,7 @@ At the moment only switch functionality is supported - no scheduling, power meas
 When building, specify `MODEL=Shelly1` or `MODEL=Shelly25`
 
 ```
-mos build --verbose --local --platform esp8266 --build-var MODEL=Shelly1
+mos build --verbose --platform esp8266 --build-var MODEL=Shelly1
 ```
 
 ## Contributions and development
@@ -82,7 +82,7 @@ For development, OTA method is recommended.
 Firmware suports OTA via both RPC and HTTP POST, so something like
 
 ```
- $ make Shelly25 && curl -F commit_timeout=120 -F file=@build_Shelly25/fw.zip http://192.168.11.75/update
+ $ make Shelly25 && curl -F commit_timeout=120 -F file=@build/fw.zip http://192.168.11.75/update
 ```
 
 Note the use of commit timeout: if something goes wrong (as it invariably does during development),
