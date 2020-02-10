@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 1.2.0
+version: 1.3.0
 platform: esp8266
 
 libs_version: ${mos.version}
@@ -82,6 +82,38 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio", 5]
+
+  - when: build_vars.MODEL == "Shelly1PM"
+    apply:
+      name: switch1 # To allow OTA from stock fw.
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: esp8266-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
+        MGOS_ROOT_FS_TYPE: SPIFFS
+        # We don't need the cryptochip support. Saves approx 12K flash.
+        MGOS_MBEDTLS_ENABLE_ATCA: 0
+      cdefs:
+        PRODUCT_MODEL: '"Shelly1PM"'
+        PRODUCT_HW_REV: '"1.0"'
+        NUM_SWITCHES: 1
+        # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
+        MG_ENABLE_SSL: 0
+        # This saves quite a bit of space but disables all HAP debug output.
+        # HAP_LOG_LEVEL: 0
+      config_schema:
+        - ["device.id", "shelly1pm-??????"]
+        - ["wifi.ap.ssid", "shelly1pm-??????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.id", 0]
+        - ["sw1.name", "Shelly SW"]
+        - ["sw1.out_gpio", 15]
+        - ["sw1.in_gpio", 4]
 
   - when: build_vars.MODEL == "Shelly25"
     apply:
