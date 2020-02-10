@@ -1,6 +1,6 @@
 # Apple HomeKit firmware for Shelly switches
 
-This firmware exposes Shelly1 and Shelly25 as Apple HomeKit accessories.
+This firmware exposes Shelly1, SHelly1PM and Shelly25 as Apple HomeKit accessories.
 
 Firmware is compatible with stock and can be uploaded via OTA (see below) or [flashed via serial connection](docs/flashing.md).
 
@@ -13,6 +13,8 @@ At the moment only switch functionality is supported - no scheduling, power meas
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
     * Shelly1 URL: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
+
+    * Shelly1PM URL: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1PM.zip`
 
     * Shelly25 URL: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip`
 
@@ -65,7 +67,7 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
 ## Building
 
-When building, specify `MODEL=Shelly1` or `MODEL=Shelly25`
+When building, specify `MODEL=Shelly1`, `MODEL=Shelly1PM` or `MODEL=Shelly25`
 
 ```
 mos build --verbose --platform esp8266 --build-var MODEL=Shelly1
