@@ -114,6 +114,7 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["sw1.out_gpio", 15]
         - ["sw1.in_gpio", 4]
+  
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
