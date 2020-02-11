@@ -339,7 +339,6 @@ enum mgos_app_init_result mgos_app_init(void) {
     remove("cert.pem");
     remove("passwd");
     remove("relaydata");
-    remove("self_test");
   }
 #endif
 

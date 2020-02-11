@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 1.3.0
+version: 1.3.1
 platform: esp8266
 
 libs_version: ${mos.version}
@@ -114,6 +114,36 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["sw1.out_gpio", 15]
         - ["sw1.in_gpio", 4]
+  
+  - when: build_vars.MODEL == "ShellyPlugS"
+    apply:
+      name: shelly-plug-s # To allow OTA from stock fw.
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: esp8266-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x7000  # To be compatible with stock firmware.
+        MGOS_ROOT_FS_TYPE: SPIFFS
+        MGOS_MBEDTLS_ENABLE_ATCA: 0
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        PRODUCT_MODEL: '"ShellyPlugS"'
+        PRODUCT_HW_REV: '"1.0"'
+        NUM_SWITCHES: 1
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["device.id", "shellyplug-s-??????"]
+        - ["wifi.ap.ssid", "shellyplug-s-??????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.id", 0]
+        - ["sw1.name", "Shelly SW"]
+        - ["sw1.out_gpio", 15]
+        - ["sw1.in_gpio", 13]
 
   - when: build_vars.MODEL == "Shelly25"
     apply:

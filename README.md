@@ -1,6 +1,6 @@
 # Apple HomeKit firmware for Shelly switches
 
-This firmware exposes Shelly1, SHelly1PM and Shelly25 as Apple HomeKit accessories.
+This firmware exposes Shelly1, SHelly1PM, ShellyPlug-S and Shelly25 as Apple HomeKit accessories.
 
 Firmware is compatible with stock and can be uploaded via OTA (see below) or [flashed via serial connection](docs/flashing.md).
 
@@ -47,7 +47,7 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
 ## LED indication
 
- Shelly2.5 has an LED that is used to indicate current status of the device
+ Shelly2.5 and ShellyPlug-S have an LED that is used to indicate current status of the device
 
  * Off - fully provisioned, connected to WiFi, paired.
  * Off, short on pulses - HAP server not provisioned (code not set).
@@ -67,7 +67,7 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
 ## Building
 
-When building, specify `MODEL=Shelly1`, `MODEL=Shelly1PM` or `MODEL=Shelly25`
+When building, specify `MODEL=Shelly1`, `MODEL=Shelly1PM`, `MODEL=ShellyPlugS` or `MODEL=Shelly25`
 
 ```
 mos build --verbose --platform esp8266 --build-var MODEL=Shelly1
