@@ -3,9 +3,9 @@ description: A HomeKit firmware for Shelly switches
 version: 1.3.1
 platform: esp8266
 
-libs_version: ${mos.version}
-modules_version: ${mos.version}
-mongoose_os_version: ${mos.version}
+libs_version: 2.17.0
+modules_version: 2.17.0
+mongoose_os_version: 2.17.0
 
 sources:
   - src
