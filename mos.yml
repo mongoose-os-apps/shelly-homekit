@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 1.3.2
+version: 1.3.3
 platform: esp8266
 
 libs_version: 2.17.0
@@ -176,12 +176,12 @@ conds:
         - ["sw1.id", 0]
         - ["sw1.name", "Shelly SW1"]
         - ["sw1.out_gpio", 4]
-        - ["sw1.in_gpio",  5]
+        - ["sw1.in_gpio",  13]
         - ["sw2", "sw", {"title": "SW2 settings"}]
         - ["sw2.id", 1]
         - ["sw2.name", "Shelly SW2"]
         - ["sw2.out_gpio", 15]
-        - ["sw2.in_gpio",  13]
+        - ["sw2.in_gpio",  5]
 
   - when: mos.platform != "ubuntu"
     apply:
