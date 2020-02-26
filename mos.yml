@@ -85,7 +85,7 @@ conds:
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
-      name: switch1 # To allow OTA from stock fw.
+      name: switch1pm # To allow OTA from stock fw.
       libs:
         - origin: https://github.com/mongoose-os-libs/mbedtls
           variant: esp8266-noatca
@@ -114,7 +114,7 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["sw1.out_gpio", 15]
         - ["sw1.in_gpio", 4]
-  
+
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
