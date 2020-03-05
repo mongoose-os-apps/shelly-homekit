@@ -1,4 +1,4 @@
-.PHONY: all Shelly1 Shelly25
+.PHONY: all Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
 
 MOS ?= mos
 LOCAL ?= 0
@@ -20,6 +20,9 @@ Shelly1PM: build-Shelly1PM
 	@true
 
 ShellyPlugS: build-ShellyPlugS
+	@true
+
+Shelly25: build-Shelly2
 	@true
 
 Shelly25: build-Shelly25
