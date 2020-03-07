@@ -11,7 +11,7 @@ ifeq "$(LOCAL)" "1"
 	BUILD_DIR = ./build_$*
 endif
 
-all: Shelly1 Shelly1PM Shelly25 ShellyPlugS
+all: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS
 
 Shelly1: build-Shelly1
 	@true
@@ -22,7 +22,7 @@ Shelly1PM: build-Shelly1PM
 ShellyPlugS: build-ShellyPlugS
 	@true
 
-Shelly25: build-Shelly2
+Shelly2: build-Shelly2
 	@true
 
 Shelly25: build-Shelly25
