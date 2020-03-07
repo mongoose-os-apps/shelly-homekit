@@ -1,4 +1,4 @@
-.PHONY: all Shelly1 Shelly25
+.PHONY: all Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
 
 MOS ?= mos
 LOCAL ?= 0
@@ -11,7 +11,7 @@ ifeq "$(LOCAL)" "1"
 	BUILD_DIR = ./build_$*
 endif
 
-all: Shelly1 Shelly1PM Shelly25 ShellyPlugS
+all: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS
 
 Shelly1: build-Shelly1
 	@true
@@ -20,6 +20,9 @@ Shelly1PM: build-Shelly1PM
 	@true
 
 ShellyPlugS: build-ShellyPlugS
+	@true
+
+Shelly2: build-Shelly2
 	@true
 
 Shelly25: build-Shelly25
