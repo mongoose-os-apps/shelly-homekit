@@ -64,8 +64,10 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
  It is possible to revert back to stock firmware.
 
- Stock firmware for Shelly1 can be downloaded [here](http://api.shelly.cloud/firmware/SHSW-1_build.zip),
- for Shelly2.5 it's [here](http://api.shelly.cloud/firmware/SHSW-25_build.zip).
+ Stock firmware for can be downloaded from the offical site:
+  * [Shelly1](http://api.shelly.cloud/firmware/SHSW-1_build.zip)
+  * [Shelly2](http://api.shelly.cloud/firmware/SHSW-21_build.zip)
+  * [Shelly2.5](http://api.shelly.cloud/firmware/SHSW-25_build.zip)
 
  Download it and upload via web interface (this firmware does not support pulling from a remote URL).
 
