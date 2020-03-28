@@ -283,7 +283,7 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
 #endif
   mg_rpc_send_responsef(
       ri,
-      "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, "
+      "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_CONFIG_HAVE_SW1
       "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B},"
 #endif
@@ -294,6 +294,7 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       "hap_provisioned: %B, hap_paired: %B}",
       mgos_sys_config_get_device_id(), MGOS_APP, mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
+      (int) mgos_uptime(),
 #ifdef MGOS_CONFIG_HAVE_SW1
       mgos_sys_config_get_sw1_id(), mgos_sys_config_get_sw1_name(),
       mgos_sys_config_get_sw1_in_mode(),
