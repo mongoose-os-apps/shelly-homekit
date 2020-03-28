@@ -382,14 +382,16 @@ enum mgos_app_init_result mgos_app_init(void) {
   services[1] = &mgos_hap_protocol_information_service;
   services[2] = &mgos_hap_pairing_service;
   int i = 3;
-  if (mgos_sys_config_get_sw1_enable()) {
-#ifdef MGOS_CONFIG_HAVE_SW1
-    services[i++] = shelly_sw_service_create(mgos_sys_config_get_sw1());
-#endif
+  // Workaround for Shelly2.5: initing SW1 input (GPIO13) somehow causes
+  // SW2 output (GPIO15) to turn on. Initializing SW2 first fixes it.
 #ifdef MGOS_CONFIG_HAVE_SW2
-    services[i++] = shelly_sw_service_create(mgos_sys_config_get_sw2());
+  services[i] = shelly_sw_service_create(mgos_sys_config_get_sw2());
+  if (services[i] != NULL) i++;
 #endif
-  }
+#ifdef MGOS_CONFIG_HAVE_SW1
+  services[i] = shelly_sw_service_create(mgos_sys_config_get_sw1());
+  if (services[i] != NULL) i++;
+#endif
   s_accessory.services = services;
   LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
 
