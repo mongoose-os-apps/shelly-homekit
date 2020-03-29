@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="axios.min.js.gz"></script>
   <style>
     html, body { height: 100vh; padding: 0; margin: 0;}
@@ -33,6 +34,7 @@
       animation: spin 1s linear infinite;
       -webkit-animation: spin 1s linear infinite;
     }
+    #sw1_auto_off_delay, #sw2_auto_off_delay { width: 5em; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
   </style>
@@ -76,8 +78,16 @@
             </select>
           </div>
           <div class="form-control">
-            <label>Persist state:</label>
+            <label for="sw1_persist">Persist state:</label>
             <input type="checkbox" id="sw1_persist">
+          </div>
+          <div class="form-control">
+            <label for="sw1_auto_off">Auto off:</label>
+            <input type="checkbox" id="sw1_auto_off">
+          </div>
+          <div>
+            <label for="sw1_auto_off_delay">Auto off delay (s):</label>
+            <input type="number" id="sw1_auto_off_delay" placeholder="1-300" min="1" max="300" step="1" value="0">
           </div>
           <div class="form-control">
             <label></label>
@@ -119,8 +129,16 @@
             </select>
           </div>
           <div class="form-control">
-            <label>Persist state:</label>
+            <label for="sw2_persist">Persist state:</label>
             <input type="checkbox" id="sw2_persist">
+          </div>
+          <div class="form-control">
+            <label for="sw2_auto_off">Auto off:</label>
+            <input type="checkbox" id="sw2_auto_off">
+          </div>
+          <div>
+            <label for="sw2_auto_off_delay">Auto off delay (s):</label>
+            <input type="number" id="sw2_auto_off_delay" placeholder="1-300" min="1" max="300" step="1" value="0">
           </div>
           <div class="form-control">
             <label></label>
@@ -335,7 +353,7 @@ document.getElementById("sw2_set_btn").onclick = function() {
   );
 }
 
-function sw_save_common(cfg_key, in_mode, persist, spinner) {
+function sw_save_common(cfg_key, in_mode, persist, auto_off, auto_off_delay, spinner) {
   spinner.className = "spin";
   var data = {
     config: {},
@@ -345,6 +363,8 @@ function sw_save_common(cfg_key, in_mode, persist, spinner) {
   data.config[cfg_key] = {
     in_mode: parseInt(in_mode),
     persist_state: persist,
+    auto_off: auto_off,
+    auto_off_delay: parseInt(auto_off_delay)
   };
   axios.post(host + "/rpc/Config.Set", data).then(function(res) {
   }).catch(function(err) {
@@ -363,6 +383,8 @@ document.getElementById("sw1_save_btn").onclick = function() {
       "sw1",
       document.getElementById("sw1_in_mode").value,
       document.getElementById("sw1_persist").checked,
+      document.getElementById("sw1_auto_off").checked,
+      document.getElementById("sw1_auto_off_delay").value,
       document.getElementById("sw1_save_spinner"),
   );
 }
@@ -372,6 +394,8 @@ document.getElementById("sw2_save_btn").onclick = function() {
       "sw2",
       document.getElementById("sw2_in_mode").value,
       document.getElementById("sw2_persist").checked,
+      document.getElementById("sw2_auto_off").checked,
+      document.getElementById("sw2_auto_off_delay").value,
       document.getElementById("sw2_save_spinner"),
   );
 }
@@ -400,6 +424,9 @@ function getInfo() {
       document.getElementById("sw1_btn_label").innerText = "Turn " + (res.data.sw1.state ? "Off" : "On");
       document.getElementById("sw1_in_mode_" + res.data.sw1.in_mode).selected = true;
       document.getElementById("sw1_persist").checked = res.data.sw1.persist;
+      document.getElementById("sw1_auto_off").checked = res.data.sw1.auto_off;
+      document.getElementById("sw1_auto_off_delay").disabled = !res.data.sw1.auto_off;
+      document.getElementById("sw1_auto_off_delay").value = res.data.sw1.auto_off_delay;
       document.getElementById("sw1_container").sw_id = res.data.sw1.id;
       document.getElementById("sw1_container").sw_state = res.data.sw1.state;
       document.getElementById("sw1_container").style.display = "block";
@@ -410,6 +437,9 @@ function getInfo() {
       document.getElementById("sw2_btn_label").innerText = "Turn " + (res.data.sw2.state ? "Off" : "On");
       document.getElementById("sw2_in_mode_" + res.data.sw2.in_mode).selected = true;
       document.getElementById("sw2_persist").checked = res.data.sw2.persist;
+      document.getElementById("sw2_auto_off").checked = res.data.sw2.auto_off;
+      document.getElementById("sw2_auto_off_delay").disabled = !res.data.sw2.auto_off;
+      document.getElementById("sw2_auto_off_delay").value = res.data.sw2.auto_off_delay;
       document.getElementById("sw2_container").sw_id = res.data.sw2.id;
       document.getElementById("sw2_container").sw_state = res.data.sw2.state;
       document.getElementById("sw2_container").style.display = "block";
@@ -429,6 +459,13 @@ document.getElementById("refresh_btn").onclick = getInfo;
 
 function onLoad() {
   getInfo();
+
+  document.getElementById('sw1_auto_off').onchange = function() {
+      document.getElementById('sw1_auto_off_delay').disabled = !this.checked;
+    };
+    document.getElementById('sw2_auto_off').onchange = function() {
+      document.getElementById('sw2_auto_off_delay').disabled = !this.checked;
+    };
 }
 
 </script>

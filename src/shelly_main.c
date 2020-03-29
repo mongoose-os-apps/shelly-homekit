@@ -285,10 +285,10 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       ri,
       "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, "
 #ifdef MGOS_CONFIG_HAVE_SW1
-      "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B},"
+      "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %d},"
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
-      "sw2: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B},"
+      "sw2: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %d},"
 #endif
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
       "hap_provisioned: %B, hap_paired: %B}",
@@ -298,11 +298,15 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       mgos_sys_config_get_sw1_id(), mgos_sys_config_get_sw1_name(),
       mgos_sys_config_get_sw1_in_mode(),
       mgos_sys_config_get_sw1_persist_state(), sw1.state,
+      mgos_sys_config_get_sw1_auto_off(),
+      mgos_sys_config_get_sw1_auto_off_delay(),
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
       mgos_sys_config_get_sw2_id(), mgos_sys_config_get_sw2_name(),
       mgos_sys_config_get_sw2_in_mode(),
       mgos_sys_config_get_sw2_persist_state(), sw2.state,
+      mgos_sys_config_get_sw2_auto_off(),
+      mgos_sys_config_get_sw2_auto_off_delay(),
 #endif
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
       (pass ? pass : ""), hap_provisioned, hap_paired);

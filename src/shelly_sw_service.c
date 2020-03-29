@@ -42,6 +42,10 @@ struct shelly_sw_service_ctx {
 
 static struct shelly_sw_service_ctx s_ctx[NUM_SWITCHES];
 
+static int auto_off_timer_id = -1;
+
+static void do_auto_off(void *arg);
+
 static void do_reset(void *arg) {
   struct shelly_sw_service_ctx *ctx = arg;
   mgos_gpio_blink(ctx->cfg->out_gpio, 0, 0);
@@ -52,6 +56,11 @@ static void do_reset(void *arg) {
   mgos_sys_config_save(&mgos_sys_config, false, NULL);
   mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
 #endif
+}
+
+static void reset_auto_off_timer() {
+  mgos_clear_timer(auto_off_timer_id);
+  auto_off_timer_id = -1;
 }
 
 static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
@@ -73,6 +82,7 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          NULL /* msg */);
   }
+
   double now = mgos_uptime();
   if (now < 60) {
     if (now - ctx->last_change_ts > 10) {
@@ -87,6 +97,25 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
       mgos_set_timer(600, 0, do_reset, ctx);
     }
   }
+
+  if (cfg->auto_off && auto_off_timer_id >= 0)
+    reset_auto_off_timer();  // Cancel timer if state changes so that only the
+                             // last timer is triggered if state changes
+                             // multiple times
+
+  if (strcmp(source, "auto_off") == 0) return;
+
+  bool auto_off = (new_state ? cfg->auto_off : false);
+  int auto_off_delay = cfg->auto_off_delay;
+  if (auto_off && auto_off_delay > 0) {
+    auto_off_timer_id =
+        mgos_set_timer(auto_off_delay * 1000, 0, do_auto_off, ctx);
+  }
+}
+
+static void do_auto_off(void *arg) {
+  struct shelly_sw_service_ctx *ctx = arg;
+  shelly_sw_set_state_ctx(ctx, false, "auto_off");
 }
 
 bool shelly_sw_set_state(int id, bool new_state, const char *source) {
