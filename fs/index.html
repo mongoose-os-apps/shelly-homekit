@@ -56,8 +56,9 @@
       <div class="form">
         <div class="">
           <div class="form-control">
-            <label>State:</label>
+            <label>Status:</label>
             <span id="sw1_state">off</span>
+            <span id="sw1_power_stats"></span>
           </div>
           <div class="form-control">
             <label></label>
@@ -67,8 +68,6 @@
             </button>
           </div>
         </div>
-      </div>
-      <div class="form">
         <div class="">
           <div class="form-control">
             <label>Mode:</label>
@@ -99,8 +98,9 @@
       <div class="form">
         <div class="">
           <div class="form-control">
-            <label>State:</label>
+            <label>Status:</label>
             <span id="sw2_state">off</span>
+            <span id="sw2_power_stats"></span>
           </div>
           <div class="form-control">
             <label></label>
@@ -110,8 +110,6 @@
             </button>
           </div>
         </div>
-      </div>
-      <div class="form">
         <div class="">
           <div class="form-control">
             <label>Mode:</label>
@@ -415,6 +413,10 @@ function getInfo() {
     if (res.data.sw1) {
       el("sw1_name").innerText = res.data.sw1.name;
       el("sw1_state").innerText = (res.data.sw1.state ? "on" : "off");
+      if (res.data.sw1.apower !== undefined) {
+        el("sw1_power_stats").innerText =
+            ", " + Math.round(res.data.sw1.apower) + "W, " + res.data.sw1.aenergy + "Wh";
+      }
       el("sw1_btn_label").innerText = "Turn " + (res.data.sw1.state ? "Off" : "On");
       el("sw1_in_mode_" + res.data.sw1.in_mode).selected = true;
       el("sw1_persist").checked = res.data.sw1.persist;
@@ -425,6 +427,10 @@ function getInfo() {
     if (res.data.sw2) {
       el("sw2_name").innerText = res.data.sw2.name;
       el("sw2_state").innerText = (res.data.sw2.state ? "on" : "off");
+      if (res.data.sw2.apower !== undefined) {
+        el("sw2_power_stats").innerText =
+            ", " + Math.round(res.data.sw2.apower) + "W, " + res.data.sw2.aenergy + "Wh";
+      }
       el("sw2_btn_label").innerText = "Turn " + (res.data.sw2.state ? "Off" : "On");
       el("sw2_in_mode_" + res.data.sw2.in_mode).selected = true;
       el("sw2_persist").checked = res.data.sw2.persist;

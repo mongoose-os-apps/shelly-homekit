@@ -17,7 +17,12 @@
 
 #include "shelly_sw_service.h"
 
+#include <math.h>
+
 #include "mgos.h"
+#ifdef MGOS_HAVE_ADE7953
+#include "mgos_ade7953.h"
+#endif
 
 #define IID_BASE 0x100
 #define IID_STEP 4
@@ -34,13 +39,21 @@ struct shelly_sw_service_ctx {
   HAPAccessoryServerRef *hap_server;
   const HAPAccessory *hap_accessory;
   const HAPService *hap_service;
-  bool state;
+  struct shelly_sw_info info;
   bool pb_state;
   int change_cnt;         // State change counter for reset.
   double last_change_ts;  // Timestamp of last change (uptime).
+#ifdef MGOS_HAVE_ADE7953
+  struct mgos_ade7953 *ade7953;
+  int ade7953_channel;
+#endif
 };
 
 static struct shelly_sw_service_ctx s_ctx[NUM_SWITCHES];
+
+#ifdef SHELLY_HAVE_PM
+static void shelly_sw_read_power(void *arg);
+#endif
 
 static void do_reset(void *arg) {
   struct shelly_sw_service_ctx *ctx = arg;
@@ -57,12 +70,12 @@ static void do_reset(void *arg) {
 static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
                                     bool new_state, const char *source) {
   const struct mgos_config_sw *cfg = ctx->cfg;
-  if (new_state == ctx->state) return;
+  if (new_state == ctx->info.state) return;
   int out_value = (new_state ? cfg->out_on_value : !cfg->out_on_value);
   mgos_gpio_write(cfg->out_gpio, out_value);
-  LOG(LL_INFO, ("%s: %d -> %d (%s) %d", cfg->name, ctx->state, new_state,
+  LOG(LL_INFO, ("%s: %d -> %d (%s) %d", cfg->name, ctx->info.state, new_state,
                 source, out_value));
-  ctx->state = new_state;
+  ctx->info.state = new_state;
   if (ctx->hap_server != NULL) {
     HAPAccessoryServerRaiseEvent(ctx->hap_server,
                                  ctx->hap_service->characteristics[1],
@@ -101,7 +114,7 @@ bool shelly_sw_get_info(int id, struct shelly_sw_info *info) {
   if (id < 0 || id >= NUM_SWITCHES) return false;
   struct shelly_sw_service_ctx *ctx = &s_ctx[id];
   if (ctx == NULL) return false;
-  info->state = ctx->state;
+  *info = ctx->info;
   return true;
 }
 
@@ -154,8 +167,8 @@ HAPError shelly_sw_handle_on_read(
     void *context) {
   struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
   const struct mgos_config_sw *cfg = ctx->cfg;
-  *value = ctx->state;
-  LOG(LL_INFO, ("%s: READ -> %d", cfg->name, ctx->state));
+  *value = ctx->info.state;
+  LOG(LL_INFO, ("%s: READ -> %d", cfg->name, ctx->info.state));
   ctx->hap_server = server;
   ctx->hap_accessory = request->accessory;
   (void) context;
@@ -215,14 +228,14 @@ static void shelly_sw_in_cb(int pin, void *arg) {
   switch ((enum shelly_sw_in_mode) ctx->cfg->in_mode) {
     case SHELLY_SW_IN_MODE_MOMENTARY:
       if (in_state) {  // Only on 0 -> 1 transitions.
-        shelly_sw_set_state_ctx(ctx, !ctx->state, "button");
+        shelly_sw_set_state_ctx(ctx, !ctx->info.state, "button");
       }
       break;
     case SHELLY_SW_IN_MODE_TOGGLE:
       shelly_sw_set_state_ctx(ctx, in_state, "switch");
       break;
     case SHELLY_SW_IN_MODE_EDGE:
-      shelly_sw_set_state_ctx(ctx, !ctx->state, "button");
+      shelly_sw_set_state_ctx(ctx, !ctx->info.state, "button");
       break;
     case SHELLY_SW_IN_MODE_DETACHED:
       // Nothing to do
@@ -231,7 +244,28 @@ static void shelly_sw_in_cb(int pin, void *arg) {
   (void) pin;
 }
 
-HAPService *shelly_sw_service_create(const struct mgos_config_sw *cfg) {
+#ifdef SHELLY_HAVE_PM
+static void shelly_sw_read_power(void *arg) {
+  struct shelly_sw_service_ctx *ctx = arg;
+#ifdef MGOS_HAVE_ADE7953
+  float apa = 0, aea = 0;
+  if (mgos_ade7953_get_apower(ctx->ade7953, ctx->ade7953_channel, &apa)) {
+    if (fabs(apa) < 0.5) apa = 0;  // Suppress noise.
+    ctx->info.apower = apa;
+  }
+  if (mgos_ade7953_get_aenergy(ctx->ade7953, ctx->ade7953_channel,
+                               true /* reset */, &aea)) {
+    ctx->info.aenergy += aea;
+  }
+#endif
+}
+#endif
+
+HAPService *shelly_sw_service_create(
+#ifdef MGOS_HAVE_ADE7953
+    struct mgos_ade7953 *ade7953, int ade7953_channel,
+#endif
+    const struct mgos_config_sw *cfg) {
   if (!cfg->enable) {
     LOG(LL_INFO, ("'%s' is disabled", cfg->name));
     mgos_gpio_setup_output(cfg->out_gpio, !cfg->out_on_value);
@@ -258,19 +292,26 @@ HAPService *shelly_sw_service_create(const struct mgos_config_sw *cfg) {
   ctx->cfg = cfg;
   ctx->hap_service = svc;
   if (cfg->persist_state) {
-    ctx->state = cfg->state;
+    ctx->info.state = cfg->state;
   } else {
-    ctx->state = 0;
+    ctx->info.state = 0;
   }
   LOG(LL_INFO, ("Exporting '%s' (GPIO out: %d, in: %d, state: %d)", cfg->name,
-                cfg->out_gpio, cfg->in_gpio, ctx->state));
-  mgos_gpio_setup_output(cfg->out_gpio,
-                         (ctx->state ? cfg->out_on_value : !cfg->out_on_value));
+                cfg->out_gpio, cfg->in_gpio, ctx->info.state));
+  mgos_gpio_setup_output(cfg->out_gpio, (ctx->info.state ? cfg->out_on_value
+                                                         : !cfg->out_on_value));
   mgos_gpio_set_button_handler(cfg->in_gpio, MGOS_GPIO_PULL_NONE,
                                MGOS_GPIO_INT_EDGE_ANY, 20, shelly_sw_in_cb,
                                ctx);
   if (ctx->cfg->in_mode == SHELLY_SW_IN_MODE_TOGGLE) {
     shelly_sw_in_cb(cfg->in_gpio, ctx);
   }
+#ifdef SHELLY_HAVE_PM
+#ifdef MGOS_HAVE_ADE7953
+  ctx->ade7953 = ade7953;
+  ctx->ade7953_channel = ade7953_channel;
+#endif
+  mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_sw_read_power, ctx);
+#endif
   return svc;
 }

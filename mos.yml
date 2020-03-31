@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 1.5.1
+version: 1.7.0
 platform: esp8266
 
 libs_version: 2.17.0
@@ -187,6 +187,8 @@ conds:
           variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
+        - origin: https://github.com/mongoose-os-libs/ade7953
+          version: master # Until 2.18 is out.
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
@@ -202,10 +204,14 @@ conds:
         PRODUCT_HW_REV: '"2.5"'
         NUM_SWITCHES: 2
         MG_ENABLE_SSL: 0
+        SHELLY_HAVE_PM: 1
         # HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shellyswitch25-??????"]
         - ["wifi.ap.ssid", "shellyswitch25-??????"]
+        - ["i2c.enable", true]
+        - ["i2c.sda_gpio", 12]
+        - ["i2c.scl_gpio", 14]
         - ["sw1", "sw", {"title": "SW1 settings"}]
         - ["sw1.id", 0]
         - ["sw1.name", "Shelly SW1"]
