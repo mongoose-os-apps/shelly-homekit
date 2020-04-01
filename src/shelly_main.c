@@ -24,6 +24,10 @@
 #endif
 #include "mgos_rpc.h"
 
+#ifdef MGOS_HAVE_ADE7953
+#include "mgos_ade7953.h"
+#endif
+
 #include "HAPPlatform+Init.h"
 #include "HAPPlatformAccessorySetup+Init.h"
 #include "HAPPlatformKeyValueStore+Init.h"
@@ -240,13 +244,28 @@ out:
   }
 }
 
+#ifdef MGOS_HAVE_ADE7953
+struct mgos_ade7953 *s_ade7953 = NULL;
+#endif
+
 static void shelly_status_timer_cb(void *arg) {
-  static bool s_tick_tock = false;
-  LOG(LL_INFO,
-      ("%s uptime: %.2lf, RAM: %lu, %lu free", (s_tick_tock ? "Tick" : "Tock"),
-       mgos_uptime(), (unsigned long) mgos_get_heap_size(),
-       (unsigned long) mgos_get_free_heap_size()));
-  s_tick_tock = !s_tick_tock;
+  LOG(LL_INFO, ("Uptime: %.2lf, RAM: %lu, %lu free", mgos_uptime(),
+                (unsigned long) mgos_get_heap_size(),
+                (unsigned long) mgos_get_free_heap_size()));
+#if defined(MGOS_HAVE_ADE7953) && defined(SHELLY_PRINT_POWER_STATS)
+  float f = 0, v = 0, ia = 0, ib = 0, aea = 0, aeb = 0, apa = 0, apb = 0;
+  mgos_ade7953_get_frequency(s_ade7953, &f);
+  mgos_ade7953_get_voltage(s_ade7953, &v);
+  mgos_ade7953_get_current(s_ade7953, 0, &ia);
+  mgos_ade7953_get_current(s_ade7953, 1, &ib);
+  mgos_ade7953_get_apower(s_ade7953, 0, &apa);
+  mgos_ade7953_get_apower(s_ade7953, 1, &apb);
+  mgos_ade7953_get_aenergy(s_ade7953, 0, false /* reset */, &aea);
+  mgos_ade7953_get_aenergy(s_ade7953, 1, false /* reset */, &aeb);
+  LOG(LL_INFO, ("  V=%.3fV f=%.2fHz | IA=%.3fA APA=%.3f AEA=%.3f | "
+                "IB=%.3fA APB=%.3f AEB=%.3f",
+                v, f, ia, apa, aea, ib, apb, aeb));
+#endif
   /* If provisioning information has been provided, start the server. */
   shelly_start_hap_server(true /* quiet */);
   check_btn(BTN_GPIO, BTN_DOWN);
@@ -286,9 +305,17 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_CONFIG_HAVE_SW1
       "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %Q},"
+#ifdef SHELLY_HAVE_PM
+      ", apower: %.3f, aenergy: %.3f"
+#endif
+      "},"
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
       "sw2: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %Q},"
+#ifdef SHELLY_HAVE_PM
+      ", apower: %.3f, aenergy: %.3f"
+#endif
+      "},"
 #endif
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
       "hap_provisioned: %B, hap_paired: %B}",
@@ -301,6 +328,9 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       mgos_sys_config_get_sw1_persist_state(), sw1.state,
       mgos_sys_config_get_sw1_auto_off(),
       mgos_sys_config_get_sw1_auto_off_delay(),
+#ifdef SHELLY_HAVE_PM
+      sw1.apower, sw1.aenergy,
+#endif
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
       mgos_sys_config_get_sw2_id(), mgos_sys_config_get_sw2_name(),
@@ -308,6 +338,9 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       mgos_sys_config_get_sw2_persist_state(), sw2.state,
       mgos_sys_config_get_sw2_auto_off(),
       mgos_sys_config_get_sw2_auto_off_delay(),
+#ifdef SHELLY_HAVE_PM
+      sw2.apower, sw2.aenergy,
+#endif
 #endif
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
       (pass ? pass : ""), hap_provisioned, hap_paired);
@@ -345,6 +378,18 @@ enum mgos_app_init_result mgos_app_init(void) {
     remove("passwd");
     remove("relaydata");
   }
+#endif
+
+#ifdef MGOS_HAVE_ADE7953
+  const struct mgos_ade7953_config ade7953_cfg = {
+      .voltage_scale = .0000382602,
+      .voltage_offset = -0.068,
+      .current_scale = {0.00000949523, 0.00000949523},
+      .current_offset = {-0.017, -0.017},
+      .apower_scale = {(1 / 164.0), (1 / 164.0)},
+      .aenergy_scale = {(1 / 25240.0), (1 / 25240.0)},
+  };
+  s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
 #endif
 
   // Key-value store.
@@ -389,11 +434,19 @@ enum mgos_app_init_result mgos_app_init(void) {
   // Workaround for Shelly2.5: initing SW1 input (GPIO13) somehow causes
   // SW2 output (GPIO15) to turn on. Initializing SW2 first fixes it.
 #ifdef MGOS_CONFIG_HAVE_SW2
-  services[i] = shelly_sw_service_create(mgos_sys_config_get_sw2());
+  services[i] = shelly_sw_service_create(
+#ifdef MGOS_HAVE_ADE7953
+      s_ade7953, 0,
+#endif
+      mgos_sys_config_get_sw2());
   if (services[i] != NULL) i++;
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW1
-  services[i] = shelly_sw_service_create(mgos_sys_config_get_sw1());
+  services[i] = shelly_sw_service_create(
+#ifdef MGOS_HAVE_ADE7953
+      s_ade7953, 1,
+#endif
+      mgos_sys_config_get_sw1());
   if (services[i] != NULL) i++;
 #endif
   s_accessory.services = services;

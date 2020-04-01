@@ -18,10 +18,22 @@
 #include "HAP.h"
 #include "mgos_sys_config.h"
 
-HAPService *shelly_sw_service_create(const struct mgos_config_sw *cfg);
+#ifdef MGOS_HAVE_ADE7953
+struct mgos_ade7953;
+#endif
+
+HAPService *shelly_sw_service_create(
+#ifdef MGOS_HAVE_ADE7953
+    struct mgos_ade7953 *ade7953, int ade7953_channel,
+#endif
+    const struct mgos_config_sw *cfg);
 
 struct shelly_sw_info {
   bool state;  // On/off
+#ifdef SHELLY_HAVE_PM
+  float apower;   // Active power, Watts.
+  float aenergy;  // Accumulated active power, Watt-hours.
+#endif
 };
 bool shelly_sw_get_info(int id, struct shelly_sw_info *info);
 
