@@ -34,7 +34,6 @@
       animation: spin 1s linear infinite;
       -webkit-animation: spin 1s linear infinite;
     }
-    #sw1_auto_off_delay, #sw2_auto_off_delay { width: 5em; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
   </style>
@@ -86,8 +85,8 @@
             <input type="checkbox" id="sw1_auto_off">
           </div>
           <div>
-            <label for="sw1_auto_off_delay">Auto off delay (s):</label>
-            <input type="number" id="sw1_auto_off_delay" placeholder="1-300" min="1" max="300" step="1" value="0">
+            <label for="sw1_auto_off_delay">Auto off delay:</label>
+            <input type="text" id="sw1_auto_off_delay" placeholder="HH:mm:ss" required pattern="(0*([0-9]|1[0-9]|2[0-3])):(0*([0-9]|[1-4][0-9]|5[0-9])):(0*([0-9]|[1-4][0-9]|5[0-9]))">
           </div>
           <div class="form-control">
             <label></label>
@@ -137,8 +136,8 @@
             <input type="checkbox" id="sw2_auto_off">
           </div>
           <div>
-            <label for="sw2_auto_off_delay">Auto off delay (s):</label>
-            <input type="number" id="sw2_auto_off_delay" placeholder="1-300" min="1" max="300" step="1" value="0">
+            <label for="sw2_auto_off_delay">Auto off delay:</label>
+            <input type="text" id="sw2_auto_off_delay" placeholder="HH:mm:ss" required pattern="(0*([0-9]|1[0-9]|2[0-3])):(0*([0-9]|[1-4][0-9]|5[0-9])):(0*([0-9]|[1-4][0-9]|5[0-9]))">
           </div>
           <div class="form-control">
             <label></label>
@@ -364,7 +363,7 @@ function sw_save_common(cfg_key, in_mode, persist, auto_off, auto_off_delay, spi
     in_mode: parseInt(in_mode),
     persist_state: persist,
     auto_off: auto_off,
-    auto_off_delay: parseInt(auto_off_delay)
+    auto_off_delay: auto_off_delay
   };
   axios.post(host + "/rpc/Config.Set", data).then(function(res) {
   }).catch(function(err) {
@@ -378,26 +377,40 @@ function sw_save_common(cfg_key, in_mode, persist, auto_off, auto_off_delay, spi
   });
 }
 
+function isValid(swType) {
+  var auto_off_delay = document.getElementById(swType + "_auto_off_delay");
+  var auto_off_delay_valid = auto_off_delay.checkValidity();
+  if (!auto_off_delay_valid) {
+    alert("Auto off delay must follow 24 hour format HH:mm:ss");
+    return false;
+  }
+  return true;
+}
+
 document.getElementById("sw1_save_btn").onclick = function() {
-  sw_save_common(
-      "sw1",
-      document.getElementById("sw1_in_mode").value,
-      document.getElementById("sw1_persist").checked,
-      document.getElementById("sw1_auto_off").checked,
-      document.getElementById("sw1_auto_off_delay").value,
-      document.getElementById("sw1_save_spinner"),
-  );
+  if (isValid("sw1")){
+    sw_save_common(
+        "sw1",
+        document.getElementById("sw1_in_mode").value,
+        document.getElementById("sw1_persist").checked,
+        document.getElementById("sw1_auto_off").checked,
+        document.getElementById("sw1_auto_off_delay").value,
+        document.getElementById("sw1_save_spinner"),
+    );
+  }
 }
 
 document.getElementById("sw2_save_btn").onclick = function() {
-  sw_save_common(
-      "sw2",
-      document.getElementById("sw2_in_mode").value,
-      document.getElementById("sw2_persist").checked,
-      document.getElementById("sw2_auto_off").checked,
-      document.getElementById("sw2_auto_off_delay").value,
-      document.getElementById("sw2_save_spinner"),
-  );
+  if (isValid("sw2")){
+    sw_save_common(
+        "sw2",
+        document.getElementById("sw2_in_mode").value,
+        document.getElementById("sw2_persist").checked,
+        document.getElementById("sw2_auto_off").checked,
+        document.getElementById("sw2_auto_off_delay").value,
+        document.getElementById("sw2_save_spinner"),
+    );
+  }
 }
 
 function getInfo() {

@@ -285,10 +285,10 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       ri,
       "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, "
 #ifdef MGOS_CONFIG_HAVE_SW1
-      "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %d},"
+      "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %Q},"
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
-      "sw2: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %d},"
+      "sw2: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %Q},"
 #endif
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
       "hap_provisioned: %B, hap_paired: %B}",

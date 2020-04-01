@@ -63,6 +63,12 @@ static void reset_auto_off_timer() {
   auto_off_timer_id = -1;
 }
 
+static int auto_off_delay_seconds(const char* delay) {
+  int hours, minutes, seconds;
+  sscanf(delay, "%d:%d:%d", &hours, &minutes, &seconds);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
 static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
                                     bool new_state, const char *source) {
   const struct mgos_config_sw *cfg = ctx->cfg;
@@ -106,10 +112,10 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
   if (strcmp(source, "auto_off") == 0) return;
 
   bool auto_off = (new_state ? cfg->auto_off : false);
-  int auto_off_delay = cfg->auto_off_delay;
-  if (auto_off && auto_off_delay > 0) {
+  int delay_seconds = auto_off_delay_seconds(cfg->auto_off_delay);
+  if (auto_off && delay_seconds > 0) {
     auto_off_timer_id =
-        mgos_set_timer(auto_off_delay * 1000, 0, do_auto_off, ctx);
+        mgos_set_timer(delay_seconds * 1000, 0, do_auto_off, ctx);
   }
 }
 
