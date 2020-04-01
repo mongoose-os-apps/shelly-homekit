@@ -267,6 +267,11 @@ static void shelly_sw_in_cb(int pin, void *arg) {
 }
 
 HAPService *shelly_sw_service_create(const struct mgos_config_sw *cfg) {
+  if (!cfg->enable) {
+    LOG(LL_INFO, ("'%s' is disabled", cfg->name));
+    mgos_gpio_setup_output(cfg->out_gpio, !cfg->out_on_value);
+    return NULL;
+  }
   if (cfg->id >= NUM_SWITCHES) {
     LOG(LL_ERROR, ("Switch ID too big!"));
     return NULL;

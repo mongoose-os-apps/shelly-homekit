@@ -46,6 +46,10 @@
         <span id="spinner"></span>
         Refresh
       </button>
+            <button class="btn" id="reboot_btn">
+              Reboot
+            </button>
+      <span id="uptime_label" style="float: right; visibility: hidden">Uptime: <span id="uptime"></span></span>
     </div>
 
     <div class="container" id="sw1_container" style="display: none">
@@ -239,19 +243,26 @@
 
 var host = "";
 
-var spinner = document.getElementById("spinner");
+var spinner = el("spinner");
 
-var wifiEn = document.getElementById("wifi_en");
-var wifiSSID = document.getElementById("wifi_ssid");
-var wifiPass = document.getElementById("wifi_pass");
-var wifiSpinner = document.getElementById("wifi_spinner");
+var wifiEn = el("wifi_en");
+var wifiSSID = el("wifi_ssid");
+var wifiPass = el("wifi_pass");
+var wifiSpinner = el("wifi_spinner");
 
-var hapProvisioned = document.getElementById("hap_provisioned");
-var hapSetupCode = document.getElementById("hap_setup_code");
-var hapSaveSpinner = document.getElementById("hap_save_spinner");
-var hapResetSpinner = document.getElementById("hap_reset_spinner");
+var hapProvisioned = el("hap_provisioned");
+var hapSetupCode = el("hap_setup_code");
+var hapSaveSpinner = el("hap_save_spinner");
+var hapResetSpinner = el("hap_reset_spinner");
 
-document.getElementById("hap_save_btn").onclick = function() {
+var sw1 = el("sw1_container");
+var sw2 = el("sw2_container");
+
+function el(id) {
+  return document.getElementById(id);
+}
+
+el("hap_save_btn").onclick = function() {
   var code = hapSetupCode.value;
   if (!code.match(/^\d\d\d-\d\d-\d\d\d$/)) {
     if (code.match(/^\d\d\d\d\d\d\d\d$/)) {
@@ -274,7 +285,7 @@ document.getElementById("hap_save_btn").onclick = function() {
   });
 };
 
-document.getElementById("hap_reset_btn").onclick = function() {
+el("hap_reset_btn").onclick = function() {
   hapResetSpinner.className = "spin";
   axios.post(host + "/rpc/HAP.Reset", {"reset_server": true, "reset_code": true}).then(function(res) {
   }).catch(function(err) {
@@ -288,12 +299,12 @@ document.getElementById("hap_reset_btn").onclick = function() {
   });
 };
 
-document.getElementById("fw_upload_form").onsubmit = function() {
-  document.getElementById("fw_spinner").className = "spin";
+el("fw_upload_form").onsubmit = function() {
+  el("fw_spinner").className = "spin";
   return true;
 };
 
-document.getElementById("wifi_save_btn").onclick = function() {
+el("wifi_save_btn").onclick = function() {
   wifiSpinner.className = "spin";
   var data = {
     config: {
@@ -310,8 +321,8 @@ document.getElementById("wifi_save_btn").onclick = function() {
       "<div class='container'><h1>Rebooting...</h1>" +
       "<p>Device is rebooting and connecting to " + wifiSSID.value + "." +
       "<p>Connect to the same network and visit " +
-      "<a href='http://" + document.getElementById("device_id").innerText + ".local/'>" +
-      document.getElementById("device_id").innerText + ".local.</a></div>.";
+      "<a href='http://" + el("device_id").innerText + ".local/'>" +
+      el("device_id").innerText + ".local.</a></div>.";
   }).catch(function(err) {
     if (err.response) {
       err = err.response.data.message;
@@ -336,19 +347,19 @@ function sw_set_common(id, state, spinner) {
   });
 }
 
-document.getElementById("sw1_set_btn").onclick = function() {
+el("sw1_set_btn").onclick = function() {
   sw_set_common(
-      document.getElementById("sw1_container").sw_id,
-      !document.getElementById("sw1_container").sw_state,
-      document.getElementById("sw1_set_spinner"),
+      sw1.sw_id,
+      !sw1.sw_state,
+      el("sw1_set_spinner"),
   );
 }
 
-document.getElementById("sw2_set_btn").onclick = function() {
+el("sw2_set_btn").onclick = function() {
   sw_set_common(
-      document.getElementById("sw2_container").sw_id,
-      !document.getElementById("sw2_container").sw_state,
-      document.getElementById("sw2_set_spinner"),
+      sw2.sw_id,
+      !sw2.sw_state,
+      el("sw2_set_spinner"),
   );
 }
 
@@ -387,30 +398,36 @@ function isValid(swType) {
   return true;
 }
 
-document.getElementById("sw1_save_btn").onclick = function() {
+el("sw1_save_btn").onclick = function() {
   if (isValid("sw1")){
     sw_save_common(
         "sw1",
-        document.getElementById("sw1_in_mode").value,
-        document.getElementById("sw1_persist").checked,
-        document.getElementById("sw1_auto_off").checked,
-        document.getElementById("sw1_auto_off_delay").value,
-        document.getElementById("sw1_save_spinner"),
+        el("sw1_in_mode").value,
+        el("sw1_persist").checked,
+        el("sw1_auto_off").checked,
+        el("sw1_auto_off_delay").value,
+        el("sw1_save_spinner"),
     );
   }
 }
 
-document.getElementById("sw2_save_btn").onclick = function() {
+el("sw2_save_btn").onclick = function() {
   if (isValid("sw2")){
     sw_save_common(
         "sw2",
-        document.getElementById("sw2_in_mode").value,
-        document.getElementById("sw2_persist").checked,
-        document.getElementById("sw2_auto_off").checked,
-        document.getElementById("sw2_auto_off_delay").value,
-        document.getElementById("sw2_save_spinner"),
+        el("sw2_in_mode").value,
+        el("sw2_persist").checked,
+        el("sw2_auto_off").checked,
+        el("sw2_auto_off_delay").value,
+        el("sw2_save_spinner"),
     );
   }
+}
+
+el("reboot_btn").onclick = function() {
+  axios.get(host + "/rpc/Sys.Reboot").then(function(res) {
+    alert("System is rebooting, please refresh the page.");
+  });
 }
 
 function getInfo() {
@@ -419,7 +436,7 @@ function getInfo() {
     wifiEn.checked = res.data.wifi_en;
     wifiSSID.value = res.data.wifi_ssid;
     wifiPass.value = res.data.wifi_pass;
-    document.getElementById("device_id").innerText = res.data.id;
+    el("device_id").innerText = res.data.id;
     if (res.data.hap_provisioned) {
       hapProvisioned.innerText = "yes";
       hapSetupCode.value = "***-**-***";
@@ -427,40 +444,42 @@ function getInfo() {
       hapProvisioned.innerText = "no";
       hapSetupCode.value = "";
     }
-    document.getElementById("hap_paired").innerText = (res.data.hap_paired ? "yes" : "no");
-    document.getElementById("app_name").innerText = res.data.app;
-    document.getElementById("app_version").innerText = res.data.version;
-    document.getElementById("app_build").innerText = res.data.fw_build;
+    el("hap_paired").innerText = (res.data.hap_paired ? "yes" : "no");
+    el("app_name").innerText = res.data.app;
+    el("app_version").innerText = res.data.version;
+    el("app_build").innerText = res.data.fw_build;
+    el("uptime").innerText = durationStr(res.data.uptime);
     if (res.data.sw1) {
-      document.getElementById("sw1_name").innerText = res.data.sw1.name;
-      document.getElementById("sw1_state").innerText = (res.data.sw1.state ? "on" : "off");
-      document.getElementById("sw1_btn_label").innerText = "Turn " + (res.data.sw1.state ? "Off" : "On");
-      document.getElementById("sw1_in_mode_" + res.data.sw1.in_mode).selected = true;
-      document.getElementById("sw1_persist").checked = res.data.sw1.persist;
-      document.getElementById("sw1_auto_off").checked = res.data.sw1.auto_off;
-      document.getElementById("sw1_auto_off_delay").disabled = !res.data.sw1.auto_off;
-      document.getElementById("sw1_auto_off_delay").value = res.data.sw1.auto_off_delay;
-      document.getElementById("sw1_container").sw_id = res.data.sw1.id;
-      document.getElementById("sw1_container").sw_state = res.data.sw1.state;
-      document.getElementById("sw1_container").style.display = "block";
+      el("sw1_name").innerText = res.data.sw1.name;
+      el("sw1_state").innerText = (res.data.sw1.state ? "on" : "off");
+      el("sw1_btn_label").innerText = "Turn " + (res.data.sw1.state ? "Off" : "On");
+      el("sw1_in_mode_" + res.data.sw1.in_mode).selected = true;
+      el("sw1_persist").checked = res.data.sw1.persist;
+      el("sw1_auto_off").checked = res.data.sw1.auto_off;
+      el("sw1_auto_off_delay").disabled = !res.data.sw1.auto_off;
+      el("sw1_auto_off_delay").value = res.data.sw1.auto_off_delay;
+      sw1.sw_id = res.data.sw1.id;
+      sw1.sw_state = res.data.sw1.state;
+      sw1.style.display = "block";
     }
     if (res.data.sw2) {
-      document.getElementById("sw2_name").innerText = res.data.sw2.name;
-      document.getElementById("sw2_state").innerText = (res.data.sw2.state ? "on" : "off");
-      document.getElementById("sw2_btn_label").innerText = "Turn " + (res.data.sw2.state ? "Off" : "On");
-      document.getElementById("sw2_in_mode_" + res.data.sw2.in_mode).selected = true;
-      document.getElementById("sw2_persist").checked = res.data.sw2.persist;
-      document.getElementById("sw2_auto_off").checked = res.data.sw2.auto_off;
-      document.getElementById("sw2_auto_off_delay").disabled = !res.data.sw2.auto_off;
-      document.getElementById("sw2_auto_off_delay").value = res.data.sw2.auto_off_delay;
-      document.getElementById("sw2_container").sw_id = res.data.sw2.id;
-      document.getElementById("sw2_container").sw_state = res.data.sw2.state;
-      document.getElementById("sw2_container").style.display = "block";
+      el("sw2_name").innerText = res.data.sw2.name;
+      el("sw2_state").innerText = (res.data.sw2.state ? "on" : "off");
+      el("sw2_btn_label").innerText = "Turn " + (res.data.sw2.state ? "Off" : "On");
+      el("sw2_in_mode_" + res.data.sw2.in_mode).selected = true;
+      el("sw2_persist").checked = res.data.sw2.persist;
+      el("sw2_auto_off").checked = res.data.sw2.auto_off;
+      el("sw2_auto_off_delay").disabled = !res.data.sw2.auto_off;
+      el("sw2_auto_off_delay").value = res.data.sw2.auto_off_delay;
+      sw2.sw_id = res.data.sw2.id;
+      sw2.sw_state = res.data.sw2.state;
+      sw2.style.display = "block";
     }
-    document.getElementById("homekit_container").style.visibility = "visible";
-    document.getElementById("wifi_container").style.visibility = "visible";
-    document.getElementById("fw_container").style.visibility = "visible";
-    document.getElementById("device_id").style.visibility = "visible";
+    el("homekit_container").style.visibility = "visible";
+    el("wifi_container").style.visibility = "visible";
+    el("fw_container").style.visibility = "visible";
+    el("device_id").style.visibility = "visible";
+    el("uptime_label").style.visibility = "visible";
   }).catch(function(err) {
     alert(err);
   }).then(function() {
@@ -468,17 +487,28 @@ function getInfo() {
   });
 }
 
-document.getElementById("refresh_btn").onclick = getInfo;
+el("refresh_btn").onclick = getInfo;
 
 function onLoad() {
   getInfo();
 
-  document.getElementById('sw1_auto_off').onchange = function() {
-      document.getElementById('sw1_auto_off_delay').disabled = !this.checked;
-    };
-    document.getElementById('sw2_auto_off').onchange = function() {
-      document.getElementById('sw2_auto_off_delay').disabled = !this.checked;
-    };
+  el('sw1_auto_off').onchange = function() {
+    el('sw1_auto_off_delay').disabled = !this.checked;
+  };
+  el('sw2_auto_off').onchange = function() {
+    el('sw2_auto_off_delay').disabled = !this.checked;
+  };
+}
+
+function durationStr(d) {
+  var days = parseInt(d / 86400); d %= 86400;
+  var hours = parseInt(d / 3600); d %= 3600;
+  var mins = parseInt(d / 60);
+  var secs = d % 60;
+  return days + ":" +
+         hours.toString().padStart(2, "0") + ":" +
+         mins.toString().padStart(2, "0") + ":" +
+         secs.toString().padStart(2, "0");
 }
 
 </script>

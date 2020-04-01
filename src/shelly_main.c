@@ -283,7 +283,7 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
 #endif
   mg_rpc_send_responsef(
       ri,
-      "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, "
+      "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_CONFIG_HAVE_SW1
       "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: %B, auto_off_delay: %Q},"
 #endif
@@ -294,6 +294,7 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       "hap_provisioned: %B, hap_paired: %B}",
       mgos_sys_config_get_device_id(), MGOS_APP, mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
+      (int) mgos_uptime(),
 #ifdef MGOS_CONFIG_HAVE_SW1
       mgos_sys_config_get_sw1_id(), mgos_sys_config_get_sw1_name(),
       mgos_sys_config_get_sw1_in_mode(),
@@ -385,14 +386,16 @@ enum mgos_app_init_result mgos_app_init(void) {
   services[1] = &mgos_hap_protocol_information_service;
   services[2] = &mgos_hap_pairing_service;
   int i = 3;
-  if (mgos_sys_config_get_sw1_enable()) {
-#ifdef MGOS_CONFIG_HAVE_SW1
-    services[i++] = shelly_sw_service_create(mgos_sys_config_get_sw1());
-#endif
+  // Workaround for Shelly2.5: initing SW1 input (GPIO13) somehow causes
+  // SW2 output (GPIO15) to turn on. Initializing SW2 first fixes it.
 #ifdef MGOS_CONFIG_HAVE_SW2
-    services[i++] = shelly_sw_service_create(mgos_sys_config_get_sw2());
+  services[i] = shelly_sw_service_create(mgos_sys_config_get_sw2());
+  if (services[i] != NULL) i++;
 #endif
-  }
+#ifdef MGOS_CONFIG_HAVE_SW1
+  services[i] = shelly_sw_service_create(mgos_sys_config_get_sw1());
+  if (services[i] != NULL) i++;
+#endif
   s_accessory.services = services;
   LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
 
