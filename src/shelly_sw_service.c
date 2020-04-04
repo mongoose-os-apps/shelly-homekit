@@ -51,7 +51,7 @@ struct shelly_sw_service_ctx {
 
 static struct shelly_sw_service_ctx s_ctx[NUM_SWITCHES];
 
-static int auto_off_timer_id = -1;
+static int s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
 
 static void do_auto_off(void *arg);
 
@@ -71,15 +71,23 @@ static void do_reset(void *arg) {
 #endif
 }
 
-static void reset_auto_off_timer() {
-  mgos_clear_timer(auto_off_timer_id);
-  auto_off_timer_id = -1;
-}
+static void handle_auto_off(struct shelly_sw_service_ctx *ctx, const char *source, bool new_state) {
 
-static int auto_off_delay_seconds(const char* delay) {
-  int hours, minutes, seconds;
-  sscanf(delay, "%d:%d:%d", &hours, &minutes, &seconds);
-  return hours * 3600 + minutes * 60 + seconds;
+  if (s_auto_off_timer_id != MGOS_INVALID_TIMER_ID) {
+    // Cancel timer if state changes so that only the last timer is triggered if state changes multiple times
+    mgos_clear_timer(s_auto_off_timer_id);
+    s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
+  }
+
+  const struct mgos_config_sw *cfg = ctx->cfg;
+
+  if (!cfg->auto_off) return;
+
+  if (strcmp(source, "auto_off") == 0) return;
+
+  if (!new_state) return;
+
+  s_auto_off_timer_id = mgos_set_timer(cfg->auto_off_delay * 1000, 0, do_auto_off, ctx);
 }
 
 static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
@@ -117,24 +125,15 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
     }
   }
 
-  if (cfg->auto_off && auto_off_timer_id >= 0)
-    reset_auto_off_timer();  // Cancel timer if state changes so that only the
-                             // last timer is triggered if state changes
-                             // multiple times
-
-  if (strcmp(source, "auto_off") == 0) return;
-
-  bool auto_off = (new_state ? cfg->auto_off : false);
-  int delay_seconds = auto_off_delay_seconds(cfg->auto_off_delay);
-  if (auto_off && delay_seconds > 0) {
-    auto_off_timer_id =
-        mgos_set_timer(delay_seconds * 1000, 0, do_auto_off, ctx);
-  }
+  handle_auto_off(ctx, source, new_state);
 }
 
 static void do_auto_off(void *arg) {
+  s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
   struct shelly_sw_service_ctx *ctx = arg;
-  shelly_sw_set_state_ctx(ctx, false, "auto_off");
+  const struct mgos_config_sw *cfg = ctx->cfg;
+  if (cfg->auto_off)  // Don't set state if auto off has been disabled during timer run
+    shelly_sw_set_state_ctx(ctx, false, "auto_off");
 }
 
 bool shelly_sw_set_state(int id, bool new_state, const char *source) {

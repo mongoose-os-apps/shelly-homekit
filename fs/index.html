@@ -372,7 +372,7 @@ function sw_save_common(cfg_key, in_mode, persist, auto_off, auto_off_delay, spi
     in_mode: parseInt(in_mode),
     persist_state: persist,
     auto_off: auto_off,
-    auto_off_delay: auto_off_delay
+    auto_off_delay: dateStringToSeconds(auto_off_delay)
   };
   axios.post(host + "/rpc/Config.Set", data).then(function(res) {
   }).catch(function(err) {
@@ -387,13 +387,30 @@ function sw_save_common(cfg_key, in_mode, persist, auto_off, auto_off_delay, spi
 }
 
 function isValid(swType) {
-  var auto_off_delay = document.getElementById(swType + "_auto_off_delay");
+  var auto_off_delay = el(swType + "_auto_off_delay");
   var auto_off_delay_valid = auto_off_delay.checkValidity();
   if (!auto_off_delay_valid) {
     alert("Auto off delay must follow 24 hour format HH:mm:ss");
     return false;
   }
   return true;
+}
+
+function dateStringToSeconds(dateString) {
+  var dateStringParts = dateString.split(':');
+  var seconds = parseInt(dateStringParts[0]) * 3600 + parseInt(dateStringParts[1]) * 60 + parseInt(dateStringParts[2]);
+  return seconds;
+}
+
+function secondsToDateString(seconds) {
+  var date = new Date(1970, 0, 1);
+  date.setSeconds(seconds);
+  var dateString = twoDigitString(date.getHours()) + ":" + twoDigitString(date.getMinutes()) + ":" + twoDigitString(date.getSeconds());
+  return dateString;
+}
+
+function twoDigitString(num) {
+	return num.toLocaleString(undefined, {minimumIntegerDigits: 2})
 }
 
 el("sw1_save_btn").onclick = function() {
@@ -459,7 +476,7 @@ function getInfo() {
       el("sw1_persist").checked = res.data.sw1.persist;
       el("sw1_auto_off").checked = res.data.sw1.auto_off;
       el("sw1_auto_off_delay").disabled = !res.data.sw1.auto_off;
-      el("sw1_auto_off_delay").value = res.data.sw1.auto_off_delay;
+      el("sw1_auto_off_delay").value = secondsToDateString(res.data.sw1.auto_off_delay);
       sw1.sw_id = res.data.sw1.id;
       sw1.sw_state = res.data.sw1.state;
       sw1.style.display = "block";
@@ -476,7 +493,7 @@ function getInfo() {
       el("sw2_persist").checked = res.data.sw2.persist;
       el("sw2_auto_off").checked = res.data.sw2.auto_off;
       el("sw2_auto_off_delay").disabled = !res.data.sw2.auto_off;
-      el("sw2_auto_off_delay").value = res.data.sw2.auto_off_delay;
+      el("sw2_auto_off_delay").value = secondsToDateString(res.data.sw2.auto_off_delay);
       sw2.sw_id = res.data.sw2.id;
       sw2.sw_state = res.data.sw2.state;
       sw2.style.display = "block";
