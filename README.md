@@ -12,13 +12,13 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
-    * Shelly1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
+    * Shelly 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
 
-    * Shelly1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1PM.zip`
+    * Shelly 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1PM.zip`
 
-    * Shelly2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly2.zip`
+    * Shelly 2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly2.zip`
 
-    * Shelly25: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip`
+    * Shelly 2.5: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip`
 
     * Shelly Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip`
 
@@ -65,9 +65,11 @@ At the moment only switch functionality is supported - no scheduling, power meas
  It is possible to revert back to stock firmware.
 
  Stock firmware for can be downloaded from the offical site:
-  * [Shelly1](http://api.shelly.cloud/firmware/SHSW-1_build.zip)
-  * [Shelly2](http://api.shelly.cloud/firmware/SHSW-21_build.zip)
-  * [Shelly2.5](http://api.shelly.cloud/firmware/SHSW-25_build.zip)
+  * [Shelly 1](http://api.shelly.cloud/firmware/SHSW-1_build.zip)
+  * [Shelly 1PM](http://api.shelly.cloud/firmware/SHSW-PM_build.zip)
+  * [Shelly 2](http://api.shelly.cloud/firmware/SHSW-21_build.zip)
+  * [Shelly 2.5](http://api.shelly.cloud/firmware/SHSW-25_build.zip)
+  * [Shelly Plug S](http://api.shelly.cloud/firmware/SHPLG-S_build.zip)
 
  Download it and upload via web interface (this firmware does not support pulling from a remote URL).
 
