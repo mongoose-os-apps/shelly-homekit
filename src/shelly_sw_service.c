@@ -251,11 +251,11 @@ static void shelly_sw_read_power(void *arg) {
   float apa = 0, aea = 0;
   if (mgos_ade7953_get_apower(ctx->ade7953, ctx->ade7953_channel, &apa)) {
     if (fabs(apa) < 0.5) apa = 0;  // Suppress noise.
-    ctx->info.apower = apa;
+    ctx->info.apower = fabs(apa);
   }
   if (mgos_ade7953_get_aenergy(ctx->ade7953, ctx->ade7953_channel,
                                true /* reset */, &aea)) {
-    ctx->info.aenergy += aea;
+    ctx->info.aenergy += fabs(aea);
   }
 #endif
 }
