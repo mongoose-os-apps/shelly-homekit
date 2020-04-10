@@ -30,7 +30,7 @@ At the moment only switch functionality is supported - no scheduling, power meas
 
    * Some obvious combinations like 111-11-111 are explicitly disallowed by Apple and will not be accepted.
 
-   * Note that code is not stored on the device in plain text and it is not possible what the current setting is.
+   * Note that code is not stored on the device in plain text and it is not possible to read what the current setting is.
 
  * Provision WiFi station (if not yet).
 
