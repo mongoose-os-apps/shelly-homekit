@@ -29,6 +29,8 @@ config_schema:
   - ["sw.in_mode", "i", 1, {"0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
   - ["sw.state", "b", false, {"State of the switch"}]
   - ["sw.persist_state", "b", false, {"Whether state of the switch should be persisted across reboots."}]
+  - ["sw.auto_off", "b", false, {"Whether the switch should automatically turn OFF after turning ON"}]
+  - ["sw.auto_off_delay", "i", -1, {"Delay for automatically turning OFF, in seconds"}]
 
 
 build_vars:

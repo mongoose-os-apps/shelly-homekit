@@ -2,3 +2,4 @@ binlibs/
 build/
 build_*/
 deps/
+.DS_Store

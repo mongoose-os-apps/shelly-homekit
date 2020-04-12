@@ -51,6 +51,10 @@ struct shelly_sw_service_ctx {
 
 static struct shelly_sw_service_ctx s_ctx[NUM_SWITCHES];
 
+static int s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
+
+static void do_auto_off(void *arg);
+
 #ifdef SHELLY_HAVE_PM
 static void shelly_sw_read_power(void *arg);
 #endif
@@ -65,6 +69,27 @@ static void do_reset(void *arg) {
   mgos_sys_config_save(&mgos_sys_config, false, NULL);
   mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
 #endif
+}
+
+static void handle_auto_off(struct shelly_sw_service_ctx *ctx,
+                            const char *source, bool new_state) {
+  if (s_auto_off_timer_id != MGOS_INVALID_TIMER_ID) {
+    // Cancel timer if state changes so that only the last timer is triggered if
+    // state changes multiple times
+    mgos_clear_timer(s_auto_off_timer_id);
+    s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
+  }
+
+  const struct mgos_config_sw *cfg = ctx->cfg;
+
+  if (!cfg->auto_off) return;
+
+  if (strcmp(source, "auto_off") == 0) return;
+
+  if (!new_state) return;
+
+  s_auto_off_timer_id =
+      mgos_set_timer(cfg->auto_off_delay * 1000, 0, do_auto_off, ctx);
 }
 
 static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
@@ -86,6 +111,7 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          NULL /* msg */);
   }
+
   double now = mgos_uptime();
   if (now < 60) {
     if (now - ctx->last_change_ts > 10) {
@@ -99,6 +125,18 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
       mgos_gpio_blink(cfg->out_gpio, 100, 100);
       mgos_set_timer(600, 0, do_reset, ctx);
     }
+  }
+
+  handle_auto_off(ctx, source, new_state);
+}
+
+static void do_auto_off(void *arg) {
+  s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
+  struct shelly_sw_service_ctx *ctx = arg;
+  const struct mgos_config_sw *cfg = ctx->cfg;
+  if (cfg->auto_off) {
+    // Don't set state if auto off has been disabled during timer run
+    shelly_sw_set_state_ctx(ctx, false, "auto_off");
   }
 }
 
