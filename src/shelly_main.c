@@ -305,7 +305,7 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_CONFIG_HAVE_SW1
       "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: "
-      "%B, auto_off_delay: %d}"
+      "%B, auto_off_delay: %d"
 #ifdef SHELLY_HAVE_PM
       ", apower: %.3f, aenergy: %.3f"
 #endif
@@ -313,7 +313,7 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
       "sw2: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: "
-      "%B, auto_off_delay: %d}"
+      "%B, auto_off_delay: %d"
 #ifdef SHELLY_HAVE_PM
       ", apower: %.3f, aenergy: %.3f"
 #endif
