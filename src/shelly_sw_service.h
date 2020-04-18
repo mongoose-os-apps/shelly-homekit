@@ -22,6 +22,20 @@
 struct mgos_ade7953;
 #endif
 
+enum shelly_sw_in_mode {
+  SHELLY_SW_IN_MODE_MOMENTARY = 0,
+  SHELLY_SW_IN_MODE_TOGGLE = 1,
+  SHELLY_SW_IN_MODE_EDGE = 2,
+  SHELLY_SW_IN_MODE_DETACHED = 3,
+};
+
+enum shelly_sw_initial_state {
+  SHELLY_SW_INITIAL_STATE_OFF = 0,
+  SHELLY_SW_INITIAL_STATE_ON = 1,
+  SHELLY_SW_INITIAL_STATE_LAST = 2,
+  SHELLY_SW_INITIAL_STATE_INPUT = 3,
+};
+
 HAPService *shelly_sw_service_create(
 #ifdef MGOS_HAVE_ADE7953
     struct mgos_ade7953 *ade7953, int ade7953_channel,

@@ -27,13 +27,6 @@
 #define IID_BASE 0x100
 #define IID_STEP 4
 
-enum shelly_sw_in_mode {
-  SHELLY_SW_IN_MODE_MOMENTARY = 0,
-  SHELLY_SW_IN_MODE_TOGGLE = 1,
-  SHELLY_SW_IN_MODE_EDGE = 2,
-  SHELLY_SW_IN_MODE_DETACHED = 3,
-};
-
 struct shelly_sw_service_ctx {
   const struct mgos_config_sw *cfg;
   HAPAccessoryServerRef *hap_server;
@@ -43,6 +36,7 @@ struct shelly_sw_service_ctx {
   bool pb_state;
   int change_cnt;         // State change counter for reset.
   double last_change_ts;  // Timestamp of last change (uptime).
+  mgos_timer_id auto_off_timer_id;
 #ifdef MGOS_HAVE_ADE7953
   struct mgos_ade7953 *ade7953;
   int ade7953_channel;
@@ -50,8 +44,6 @@ struct shelly_sw_service_ctx {
 };
 
 static struct shelly_sw_service_ctx s_ctx[NUM_SWITCHES];
-
-static int s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
 
 static void do_auto_off(void *arg);
 
@@ -73,11 +65,12 @@ static void do_reset(void *arg) {
 
 static void handle_auto_off(struct shelly_sw_service_ctx *ctx,
                             const char *source, bool new_state) {
-  if (s_auto_off_timer_id != MGOS_INVALID_TIMER_ID) {
+  if (ctx->auto_off_timer_id != MGOS_INVALID_TIMER_ID) {
     // Cancel timer if state changes so that only the last timer is triggered if
     // state changes multiple times
-    mgos_clear_timer(s_auto_off_timer_id);
-    s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
+    mgos_clear_timer(ctx->auto_off_timer_id);
+    ctx->auto_off_timer_id = MGOS_INVALID_TIMER_ID;
+    LOG(LL_INFO, ("%d: Cleared auto-off timer", ctx->cfg->id));
   }
 
   const struct mgos_config_sw *cfg = ctx->cfg;
@@ -88,16 +81,17 @@ static void handle_auto_off(struct shelly_sw_service_ctx *ctx,
 
   if (!new_state) return;
 
-  s_auto_off_timer_id =
+  ctx->auto_off_timer_id =
       mgos_set_timer(cfg->auto_off_delay * 1000, 0, do_auto_off, ctx);
+  LOG(LL_INFO, ("%d: Set auto-off timer for %d", cfg->id, cfg->auto_off_delay));
 }
 
 static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
                                     bool new_state, const char *source) {
   const struct mgos_config_sw *cfg = ctx->cfg;
-  if (new_state == ctx->info.state) return;
   int out_value = (new_state ? cfg->out_on_value : !cfg->out_on_value);
-  mgos_gpio_write(cfg->out_gpio, out_value);
+  mgos_gpio_setup_output(cfg->out_gpio, out_value);
+  if (new_state == ctx->info.state) return;
   LOG(LL_INFO, ("%s: %d -> %d (%s) %d", cfg->name, ctx->info.state, new_state,
                 source, out_value));
   ctx->info.state = new_state;
@@ -106,10 +100,12 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
                                  ctx->hap_service->characteristics[1],
                                  ctx->hap_service, ctx->hap_accessory);
   }
-  if (cfg->persist_state) {
+  if (cfg->state != new_state) {
     ((struct mgos_config_sw *) cfg)->state = new_state;
-    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
-                         NULL /* msg */);
+    if (cfg->initial_state == SHELLY_SW_INITIAL_STATE_LAST) {
+      mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                           NULL /* msg */);
+    }
   }
 
   double now = mgos_uptime();
@@ -131,9 +127,10 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
 }
 
 static void do_auto_off(void *arg) {
-  s_auto_off_timer_id = MGOS_INVALID_TIMER_ID;
   struct shelly_sw_service_ctx *ctx = arg;
   const struct mgos_config_sw *cfg = ctx->cfg;
+  ctx->auto_off_timer_id = MGOS_INVALID_TIMER_ID;
+  LOG(LL_INFO, ("%d: Auto-off timer fired", cfg->id));
   if (cfg->auto_off) {
     // Don't set state if auto off has been disabled during timer run
     shelly_sw_set_state_ctx(ctx, false, "auto_off");
@@ -329,21 +326,28 @@ HAPService *shelly_sw_service_create(
   struct shelly_sw_service_ctx *ctx = &s_ctx[cfg->id];
   ctx->cfg = cfg;
   ctx->hap_service = svc;
-  if (cfg->persist_state) {
-    ctx->info.state = cfg->state;
-  } else {
-    ctx->info.state = 0;
-  }
+  ctx->auto_off_timer_id = MGOS_INVALID_TIMER_ID;
   LOG(LL_INFO, ("Exporting '%s' (GPIO out: %d, in: %d, state: %d)", cfg->name,
                 cfg->out_gpio, cfg->in_gpio, ctx->info.state));
-  mgos_gpio_setup_output(cfg->out_gpio, (ctx->info.state ? cfg->out_on_value
-                                                         : !cfg->out_on_value));
+
+  switch ((enum shelly_sw_initial_state) cfg->initial_state) {
+    case SHELLY_SW_INITIAL_STATE_OFF:
+      shelly_sw_set_state_ctx(ctx, false, "init");
+      break;
+    case SHELLY_SW_INITIAL_STATE_ON:
+      shelly_sw_set_state_ctx(ctx, true, "init");
+      break;
+    case SHELLY_SW_INITIAL_STATE_LAST:
+      shelly_sw_set_state_ctx(ctx, cfg->state, "init");
+      break;
+    case SHELLY_SW_INITIAL_STATE_INPUT:
+      if (cfg->in_mode == SHELLY_SW_IN_MODE_TOGGLE) {
+        shelly_sw_in_cb(cfg->in_gpio, ctx);
+      }
+  }
   mgos_gpio_set_button_handler(cfg->in_gpio, MGOS_GPIO_PULL_NONE,
                                MGOS_GPIO_INT_EDGE_ANY, 20, shelly_sw_in_cb,
                                ctx);
-  if (ctx->cfg->in_mode == SHELLY_SW_IN_MODE_TOGGLE) {
-    shelly_sw_in_cb(cfg->in_gpio, ctx);
-  }
 #ifdef SHELLY_HAVE_PM
 #ifdef MGOS_HAVE_ADE7953
   ctx->ade7953 = ade7953;

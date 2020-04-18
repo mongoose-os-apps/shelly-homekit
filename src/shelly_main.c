@@ -304,16 +304,16 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       ri,
       "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_CONFIG_HAVE_SW1
-      "sw1: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: "
-      "%B, auto_off_delay: %d"
+      "sw1: {id: %d, name: %Q, in_mode: %d, initial: %d, "
+      "state: %B, auto_off: %B, auto_off_delay: %d"
 #ifdef SHELLY_HAVE_PM
       ", apower: %.3f, aenergy: %.3f"
 #endif
       "},"
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
-      "sw2: {id: %d, name: %Q, in_mode: %d, persist: %B, state: %B, auto_off: "
-      "%B, auto_off_delay: %d"
+      "sw2: {id: %d, name: %Q, in_mode: %d, initial: %d, "
+      "state: %B, auto_off: %B, auto_off_delay: %d"
 #ifdef SHELLY_HAVE_PM
       ", apower: %.3f, aenergy: %.3f"
 #endif
@@ -327,7 +327,7 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
 #ifdef MGOS_CONFIG_HAVE_SW1
       mgos_sys_config_get_sw1_id(), mgos_sys_config_get_sw1_name(),
       mgos_sys_config_get_sw1_in_mode(),
-      mgos_sys_config_get_sw1_persist_state(), sw1.state,
+      mgos_sys_config_get_sw1_initial_state(), sw1.state,
       mgos_sys_config_get_sw1_auto_off(),
       mgos_sys_config_get_sw1_auto_off_delay(),
 #ifdef SHELLY_HAVE_PM
@@ -337,7 +337,7 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
 #ifdef MGOS_CONFIG_HAVE_SW2
       mgos_sys_config_get_sw2_id(), mgos_sys_config_get_sw2_name(),
       mgos_sys_config_get_sw2_in_mode(),
-      mgos_sys_config_get_sw2_persist_state(), sw2.state,
+      mgos_sys_config_get_sw2_initial_state(), sw2.state,
       mgos_sys_config_get_sw2_auto_off(),
       mgos_sys_config_get_sw2_auto_off_delay(),
 #ifdef SHELLY_HAVE_PM
@@ -370,6 +370,25 @@ static void shelly_set_switch_handler(struct mg_rpc_request_info *ri,
   (void) fi;
 }
 
+static bool shelly_cfg_migrate(void) {
+  bool changed = false;
+  if (mgos_sys_config_get_shelly_cfg_version() == 0) {
+#ifdef MGOS_CONFIG_HAVE_SW1
+    if (mgos_sys_config_get_sw1_persist_state()) {
+      mgos_sys_config_set_sw1_initial_state(SHELLY_SW_INITIAL_STATE_LAST);
+    }
+#endif
+#ifdef MGOS_CONFIG_HAVE_SW2
+    if (mgos_sys_config_get_sw2_persist_state()) {
+      mgos_sys_config_set_sw2_initial_state(SHELLY_SW_INITIAL_STATE_LAST);
+    }
+#endif
+    mgos_sys_config_set_shelly_cfg_version(1);
+    changed = true;
+  }
+  return changed;
+}
+
 enum mgos_app_init_result mgos_app_init(void) {
 #ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
@@ -381,6 +400,11 @@ enum mgos_app_init_result mgos_app_init(void) {
     remove("relaydata");
   }
 #endif
+
+  if (shelly_cfg_migrate()) {
+    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                         NULL /* msg */);
+  }
 
 #ifdef MGOS_HAVE_ADE7953
   const struct mgos_ade7953_config ade7953_cfg = {

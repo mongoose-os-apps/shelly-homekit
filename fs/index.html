@@ -80,8 +80,13 @@
             </select>
           </div>
           <div class="form-control">
-            <label for="sw1_persist">Persist state:</label>
-            <input type="checkbox" id="sw1_persist">
+            <label for="sw1_initial">Initial state:</label>
+            <select id="sw1_initial">
+              <option id="sw1_initial_0" value="0">Off</option>
+              <option id="sw1_initial_1" value="1">On</option>
+              <option id="sw1_initial_2" value="2">Last</option>
+              <option id="sw1_initial_3" value="3">Input</option>
+            </select>
           </div>
           <div class="form-control">
             <label for="sw1_auto_off">Auto off:</label>
@@ -130,8 +135,13 @@
             </select>
           </div>
           <div class="form-control">
-            <label for="sw2_persist">Persist state:</label>
-            <input type="checkbox" id="sw2_persist">
+            <label for="sw2_initial">Initial state:</label>
+            <select id="sw2_initial">
+              <option id="sw2_initial_0" value="0">Off</option>
+              <option id="sw2_initial_1" value="1">On</option>
+              <option id="sw2_initial_2" value="2">Last</option>
+              <option id="sw2_initial_3" value="3">Input</option>
+            </select>
           </div>
           <div class="form-control">
             <label for="sw2_auto_off">Auto off:</label>
@@ -361,7 +371,7 @@ el("sw2_set_btn").onclick = function() {
   );
 }
 
-function sw_save_common(cfg_key, in_mode, persist, auto_off, auto_off_delay, spinner) {
+function sw_save_common(cfg_key, in_mode, initial_state, auto_off, auto_off_delay, spinner) {
   spinner.className = "spin";
   var data = {
     config: {},
@@ -370,7 +380,7 @@ function sw_save_common(cfg_key, in_mode, persist, auto_off, auto_off_delay, spi
   };
   data.config[cfg_key] = {
     in_mode: parseInt(in_mode),
-    persist_state: persist,
+    initial_state: parseInt(initial_state),
     auto_off: auto_off,
     auto_off_delay: dateStringToSeconds(auto_off_delay)
   };
@@ -410,7 +420,7 @@ function secondsToDateString(seconds) {
 }
 
 function twoDigitString(num) {
-	return num.toLocaleString(undefined, {minimumIntegerDigits: 2})
+  return num.toLocaleString(undefined, {minimumIntegerDigits: 2})
 }
 
 el("sw1_save_btn").onclick = function() {
@@ -418,7 +428,7 @@ el("sw1_save_btn").onclick = function() {
     sw_save_common(
         "sw1",
         el("sw1_in_mode").value,
-        el("sw1_persist").checked,
+        el("sw1_initial").value,
         el("sw1_auto_off").checked,
         el("sw1_auto_off_delay").value,
         el("sw1_save_spinner"),
@@ -431,7 +441,7 @@ el("sw2_save_btn").onclick = function() {
     sw_save_common(
         "sw2",
         el("sw2_in_mode").value,
-        el("sw2_persist").checked,
+        el("sw2_initial").value,
         el("sw2_auto_off").checked,
         el("sw2_auto_off_delay").value,
         el("sw2_save_spinner"),
@@ -473,7 +483,7 @@ function getInfo() {
       }
       el("sw1_btn_label").innerText = "Turn " + (res.data.sw1.state ? "Off" : "On");
       el("sw1_in_mode_" + res.data.sw1.in_mode).selected = true;
-      el("sw1_persist").checked = res.data.sw1.persist;
+      el("sw1_initial_" + res.data.sw1.initial).selected = true;
       el("sw1_auto_off").checked = res.data.sw1.auto_off;
       el("sw1_auto_off_delay").disabled = !res.data.sw1.auto_off;
       el("sw1_auto_off_delay").value = secondsToDateString(res.data.sw1.auto_off_delay);
@@ -490,7 +500,7 @@ function getInfo() {
       }
       el("sw2_btn_label").innerText = "Turn " + (res.data.sw2.state ? "Off" : "On");
       el("sw2_in_mode_" + res.data.sw2.in_mode).selected = true;
-      el("sw2_persist").checked = res.data.sw2.persist;
+      el("sw2_initial_" + res.data.sw2.initial).selected = true;
       el("sw2_auto_off").checked = res.data.sw2.auto_off;
       el("sw2_auto_off_delay").disabled = !res.data.sw2.auto_off;
       el("sw2_auto_off_delay").value = secondsToDateString(res.data.sw2.auto_off_delay);
