@@ -108,21 +108,6 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
     }
   }
 
-  double now = mgos_uptime();
-  if (now < 60) {
-    if (now - ctx->last_change_ts > 10) {
-      ctx->change_cnt = 0;
-    }
-    ctx->change_cnt++;
-    ctx->last_change_ts = now;
-    if (ctx->change_cnt >= 10) {
-      LOG(LL_INFO, ("Reset sequence detected"));
-      ctx->change_cnt = 0;
-      mgos_gpio_blink(cfg->out_gpio, 100, 100);
-      mgos_set_timer(600, 0, do_reset, ctx);
-    }
-  }
-
   handle_auto_off(ctx, source, new_state);
 }
 
@@ -260,6 +245,24 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
 static void shelly_sw_in_cb(int pin, void *arg) {
   struct shelly_sw_service_ctx *ctx = arg;
   bool in_state = mgos_gpio_read(pin);
+
+
+  double now = mgos_uptime();
+  if (now < 60) {
+    if (now - ctx->last_change_ts > 10) {
+      ctx->change_cnt = 0;
+    }
+    ctx->change_cnt++;
+    ctx->last_change_ts = now;
+    if (ctx->change_cnt >= 10) {
+      LOG(LL_INFO, ("Reset sequence detected"));
+      ctx->change_cnt = 0;
+      mgos_gpio_blink(ctx->cfg->out_gpio, 100, 100);
+      mgos_set_timer(600, 0, do_reset, ctx);
+      return;
+    }
+  }
+
   switch ((enum shelly_sw_in_mode) ctx->cfg->in_mode) {
     case SHELLY_SW_IN_MODE_MOMENTARY:
       if (in_state) {  // Only on 0 -> 1 transitions.
