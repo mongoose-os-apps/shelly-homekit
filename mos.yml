@@ -14,8 +14,6 @@ filesystem:
   - fs
 
 config_schema:
-  # Serial number. This can be later set in the field but HomeKit requires at least 2 bytes.
-  - ["device.sn", "000000"]
   # Try .gz-compressed html.
   - ["http.index_files", "index.html,index.html.gz"]
 

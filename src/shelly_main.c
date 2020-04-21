@@ -451,6 +451,11 @@ enum mgos_app_init_result mgos_app_init(void) {
   s_accessory.name = mgos_sys_config_get_device_id();
   s_accessory.firmwareVersion = mgos_sys_ro_vars_get_fw_version();
   s_accessory.serialNumber = mgos_sys_config_get_device_sn();
+  if (s_accessory.serialNumber == NULL) {
+    static char sn[13] = "????????????";
+    mgos_expand_mac_address_placeholders(sn);
+    s_accessory.serialNumber = sn;
+  }
 
   const HAPService **services = calloc(3 + NUM_SWITCHES + 1, sizeof(*services));
   services[0] = &mgos_hap_accessory_information_service;
