@@ -28,7 +28,7 @@ config_schema:
   - ["sw.state", "b", false, {"State of the switch"}]
   - ["sw.initial_state", "i", 3, {"Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
   - ["sw.auto_off", "b", false, {"Whether the switch should automatically turn OFF after turning ON"}]
-  - ["sw.auto_off_delay", "i", -1, {"Delay for automatically turning OFF, in seconds"}]
+  - ["sw.auto_off_delay", "d", -1, {"Delay for automatically turning OFF, in seconds"}]
 
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
   # Deprecated settings, only kept to enable migration.

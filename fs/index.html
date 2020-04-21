@@ -94,7 +94,7 @@
           </div>
           <div>
             <label for="sw1_auto_off_delay">Auto off delay:</label>
-            <input type="text" id="sw1_auto_off_delay" placeholder="HH:mm:ss" required pattern="(0*([0-9]|1[0-9]|2[0-3])):(0*([0-9]|[1-4][0-9]|5[0-9])):(0*([0-9]|[1-4][0-9]|5[0-9]))">
+            <input type="text" id="sw1_auto_off_delay" placeholder="HH:mm:ss.ff" required pattern="(0*([0-9]|1[0-9]|2[0-3])):(0*([0-9]|[1-4][0-9]|5[0-9])):(0*([0-9]|[1-4][0-9]|5[0-9])).([0-9][0-9])">
           </div>
           <div class="form-control">
             <label></label>
@@ -149,7 +149,7 @@
           </div>
           <div>
             <label for="sw2_auto_off_delay">Auto off delay:</label>
-            <input type="text" id="sw2_auto_off_delay" placeholder="HH:mm:ss" required pattern="(0*([0-9]|1[0-9]|2[0-3])):(0*([0-9]|[1-4][0-9]|5[0-9])):(0*([0-9]|[1-4][0-9]|5[0-9]))">
+            <input type="text" id="sw2_auto_off_delay" placeholder="HH:mm:ss.ff" required pattern="(0*([0-9]|1[0-9]|2[0-3])):(0*([0-9]|[1-4][0-9]|5[0-9])):(0*([0-9]|[1-4][0-9]|5[0-9])).([0-9][0-9])">
           </div>
           <div class="form-control">
             <label></label>
@@ -400,7 +400,7 @@ function isValid(swType) {
   var auto_off_delay = el(swType + "_auto_off_delay");
   var auto_off_delay_valid = auto_off_delay.checkValidity();
   if (!auto_off_delay_valid) {
-    alert("Auto off delay must follow 24 hour format HH:mm:ss");
+    alert("Auto off delay must follow 24 hour format HH:mm:ss.ff");
     return false;
   }
   return true;
@@ -408,14 +408,16 @@ function isValid(swType) {
 
 function dateStringToSeconds(dateString) {
   var dateStringParts = dateString.split(':');
-  var seconds = parseInt(dateStringParts[0]) * 3600 + parseInt(dateStringParts[1]) * 60 + parseInt(dateStringParts[2]);
+  var secondsPart = dateStringParts[2].split('.')[0];
+  var fractionPart = dateStringParts[2].split('.')[1];
+  var seconds = parseInt(dateStringParts[0]) * 3600 + parseInt(dateStringParts[1]) * 60 + parseInt(secondsPart) + parseFloat(fractionPart / 100);
   return seconds;
 }
 
 function secondsToDateString(seconds) {
   var date = new Date(1970, 0, 1);
-  date.setSeconds(seconds);
-  var dateString = twoDigitString(date.getHours()) + ":" + twoDigitString(date.getMinutes()) + ":" + twoDigitString(date.getSeconds());
+  date.setMilliseconds(seconds * 1000);
+  var dateString = twoDigitString(date.getHours()) + ":" + twoDigitString(date.getMinutes()) + ":" + twoDigitString(date.getSeconds()) + "." + twoDigitString(Math.floor(date.getMilliseconds() / 10));
   return dateString;
 }
 
