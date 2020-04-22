@@ -53,7 +53,7 @@
     </div>
 
     <div class="container" id="sw1_container" style="display: none">
-      <h1 class="" id="sw1_name">SW1 Name</h1>
+      <h1>Switch 1</h1>
       <div class="form">
         <div class="">
           <div class="form-control">
@@ -70,6 +70,10 @@
           </div>
         </div>
         <div class="">
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="sw1_name">
+          </div>
           <div class="form-control">
             <label>Mode:</label>
             <select id="sw1_in_mode">
@@ -108,7 +112,7 @@
     </div>
 
     <div class="container" id="sw2_container" style="display: none">
-      <h1 class="" id="sw2_name">SW2 Name</h1>
+      <h1>Switch 2</h1>
       <div class="form">
         <div class="">
           <div class="form-control">
@@ -125,6 +129,10 @@
           </div>
         </div>
         <div class="">
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="sw2_name">
+          </div>
           <div class="form-control">
             <label>Mode:</label>
             <select id="sw2_in_mode">
@@ -371,7 +379,7 @@ el("sw2_set_btn").onclick = function() {
   );
 }
 
-function sw_save_common(cfg_key, in_mode, initial_state, auto_off, auto_off_delay, spinner) {
+function sw_save_common(cfg_key, name, in_mode, initial_state, auto_off, auto_off_delay, spinner) {
   spinner.className = "spin";
   var data = {
     config: {},
@@ -379,6 +387,7 @@ function sw_save_common(cfg_key, in_mode, initial_state, auto_off, auto_off_dela
     reboot: false,
   };
   data.config[cfg_key] = {
+    name: name,
     in_mode: parseInt(in_mode),
     initial_state: parseInt(initial_state),
     auto_off: auto_off,
@@ -397,6 +406,10 @@ function sw_save_common(cfg_key, in_mode, initial_state, auto_off, auto_off_dela
 }
 
 function isValid(swType) {
+  if (el(swType + "_name").value == "") {
+    alert("Name must not be empty");
+    return false;
+  }
   var auto_off_delay = el(swType + "_auto_off_delay");
   var auto_off_delay_valid = auto_off_delay.checkValidity();
   if (!auto_off_delay_valid) {
@@ -407,6 +420,7 @@ function isValid(swType) {
 }
 
 function dateStringToSeconds(dateString) {
+  if (dateString == "") return 0;
   var dateStringParts = dateString.split(':');
   var secondsPart = dateStringParts[2].split('.')[0];
   var fractionPart = dateStringParts[2].split('.')[1];
@@ -433,6 +447,7 @@ el("sw1_save_btn").onclick = function() {
   if (isValid("sw1")){
     sw_save_common(
         "sw1",
+        el("sw1_name").value,
         el("sw1_in_mode").value,
         el("sw1_initial").value,
         el("sw1_auto_off").checked,
@@ -446,6 +461,7 @@ el("sw2_save_btn").onclick = function() {
   if (isValid("sw2")){
     sw_save_common(
         "sw2",
+        el("sw2_name").value,
         el("sw2_in_mode").value,
         el("sw2_initial").value,
         el("sw2_auto_off").checked,
@@ -481,7 +497,7 @@ function getInfo() {
     el("app_build").innerText = res.data.fw_build;
     el("uptime").innerText = durationStr(res.data.uptime);
     if (res.data.sw1) {
-      el("sw1_name").innerText = res.data.sw1.name;
+      el("sw1_name").value = res.data.sw1.name;
       el("sw1_state").innerText = (res.data.sw1.state ? "on" : "off");
       if (res.data.sw1.apower !== undefined) {
         el("sw1_power_stats").innerText =
@@ -498,7 +514,7 @@ function getInfo() {
       sw1.style.display = "block";
     }
     if (res.data.sw2) {
-      el("sw2_name").innerText = res.data.sw2.name;
+      el("sw2_name").value = res.data.sw2.name;
       el("sw2_state").innerText = (res.data.sw2.state ? "on" : "off");
       if (res.data.sw2.apower !== undefined) {
         el("sw2_power_stats").innerText =
