@@ -500,7 +500,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
                      "{id: %d, state: %B}", shelly_set_switch_handler, NULL);
 
-  if (BTN_GPIO > 0) {
+  if (BTN_GPIO >= 0) {
     mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);
   }
 
