@@ -1,7 +1,7 @@
 html, body { height: 100vh; padding: 0; margin: 0; background-color: #ffffff;}
     * { outline: none !important; }
-    body { color: #454955; font: 14px/1.5 Helvetica; }
-    h1, h2, h3, h4, h5, h6, b, th, strong, .nav-link { color: #25282A; }
+    body { color: #454955; font: 14px/1.5 '-apple-system', 'HelveticaNeue', Helvetica, Segoe UI; }
+    h1, h2, h3, h4, h5, h6, b, th, strong, .nav-link { color: #454955; }
     input, button, div, pre, p { font: inherit; }
     button {
       color: white; padding: 0.5em 1em; border-radius: 18px;
@@ -26,10 +26,10 @@ html, body { height: 100vh; padding: 0; margin: 0; background-color: #ffffff;}
     .apl_thin {
       margin-left: 80px; 
       height: 75px; 
-      padding-top: 0.2em; 
+      padding-top: 0.25em; 
       padding-left: 10px; 
       color: #454955; 
-      font: 42px Segoe UI Light, Yu Gothic UI Light;
+      font: 36px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light;
     }
     .icon {
        width: 25px;
