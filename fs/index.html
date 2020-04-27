@@ -1,47 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+  <link rel="stylesheet" type="text/css" href="style.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="axios.min.js.gz"></script>
-  <style>
-    html, body { height: 100vh; padding: 0; margin: 0;}
-    * { outline: none !important; }
-    body { color: #454955; font: 15px/1.5 Verdana, Helvetica, Arial, sans-serif; }
-    h1, h2, h3, h4, h5, h6, b, th, strong, .nav-link { color: #777; }
-    input, button, div, pre, p { font: inherit; }
-    button {
-      color: white; padding: 0.4em 1em; border-radius: 0.3em;
-      border: none; cursor: pointer;
-    }
-    input[type=text] input[type=password] {
-      padding: 0.2em 0.7em; position: relative;
-      border: 1px solid #cdcdcd; border-color: rgba(0, 0, 0, .15);
-      background-color: white; font-size: 16px;
-    }
-    h1 { margin: 0; padding-top: 0.5em; text-align: center; }
-    .container { padding: 0 1em; margin: 1em auto; max-width: 640px; background: #fafafa; }
-    .form-control { margin: 0.5em 0; }
-    .form-control input, .form-control button { Xmin-width: 15em; }
-    .form label { min-width: 10em; display: inline-block; }
-    .form { padding: 1em 0; }
-    .btn { background: #2079b0; }
-    .spin {
-      display: inline-block; width: 0.9em; height: 0.9em;
-      margin-bottom: -0.2em; 
-      border: 0.15em solid rgba(255,255,255,.5);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 1s linear infinite;
-      -webkit-animation: spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
-  </style>
   </head>
   <body onLoad="onLoad()">
-
     <div class="container">
-      <h1 class="" id="device_id" style="visibility: hidden">shellyswitch25-XXXXXX</h1>
+     <br>
+      <div class="logodiv">
+        <img class="img" src="logo.png" alt=""></div>
+          <div class="apl_thin">
+            shelly-HomeKit
+          </div>
+    <h1 class="" id="device_id" style="visibility: hidden">shellyswitch25-XXXXXX</h1>
+     <br>
       <button class="btn" id="refresh_btn">
         <span id="spinner"></span>
         Refresh
@@ -49,9 +22,11 @@
             <button class="btn" id="reboot_btn">
               Reboot
             </button>
-      <span id="uptime_label" style="float: right; visibility: hidden">Uptime: <span id="uptime"></span></span>
+     <button disabled class="btndis" id="uptime_label">
+       Uptime: <span id="uptime"></span>
+     </button>
+     <br><br>  
     </div>
-
     <div class="container" id="sw1_container" style="display: none">
       <h1>Switch 1</h1>
       <div class="form">
@@ -94,11 +69,14 @@
           </div>
           <div class="form-control">
             <label for="sw1_auto_off">Auto off:</label>
-            <input type="checkbox" id="sw1_auto_off">
+              <label class="switch">
+                <input type="checkbox" id="sw1_auto_off">
+              <span class="slider round"></span>
+            </label>
           </div>
           <div>
             <label for="sw1_auto_off_delay">Auto off delay:</label>
-            <input type="text" id="sw1_auto_off_delay" placeholder="D:HH:MM:SS.sss" required
+               <input type="text" id="sw1_auto_off_delay" placeholder="D:HH:MM:SS.sss" required
                    pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
           </div>
           <div class="form-control">
@@ -154,11 +132,14 @@
           </div>
           <div class="form-control">
             <label for="sw2_auto_off">Auto off:</label>
-            <input type="checkbox" id="sw2_auto_off">
+              <label class="switch">
+                <input type="checkbox" id="sw2_auto_off">
+              <span class="slider round"></span>
+            </label>
           </div>
           <div>
             <label for="sw2_auto_off_delay">Auto off delay:</label>
-            <input type="text" id="sw2_auto_off_delay" placeholder="D:HH:MM:SS.sss" required
+             <input type="text" id="sw2_auto_off_delay" placeholder="D:HH:MM:SS.sss" required
                    pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
           </div>
           <div class="form-control">
@@ -171,7 +152,6 @@
         </div>
       </div>
     </div>
-
     <div class="container" id="homekit_container" style="visibility: hidden">
       <h1 class="">HomeKit Settings</h1>
       <div class="form">
@@ -202,14 +182,16 @@
         </div>
       </div>
     </div>
-
     <div class="container" id="wifi_container" style="visibility: hidden">
       <h1 class="">WiFi setup</h1>
       <div class="form">
         <div class="">
           <div class="form-control">
             <label>Enable:</label>
-            <input type="checkbox" id="wifi_en">
+              <label class="switch">
+                <input type="checkbox" id="wifi_en">
+              <span class="slider round"></span>
+            </label>
           </div>
           <div class="form-control">
             <label>WiFi network:</label>
@@ -256,7 +238,6 @@
         </div>
       </div>
     </div>
-
 <script>
 
 var host = "";

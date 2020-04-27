@@ -1,0 +1,126 @@
+html, body { height: 100vh; padding: 0; margin: 0; background-color: #ffffff;}
+    * { outline: none !important; }
+    body { color: #454955; font: 14px/1.5 '-apple-system', 'HelveticaNeue', Helvetica, Segoe UI; }
+    h1, h2, h3, h4, h5, h6, b, th, strong, .nav-link { color: #454955; }
+    input, button, div, pre, p { font: inherit; }
+    button {
+      color: white; padding: 0.5em 1em; border-radius: 18px;
+      border: none; cursor: pointer;
+    }
+    input[type=text] input[type=password] {
+      padding: 0.2em 0.7em; position: relative;
+      border: 1px solid #cdcdcd; border-color: rgba(0, 0, 0, .15);
+      background-color: #ffffff; font-size: 14px;
+    }
+    h1 { margin: 0; padding-top: 0.5em; text-align: center; }
+    .container { padding: 0 1em; margin: 1em auto; max-width: 640px; background: #fafafa; }
+    .form-control { margin: 0.6em 0; }
+    .form-control input, .form-control button { Xmin-width: 15em; }
+    .form label { min-width: 9.5em; display: inline-block; }
+    .form { padding: 1em 0; }
+    .btn { background: #0071e3; }
+    .btndis { 
+      background: #fafafa; 
+      color: #25282A;
+}
+    .apl_thin {
+      margin-left: 80px; 
+      height: 75px; 
+      padding-top: 0.25em; 
+      padding-left: 10px; 
+      color: #454955; 
+      font: 36px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light;
+    }
+    .icon {
+       width: 25px;
+       height: 25px;
+       vertical-align: top;
+       padding-top: 0.28em; 
+    }
+    .logodiv {
+      float:left; 
+      width: 80px; 
+      height: 80px; 
+      padding-left: 10px;
+    }
+    .img { 
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      width: 80px;
+      height: 80px; 
+     }
+    .spin {
+      display: inline-block; width: 0.9em; height: 0.9em;
+      margin-bottom: -0.2em; 
+      border: 0.15em solid rgba(255,255,255,.5);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s linear infinite;
+      -webkit-animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 57px;
+  height: 32px;
+  min-width: 0.5em !important;
+  vertical-align: middle;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #34c759;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(24px);
+  -ms-transform: translateX(24px);
+  transform: translateX(24px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 32px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
