@@ -6,7 +6,9 @@ Firmware is compatible with stock and can be uploaded via OTA (see below) or [fl
 
 Reverting to stock firmware is also supported (see below).
 
-At the moment only switch functionality is supported - no scheduling, power measurement, etc.
+*Note:* At the moment only switch functionality is supported - no scheduling, power measurement, etc.
+
+*Note 2:* Only HomeKit is supported, no Shelly Cloud, MQTT for now.
 
 ## Updating from stock firmware
 
