@@ -52,7 +52,7 @@ static void shelly_sw_read_power(void *arg);
 #endif
 
 static void do_reset(void *arg) {
-  struct shelly_sw_service_ctx *ctx = arg;
+  struct shelly_sw_service_ctx *ctx = (struct shelly_sw_service_ctx *) arg;
   mgos_gpio_blink(ctx->cfg->out_gpio, 0, 0);
   LOG(LL_INFO, ("Performing reset"));
 #ifdef MGOS_SYS_CONFIG_HAVE_WIFI
@@ -83,7 +83,8 @@ static void handle_auto_off(struct shelly_sw_service_ctx *ctx,
 
   ctx->auto_off_timer_id =
       mgos_set_timer(cfg->auto_off_delay * 1000, 0, do_auto_off, ctx);
-  LOG(LL_INFO, ("%d: Set auto-off timer for %d", cfg->id, cfg->auto_off_delay));
+  LOG(LL_INFO,
+      ("%d: Set auto-off timer for %.3f", cfg->id, cfg->auto_off_delay));
 }
 
 static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
@@ -112,7 +113,7 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
 }
 
 static void do_auto_off(void *arg) {
-  struct shelly_sw_service_ctx *ctx = arg;
+  struct shelly_sw_service_ctx *ctx = (struct shelly_sw_service_ctx *) arg;
   const struct mgos_config_sw *cfg = ctx->cfg;
   ctx->auto_off_timer_id = MGOS_INVALID_TIMER_ID;
   LOG(LL_INFO, ("%d: Auto-off timer fired", cfg->id));
@@ -139,7 +140,8 @@ bool shelly_sw_get_info(int id, struct shelly_sw_info *info) {
 }
 
 static const HAPCharacteristic *shelly_sw_name_char(uint16_t iid) {
-  HAPStringCharacteristic *c = calloc(1, sizeof(*c));
+  HAPStringCharacteristic *c =
+      (HAPStringCharacteristic *) calloc(1, sizeof(*c));
   if (c == NULL) return NULL;
   *c = (const HAPStringCharacteristic){
       .format = kHAPCharacteristicFormat_String,
@@ -153,6 +155,9 @@ static const HAPCharacteristic *shelly_sw_name_char(uint16_t iid) {
               .writable = false,
               .supportsEventNotification = false,
               .hidden = false,
+              .requiresAdminPermissions = false,
+              .readRequiresAdminPermissions = false,
+              .writeRequiresAdminPermissions = false,
               .requiresTimedWrite = false,
               .supportsAuthorizationData = false,
               .ip =
@@ -208,7 +213,7 @@ HAPError shelly_sw_handle_on_write(
 }
 
 static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
-  HAPBoolCharacteristic *c = calloc(1, sizeof(*c));
+  HAPBoolCharacteristic *c = (HAPBoolCharacteristic *) calloc(1, sizeof(*c));
   if (c == NULL) return NULL;
   *c = (const HAPBoolCharacteristic){
       .format = kHAPCharacteristicFormat_Bool,
@@ -222,9 +227,16 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
               .writable = true,
               .supportsEventNotification = true,
               .hidden = false,
+              .requiresAdminPermissions = false,
+              .readRequiresAdminPermissions = false,
+              .writeRequiresAdminPermissions = false,
               .requiresTimedWrite = false,
               .supportsAuthorizationData = false,
-              .ip = {.controlPoint = false, .supportsWriteResponse = false},
+              .ip =
+                  {
+                      .controlPoint = false,
+                      .supportsWriteResponse = false,
+                  },
               .ble =
                   {
                       .supportsBroadcastNotification = true,
@@ -243,9 +255,8 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
 };
 
 static void shelly_sw_in_cb(int pin, void *arg) {
-  struct shelly_sw_service_ctx *ctx = arg;
+  struct shelly_sw_service_ctx *ctx = (struct shelly_sw_service_ctx *) arg;
   bool in_state = mgos_gpio_read(pin);
-
 
   double now = mgos_uptime();
   if (now < 60) {
@@ -284,7 +295,7 @@ static void shelly_sw_in_cb(int pin, void *arg) {
 
 #ifdef SHELLY_HAVE_PM
 static void shelly_sw_read_power(void *arg) {
-  struct shelly_sw_service_ctx *ctx = arg;
+  struct shelly_sw_service_ctx *ctx = (struct shelly_sw_service_ctx *) arg;
 #ifdef MGOS_HAVE_ADE7953
   float apa = 0, aea = 0;
   if (mgos_ade7953_get_apower(ctx->ade7953, ctx->ade7953_channel, &apa)) {
@@ -313,9 +324,10 @@ HAPService *shelly_sw_service_create(
     LOG(LL_ERROR, ("Switch ID too big!"));
     return NULL;
   }
-  HAPService *svc = calloc(1, sizeof(*svc));
+  HAPService *svc = (HAPService *) calloc(1, sizeof(*svc));
   if (svc == NULL) return NULL;
-  const HAPCharacteristic **chars = calloc(3, sizeof(*chars));
+  const HAPCharacteristic **chars =
+      (const HAPCharacteristic **) calloc(3, sizeof(*chars));
   if (chars == NULL) return NULL;
   svc->iid = IID_BASE + (IID_STEP * cfg->id) + 0;
   svc->serviceType = &kHAPServiceType_Switch;

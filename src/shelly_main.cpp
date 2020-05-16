@@ -64,9 +64,11 @@ static HAPIPAccessoryServerStorage s_ip_storage = {
 static HAPPlatformKeyValueStore s_kvs;
 static HAPPlatformAccessorySetup s_accessory_setup;
 static HAPAccessoryServerOptions s_server_options = {
+    .maxPairings = kHAPPairingStorage_MinElements,
     .ip =
         {
             .transport = &kHAPAccessoryServerTransport_IP,
+            .available = 0,
             .accessoryServerStorage = &s_ip_storage,
         },
 };
@@ -78,6 +80,8 @@ static HAPAccessoryServerRef s_server;
 static HAPPlatform s_platform = {
     .keyValueStore = &s_kvs,
     .accessorySetup = &s_accessory_setup,
+    .setupDisplay = NULL,
+    .setupNFC = NULL,
     .ip =
         {
             .tcpStreamManager = &s_tcp_stream_manager,
@@ -389,7 +393,7 @@ static bool shelly_cfg_migrate(void) {
   return changed;
 }
 
-enum mgos_app_init_result mgos_app_init(void) {
+bool shelly_app_init() {
 #ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
     LOG(LL_INFO, ("Performing cleanup"));
@@ -419,23 +423,25 @@ enum mgos_app_init_result mgos_app_init(void) {
 #endif
 
   // Key-value store.
-  HAPPlatformKeyValueStoreCreate(
-      &s_kvs,
-      &(const HAPPlatformKeyValueStoreOptions){.fileName = KVS_FILE_NAME});
+  static const HAPPlatformKeyValueStoreOptions kvs_opts = {
+      .fileName = KVS_FILE_NAME,
+  };
+  HAPPlatformKeyValueStoreCreate(&s_kvs, &kvs_opts);
 
   // Accessory setup.
-  HAPPlatformAccessorySetupCreate(&s_accessory_setup,
-                                  &(const HAPPlatformAccessorySetupOptions){});
+  static const HAPPlatformAccessorySetupOptions as_opts = {};
+  HAPPlatformAccessorySetupCreate(&s_accessory_setup, &as_opts);
 
   // TCP Stream Manager.
-  HAPPlatformTCPStreamManagerCreate(
-      &s_tcp_stream_manager, &(const HAPPlatformTCPStreamManagerOptions){
-                                 .port = kHAPNetworkPort_Any,
-                                 .maxConcurrentTCPStreams = NUM_SESSIONS});
+  static const HAPPlatformTCPStreamManagerOptions tcpm_opts = {
+      .port = kHAPNetworkPort_Any,
+      .maxConcurrentTCPStreams = NUM_SESSIONS,
+  };
+  HAPPlatformTCPStreamManagerCreate(&s_tcp_stream_manager, &tcpm_opts);
 
   // Service discovery.
-  HAPPlatformServiceDiscoveryCreate(
-      &s_service_discovery, &(const HAPPlatformServiceDiscoveryOptions){});
+  static const HAPPlatformServiceDiscoveryOptions sd_opts = {};
+  HAPPlatformServiceDiscoveryCreate(&s_service_discovery, &sd_opts);
 
   for (size_t i = 0; i < ARRAY_SIZE(sessions); i++) {
     sessions[i].inboundBuffer.bytes = in_bufs[i];
@@ -443,8 +449,6 @@ enum mgos_app_init_result mgos_app_init(void) {
     sessions[i].outboundBuffer.bytes = out_bufs[i];
     sessions[i].outboundBuffer.numBytes = sizeof(out_bufs[i]);
   }
-
-  s_server_options.maxPairings = kHAPPairingStorage_MinElements;
 
   s_callbacks.handleUpdatedState = shelly_hap_server_state_update_cb;
 
@@ -457,7 +461,8 @@ enum mgos_app_init_result mgos_app_init(void) {
     s_accessory.serialNumber = sn;
   }
 
-  const HAPService **services = calloc(3 + NUM_SWITCHES + 1, sizeof(*services));
+  const HAPService **services =
+      (const HAPService **) calloc(3 + NUM_SWITCHES + 1, sizeof(*services));
   services[0] = &mgos_hap_accessory_information_service;
   services[1] = &mgos_hap_protocol_information_service;
   services[2] = &mgos_hap_pairing_service;
@@ -504,5 +509,11 @@ enum mgos_app_init_result mgos_app_init(void) {
     mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);
   }
 
-  return MGOS_APP_INIT_SUCCESS;
+  return true;
+}
+
+extern "C" {
+enum mgos_app_init_result mgos_app_init(void) {
+  return shelly_app_init() ? MGOS_APP_INIT_SUCCESS : MGOS_APP_INIT_ERROR;
+}
 }
