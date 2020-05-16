@@ -24,8 +24,10 @@
 #include "mgos_ade7953.h"
 #endif
 
-#define IID_BASE 0x100
-#define IID_STEP 4
+#define IID_BASE_SWITCH 0x100
+#define IID_STEP_SWITCH 4
+#define IID_BASE_OUTLET 0x200
+#define IID_STEP_OUTLET 5
 
 struct shelly_sw_service_ctx {
   const struct mgos_config_sw *cfg;
@@ -254,6 +256,58 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
   return c;
 };
 
+HAPError shelly_sw_handle_on_read_in_use(
+    HAPAccessoryServerRef *server,
+    const HAPBoolCharacteristicReadRequest *request, bool *value,
+    void *context) {
+  *value = true;
+  (void) server;
+  (void) request;
+  (void) context;
+  return kHAPError_None;
+}
+
+static const HAPCharacteristic *shelly_sw_in_use_char(uint16_t iid) {
+  HAPBoolCharacteristic *c = (HAPBoolCharacteristic *) calloc(1, sizeof(*c));
+  if (c == NULL) return NULL;
+  *c = (const HAPBoolCharacteristic){
+      .format = kHAPCharacteristicFormat_Bool,
+      .iid = iid,
+      .characteristicType = &kHAPCharacteristicType_OutletInUse,
+      .debugDescription = kHAPCharacteristicDebugDescription_OutletInUse,
+      .manufacturerDescription = NULL,
+      .properties =
+          {
+              .readable = true,
+              .writable = false,
+              .supportsEventNotification = false,
+              .hidden = false,
+              .requiresAdminPermissions = false,
+              .readRequiresAdminPermissions = false,
+              .writeRequiresAdminPermissions = false,
+              .requiresTimedWrite = false,
+              .supportsAuthorizationData = false,
+              .ip =
+                  {
+                      .controlPoint = false,
+                      .supportsWriteResponse = false,
+                  },
+              .ble =
+                  {
+                      .supportsBroadcastNotification = false,
+                      .supportsDisconnectedNotification = false,
+                      .readableWithoutSecurity = false,
+                      .writableWithoutSecurity = false,
+                  },
+          },
+      .callbacks =
+          {
+              .handleRead = shelly_sw_handle_on_read_in_use,
+          },
+  };
+  return c;
+};
+
 static void shelly_sw_in_cb(int pin, void *arg) {
   struct shelly_sw_service_ctx *ctx = (struct shelly_sw_service_ctx *) arg;
   bool in_state = mgos_gpio_read(pin);
@@ -327,23 +381,37 @@ HAPService *shelly_sw_service_create(
   HAPService *svc = (HAPService *) calloc(1, sizeof(*svc));
   if (svc == NULL) return NULL;
   const HAPCharacteristic **chars =
-      (const HAPCharacteristic **) calloc(3, sizeof(*chars));
+      (const HAPCharacteristic **) calloc(4, sizeof(*chars));
   if (chars == NULL) return NULL;
-  svc->iid = IID_BASE + (IID_STEP * cfg->id) + 0;
-  svc->serviceType = &kHAPServiceType_Switch;
-  svc->debugDescription = kHAPServiceDebugDescription_Switch;
+  uint16_t iid;
+  const char *svc_type_name = NULL;
+  if (cfg->svc_type == SHELLY_SW_TYPE_OUTLET) {
+    iid = IID_BASE_OUTLET + (IID_STEP_OUTLET * cfg->id);
+    svc->serviceType = &kHAPServiceType_Outlet;
+    svc->debugDescription = kHAPServiceDebugDescription_Outlet;
+    svc_type_name = "outlet";
+  } else {
+    iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * cfg->id);
+    svc->serviceType = &kHAPServiceType_Switch;
+    svc->debugDescription = kHAPServiceDebugDescription_Switch;
+    svc_type_name = "switch";
+  }
+  svc->iid = iid++;
   svc->name = cfg->name;
   svc->properties.primaryService = true;
-  chars[0] = shelly_sw_name_char(IID_BASE + (IID_STEP * cfg->id) + 1);
-  chars[1] = shelly_sw_on_char(IID_BASE + (IID_STEP * cfg->id) + 2);
-  chars[2] = NULL;
+  chars[0] = shelly_sw_name_char(iid++);
+  chars[1] = shelly_sw_on_char(iid++);
+  if (cfg->svc_type == SHELLY_SW_TYPE_OUTLET) {
+    chars[2] = shelly_sw_in_use_char(iid++);
+  }
   svc->characteristics = chars;
   struct shelly_sw_service_ctx *ctx = &s_ctx[cfg->id];
   ctx->cfg = cfg;
   ctx->hap_service = svc;
   ctx->auto_off_timer_id = MGOS_INVALID_TIMER_ID;
-  LOG(LL_INFO, ("Exporting '%s' (GPIO out: %d, in: %d, state: %d)", cfg->name,
-                cfg->out_gpio, cfg->in_gpio, ctx->info.state));
+  LOG(LL_INFO,
+      ("Exporting '%s': type %s, GPIO out: %d, in: %d, state: %d", cfg->name,
+       svc_type_name, cfg->out_gpio, cfg->in_gpio, ctx->info.state));
 
   switch ((enum shelly_sw_initial_state) cfg->initial_state) {
     case SHELLY_SW_INITIAL_STATE_OFF:

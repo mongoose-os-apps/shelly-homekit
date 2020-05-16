@@ -17,7 +17,6 @@
 
 #include "mgos.h"
 #include "mgos_app.h"
-#include "mgos_dns_sd.h"
 #include "mgos_hap.h"
 #ifdef MGOS_HAVE_OTA_COMMON
 #include "mgos_ota.h"
@@ -34,6 +33,7 @@
 #include "HAPPlatformServiceDiscovery+Init.h"
 #include "HAPPlatformTCPStreamManager+Init.h"
 
+#include "shelly_rpc_service.h"
 #include "shelly_sw_service.h"
 
 #define KVS_FILE_NAME "kvs.json"
@@ -289,72 +289,6 @@ bool mgos_sys_config_get_wifi_sta_enable(void) {
 }
 #endif
 
-static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
-                                    void *cb_arg, struct mg_rpc_frame_info *fi,
-                                    struct mg_str args) {
-  const char *ssid = mgos_sys_config_get_wifi_sta_ssid();
-  const char *pass = mgos_sys_config_get_wifi_sta_pass();
-  bool hap_provisioned = !mgos_conf_str_empty(mgos_sys_config_get_hap_salt());
-  bool hap_paired = HAPAccessoryServerIsPaired(&s_server);
-#ifdef MGOS_CONFIG_HAVE_SW1
-  struct shelly_sw_info sw1;
-  shelly_sw_get_info(mgos_sys_config_get_sw1_id(), &sw1);
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-  struct shelly_sw_info sw2;
-  shelly_sw_get_info(mgos_sys_config_get_sw2_id(), &sw2);
-#endif
-  mg_rpc_send_responsef(
-      ri,
-      "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
-#ifdef MGOS_CONFIG_HAVE_SW1
-      "sw1: {id: %d, name: %Q, in_mode: %d, initial: %d, "
-      "state: %B, auto_off: %B, auto_off_delay: %.3f"
-#ifdef SHELLY_HAVE_PM
-      ", apower: %.3f, aenergy: %.3f"
-#endif
-      "},"
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-      "sw2: {id: %d, name: %Q, in_mode: %d, initial: %d, "
-      "state: %B, auto_off: %B, auto_off_delay: %.3f"
-#ifdef SHELLY_HAVE_PM
-      ", apower: %.3f, aenergy: %.3f"
-#endif
-      "},"
-#endif
-      "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
-      "hap_provisioned: %B, hap_paired: %B}",
-      mgos_sys_config_get_device_id(), MGOS_APP, mgos_dns_sd_get_host_name(),
-      mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
-      (int) mgos_uptime(),
-#ifdef MGOS_CONFIG_HAVE_SW1
-      mgos_sys_config_get_sw1_id(), mgos_sys_config_get_sw1_name(),
-      mgos_sys_config_get_sw1_in_mode(),
-      mgos_sys_config_get_sw1_initial_state(), sw1.state,
-      mgos_sys_config_get_sw1_auto_off(),
-      mgos_sys_config_get_sw1_auto_off_delay(),
-#ifdef SHELLY_HAVE_PM
-      sw1.apower, sw1.aenergy,
-#endif
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-      mgos_sys_config_get_sw2_id(), mgos_sys_config_get_sw2_name(),
-      mgos_sys_config_get_sw2_in_mode(),
-      mgos_sys_config_get_sw2_initial_state(), sw2.state,
-      mgos_sys_config_get_sw2_auto_off(),
-      mgos_sys_config_get_sw2_auto_off_delay(),
-#ifdef SHELLY_HAVE_PM
-      sw2.apower, sw2.aenergy,
-#endif
-#endif
-      mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
-      (pass ? pass : ""), hap_provisioned, hap_paired);
-  (void) cb_arg;
-  (void) fi;
-  (void) args;
-}
-
 static void shelly_set_switch_handler(struct mg_rpc_request_info *ri,
                                       void *cb_arg,
                                       struct mg_rpc_frame_info *fi,
@@ -499,15 +433,14 @@ bool shelly_app_init() {
 
   mgos_hap_add_rpc_service(&s_server, &s_accessory, &s_kvs);
 
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
-                     shelly_get_info_handler, NULL);
-
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
                      "{id: %d, state: %B}", shelly_set_switch_handler, NULL);
 
   if (BTN_GPIO >= 0) {
     mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);
   }
+
+  shelly_rpc_service_init(&s_server, &s_kvs);
 
   return true;
 }
