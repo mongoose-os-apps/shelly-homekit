@@ -1,8 +1,7 @@
-.PHONY: all fs Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
+.PHONY: build fs upload upload-beta Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
 
 MOS ?= mos
 LOCAL ?= 0
-UPLOAD ?= 0
 MOS_BUILD_FLAGS ?=
 BUILD_DIR ?= ./build
 
@@ -11,7 +10,11 @@ ifeq "$(LOCAL)" "1"
 	BUILD_DIR = ./build_$*
 endif
 
-all: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS
+build: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS
+
+upload: upload-Shelly1 upload-Shelly1PM upload-Shelly2 upload-Shelly25 upload-ShellyPlugS
+
+upload-beta: upload-beta-Shelly1 upload-beta-Shelly1PM upload-beta-Shelly2 upload-beta-Shelly25 upload-beta-ShellyPlugS
 
 Shelly1: build-Shelly1
 	@true
@@ -34,6 +37,10 @@ fs:
 
 build-%: fs
 	$(MOS) build --platform=esp8266 --build-var=MODEL=$* $(MOS_BUILD_FLAGS) --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs
-ifeq "$(UPLOAD)" "1"
-	scp ./build_$*/fw.zip rojer.me:www/files/shelly/shelly-homekit-$*.zip
-endif
+	cp ./build_$*/fw.zip shelly-homekit-$*.zip
+
+upload-%:
+	scp shelly-homekit-$*.zip rojer.me:www/files/shelly/shelly-homekit-$*.zip
+
+upload-beta-%:
+	scp shelly-homekit-$*.zip rojer.me:www/files/shelly/beta/shelly-homekit-$*.zip
