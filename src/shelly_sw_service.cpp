@@ -16,6 +16,7 @@
  */
 
 #include "shelly_sw_service.h"
+#include "shelly_sw_service_internal.h"
 
 #include <math.h>
 
@@ -30,22 +31,6 @@
 #define IID_STEP_OUTLET 5
 #define IID_BASE_LOCK 0x300
 #define IID_STEP_LOCK 4
-
-struct shelly_sw_service_ctx {
-  const struct mgos_config_sw *cfg;
-  HAPAccessoryServerRef *hap_server;
-  const HAPAccessory *hap_accessory;
-  const HAPService *hap_service;
-  struct shelly_sw_info info;
-  bool pb_state;
-  int change_cnt;         // State change counter for reset.
-  double last_change_ts;  // Timestamp of last change (uptime).
-  mgos_timer_id auto_off_timer_id;
-#ifdef MGOS_HAVE_ADE7953
-  struct mgos_ade7953 *ade7953;
-  int ade7953_channel;
-#endif
-};
 
 static struct shelly_sw_service_ctx s_ctx[NUM_SWITCHES];
 
@@ -91,8 +76,8 @@ static void handle_auto_off(struct shelly_sw_service_ctx *ctx,
       ("%d: Set auto-off timer for %.3f", cfg->id, cfg->auto_off_delay));
 }
 
-static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
-                                    bool new_state, const char *source) {
+void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx, bool new_state,
+                             const char *source) {
   const struct mgos_config_sw *cfg = ctx->cfg;
   int out_value = (new_state ? cfg->out_on_value : !cfg->out_on_value);
   mgos_gpio_setup_output(cfg->out_gpio, out_value);
@@ -148,296 +133,12 @@ bool shelly_sw_get_info(int id, struct shelly_sw_info *info) {
   return true;
 }
 
-static const HAPCharacteristic *shelly_sw_name_char(uint16_t iid) {
-  HAPStringCharacteristic *c =
-      (HAPStringCharacteristic *) calloc(1, sizeof(*c));
-  if (c == NULL) return NULL;
-  *c = (const HAPStringCharacteristic){
-      .format = kHAPCharacteristicFormat_String,
-      .iid = iid,
-      .characteristicType = &kHAPCharacteristicType_Name,
-      .debugDescription = kHAPCharacteristicDebugDescription_Name,
-      .manufacturerDescription = NULL,
-      .properties =
-          {
-              .readable = true,
-              .writable = false,
-              .supportsEventNotification = false,
-              .hidden = false,
-              .requiresAdminPermissions = false,
-              .readRequiresAdminPermissions = false,
-              .writeRequiresAdminPermissions = false,
-              .requiresTimedWrite = false,
-              .supportsAuthorizationData = false,
-              .ip =
-                  {
-                      .controlPoint = false,
-                      .supportsWriteResponse = false,
-                  },
-              .ble =
-                  {
-                      .supportsBroadcastNotification = false,
-                      .supportsDisconnectedNotification = false,
-                      .readableWithoutSecurity = false,
-                      .writableWithoutSecurity = false,
-                  },
-          },
-      .constraints = {.maxLength = 64},
-      .callbacks = {.handleRead = HAPHandleNameRead, .handleWrite = NULL},
-  };
-  return c;
-};
-
-static struct shelly_sw_service_ctx *find_ctx(const HAPService *svc) {
+struct shelly_sw_service_ctx *find_ctx(const HAPService *svc) {
   for (size_t i = 0; i < ARRAY_SIZE(s_ctx); i++) {
     if (s_ctx[i].hap_service == svc) return &s_ctx[i];
   }
   return NULL;
 }
-
-HAPError shelly_sw_handle_on_read(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicReadRequest *request, bool *value,
-    void *context) {
-  struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
-  const struct mgos_config_sw *cfg = ctx->cfg;
-  *value = ctx->info.state;
-  LOG(LL_INFO, ("%s: READ -> %d", cfg->name, ctx->info.state));
-  ctx->hap_server = server;
-  ctx->hap_accessory = request->accessory;
-  (void) context;
-  return kHAPError_None;
-}
-
-HAPError shelly_sw_handle_on_write(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicWriteRequest *request, bool value,
-    void *context) {
-  struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
-  ctx->hap_server = server;
-  ctx->hap_accessory = request->accessory;
-  shelly_sw_set_state_ctx(ctx, value, "HAP");
-  (void) context;
-  return kHAPError_None;
-}
-
-static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
-  HAPBoolCharacteristic *c = (HAPBoolCharacteristic *) calloc(1, sizeof(*c));
-  if (c == NULL) return NULL;
-  *c = (const HAPBoolCharacteristic){
-      .format = kHAPCharacteristicFormat_Bool,
-      .iid = iid,
-      .characteristicType = &kHAPCharacteristicType_On,
-      .debugDescription = kHAPCharacteristicDebugDescription_On,
-      .manufacturerDescription = NULL,
-      .properties =
-          {
-              .readable = true,
-              .writable = true,
-              .supportsEventNotification = true,
-              .hidden = false,
-              .requiresAdminPermissions = false,
-              .readRequiresAdminPermissions = false,
-              .writeRequiresAdminPermissions = false,
-              .requiresTimedWrite = false,
-              .supportsAuthorizationData = false,
-              .ip =
-                  {
-                      .controlPoint = false,
-                      .supportsWriteResponse = false,
-                  },
-              .ble =
-                  {
-                      .supportsBroadcastNotification = true,
-                      .supportsDisconnectedNotification = true,
-                      .readableWithoutSecurity = false,
-                      .writableWithoutSecurity = false,
-                  },
-          },
-      .callbacks =
-          {
-              .handleRead = shelly_sw_handle_on_read,
-              .handleWrite = shelly_sw_handle_on_write,
-          },
-  };
-  return c;
-};
-
-HAPError shelly_sw_handle_lock_cur_state_read(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicReadRequest *request, uint8_t *value,
-    void *context) {
-  struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
-  *value = (ctx->info.state ? 0 : 1);
-  ctx->hap_server = server;
-  ctx->hap_accessory = request->accessory;
-  (void) context;
-  return kHAPError_None;
-}
-
-static const HAPCharacteristic *shelly_sw_lock_cur_state(uint16_t iid) {
-  HAPUInt8Characteristic *c = (HAPUInt8Characteristic *) calloc(1, sizeof(*c));
-  if (c == NULL) return NULL;
-  *c = (const HAPUInt8Characteristic){
-      .format = kHAPCharacteristicFormat_UInt8,
-      .iid = iid,
-      .characteristicType = &kHAPCharacteristicType_LockCurrentState,
-      .debugDescription = kHAPCharacteristicDebugDescription_LockCurrentState,
-      .manufacturerDescription = NULL,
-      .properties =
-          {
-              .readable = true,
-              .writable = false,
-              .supportsEventNotification = true,
-              .hidden = false,
-              .requiresAdminPermissions = false,
-              .readRequiresAdminPermissions = false,
-              .writeRequiresAdminPermissions = false,
-              .requiresTimedWrite = false,
-              .supportsAuthorizationData = false,
-              .ip =
-                  {
-                      .controlPoint = false,
-                      .supportsWriteResponse = false,
-                  },
-              .ble =
-                  {
-                      .supportsBroadcastNotification = true,
-                      .supportsDisconnectedNotification = true,
-                      .readableWithoutSecurity = false,
-                      .writableWithoutSecurity = false,
-                  },
-          },
-      .units = kHAPCharacteristicUnits_None,
-      .constraints =
-          {
-              .minimumValue = 0,
-              .maximumValue = 3,
-              .stepValue = 1,
-          },
-      .callbacks =
-          {
-              .handleRead = shelly_sw_handle_lock_cur_state_read,
-          },
-  };
-  return c;
-};
-
-HAPError shelly_sw_handle_lock_tgt_state_write(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicWriteRequest *request, uint8_t value,
-    void *context) {
-  struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
-  ctx->hap_server = server;
-  ctx->hap_accessory = request->accessory;
-  HAPAccessoryServerRaiseEvent(ctx->hap_server,
-                               ctx->hap_service->characteristics[2],
-                               ctx->hap_service, ctx->hap_accessory);
-  shelly_sw_set_state_ctx(ctx, (value == 0), "HAP");
-  (void) context;
-  return kHAPError_None;
-}
-
-static const HAPCharacteristic *shelly_sw_lock_tgt_state(uint16_t iid) {
-  HAPUInt8Characteristic *c = (HAPUInt8Characteristic *) calloc(1, sizeof(*c));
-  if (c == NULL) return NULL;
-  *c = (const HAPUInt8Characteristic){
-      .format = kHAPCharacteristicFormat_UInt8,
-      .iid = iid,
-      .characteristicType = &kHAPCharacteristicType_LockTargetState,
-      .debugDescription = kHAPCharacteristicDebugDescription_LockTargetState,
-      .manufacturerDescription = NULL,
-      .properties =
-          {
-              .readable = true,
-              .writable = true,
-              .supportsEventNotification = true,
-              .hidden = false,
-              .requiresAdminPermissions = false,
-              .readRequiresAdminPermissions = false,
-              .writeRequiresAdminPermissions = false,
-              .requiresTimedWrite = false,
-              .supportsAuthorizationData = false,
-              .ip =
-                  {
-                      .controlPoint = false,
-                      .supportsWriteResponse = false,
-                  },
-              .ble =
-                  {
-                      .supportsBroadcastNotification = true,
-                      .supportsDisconnectedNotification = true,
-                      .readableWithoutSecurity = false,
-                      .writableWithoutSecurity = false,
-                  },
-          },
-      .units = kHAPCharacteristicUnits_None,
-      .constraints =
-          {
-              .minimumValue = 0,
-              .maximumValue = 1,
-              .stepValue = 1,
-          },
-      .callbacks =
-          {
-              .handleRead = shelly_sw_handle_lock_cur_state_read,
-              .handleWrite = shelly_sw_handle_lock_tgt_state_write,
-          },
-  };
-  return c;
-};
-
-HAPError shelly_sw_handle_on_read_in_use(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicReadRequest *request, bool *value,
-    void *context) {
-  *value = true;
-  (void) server;
-  (void) request;
-  (void) context;
-  return kHAPError_None;
-}
-
-static const HAPCharacteristic *shelly_sw_in_use_char(uint16_t iid) {
-  HAPBoolCharacteristic *c = (HAPBoolCharacteristic *) calloc(1, sizeof(*c));
-  if (c == NULL) return NULL;
-  *c = (const HAPBoolCharacteristic){
-      .format = kHAPCharacteristicFormat_Bool,
-      .iid = iid,
-      .characteristicType = &kHAPCharacteristicType_OutletInUse,
-      .debugDescription = kHAPCharacteristicDebugDescription_OutletInUse,
-      .manufacturerDescription = NULL,
-      .properties =
-          {
-              .readable = true,
-              .writable = false,
-              .supportsEventNotification = false,
-              .hidden = false,
-              .requiresAdminPermissions = false,
-              .readRequiresAdminPermissions = false,
-              .writeRequiresAdminPermissions = false,
-              .requiresTimedWrite = false,
-              .supportsAuthorizationData = false,
-              .ip =
-                  {
-                      .controlPoint = false,
-                      .supportsWriteResponse = false,
-                  },
-              .ble =
-                  {
-                      .supportsBroadcastNotification = false,
-                      .supportsDisconnectedNotification = false,
-                      .readableWithoutSecurity = false,
-                      .writableWithoutSecurity = false,
-                  },
-          },
-      .callbacks =
-          {
-              .handleRead = shelly_sw_handle_on_read_in_use,
-          },
-  };
-  return c;
-};
 
 static void shelly_sw_in_cb(int pin, void *arg) {
   struct shelly_sw_service_ctx *ctx = (struct shelly_sw_service_ctx *) arg;
