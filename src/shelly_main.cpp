@@ -336,6 +336,8 @@ bool shelly_app_init() {
     remove("cert.pem");
     remove("passwd");
     remove("relaydata");
+    remove("index.html");
+    remove("style.css");
   }
 #endif
 

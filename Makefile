@@ -1,4 +1,4 @@
-.PHONY: all Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
+.PHONY: all fs Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
 
 MOS ?= mos
 LOCAL ?= 0
@@ -28,7 +28,11 @@ Shelly2: build-Shelly2
 Shelly25: build-Shelly25
 	@true
 
-build-%:
+fs:
+	gzip -9 -c fs_src/index.html > fs/index.html.gz
+	gzip -9 -c fs_src/style.css > fs/style.css.gz
+
+build-%: fs
 	$(MOS) build --platform=esp8266 --build-var=MODEL=$* $(MOS_BUILD_FLAGS) --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs
 ifeq "$(UPLOAD)" "1"
 	scp ./build_$*/fw.zip rojer.me:www/files/shelly/shelly-homekit-$*.zip
