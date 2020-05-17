@@ -25,6 +25,7 @@ struct mgos_ade7953;
 enum shelly_sw_svc_type {
   SHELLY_SW_TYPE_SWITCH = 0,
   SHELLY_SW_TYPE_OUTLET = 1,
+  SHELLY_SW_TYPE_LOCK = 2,
 };
 
 enum shelly_sw_in_mode {

@@ -28,6 +28,8 @@
 #define IID_STEP_SWITCH 4
 #define IID_BASE_OUTLET 0x200
 #define IID_STEP_OUTLET 5
+#define IID_BASE_LOCK 0x300
+#define IID_STEP_LOCK 4
 
 struct shelly_sw_service_ctx {
   const struct mgos_config_sw *cfg;
@@ -99,6 +101,11 @@ static void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx,
                 source, out_value));
   ctx->info.state = new_state;
   if (ctx->hap_server != NULL) {
+    if (cfg->svc_type == SHELLY_SW_TYPE_LOCK) {
+      HAPAccessoryServerRaiseEvent(ctx->hap_server,
+                                   ctx->hap_service->characteristics[2],
+                                   ctx->hap_service, ctx->hap_accessory);
+    }
     HAPAccessoryServerRaiseEvent(ctx->hap_server,
                                  ctx->hap_service->characteristics[1],
                                  ctx->hap_service, ctx->hap_accessory);
@@ -256,6 +263,130 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
   return c;
 };
 
+HAPError shelly_sw_handle_lock_cur_state_read(
+    HAPAccessoryServerRef *server,
+    const HAPUInt8CharacteristicReadRequest *request, uint8_t *value,
+    void *context) {
+  struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
+  *value = (ctx->info.state ? 0 : 1);
+  ctx->hap_server = server;
+  ctx->hap_accessory = request->accessory;
+  (void) context;
+  return kHAPError_None;
+}
+
+static const HAPCharacteristic *shelly_sw_lock_cur_state(uint16_t iid) {
+  HAPUInt8Characteristic *c = (HAPUInt8Characteristic *) calloc(1, sizeof(*c));
+  if (c == NULL) return NULL;
+  *c = (const HAPUInt8Characteristic){
+      .format = kHAPCharacteristicFormat_UInt8,
+      .iid = iid,
+      .characteristicType = &kHAPCharacteristicType_LockCurrentState,
+      .debugDescription = kHAPCharacteristicDebugDescription_LockCurrentState,
+      .manufacturerDescription = NULL,
+      .properties =
+          {
+              .readable = true,
+              .writable = false,
+              .supportsEventNotification = true,
+              .hidden = false,
+              .requiresAdminPermissions = false,
+              .readRequiresAdminPermissions = false,
+              .writeRequiresAdminPermissions = false,
+              .requiresTimedWrite = false,
+              .supportsAuthorizationData = false,
+              .ip =
+                  {
+                      .controlPoint = false,
+                      .supportsWriteResponse = false,
+                  },
+              .ble =
+                  {
+                      .supportsBroadcastNotification = true,
+                      .supportsDisconnectedNotification = true,
+                      .readableWithoutSecurity = false,
+                      .writableWithoutSecurity = false,
+                  },
+          },
+      .units = kHAPCharacteristicUnits_None,
+      .constraints =
+          {
+              .minimumValue = 0,
+              .maximumValue = 3,
+              .stepValue = 1,
+          },
+      .callbacks =
+          {
+              .handleRead = shelly_sw_handle_lock_cur_state_read,
+          },
+  };
+  return c;
+};
+
+HAPError shelly_sw_handle_lock_tgt_state_write(
+    HAPAccessoryServerRef *server,
+    const HAPUInt8CharacteristicWriteRequest *request, uint8_t value,
+    void *context) {
+  struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
+  ctx->hap_server = server;
+  ctx->hap_accessory = request->accessory;
+  HAPAccessoryServerRaiseEvent(ctx->hap_server,
+                               ctx->hap_service->characteristics[2],
+                               ctx->hap_service, ctx->hap_accessory);
+  shelly_sw_set_state_ctx(ctx, (value == 0), "HAP");
+  (void) context;
+  return kHAPError_None;
+}
+
+static const HAPCharacteristic *shelly_sw_lock_tgt_state(uint16_t iid) {
+  HAPUInt8Characteristic *c = (HAPUInt8Characteristic *) calloc(1, sizeof(*c));
+  if (c == NULL) return NULL;
+  *c = (const HAPUInt8Characteristic){
+      .format = kHAPCharacteristicFormat_UInt8,
+      .iid = iid,
+      .characteristicType = &kHAPCharacteristicType_LockTargetState,
+      .debugDescription = kHAPCharacteristicDebugDescription_LockTargetState,
+      .manufacturerDescription = NULL,
+      .properties =
+          {
+              .readable = true,
+              .writable = true,
+              .supportsEventNotification = true,
+              .hidden = false,
+              .requiresAdminPermissions = false,
+              .readRequiresAdminPermissions = false,
+              .writeRequiresAdminPermissions = false,
+              .requiresTimedWrite = false,
+              .supportsAuthorizationData = false,
+              .ip =
+                  {
+                      .controlPoint = false,
+                      .supportsWriteResponse = false,
+                  },
+              .ble =
+                  {
+                      .supportsBroadcastNotification = true,
+                      .supportsDisconnectedNotification = true,
+                      .readableWithoutSecurity = false,
+                      .writableWithoutSecurity = false,
+                  },
+          },
+      .units = kHAPCharacteristicUnits_None,
+      .constraints =
+          {
+              .minimumValue = 0,
+              .maximumValue = 1,
+              .stepValue = 1,
+          },
+      .callbacks =
+          {
+              .handleRead = shelly_sw_handle_lock_cur_state_read,
+              .handleWrite = shelly_sw_handle_lock_tgt_state_write,
+          },
+  };
+  return c;
+};
+
 HAPError shelly_sw_handle_on_read_in_use(
     HAPAccessoryServerRef *server,
     const HAPBoolCharacteristicReadRequest *request, bool *value,
@@ -353,7 +484,7 @@ static void shelly_sw_read_power(void *arg) {
 #ifdef MGOS_HAVE_ADE7953
   float apa = 0, aea = 0;
   if (mgos_ade7953_get_apower(ctx->ade7953, ctx->ade7953_channel, &apa)) {
-    if (fabs(apa) < 0.5) apa = 0;  // Suppress noise.
+    if (fabs(apa) < 1) apa = 0;  // Suppress noise.
     ctx->info.apower = fabs(apa);
   }
   if (mgos_ade7953_get_aenergy(ctx->ade7953, ctx->ade7953_channel,
@@ -380,29 +511,44 @@ HAPService *shelly_sw_service_create(
   }
   HAPService *svc = (HAPService *) calloc(1, sizeof(*svc));
   if (svc == NULL) return NULL;
+  svc->name = cfg->name;
+  svc->properties.primaryService = true;
   const HAPCharacteristic **chars =
-      (const HAPCharacteristic **) calloc(4, sizeof(*chars));
+      (const HAPCharacteristic **) calloc(5, sizeof(*chars));
   if (chars == NULL) return NULL;
   uint16_t iid;
   const char *svc_type_name = NULL;
-  if (cfg->svc_type == SHELLY_SW_TYPE_OUTLET) {
-    iid = IID_BASE_OUTLET + (IID_STEP_OUTLET * cfg->id);
-    svc->serviceType = &kHAPServiceType_Outlet;
-    svc->debugDescription = kHAPServiceDebugDescription_Outlet;
-    svc_type_name = "outlet";
-  } else {
-    iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * cfg->id);
-    svc->serviceType = &kHAPServiceType_Switch;
-    svc->debugDescription = kHAPServiceDebugDescription_Switch;
-    svc_type_name = "switch";
-  }
-  svc->iid = iid++;
-  svc->name = cfg->name;
-  svc->properties.primaryService = true;
-  chars[0] = shelly_sw_name_char(iid++);
-  chars[1] = shelly_sw_on_char(iid++);
-  if (cfg->svc_type == SHELLY_SW_TYPE_OUTLET) {
-    chars[2] = shelly_sw_in_use_char(iid++);
+  switch (cfg->svc_type) {
+    default:
+    case SHELLY_SW_TYPE_SWITCH:
+      iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * cfg->id);
+      svc->iid = iid++;
+      svc->serviceType = &kHAPServiceType_Switch;
+      svc->debugDescription = kHAPServiceDebugDescription_Switch;
+      chars[0] = shelly_sw_name_char(iid++);
+      chars[1] = shelly_sw_on_char(iid++);
+      svc_type_name = "switch";
+      break;
+    case SHELLY_SW_TYPE_OUTLET:
+      iid = IID_BASE_OUTLET + (IID_STEP_OUTLET * cfg->id);
+      svc->iid = iid++;
+      svc->serviceType = &kHAPServiceType_Outlet;
+      svc->debugDescription = kHAPServiceDebugDescription_Outlet;
+      chars[0] = shelly_sw_name_char(iid++);
+      chars[1] = shelly_sw_on_char(iid++);
+      chars[2] = shelly_sw_in_use_char(iid++);
+      svc_type_name = "outlet";
+      break;
+    case SHELLY_SW_TYPE_LOCK:
+      iid = IID_BASE_LOCK + (IID_STEP_LOCK * cfg->id);
+      svc->iid = iid++;
+      svc->serviceType = &kHAPServiceType_LockMechanism;
+      svc->debugDescription = kHAPServiceDebugDescription_LockMechanism;
+      chars[0] = shelly_sw_name_char(iid++);
+      chars[1] = shelly_sw_lock_cur_state(iid++);
+      chars[2] = shelly_sw_lock_tgt_state(iid++);
+      svc_type_name = "lock";
+      break;
   }
   svc->characteristics = chars;
   struct shelly_sw_service_ctx *ctx = &s_ctx[cfg->id];
