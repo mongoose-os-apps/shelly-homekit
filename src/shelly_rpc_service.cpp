@@ -109,7 +109,6 @@ static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
                                       struct mg_rpc_frame_info *fi,
                                       struct mg_str args) {
   const char *msg = "";
-  bool reboot = false;
 #ifdef MGOS_CONFIG_HAVE_SW1
   int old_sw1_svc_type = mgos_sys_config_get_sw1_svc_type();
 #endif
@@ -122,16 +121,14 @@ static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
 #ifdef MGOS_CONFIG_HAVE_SW1
   if (mgos_sys_config_get_sw1_svc_type() != old_sw1_svc_type) {
     if (HAPAccessoryServerIncrementCN(s_kvs) == kHAPError_None) {
-      reboot = true;
-      msg = "Device is rebooting";
+      msg = "Please reboot the device for changes to take effect";
     }
   }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
   if (mgos_sys_config_get_sw2_svc_type() != old_sw2_svc_type) {
     if (HAPAccessoryServerIncrementCN(s_kvs) == kHAPError_None) {
-      reboot = true;
-      msg = "Device is rebooting";
+      msg = "Please reboot the device for changes to take effect";
     }
   }
 #endif
@@ -139,11 +136,6 @@ static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
   mgos_sys_config_save(&mgos_sys_config, false /* try once */, NULL);
 
   mg_rpc_send_responsef(ri, "{msg: %Q}", msg);
-
-  if (reboot) {
-    LOG(LL_INFO, ("Rebooting to apply config"));
-    mgos_system_restart_after(500);
-  }
 
   (void) cb_arg;
   (void) fi;
