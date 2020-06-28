@@ -1,4 +1,4 @@
-.PHONY: build fs upload upload-beta Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
+.PHONY: build format fs upload upload-beta Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
 
 MOS ?= mos
 LOCAL ?= 0
@@ -44,3 +44,6 @@ upload-%:
 
 upload-beta-%:
 	scp shelly-homekit-$*.zip rojer.me:www/files/shelly/beta/shelly-homekit-$*.zip
+
+format:
+	clang-format -i src/shelly_*

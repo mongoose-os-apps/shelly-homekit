@@ -71,6 +71,14 @@ static HAPAccessoryServerOptions s_server_options = {
             .available = 0,
             .accessoryServerStorage = &s_ip_storage,
         },
+    .ble =
+        {
+            .transport = nullptr,
+            .available = false,
+            .accessoryServerStorage = nullptr,
+            .preferredAdvertisingInterval = 0,
+            .preferredNotificationDuration = 0,
+        },
 };
 static HAPAccessoryServerCallbacks s_callbacks;
 static HAPPlatformTCPStreamManager s_tcp_stream_manager;
@@ -86,6 +94,15 @@ static HAPPlatform s_platform = {
         {
             .tcpStreamManager = &s_tcp_stream_manager,
             .serviceDiscovery = &s_service_discovery,
+        },
+    .ble =
+        {
+            .blePeripheralManager = nullptr,
+        },
+    .authentication =
+        {
+            .mfiHWAuth = nullptr,
+            .mfiTokenAuth = nullptr,
         },
 };
 

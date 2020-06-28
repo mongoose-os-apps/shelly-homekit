@@ -3,3 +3,4 @@ build/
 build_*/
 deps/
 .DS_Store
+*.zip
