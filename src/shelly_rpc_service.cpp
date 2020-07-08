@@ -115,8 +115,9 @@ static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
 #ifdef MGOS_CONFIG_HAVE_SW2
   int old_sw2_svc_type = mgos_sys_config_get_sw2_svc_type();
 #endif
+  bool reboot = false;
 
-  json_scanf(args.p, args.len, ri->args_fmt, set_handler, NULL);
+  json_scanf(args.p, args.len, ri->args_fmt, set_handler, NULL, &reboot);
 
 #ifdef MGOS_CONFIG_HAVE_SW1
   if (mgos_sys_config_get_sw1_svc_type() != old_sw1_svc_type) {
@@ -137,6 +138,8 @@ static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
 
   mg_rpc_send_responsef(ri, "{msg: %Q}", msg);
 
+  if (reboot) mgos_system_restart_after(300);
+
   (void) cb_arg;
   (void) fi;
 }
@@ -147,7 +150,7 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   s_kvs = kvs;
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                      shelly_get_info_handler, NULL);
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig", "{config: %M}",
+  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig", "{config: %M, reboot: %B}",
                      shelly_set_config_handler, NULL);
   return true;
 }

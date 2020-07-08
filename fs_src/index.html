@@ -328,7 +328,6 @@ el("wifi_save_btn").onclick = function() {
         ap: { enable: !wifiEn.checked },
       },
     },
-    save: true,
     reboot: true,
   };
   axios.post(host + "/rpc/Shelly.SetConfig", data).then(function(res) {
@@ -382,8 +381,6 @@ function sw_save_common(cfg_key, name, svc_type, in_mode, initial_state, auto_of
   spinner.className = "spin";
   var data = {
     config: {},
-    save: true,
-    reboot: false,
   };
   data.config[cfg_key] = {
     name: name,
