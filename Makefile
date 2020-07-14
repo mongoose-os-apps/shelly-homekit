@@ -3,11 +3,10 @@
 MOS ?= mos
 LOCAL ?= 0
 MOS_BUILD_FLAGS ?=
-BUILD_DIR ?= ./build
+BUILD_DIR ?= ./build_$*
 
 ifeq "$(LOCAL)" "1"
-	MOS_BUILD_FLAGS += --local
-	BUILD_DIR = ./build_$*
+  MOS_BUILD_FLAGS += --local
 endif
 
 build: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS
@@ -37,7 +36,7 @@ fs:
 
 build-%: fs
 	$(MOS) build --platform=esp8266 --build-var=MODEL=$* $(MOS_BUILD_FLAGS) --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs
-	cp ./build_$*/fw.zip shelly-homekit-$*.zip
+	cp $(BUILD_DIR)/fw.zip shelly-homekit-$*.zip
 
 upload-%:
 	scp shelly-homekit-$*.zip rojer.me:www/files/shelly/shelly-homekit-$*.zip

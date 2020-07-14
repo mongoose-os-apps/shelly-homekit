@@ -75,54 +75,16 @@ Reverting to stock firmware is also supported (see below).
 
  Download it and upload via web interface (this firmware does not support pulling from a remote URL).
 
-## Building
+## Contributions and Development
 
-When building, specify `MODEL=Shelly1`, `MODEL=Shelly1PM`, `MODEL=ShellyPlugS` or `MODEL=Shelly25`
+Code contributions are welcome! See open issues and feel free to pick one up.
 
-```
-mos build --verbose --platform esp8266 --build-var MODEL=Shelly1
-```
+See [here](docs/development.md) for development environment setup.
 
-## Contributions and development
+Alternatively, you can support the project by donating:
 
-Contributions are welcome!
-
-### OTA method
-
-For development, OTA method is recommended.
-
-Firmware suports OTA via both RPC and HTTP POST, so something like
-
-```
- $ make Shelly25 && curl -F commit_timeout=120 -F file=@build/fw.zip http://192.168.11.75/update
-```
-
-Note the use of commit timeout: if something goes wrong (as it invariably does during development),
-device will revert to previous firmware automatically. If you are happy with the result, you have 2 minutes
-to commit the firmware via `curl http://192.168.11.75/update/commit` or `mos --port=ws://192.168.11.75/rpc call OTA.Commit`.
-
-### UDP logging
-
-To get remote access to logs, configure UDP logging:
-
-```
- $ mos --port=ws://192.168.11.75/rpc config-set debug.udp_log_addr=192.168.11.30:1234
-```
-
-192.168.11.30 is the address of your workstation (or any address, really - even external).
-
-Then use any UDP listener such as netcat to catch the logs. It is also integrated into mos console:
-
-```
- $ mos --port udp://:1234/ console
-Listening on UDP port 1234...
-[Feb  2 03:45:27.030] shellyswitch25-B955B6 59 18.558 2|shelly_main.c:248       Tick uptime: 18.55, RAM: 32880, 22264 free
-[Feb  2 03:45:28.058] shellyswitch25-B955B6 60 19.558 2|shelly_main.c:248       Tock uptime: 19.55, RAM: 32880, 22264 free
-...
-```
-
+[![Donate via PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6KPSKWJDHVLB4)
 
 ## License
 
-This firmware is distributed under Apache 2.0 license.
-
+This firmware is free software and is distributed under [Apache 2.0 license](LICENSE).
