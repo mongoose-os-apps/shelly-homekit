@@ -448,7 +448,7 @@ bool shelly_app_init() {
   shelly_start_hap_server(false /* quiet */);
 
   // Timer for periodic status.
-  mgos_set_timer(1000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
+  mgos_set_timer(5000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
 
   mgos_hap_add_rpc_service(&s_server, &s_accessory, &s_kvs);
 
