@@ -19,6 +19,8 @@
 #include "mgos_app.h"
 #include "mgos_hap.h"
 #ifdef MGOS_HAVE_OTA_COMMON
+#include "esp_coredump.h"
+#include "esp_rboot.h"
 #include "mgos_ota.h"
 #endif
 #include "mgos_rpc.h"
@@ -291,6 +293,17 @@ static void shelly_status_timer_cb(void *arg) {
   shelly_start_hap_server(true /* quiet */);
   check_btn(BTN_GPIO, BTN_DOWN);
   check_led(LED_GPIO, LED_ON);
+#ifdef MGOS_HAVE_OTA_COMMON
+  // If committed, set up inactive app slot as location for core dumps.
+  struct mgos_ota_status ota_status;
+  if (mgos_ota_is_committed() && mgos_ota_get_status(&ota_status)) {
+    rboot_config bcfg = rboot_get_config();
+    int cd_slot = (ota_status.partition == 0 ? 1 : 0);
+    uint32_t cd_addr = bcfg.roms[cd_slot];
+    uint32_t cd_size = bcfg.roms_sizes[cd_slot];
+    esp_core_dump_set_flash_area(cd_addr, cd_size);
+  }
+#endif
   (void) arg;
 }
 
