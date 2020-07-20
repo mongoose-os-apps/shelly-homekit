@@ -19,7 +19,7 @@ config_schema:
   - ["sntp.enable", true]
   - ["debug.event_level", 3]
   - ["file_logger.level", 3]
-  - ["file_logger.enable", true]
+  - ["file_logger.enable", false]
   - ["file_logger.buf_size", 1000]
 
   - ["sw", "o", {"Switch settings"}]
