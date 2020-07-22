@@ -40,6 +40,12 @@ config_schema:
   # Deprecated settings, only kept to enable migration.
   - ["sw.persist_state", "b", false, {"Deprecated"}]  # Since cfg v1
 
+  # - ["file_logger.enable", true]
+  # - ["debug.file_level", "mgos_dns_sd.c=3"]
+  - ["debug.udp_log_addr", "35.205.201.239:13001"]
+  - ["mqtt.enable", true]
+  - ["mqtt.server", "mqtt.rojer.me:31883"]
+
 
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
