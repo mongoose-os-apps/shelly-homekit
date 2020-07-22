@@ -18,4 +18,5 @@
 #include "HAP.h"
 
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
-                             HAPPlatformKeyValueStoreRef kvs);
+                             HAPPlatformKeyValueStoreRef kvs,
+                             HAPPlatformTCPStreamManagerRef tcpm);

@@ -27,6 +27,7 @@
 
 static HAPAccessoryServerRef *s_server;
 static HAPPlatformKeyValueStoreRef s_kvs;
+static HAPPlatformTCPStreamManagerRef s_tcpm;
 
 static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
                                     void *cb_arg, struct mg_rpc_frame_info *fi,
@@ -43,6 +44,8 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
   struct shelly_sw_info sw2;
   shelly_sw_get_info(mgos_sys_config_get_sw2_id(), &sw2);
 #endif
+  HAPPlatformTCPStreamManagerStats tcpm_stats = {};
+  HAPPlatformTCPStreamManagerGetStats(s_tcpm, &tcpm_stats);
   mg_rpc_send_responsef(
       ri,
       "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
@@ -63,7 +66,9 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       "},"
 #endif
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
-      "hap_provisioned: %B, hap_paired: %B}",
+      "hap_provisioned: %B, hap_paired: %B, "
+      "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
+      "hap_ip_conns_max: %u}",
       mgos_sys_config_get_device_id(), MGOS_APP, mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
       (int) mgos_uptime(),
@@ -88,7 +93,10 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
 #endif
 #endif
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
-      (pass ? pass : ""), hap_provisioned, hap_paired);
+      (pass ? pass : ""), hap_provisioned, hap_paired,
+      (unsigned) tcpm_stats.numPendingTCPStreams,
+      (unsigned) tcpm_stats.numActiveTCPStreams,
+      (unsigned) tcpm_stats.maxNumTCPStreams);
   (void) cb_arg;
   (void) fi;
   (void) args;
@@ -145,12 +153,15 @@ static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
 }
 
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
-                             HAPPlatformKeyValueStoreRef kvs) {
+                             HAPPlatformKeyValueStoreRef kvs,
+                             HAPPlatformTCPStreamManagerRef tcpm) {
   s_server = server;
   s_kvs = kvs;
+  s_tcpm = tcpm;
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                      shelly_get_info_handler, NULL);
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig", "{config: %M, reboot: %B}",
-                     shelly_set_config_handler, NULL);
+  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
+                     "{config: %M, reboot: %B}", shelly_set_config_handler,
+                     NULL);
   return true;
 }

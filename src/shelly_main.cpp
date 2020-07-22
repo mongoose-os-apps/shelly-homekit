@@ -272,7 +272,12 @@ struct mgos_ade7953 *s_ade7953 = NULL;
 #endif
 
 static void shelly_status_timer_cb(void *arg) {
-  LOG(LL_INFO, ("Uptime: %.2lf, RAM: %lu, %lu free", mgos_uptime(),
+  HAPPlatformTCPStreamManagerStats tcpm_stats = {};
+  HAPPlatformTCPStreamManagerGetStats(&s_tcp_stream_manager, &tcpm_stats);
+  LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u, RAM: %lu, %lu free",
+                mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
+                (unsigned) tcpm_stats.numActiveTCPStreams,
+                (unsigned) tcpm_stats.maxNumTCPStreams,
                 (unsigned long) mgos_get_heap_size(),
                 (unsigned long) mgos_get_free_heap_size()));
 #if defined(MGOS_HAVE_ADE7953) && defined(SHELLY_PRINT_POWER_STATS)
@@ -472,7 +477,7 @@ bool shelly_app_init() {
     mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);
   }
 
-  shelly_rpc_service_init(&s_server, &s_kvs);
+  shelly_rpc_service_init(&s_server, &s_kvs, &s_tcp_stream_manager);
 
   return true;
 }
