@@ -19,13 +19,22 @@
 
 #include "mgos_http_server.h"
 
+#include "HAPAccessoryServer+Internal.h"
+
+static HAPPlatformKeyValueStoreRef s_kvs;
+
 static void shelly_debug_handler(struct mg_connection *nc, int ev,
                                  void *ev_data, void *user_data) {
   if (ev != MG_EV_HTTP_REQUEST) return;
+  uint16_t cn;
+  if (HAPAccessoryServerGetCN(s_kvs, &cn) != kHAPError_None) {
+    cn = 0;
+  }
   mg_send_response_line(nc, 200,
                         "Content-Type: text/html\r\n"
                         "Connection: close\r\n");
   mg_printf(nc, "<pre>\r\n");
+  mg_printf(nc, "Config number: %u\r\n", cn);
   mg_printf(nc, "HAP connections:\r\n");
   time_t now = mg_time();
   int num_hap_connections = 0;
@@ -41,14 +50,15 @@ static void shelly_debug_handler(struct mg_connection *nc, int ev,
     mg_printf(nc, "  %s last_io %d\r\n", addr, (int) (now - nc2->last_io_time));
     num_hap_connections++;
   }
-  mg_printf(nc, "%d total", num_hap_connections);
+  mg_printf(nc, " Total: %d", num_hap_connections);
 
   nc->flags |= MG_F_SEND_AND_CLOSE;
   (void) ev_data;
   (void) user_data;
 }
 
-bool shelly_debug_init(void) {
+bool shelly_debug_init(HAPPlatformKeyValueStoreRef kvs) {
+  s_kvs = kvs;
   mgos_register_http_endpoint("/debug/", shelly_debug_handler, NULL);
   return true;
 }

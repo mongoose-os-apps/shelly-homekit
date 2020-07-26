@@ -15,4 +15,6 @@
  * limitations under the License.
  */
 
-bool shelly_debug_init(void);
+#include "HAP.h"
+
+bool shelly_debug_init(HAPPlatformKeyValueStoreRef kvs);
