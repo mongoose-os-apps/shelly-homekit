@@ -35,6 +35,7 @@
 #include "HAPPlatformServiceDiscovery+Init.h"
 #include "HAPPlatformTCPStreamManager+Init.h"
 
+#include "shelly_debug.h"
 #include "shelly_rpc_service.h"
 #include "shelly_sw_service.h"
 
@@ -475,6 +476,8 @@ bool shelly_app_init() {
   }
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcp_stream_manager);
+
+  shelly_debug_init();
 
   return true;
 }
