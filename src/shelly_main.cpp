@@ -72,20 +72,18 @@ static HAPAccessoryServerOptions s_server_options = {
     .ip =
         {
             .transport = &kHAPAccessoryServerTransport_IP,
-            .available = 0,
             .accessoryServerStorage = &s_ip_storage,
         },
     .ble =
         {
             .transport = nullptr,
-            .available = false,
             .accessoryServerStorage = nullptr,
             .preferredAdvertisingInterval = 0,
             .preferredNotificationDuration = 0,
         },
 };
 static HAPAccessoryServerCallbacks s_callbacks;
-static HAPPlatformTCPStreamManager s_tcp_stream_manager;
+static HAPPlatformTCPStreamManager s_tcpm;
 static HAPPlatformServiceDiscovery s_service_discovery;
 static HAPAccessoryServerRef s_server;
 
@@ -96,7 +94,7 @@ static HAPPlatform s_platform = {
     .setupNFC = NULL,
     .ip =
         {
-            .tcpStreamManager = &s_tcp_stream_manager,
+            .tcpStreamManager = &s_tcpm,
             .serviceDiscovery = &s_service_discovery,
         },
     .ble =
@@ -275,7 +273,7 @@ struct mgos_ade7953 *s_ade7953 = NULL;
 
 static void shelly_status_timer_cb(void *arg) {
   HAPPlatformTCPStreamManagerStats tcpm_stats = {};
-  HAPPlatformTCPStreamManagerGetStats(&s_tcp_stream_manager, &tcpm_stats);
+  HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
   LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u, RAM: %lu, %lu free",
                 mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
                 (unsigned) tcpm_stats.numActiveTCPStreams,
@@ -302,8 +300,10 @@ static void shelly_status_timer_cb(void *arg) {
   check_led(LED_GPIO, LED_ON);
 #ifdef MGOS_HAVE_OTA_COMMON
   // If committed, set up inactive app slot as location for core dumps.
+  static bool s_cd_area_set = false;
   struct mgos_ota_status ota_status;
-  if (mgos_ota_is_committed() && mgos_ota_get_status(&ota_status)) {
+  if (!s_cd_area_set && mgos_ota_is_committed() &&
+      mgos_ota_get_status(&ota_status)) {
     rboot_config bcfg = rboot_get_config();
     int cd_slot = (ota_status.partition == 0 ? 1 : 0);
     uint32_t cd_addr = bcfg.roms[cd_slot];
@@ -419,7 +419,7 @@ bool shelly_app_init() {
       .port = kHAPNetworkPort_Any,
       .maxConcurrentTCPStreams = NUM_SESSIONS,
   };
-  HAPPlatformTCPStreamManagerCreate(&s_tcp_stream_manager, &tcpm_opts);
+  HAPPlatformTCPStreamManagerCreate(&s_tcpm, &tcpm_opts);
 
   // Service discovery.
   static const HAPPlatformServiceDiscoveryOptions sd_opts = {};
@@ -486,9 +486,9 @@ bool shelly_app_init() {
     mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);
   }
 
-  shelly_rpc_service_init(&s_server, &s_kvs, &s_tcp_stream_manager);
+  shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
-  shelly_debug_init(&s_kvs);
+  shelly_debug_init(&s_kvs, &s_tcpm);
 
   return true;
 }

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+#include <string>
+
 #include "HAP.h"
 
-bool shelly_debug_init(HAPPlatformKeyValueStoreRef kvs);
+void shelly_get_debug_info(std::string *out);
+
+bool shelly_debug_init(HAPPlatformKeyValueStoreRef kvs,
+                       HAPPlatformTCPStreamManagerRef tcpm);

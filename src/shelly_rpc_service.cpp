@@ -23,6 +23,7 @@
 
 #include "HAPAccessoryServer+Internal.h"
 
+#include "shelly_debug.h"
 #include "shelly_sw_service.h"
 
 static HAPAccessoryServerRef *s_server;
@@ -32,8 +33,10 @@ static HAPPlatformTCPStreamManagerRef s_tcpm;
 static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
                                     void *cb_arg, struct mg_rpc_frame_info *fi,
                                     struct mg_str args) {
+#ifdef MGOS_HAVE_WIFI
   const char *ssid = mgos_sys_config_get_wifi_sta_ssid();
   const char *pass = mgos_sys_config_get_wifi_sta_pass();
+#endif
   bool hap_provisioned = !mgos_conf_str_empty(mgos_sys_config_get_hap_salt());
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
 #ifdef MGOS_CONFIG_HAVE_SW1
@@ -65,7 +68,9 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
 #endif
       "},"
 #endif
+#ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
+#endif
       "hap_provisioned: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u}",
@@ -92,9 +97,11 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       sw2.apower, sw2.aenergy,
 #endif
 #endif
+#ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
-      (pass ? pass : ""), hap_provisioned, hap_paired,
-      (unsigned) tcpm_stats.numPendingTCPStreams,
+      (pass ? pass : ""),
+#endif
+      hap_provisioned, hap_paired, (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams);
   (void) cb_arg;
@@ -152,6 +159,18 @@ static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
   (void) fi;
 }
 
+static void shelly_get_debug_info_handler(struct mg_rpc_request_info *ri,
+                                          void *cb_arg,
+                                          struct mg_rpc_frame_info *fi,
+                                          struct mg_str args) {
+  std::string res;
+  shelly_get_debug_info(&res);
+  mg_rpc_send_responsef(ri, "{info: %Q}", res.c_str());
+  (void) cb_arg;
+  (void) args;
+  (void) fi;
+}
+
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm) {
@@ -163,5 +182,7 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
                      "{config: %M, reboot: %B}", shelly_set_config_handler,
                      NULL);
+  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
+                     shelly_get_debug_info_handler, NULL);
   return true;
 }
