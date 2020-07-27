@@ -2,11 +2,22 @@
 
 MOS ?= mos
 LOCAL ?= 0
+CLEAN ?= 0
+VERBOSE ?= 0
 MOS_BUILD_FLAGS ?=
 BUILD_DIR ?= ./build_$*
 
+MAKEFLAGS += --warn-undefined-variables
+
+MOS_BUILD_FLAGS_FINAL = $(MOS_BUILD_FLAGS)
 ifeq "$(LOCAL)" "1"
-  MOS_BUILD_FLAGS += --local
+  MOS_BUILD_FLAGS_FINAL += --local
+endif
+ifeq "$(CLEAN)" "1"
+  MOS_BUILD_FLAGS_FINAL += --clean
+endif
+ifeq "$(VERBOSE)" "1"
+  MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
 build: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS
@@ -30,12 +41,15 @@ Shelly2: build-Shelly2
 Shelly25: build-Shelly25
 	@true
 
-fs:
+fs/index.html.gz: fs_src/index.html
 	gzip -9 -c fs_src/index.html > fs/index.html.gz
+
+fs/style.css.gz: fs_src/style.css
 	gzip -9 -c fs_src/style.css > fs/style.css.gz
 
-build-%: fs
-	$(MOS) build --platform=esp8266 --build-var=MODEL=$* $(MOS_BUILD_FLAGS) --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs
+build-%: fs/index.html.gz fs/style.css.gz
+	$(MOS) build --platform=esp8266 --build-var=MODEL=$* \
+	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL)
 	cp $(BUILD_DIR)/fw.zip shelly-homekit-$*.zip
 
 upload-%:
