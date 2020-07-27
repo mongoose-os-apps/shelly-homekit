@@ -326,16 +326,6 @@ bool mgos_sys_config_get_wifi_sta_enable(void) {
 }
 #endif
 
-static void shelly_ota_ev_handler(int ev, void *evd, void *arg) {
-  // Increment CN on firmware update, as required by the spec.
-  if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
-    // Oh, well.
-  }
-  (void) ev;
-  (void) evd;
-  (void) arg;
-}
-
 static void shelly_set_switch_handler(struct mg_rpc_request_info *ri,
                                       void *cb_arg,
                                       struct mg_rpc_frame_info *fi,
@@ -410,6 +400,15 @@ bool shelly_app_init() {
       .fileName = KVS_FILE_NAME,
   };
   HAPPlatformKeyValueStoreCreate(&s_kvs, &kvs_opts);
+
+#ifdef MGOS_HAVE_OTA_COMMON
+  if (mgos_ota_is_first_boot()) {
+    // Increment CN on firmware update, as required by the spec.
+    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+      LOG(LL_ERROR, ("Failed to increment configuration number"));
+    }
+  }
+#endif
 
   // Accessory setup.
   static const HAPPlatformAccessorySetupOptions as_opts = {};
@@ -488,10 +487,6 @@ bool shelly_app_init() {
   }
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcp_stream_manager);
-
-#ifdef MGOS_HAVE_OTA_COMMON
-  mgos_event_add_handler(MGOS_EVENT_OTA_BEGIN, shelly_ota_ev_handler, NULL);
-#endif
 
   shelly_debug_init(&s_kvs);
 
