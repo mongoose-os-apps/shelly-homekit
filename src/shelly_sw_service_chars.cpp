@@ -23,7 +23,7 @@ const HAPCharacteristic *shelly_sw_name_char(uint16_t iid) {
   HAPStringCharacteristic *c =
       (HAPStringCharacteristic *) calloc(1, sizeof(*c));
   if (c == nullptr) return nullptr;
-  *c = (const HAPStringCharacteristic){
+  const HAPStringCharacteristic cc = {
       .format = kHAPCharacteristicFormat_String,
       .iid = iid,
       .characteristicType = &kHAPCharacteristicType_Name,
@@ -35,7 +35,6 @@ const HAPCharacteristic *shelly_sw_name_char(uint16_t iid) {
               .writable = false,
               .supportsEventNotification = false,
               .hidden = false,
-              .requiresAdminPermissions = false,
               .readRequiresAdminPermissions = false,
               .writeRequiresAdminPermissions = false,
               .requiresTimedWrite = false,
@@ -62,6 +61,7 @@ const HAPCharacteristic *shelly_sw_name_char(uint16_t iid) {
               .handleUnsubscribe = nullptr,
           },
   };
+  memcpy(c, &cc, sizeof(*c));
   return c;
 };
 
@@ -94,7 +94,7 @@ HAPError shelly_sw_handle_on_write(
 const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
   HAPBoolCharacteristic *c = (HAPBoolCharacteristic *) calloc(1, sizeof(*c));
   if (c == nullptr) return nullptr;
-  *c = (const HAPBoolCharacteristic){
+  const HAPBoolCharacteristic cc = {
       .format = kHAPCharacteristicFormat_Bool,
       .iid = iid,
       .characteristicType = &kHAPCharacteristicType_On,
@@ -106,7 +106,6 @@ const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
               .writable = true,
               .supportsEventNotification = true,
               .hidden = false,
-              .requiresAdminPermissions = false,
               .readRequiresAdminPermissions = false,
               .writeRequiresAdminPermissions = false,
               .requiresTimedWrite = false,
@@ -132,6 +131,7 @@ const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
               .handleUnsubscribe = nullptr,
           },
   };
+  memcpy(c, &cc, sizeof(*c));
   return c;
 };
 
@@ -150,7 +150,7 @@ HAPError shelly_sw_handle_lock_cur_state_read(
 const HAPCharacteristic *shelly_sw_lock_cur_state(uint16_t iid) {
   HAPUInt8Characteristic *c = (HAPUInt8Characteristic *) calloc(1, sizeof(*c));
   if (c == nullptr) return nullptr;
-  *c = (const HAPUInt8Characteristic){
+  const HAPUInt8Characteristic cc = {
       .format = kHAPCharacteristicFormat_UInt8,
       .iid = iid,
       .characteristicType = &kHAPCharacteristicType_LockCurrentState,
@@ -162,7 +162,6 @@ const HAPCharacteristic *shelly_sw_lock_cur_state(uint16_t iid) {
               .writable = false,
               .supportsEventNotification = true,
               .hidden = false,
-              .requiresAdminPermissions = false,
               .readRequiresAdminPermissions = false,
               .writeRequiresAdminPermissions = false,
               .requiresTimedWrite = false,
@@ -197,6 +196,7 @@ const HAPCharacteristic *shelly_sw_lock_cur_state(uint16_t iid) {
               .handleUnsubscribe = nullptr,
           },
   };
+  memcpy(c, &cc, sizeof(*c));
   return c;
 };
 
@@ -218,7 +218,7 @@ HAPError shelly_sw_handle_lock_tgt_state_write(
 const HAPCharacteristic *shelly_sw_lock_tgt_state(uint16_t iid) {
   HAPUInt8Characteristic *c = (HAPUInt8Characteristic *) calloc(1, sizeof(*c));
   if (c == nullptr) return nullptr;
-  *c = (const HAPUInt8Characteristic){
+  const HAPUInt8Characteristic cc = {
       .format = kHAPCharacteristicFormat_UInt8,
       .iid = iid,
       .characteristicType = &kHAPCharacteristicType_LockTargetState,
@@ -230,7 +230,6 @@ const HAPCharacteristic *shelly_sw_lock_tgt_state(uint16_t iid) {
               .writable = true,
               .supportsEventNotification = true,
               .hidden = false,
-              .requiresAdminPermissions = false,
               .readRequiresAdminPermissions = false,
               .writeRequiresAdminPermissions = false,
               .requiresTimedWrite = false,
@@ -265,6 +264,7 @@ const HAPCharacteristic *shelly_sw_lock_tgt_state(uint16_t iid) {
               .handleUnsubscribe = nullptr,
           },
   };
+  memcpy(c, &cc, sizeof(*c));
   return c;
 };
 
@@ -282,7 +282,7 @@ HAPError shelly_sw_handle_on_read_in_use(
 const HAPCharacteristic *shelly_sw_in_use_char(uint16_t iid) {
   HAPBoolCharacteristic *c = (HAPBoolCharacteristic *) calloc(1, sizeof(*c));
   if (c == nullptr) return nullptr;
-  *c = (const HAPBoolCharacteristic){
+  const HAPBoolCharacteristic cc = {
       .format = kHAPCharacteristicFormat_Bool,
       .iid = iid,
       .characteristicType = &kHAPCharacteristicType_OutletInUse,
@@ -294,7 +294,6 @@ const HAPCharacteristic *shelly_sw_in_use_char(uint16_t iid) {
               .writable = false,
               .supportsEventNotification = false,
               .hidden = false,
-              .requiresAdminPermissions = false,
               .readRequiresAdminPermissions = false,
               .writeRequiresAdminPermissions = false,
               .requiresTimedWrite = false,
@@ -320,5 +319,6 @@ const HAPCharacteristic *shelly_sw_in_use_char(uint16_t iid) {
               .handleUnsubscribe = nullptr,
           },
   };
+  memcpy(c, &cc, sizeof(*c));
   return c;
 };
