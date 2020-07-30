@@ -42,8 +42,8 @@
 #include "shelly_sw_service.h"
 
 #define KVS_FILE_NAME "kvs.json"
-#define NUM_SESSIONS 6
-#define IO_BUF_SIZE 1536
+#define NUM_SESSIONS 9
+#define SCRATCH_BUF_SIZE 1536
 
 #ifndef LED_ON
 #define LED_ON 0
@@ -53,8 +53,7 @@
 #endif
 
 static HAPIPSession sessions[NUM_SESSIONS];
-static uint8_t out_bufs[NUM_SESSIONS][IO_BUF_SIZE];
-static uint8_t scratch_buf[IO_BUF_SIZE];
+static uint8_t scratch_buf[SCRATCH_BUF_SIZE];
 static HAPIPAccessoryServerStorage s_ip_storage = {
     .sessions = sessions,
     .numSessions = ARRAY_SIZE(sessions),
@@ -425,11 +424,6 @@ bool shelly_app_init() {
   // Service discovery.
   static const HAPPlatformServiceDiscoveryOptions sd_opts = {};
   HAPPlatformServiceDiscoveryCreate(&s_service_discovery, &sd_opts);
-
-  for (size_t i = 0; i < ARRAY_SIZE(sessions); i++) {
-    sessions[i].outboundBuffer.bytes = out_bufs[i];
-    sessions[i].outboundBuffer.numBytes = sizeof(out_bufs[i]);
-  }
 
   s_callbacks.handleUpdatedState = shelly_hap_server_state_update_cb;
 
