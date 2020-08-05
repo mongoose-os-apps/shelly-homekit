@@ -51,7 +51,8 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
   HAPPlatformTCPStreamManagerGetStats(s_tcpm, &tcpm_stats);
   mg_rpc_send_responsef(
       ri,
-      "{id: %Q, app: %Q, host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
+      "{id: %Q, app: %Q, model: %Q, host: %Q, "
+      "version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_CONFIG_HAVE_SW1
       "sw1: {id: %d, name: %Q, type: %d, in_mode: %d, initial: %d, "
       "state: %B, auto_off: %B, auto_off_delay: %.3f"
@@ -74,7 +75,8 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       "hap_provisioned: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u}",
-      mgos_sys_config_get_device_id(), MGOS_APP, mgos_dns_sd_get_host_name(),
+      mgos_sys_config_get_device_id(), MGOS_APP,
+      CS_STRINGIFY_MACRO(PRODUCT_MODEL), mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
       (int) mgos_uptime(),
 #ifdef MGOS_CONFIG_HAVE_SW1
