@@ -23,7 +23,7 @@
 #  https://github.com/mongoose-os-apps/shelly-homekit/blob/master/README.md
 #  
 #  -f, --flash         Flash the lastest available firmware.
-#  -c, --check-only    only check for updates.
+#  -c, --check-only    Only check for updates.
 #  -h, --help          This help text.
 # 
 #  usage: ./flash_shellys.sh -f
@@ -168,7 +168,7 @@ function device-scan {
 
 function help {
   echo " -f, --flash         Flash the lastest available firmware."
-  echo " -c, --check-only    only check for updates."
+  echo " -c, --check-only    Only check for updates."
   echo " -h, --help          This help text."
 }
 
