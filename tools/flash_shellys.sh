@@ -32,6 +32,27 @@ function install_brew {
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 }
 
+if [ "$(which brew 2>/dev/null)" == "" ]; then
+  while true; do
+    read -p "brew is not installed, would you like to install it ?" yn
+    case $yn in
+        [Yy]* ) install_brew; break;;
+        [Nn]* ) echo "brew is required for this script to fuction. now exiting..."; exit;;
+        * ) echo "Please answer yes or no.";;
+    esac
+  done
+fi
+
+if [ "$(which timeout 2>/dev/null)" == "" ]; then
+  echo -e '\033[1mInstalling coreutils...\033[0m'
+  brew install coreutils
+fi
+
+if [ "$(which jq  2>/dev/null)" == "" ]; then
+  echo -e '\033[1mInstalling jq...\033[0m'
+  brew install jq
+fi
+
 function convert_to_integer {
   echo "$@" | awk -F "." '{ printf("%03d%03d%03d", $1,$2,$3); }';
 }
@@ -62,27 +83,6 @@ function flash {
   rm -f shelly-flash.zip
   read -p "Press enter to continue"
 }
-
-if [ "$(which brew 2>/dev/null)" == "" ]; then
-  while true; do
-    read -p "brew is not installed, would you like to install it ?" yn
-    case $yn in
-        [Yy]* ) install_brew; break;;
-        [Nn]* ) echo "brew is required for this script to fuction. now exiting..."; exit;;
-        * ) echo "Please answer yes or no.";;
-    esac
-  done
-fi
-
-if [ "$(which timeout 2>/dev/null)" == "" ]; then
-  echo -e '\033[1mInstalling coreutils...\033[0m'
-  brew install coreutils
-fi
-
-if [ "$(which jq  2>/dev/null)" == "" ]; then
-  echo -e '\033[1mInstalling jq...\033[0m'
-  brew install jq
-fi
 
 echo -e '\033[1mScanning for Shelly devices...\033[0m'
 release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
