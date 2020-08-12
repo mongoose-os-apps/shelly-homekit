@@ -1,31 +1,31 @@
 #!/bin/bash
-# 
+#
 #  Copyright (c) 2020 Andrew Blackburn
 #  All rights reserved
-# 
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-# 
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-#  
+#
 #  This script will probe for any shelly device on the network and it will
 #  attemp to update them to the lastest firmware version availible.
 #  This script will not flash any firmware to a device that is not already on a
 #  version of this firmware, if you are looking to flash your device from stock
-#  or any other firmware please follow instructions here: 
+#  or any other firmware please follow instructions here:
 #  https://github.com/mongoose-os-apps/shelly-homekit/blob/master/README.md
-#  
+#
 #  -f, --flash         Flash the lastest available firmware.
-#  -c, --check-only    Only check for updates.
+#  -c, --check-only    only check for updates.
 #  -h, --help          This help text.
-# 
+#
 #  usage: ./flash_shellys.sh -f
 #  usage: ./flash_shellys.sh -f shelly1-034FFF.local
 
@@ -177,11 +177,11 @@ function device-scan {
 
 function help {
   echo " -f, --flash         Flash the lastest available firmware."
-  echo " -c, --check-only    Only check for updates."
-  echo " -h, --help          This help text."
+  echo " -c, --check-only    only check for updates."
+  echo " -h, --help          This help text"
 }
 
-if [ -n "$1" ]; then 
+if [ -n "$1" ]; then
   if [ $1 == "-h" -o $1 == "--help" ]; then
     help
   elif [ $1 == "-f" -o $1 == "--flash" ]; then
