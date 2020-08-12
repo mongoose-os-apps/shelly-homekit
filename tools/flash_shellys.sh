@@ -22,7 +22,7 @@
 #  or any other firmware please follow instructions here: 
 #  https://github.com/mongoose-os-apps/shelly-homekit/blob/master/README.md
 #  
-#  usage: . flash_shellys.sh
+#  usage: ./flash_shellys.sh
 
 function install_brew {
   echo -e '\033[1mInstalling brew...\033[0m'
