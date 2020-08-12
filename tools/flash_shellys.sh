@@ -27,6 +27,7 @@
 #  -h, --help          This help text.
 # 
 #  usage: ./flash_shellys.sh -f
+#  usage: ./flash_shellys.sh -f shelly1-034FFF.local
 
 
 function install_brew {
@@ -89,81 +90,89 @@ function write_flash {
   read -p "Press enter to continue"
 }
 
-function device-scan {
-  echo -e '\033[1mScanning for Shelly devices...\033[0m'
+function probe-info {
+  flash=null
+  device="$2"
   release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
   lfw=$(echo "$release_info" | jq -r .tag_name)
 
-  for device in $(timeout 2 dns-sd -B _hap . | awk '/shelly/ {print $7}'); do
-    device="$device.local"
-    flash=null
-    if [[ $(curl -qsS -m 5 http://$device/rpc/Shelly.GetInfo) == "Not Found" ]]; then
-      continue
-    fi
+  if [[ $(curl -qsS -m 5 http://$device/rpc/Shelly.GetInfo) == "Not Found" ]]; then
+    continue
+  fi
 
-    info=$(curl -qsS -m 5 http://$device/rpc/Shelly.GetInfo)
-    cfw=$(echo "$info" | jq -r .version)
-    type=$(echo "$info" | jq -r .app)
-    model=$(echo "$info" | jq -r .model) 
+  info=$(curl -qsS -m 5 http://$device/rpc/Shelly.GetInfo)
+  cfw=$(echo "$info" | jq -r .version)
+  type=$(echo "$info" | jq -r .app)
+  model=$(echo "$info" | jq -r .model)
 
-    if [[ $model != *Shelly* ]]; then
-      case $type in
-        switch1)  
-          model="Shelly1";;
-        switch1pm)
-          model="Shelly1PM";;
-        switch25) 
-          model="Shelly25";;
-        shelly-plug-s)  
-          model="ShellyPlugS";;
-        *) ;;
-      esac
-    fi
+  if [[ $model != *Shelly* ]]; then
+    case $type in
+      switch1)
+        model="Shelly1";;
+      switch1pm)
+        model="Shelly1PM";;
+      switch25)
+        model="Shelly25";;
+      shelly-plug-s)
+        model="ShellyPlugS";;
+      *) ;;
+    esac
+  fi
 
-    dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+  dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
 
-    if [ $scriptmode == "flash" ];then 
-      clear
-      echo "Host: $device"
-      echo "Type: $type"
-      echo "Model: $model"
-      echo "Current: $cfw"
-      echo "Latest: $lfw"
-      echo "DURL: $dlurl"
+  if [ $1 == "flash" ]; then
+    clear
+    echo "Host: $device"
+    # echo "Type: $type"
+    echo "Model: $model"
+    echo "Current: $cfw"
+    echo "Latest: $lfw"
+    echo "DURL: $dlurl"
 
-      cfw=2.0.11
-      cfw_V=$(convert_to_integer $cfw)
-      lfw_V=$(convert_to_integer $lfw)
-  
-      if [ $(echo "$lfw_V $cfw_V -p" | dc) == 1 ]; then
-        while true; do
-          read -p "Do you wish to flash $device to firmware version $lfw ? " yn
-          case $yn in
-            [Yy]* )  flash="yes"; break;;
-            [Nn]* ) flash="no";break;;
-            * ) echo "Please answer yes or no.";;
-          esac
-        done
-      else
-        echo "$device DOSE NOT NEED UPDATING..."
-        read -p "Press enter to continue"
-      fi
+    cfw=2.0.11
+    cfw_V=$(convert_to_integer $cfw)
+    lfw_V=$(convert_to_integer $lfw)
 
-      if [ "$flash" = "yes" ]; then
-        write_flash $device $lfw $dlurl
-      elif [ "$flash" = "no" ]; then
-        echo "Skipping Flash..."
-        read -p "Press enter to continue"
-      fi
+    if [ $(echo "$lfw_V $cfw_V -p" | dc) == 1 ]; then
+      while true; do
+        read -p "Do you wish to flash $device to firmware version $lfw ? " yn
+        case $yn in
+          [Yy]* )  flash="yes"; break;;
+          [Nn]* ) flash="no";break;;
+          * ) echo "Please answer yes or no.";;
+        esac
+      done
     else
-      echo "Host: $device"
-      echo "Type: $type"
-      echo "Model: $model"
-      echo "Current: $cfw"
-      echo "Latest: $lfw"
-      echo " "
+      echo "$device DOSE NOT NEED UPDATING..."
+      read -p "Press enter to continue"
     fi
-  done
+
+    if [ "$flash" = "yes" ]; then
+      write_flash $device $lfw $dlurl
+    elif [ "$flash" = "no" ]; then
+      echo "Skipping Flash..."
+      read -p "Press enter to continue"
+    fi
+  else
+    echo "Host: $device"
+    echo "Type: $type"
+    echo "Model: $model"
+    echo "Current: $cfw"
+    echo "Latest: $lfw"
+    echo " "
+  fi
+}
+
+function device-scan {
+  if [ "$2" != "null" ]; then
+    probe-info $1 $2
+  else
+    echo -e '\033[1mScanning for Shelly devices...\033[0m'
+    for device in $(timeout 2 dns-sd -B _hap . | awk '/shelly/ {print $7}'); do
+      probe-info $1 $device.local
+    done
+  fi
 }
 
 function help {
@@ -177,10 +186,13 @@ if [ -n "$1" ]; then
     help
   elif [ $1 == "-f" -o $1 == "--flash" ]; then
     scriptmode="flash"
-    device-scan
   elif [ $1 == "-c" -o $1 == "--check-only" ]; then
     scriptmode="check-only"
-    device-scan
+  fi
+  if [ -n "$2" ]; then
+    device-scan $scriptmode $2
+  else
+    device-scan $scriptmode null
   fi
 else
 	help
