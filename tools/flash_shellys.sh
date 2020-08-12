@@ -156,7 +156,7 @@ function probe-info {
     fi
   else
     echo "Host: $device"
-    echo "Type: $type"
+    # echo "Type: $type"
     echo "Model: $model"
     echo "Current: $cfw"
     echo "Latest: $lfw"
