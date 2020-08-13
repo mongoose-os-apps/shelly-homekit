@@ -104,7 +104,6 @@ function probe_info {
   official="false"
   flash=null
   device="$2"
-  release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
   lfw=$(echo "$release_info" | jq -r .tag_name)
   info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
   if [[ $info == "error" ]]; then
@@ -252,6 +251,7 @@ case $1 in
     exit;;
 esac
 
+release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
 if [ -n "$2" ]; then
   device_scan $scriptmode $2
 else
