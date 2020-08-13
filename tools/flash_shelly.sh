@@ -22,12 +22,12 @@
 #  or any other firmware please follow instructions here:
 #  https://github.com/mongoose-os-apps/shelly-homekit/blob/master/README.md
 #
-#  -f, --flash         Flash the lastest available firmware.
-#  -c, --check-only    only check for updates.
+#  -u, --update        Update device(s) to the lastest available firmware.
+#  -c, --check-only    Only check for updates.
 #  -h, --help          This help text.
 #
-#  usage: ./flash_shellys.sh -f
-#  usage: ./flash_shellys.sh -f shelly1-034FFF.local
+#  usage: ./flash_shelly.sh -u
+#  usage: ./flash_shelly.sh -u shelly1-034FFF.local
 
 
 function install_brew {
@@ -121,10 +121,9 @@ function probe-info {
 
   dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
 
-  if [ $1 == "flash" ]; then
+  if [ $1 == "update" ]; then
     clear
     echo "Host: $device"
-    # echo "Type: $type"
     echo "Model: $model"
     echo "Current: $cfw"
     echo "Latest: $lfw"
@@ -156,7 +155,6 @@ function probe-info {
     fi
   else
     echo "Host: $device"
-    # echo "Type: $type"
     echo "Model: $model"
     echo "Current: $cfw"
     echo "Latest: $lfw"
@@ -176,18 +174,22 @@ function device-scan {
 }
 
 function help {
-  echo " -f, --flash         Flash the lastest available firmware."
-  echo " -c, --check-only    only check for updates."
+  echo " -u, --update        Update device(s) to the lastest available firmware."
+  echo " -c, --check-only    Only check for updates."
   echo " -h, --help          This help text"
 }
 
 if [ -n "$1" ]; then
   if [ $1 == "-h" -o $1 == "--help" ]; then
     help
-  elif [ $1 == "-f" -o $1 == "--flash" ]; then
-    scriptmode="flash"
+  elif [ $1 == "-u" -o $1 == "--update" ]; then
+    scriptmode="update"
   elif [ $1 == "-c" -o $1 == "--check-only" ]; then
     scriptmode="check-only"
+  else
+    echo "flash_shelly: option $1: is unknown"
+    echo "flash_shelly: try flash_shelly --help"
+    exit
   fi
   if [ -n "$2" ]; then
     device-scan $scriptmode $2
@@ -195,5 +197,5 @@ if [ -n "$1" ]; then
     device-scan $scriptmode null
   fi
 else
-	help
+  echo "flash_shelly: try flash_shelly --help"
 fi
