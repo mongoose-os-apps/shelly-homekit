@@ -146,33 +146,27 @@ function probe-info {
         *) ;;
       esac
     fi
-    dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
   else
     official="true"
     cfw=$(echo "$info" | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
     type=$(echo "$info" | jq -r .type)
     case $type in
       SHSW-1)
-        model="Shelly1";
-        dlurl="http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip";;
+        model="Shelly1";;
       SHSW-PM)
-        model="Shelly1PM";
-        dlurl="http://rojer.me/files/shelly/shelly-homekit-Shelly1PM.zip";;
+        model="Shelly1PM";;
       SHSW-25)
-        model="Shelly25";
-        dlurl="http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip";;
+        model="Shelly25";;
       SHPLG-S)
-        model="ShellyPlugS";
-        dlurl="http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip";;
+        model="ShellyPlugS";;
       SHDM-1)
-        model="ShellyDimmer";
-        unset -v dlurl;;
+        model="ShellyDimmer";;
       SHRGBW2)
-        model="ShellyRGBW2";
-        unset -v dlurl;;
+        model="ShellyRGBW2";;
       *) ;;
     esac
   fi
+  dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
   if [ -z $dlurl ]; then
     lfw=0
   fi
