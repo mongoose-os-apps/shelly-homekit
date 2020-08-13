@@ -182,6 +182,7 @@ function help {
 if [ -n "$1" ]; then
   if [ $1 == "-h" -o $1 == "--help" ]; then
     help
+    exit
   elif [ $1 == "-u" -o $1 == "--update" ]; then
     scriptmode="update"
   elif [ $1 == "-c" -o $1 == "--check-only" ]; then
