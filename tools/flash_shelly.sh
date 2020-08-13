@@ -68,12 +68,14 @@ function download {
 }
 
 function write_flash {
-  download "$3"
-  if [ -f shelly-flash.zip ];then
+  if [ $4 == "false" ]; then
+    download "$3"
+  fi
+  if [ -f shelly-flash.zip ] || [ $4 == "true" ];then
     while true; do
       read -p "Are you sure you want to flash $1 to firmware version $2 ? " yn
       case $yn in
-        [Yy]* )  echo "Now Flashing.."; curl -F file=shelly-flash.zip http://$1/update; break;;
+        [Yy]* ) echo "Now Flashing.."; $($flashcmd); break;;
         [Nn]* ) echo "Skipping..";break;;
         * ) echo "Please answer yes or no.";;
       esac
@@ -81,46 +83,101 @@ function write_flash {
   fi
   echo "waiting for $1 to reboot"
   sleep 10
-  if [ $(curl -qsS -m 5 http://$1/rpc/Sys.GetInfo | jq -r .fw_version) == $2 ];then
-    echo "Successfully flashed $1 to $2"
+  if [ $4 == "false" ]; then
+    if [ $(curl -qs -m 5 http://$1/rpc/Shelly.GetInfo | jq -r .version) == $2 ];then
+      echo "Successfully flashed $1 to $2"
+    else
+      echo "Flash failed!!!"
+    fi
+    rm -f shelly-flash.zip
   else
-    echo "Flash failed!!!"
+    if [ $(curl -qs -m 5 http://$1/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $2 ];then
+      echo "Successfully flashed $1 to $2"
+    else
+      echo "Flash failed!!!"
+    fi
   fi
-  rm -f shelly-flash.zip
   read -p "Press enter to continue"
 }
 
 function probe-info {
+  official="false"
   flash=null
   device="$2"
   release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
   lfw=$(echo "$release_info" | jq -r .tag_name)
-
-  if [[ $(curl -qsS -m 5 http://$device/rpc/Shelly.GetInfo) == "Not Found" ]]; then
-    continue
+  info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
+  if [[ $info == "error" ]]; then
+    echo "Could not resolve host: $device"
+    if [[ -z $device ]]; then
+      read -p "Press enter to continue"
+      continue
+    else
+      exit
+    fi
+  fi
+  if [[ $info == "Not Found" ]]; then
+    info=$(curl -qsS -m 5 http://$device/Shelly.GetInfo)
+    if [[ -z $device ]]; then
+      continue
+    fi
   fi
 
-  info=$(curl -qsS -m 5 http://$device/rpc/Shelly.GetInfo)
-  cfw=$(echo "$info" | jq -r .version)
-  type=$(echo "$info" | jq -r .app)
-  model=$(echo "$info" | jq -r .model)
+  if [[ $(echo "$info" | jq -r .version) != "null" ]]; then
+    flashcmd="curl -F file=shelly-flash.zip http://$device/update"
+    cfw=$(echo "$info" | jq -r .version)
+    type=$(echo "$info" | jq -r .app)
+    model=$(echo "$info" | jq -r .model)
 
-  if [[ $model != *Shelly* ]]; then
+    if [[ $model != *Shelly* ]]; then
+      case $type in
+        switch1)
+          model="Shelly1";;
+        switch1pm)
+          model="Shelly1PM";;
+        switch25)
+          model="Shelly25";;
+        shelly-plug-s)
+          model="ShellyPlugS";;
+        dimmer1)
+          model="ShellyDimmer";;
+        rgbw2)
+          model="ShellyRGBW2";;
+        *) ;;
+      esac
+    fi
+    dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+  else
+    official="true"
+    cfw=$(echo "$info" | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
+    type=$(echo "$info" | jq -r .type)
     case $type in
-      switch1)
-        model="Shelly1";;
-      switch1pm)
-        model="Shelly1PM";;
-      switch25)
-        model="Shelly25";;
-      shelly-plug-s)
-        model="ShellyPlugS";;
+      SHSW-1)
+        model="Shelly1";
+        dlurl="http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip";;
+      SHSW-PM)
+        model="Shelly1PM";
+        dlurl="http://rojer.me/files/shelly/shelly-homekit-Shelly1PM.zip";;
+      SHSW-25)
+        model="Shelly25";
+        dlurl="http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip";;
+      SHPLG-S)
+        model="ShellyPlugS";
+        dlurl="http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip";;
+      SHDM-1)
+        model="ShellyDimmer";
+        unset -v dlurl;;
+      SHRGBW2)
+        model="ShellyRGBW2";
+        unset -v dlurl;;
       *) ;;
     esac
   fi
+  if [ -z $dlurl ]; then
+    lfw=0
+  fi
 
-  dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
-
+  flashcmd="curl http://$device/ota?url=$dlurl"
   if [ $1 == "update" ]; then
     clear
     echo "Host: $device"
@@ -132,7 +189,7 @@ function probe-info {
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
-    if [ $(echo "$lfw_V $cfw_V -p" | dc) == 1 ]; then
+    if [ $(echo "$lfw_V $cfw_V -p" | dc) == 1 ] || [ $official == "true" ] && [ ! -z $dlurl ]; then
       while true; do
         read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
@@ -141,18 +198,24 @@ function probe-info {
           * ) echo "Please answer yes or no.";;
         esac
       done
+    elif [ -z $dlurl ]; then
+      echo "$device IS NOT SUPPORTED YET..."
+      read -p "Press enter to continue"
     else
       echo "$device DOSE NOT NEED UPDATING..."
       read -p "Press enter to continue"
     fi
 
     if [ "$flash" = "yes" ]; then
-      write_flash $device $lfw $dlurl
+      write_flash $device $lfw $dlurl $official
     elif [ "$flash" = "no" ]; then
       echo "Skipping Flash..."
       read -p "Press enter to continue"
     fi
   else
+    if [ -z $dlurl ]; then
+      lfw="Not Supported"
+    fi
     echo "Host: $device"
     echo "Model: $model"
     echo "Current: $cfw"
@@ -166,36 +229,37 @@ function device-scan {
     probe-info $1 $2
   else
     echo -e '\033[1mScanning for Shelly devices...\033[0m'
-    for device in $(timeout 2 dns-sd -B _hap . | awk '/shelly/ {print $7}'); do
+    for device in $(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}'); do
       probe-info $1 $device.local
     done
   fi
 }
 
 function help {
-  echo " -u, --update        Update device(s) to the lastest available firmware."
+  echo "Shelly HomeKit flashing script utility"
+  echo "Usage: $0 {-c|-u} $1{hostname optional}"
   echo " -c, --check-only    Only check for updates."
+  echo " -u, --update        Update device(s) to the lastest available firmware."
   echo " -h, --help          This help text"
 }
 
-if [ -n "$1" ]; then
-  if [ $1 == "-h" -o $1 == "--help" ]; then
-    help
-    exit
-  elif [ $1 == "-u" -o $1 == "--update" ]; then
-    scriptmode="update"
-  elif [ $1 == "-c" -o $1 == "--check-only" ]; then
-    scriptmode="check-only"
-  else
-    echo "flash_shelly: option $1: is unknown"
+case $1 in
+  -h|--help)
+    help; exit;;
+  -c|--check-only)
+    scriptmode="check-only";;
+  -u|--update)
+    scriptmode="update";;
+  *)
+    if [ -n "$1" ]; then
+        echo "flash_shelly: option $1: is unknown"
+    fi
     echo "flash_shelly: try flash_shelly --help"
-    exit
-  fi
-  if [ -n "$2" ]; then
-    device-scan $scriptmode $2
-  else
-    device-scan $scriptmode null
-  fi
+    exit;;
+esac
+
+if [ -n "$2" ]; then
+  device-scan $scriptmode $2
 else
-  echo "flash_shelly: try flash_shelly --help"
+  device-scan $scriptmode null
 fi
