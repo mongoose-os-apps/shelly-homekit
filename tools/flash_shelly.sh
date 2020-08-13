@@ -129,7 +129,6 @@ function probe-info {
     echo "Latest: $lfw"
     echo "DURL: $dlurl"
 
-    cfw=2.0.11
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
