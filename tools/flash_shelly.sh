@@ -100,7 +100,7 @@ function write_flash {
   read -p "Press enter to continue"
 }
 
-function probe-info {
+function probe_info {
   official="false"
   flash=null
   device="$2"
@@ -218,20 +218,20 @@ function probe-info {
   fi
 }
 
-function device-scan {
+function device_scan {
   if [ "$2" != "null" ]; then
-    probe-info $1 $2
+    probe_info $1 $2
   else
     echo -e '\033[1mScanning for Shelly devices...\033[0m'
     for device in $(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}'); do
-      probe-info $1 $device.local
+      probe_info $1 $device.local
     done
   fi
 }
 
 function help {
   echo "Shelly HomeKit flashing script utility"
-  echo "Usage: $0 {-c|-u} $1{hostname optional}"
+  echo "Usage: $1 {-c|-u} $2{hostname optional}"
   echo " -c, --check-only    Only check for updates."
   echo " -u, --update        Update device(s) to the lastest available firmware."
   echo " -h, --help          This help text"
@@ -253,7 +253,7 @@ case $1 in
 esac
 
 if [ -n "$2" ]; then
-  device-scan $scriptmode $2
+  device_scan $scriptmode $2
 else
-  device-scan $scriptmode null
+  device_scan $scriptmode null
 fi
