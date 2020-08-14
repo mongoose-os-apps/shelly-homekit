@@ -75,7 +75,7 @@ function write_flash {
     while true; do
       read -p "Are you sure you want to flash $1 to firmware version $2 ? " yn
       case $yn in
-        [Yy]* ) echo "Now Flashing.."; $($flashcmd); break;;
+        [Yy]* ) echo "Now Flashing.."; echo $($flashcmd); break;;
         [Nn]* ) echo "Skipping..";break;;
         * ) echo "Please answer yes or no.";;
       esac
@@ -123,7 +123,7 @@ function probe_info {
   fi
 
   if [[ $(echo "$info" | jq -r .version) != "null" ]]; then
-    flashcmd="curl -F file=shelly-flash.zip http://$device/update"
+    flashcmd="curl -F file=@shelly-flash.zip http://$device/update"
     cfw=$(echo "$info" | jq -r .version)
     type=$(echo "$info" | jq -r .app)
     model=$(echo "$info" | jq -r .model)
