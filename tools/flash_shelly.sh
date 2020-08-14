@@ -144,6 +144,7 @@ function probe_info {
           model="ShellyRGBW2";;
         *) ;;
       esac
+      dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
     fi
   else
     official="true"
@@ -164,13 +165,13 @@ function probe_info {
         model="ShellyRGBW2";;
       *) ;;
     esac
+    dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+    flashcmd="curl http://$device/ota?url=$dlurl"
   fi
-  dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
   if [ -z $dlurl ]; then
     lfw=0
   fi
 
-  flashcmd="curl http://$device/ota?url=$dlurl"
   if [ $1 == "update" ]; then
     clear
     echo "Host: $device"
