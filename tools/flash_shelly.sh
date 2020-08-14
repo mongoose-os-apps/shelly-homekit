@@ -182,7 +182,7 @@ function probe_info {
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
-    if [ $(echo "$lfw_V $cfw_V -p" | dc) == 1 ] || [ $official == "true" ] && [ ! -z $dlurl ]; then
+    if [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ] || [ $official == "true" ] && [ ! -z $dlurl ]; then
       while true; do
         read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
