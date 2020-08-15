@@ -174,6 +174,9 @@ function probe_info {
       *) ;;
     esac
     dlurl="http://rojer.me/files/shelly/shelly-homekit-$model.zip"
+    if [ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]; then
+      unset dlurl
+    fi
     flashcmd="curl http://$device/ota?url=$dlurl"
   fi
   if [ -z $dlurl ]; then
@@ -201,7 +204,7 @@ function probe_info {
         esac
       done
     elif [ -z $dlurl ]; then
-      echo "$device IS NOT SUPPORTED YET..."
+      echo "$model IS NOT SUPPORTED YET..."
       read -p "Press enter to continue"
     else
       echo "$device DOSE NOT NEED UPDATING..."
