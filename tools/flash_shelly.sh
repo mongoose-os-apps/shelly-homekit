@@ -68,6 +68,7 @@ function download {
 }
 
 function write_flash {
+  flashed=false
   if [ $4 == "false" ]; then
     download "$3"
   fi
@@ -75,7 +76,7 @@ function write_flash {
     while true; do
       read -p "Are you sure you want to flash $1 to firmware version $2 ? " yn
       case $yn in
-        [Yy]* ) echo "Now Flashing.."; echo $($flashcmd); break;;
+        [Yy]* ) echo "Now Flashing.."; $($flashcmd); break;;
         [Nn]* ) echo "Skipping..";break;;
         * ) echo "Please answer yes or no.";;
       esac
@@ -92,6 +93,13 @@ function write_flash {
     rm -f shelly-flash.zip
   else
     if [ $(curl -qs -m 5 http://$1/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $2 ];then
+      flashed=true
+      echo "Successfully flashed $1 to $2"
+    else
+      echo "still waiting for $1 to reboot"
+      sleep 10
+    fi
+    if [ flashed == true ] || [ $(curl -qs -m 5 http://$1/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $2 ];then
       echo "Successfully flashed $1 to $2"
     else
       echo "Flash failed!!!"
@@ -165,7 +173,7 @@ function probe_info {
         model="ShellyRGBW2";;
       *) ;;
     esac
-    dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+    dlurl="http://rojer.me/files/shelly/shelly-homekit-$model.zip"
     flashcmd="curl http://$device/ota?url=$dlurl"
   fi
   if [ -z $dlurl ]; then
