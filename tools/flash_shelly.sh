@@ -220,7 +220,7 @@ function probe_info {
       done
     elif [ $perform_flash == true ] && [ $dry_run == true ]; then
       if [ $official == false ]; then
-        local keyword="upgraded to version $lfw"
+        local keyword="upgraded from $cfw to version $lfw"
       else
         local keyword="converted to HomeKit firmware"
       fi
