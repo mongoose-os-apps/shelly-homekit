@@ -68,13 +68,20 @@ function download {
 }
 
 function write_flash {
+  f_device=$1
+  f_lfw=$2
+  f_durl=$3
+  f_official=$4
   flashed=false
-  if [ $4 == "false" ]; then
-    download "$3"
+  if [ $f_official == false ]; then
+    download "$f_durl"
+    flashcmd="curl -F file=@shelly-flash.zip http://$f_device/update"
+  else
+    flashcmd="curl http://$f_device/ota?url=$f_dlurl"
   fi
-  if [ -f shelly-flash.zip ] || [ $4 == "true" ];then
+  if [ -f shelly-flash.zip ] || [ $f_official == "true" ];then
     while true; do
-      read -p "Are you sure you want to flash $1 to firmware version $2 ? " yn
+      read -p "Are you sure you want to flash $f_device to firmware version $f_lfw ? " yn
       case $yn in
         [Yy]* ) echo "Now Flashing.."; $($flashcmd); break;;
         [Nn]* ) echo "Skipping..";break;;
@@ -82,25 +89,25 @@ function write_flash {
       esac
     done
   fi
-  echo "waiting for $1 to reboot"
+  echo "waiting for $f_device to reboot"
   sleep 10
-  if [ $4 == "false" ]; then
-    if [ $(curl -qs -m 5 http://$1/rpc/Shelly.GetInfo | jq -r .version) == $2 ];then
-      echo "Successfully flashed $1 to $2"
+  if [ $f_official == "false" ]; then
+    if [ $(curl -qs -m 5 http://$f_device/rpc/Shelly.GetInfo | jq -r .version) == $f_lfw ];then
+      echo "Successfully flashed $f_device to $f_lfw"
     else
       echo "Flash failed!!!"
     fi
     rm -f shelly-flash.zip
   else
-    if [ $(curl -qs -m 5 http://$1/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $2 ];then
+    if [ $(curl -qs -m 5 http://$f_device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $f_lfw ];then
       flashed=true
-      echo "Successfully flashed $1 to $2"
+      echo "Successfully flashed $f_device to $f_lfw"
     else
-      echo "still waiting for $1 to reboot"
+      echo "still waiting for $f_device to reboot"
       sleep 10
     fi
-    if [ flashed == true ] || [ $(curl -qs -m 5 http://$1/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $2 ];then
-      echo "Successfully flashed $1 to $2"
+    if [ flashed == true ] || [ $(curl -qs -m 5 http://$f_device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $f_lfw ];then
+      echo "Successfully flashed $f_device to $f_lfw"
     else
       echo "Flash failed!!!"
     fi
@@ -111,12 +118,13 @@ function write_flash {
 function probe_info {
   official="false"
   flash=null
-  device="$2"
+  p_scriptmode=$1
+  p_device="$2"
   lfw=$(echo "$release_info" | jq -r .tag_name)
-  info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
+  info=$(curl -qs -m 5 http://$p_device/rpc/Shelly.GetInfo)||info="error"
   if [[ $info == "error" ]]; then
-    echo "Could not resolve host: $device"
-    if [[ -z $device ]]; then
+    echo "Could not resolve host: $p_device"
+    if [[ -z $p_device ]]; then
       read -p "Press enter to continue"
       continue
     else
@@ -124,14 +132,13 @@ function probe_info {
     fi
   fi
   if [[ $info == "Not Found" ]]; then
-    info=$(curl -qsS -m 5 http://$device/Shelly.GetInfo)
-    if [[ -z $device ]]; then
+    info=$(curl -qsS -m 5 http://$p_device/Shelly.GetInfo)
+    if [[ -z $p_device ]]; then
       continue
     fi
   fi
 
   if [[ $(echo "$info" | jq -r .version) != "null" ]]; then
-    flashcmd="curl -F file=@shelly-flash.zip http://$device/update"
     cfw=$(echo "$info" | jq -r .version)
     type=$(echo "$info" | jq -r .app)
     model=$(echo "$info" | jq -r .model)
@@ -177,26 +184,26 @@ function probe_info {
     if [ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]; then
       unset dlurl
     fi
-    flashcmd="curl http://$device/ota?url=$dlurl"
   fi
   if [ -z $dlurl ]; then
     lfw=0
   fi
 
-  if [ $1 == "update" ]; then
+  if [ $p_scriptmode == "update" ]; then
     clear
-    echo "Host: $device"
+    echo "Host: $p_device"
     echo "Model: $model"
     echo "Current: $cfw"
     echo "Latest: $lfw"
     echo "DURL: $dlurl"
+    echo ""
 
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
     if [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ] || [ $official == "true" ] && [ ! -z $dlurl ]; then
       while true; do
-        read -p "Do you wish to flash $device to firmware version $lfw ? " yn
+        read -p "Do you wish to flash $p_device to firmware version $lfw ? " yn
         case $yn in
           [Yy]* )  flash="yes"; break;;
           [Nn]* ) flash="no";break;;
@@ -207,12 +214,12 @@ function probe_info {
       echo "$model IS NOT SUPPORTED YET..."
       read -p "Press enter to continue"
     else
-      echo "$device DOSE NOT NEED UPDATING..."
+      echo "$p_device DOSE NOT NEED UPDATING..."
       read -p "Press enter to continue"
     fi
 
     if [ "$flash" = "yes" ]; then
-      write_flash $device $lfw $dlurl $official
+      write_flash $p_device $lfw $dlurl $official
     elif [ "$flash" = "no" ]; then
       echo "Skipping Flash..."
       read -p "Press enter to continue"
@@ -221,7 +228,7 @@ function probe_info {
     if [ -z $dlurl ]; then
       lfw="Not Supported"
     fi
-    echo "Host: $device"
+    echo "Host: $p_device"
     echo "Model: $model"
     echo "Current: $cfw"
     echo "Latest: $lfw"
@@ -230,12 +237,14 @@ function probe_info {
 }
 
 function device_scan {
-  if [ "$2" != "null" ]; then
-    probe_info $1 $2
+  ds_scriptmode=$1
+  ds_host=$2
+  if [ $ds_host != null ]; then
+    probe_info $ds_scriptmode $ds_host
   else
     echo -e '\033[1mScanning for Shelly devices...\033[0m'
     for device in $(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}'); do
-      probe_info $1 $device.local
+      probe_info $ds_scriptmode $device.local
     done
   fi
 }
