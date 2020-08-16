@@ -116,8 +116,8 @@ function write_flash {
 }
 
 function probe_info {
+  local flash=null
   local official=false
-  flash=null
   local device="$1"
   local action="$2"
   local dry_run="$3"
@@ -219,13 +219,18 @@ function probe_info {
         esac
       done
     elif [ $perform_flash == true ] && [ $dry_run == true ]; then
-      echo "Would have been converted to HomeKit firmware..."
+      if [ $official == false ]; then
+        local keyword="upgraded to version $lfw"
+      else
+        local keyword="converted to HomeKit firmware"
+      fi
+      echo "Would have been $keyword..."
       read -p "Press enter to continue"
     elif [ -z $dlurl ]; then
-      echo "$model Is not supported yet..."
+      echo "$model is not supported yet..."
       read -p "Press enter to continue"
     else
-      echo "$device Dose not need updating..."
+      echo "$device dose not need updating..."
       read -p "Press enter to continue"
     fi
 
