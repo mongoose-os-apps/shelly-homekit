@@ -120,7 +120,7 @@ function write_flash {
 }
 
 function probe_info {
-  official="false"
+  official=false
   flash=null
   p_device="$1"
   p_action="$2"
@@ -168,7 +168,7 @@ function probe_info {
       dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
     fi
   else
-    official="true"
+    official=true
     cfw=$(echo "$info" | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
     type=$(echo "$info" | jq -r .type)
     case $type in
@@ -207,7 +207,14 @@ function probe_info {
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
-    if [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ] || [ $official == "true" ] && [ ! -z $dlurl ]; then
+    if [ $official == false ] && [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ]; then
+      perform_flash=true
+    elif [ $official == true ] && [[ ! -z $dlurl ]]; then
+      perform_flash=true
+    else
+      perform_flash=false
+    fi
+    if [ $perform_flash == true ] && [ $dry_run == false ]; then
       while true; do
         read -p "Do you wish to flash $p_device to firmware version $lfw ? " yn
         case $yn in
@@ -216,6 +223,9 @@ function probe_info {
           * ) echo "Please answer yes or no.";;
         esac
       done
+    elif [ $perform_flash == true ] && [ $dry_run == true ]; then
+      echo "Would have been converted to HomeKit firmware..."
+      read -p "Press enter to continue"
     elif [ -z $dlurl ]; then
       echo "$model IS NOT SUPPORTED YET..."
       read -p "Press enter to continue"
@@ -267,7 +277,7 @@ action=flash
 do_all=false
 dry_run=false
 
-while getopts ":ahl" opt; do
+while getopts ":ahln" opt; do
   case ${opt} in
     a )
       do_all=true
