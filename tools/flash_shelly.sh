@@ -22,9 +22,12 @@
 #  or any other firmware please follow instructions here:
 #  https://github.com/mongoose-os-apps/shelly-homekit/blob/master/README.md
 #
-#  -u, --update        Update device(s) to the lastest available firmware.
-#  -c, --check-only    Only check for updates.
-#  -h, --help          This help text.
+#  Shelly HomeKit flashing script utility
+#  Usage: $0 -{l|a|n|h} $1{hostname(s) optional}
+#  -l      List info of shelly device."
+#  -a      Run against all the devices on the network.
+#  -n      Do a dummy run through.
+#  -h      This help text.
 #
 #  usage: ./flash_shelly.sh -u
 #  usage: ./flash_shelly.sh -u shelly1-034FFF.local
@@ -269,8 +272,11 @@ function device_scan {
 
 function help {
   echo "Shelly HomeKit flashing script utility"
-  echo "Usage: $0 TODO"
-  # TODO
+  echo "Usage: $0 -{l|a|n|h} $1{hostname(s) optional}"
+  echo " -l      List info of shelly device."
+  echo " -a      Run against all the devices on the network."
+  echo " -n      Do a dummy run through."
+  echo " -h      This help text."
 }
 
 action=flash
@@ -282,15 +288,15 @@ while getopts ":ahln" opt; do
     a )
       do_all=true
       ;;
-    h )
-      help
-      exit 0
-      ;;
     l )
       action=list
       ;;
     n )
       dry_run=true
+      ;;
+    h )
+      help
+      exit 0
       ;;
     \? )
       echo "Invalid option"
@@ -301,9 +307,6 @@ while getopts ":ahln" opt; do
 done
 shift $((OPTIND -1))
 
-echo "action=$action do_all=$do_all dry_run=$dry_run"
-echo "args: $@"
-echo ""
 if [ $# == 0 -a $do_all == false ]; then
   help
   exit 1
