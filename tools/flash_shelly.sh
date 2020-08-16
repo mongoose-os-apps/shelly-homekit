@@ -67,25 +67,21 @@ function convert_to_integer {
   echo "$@" | awk -F "." '{ printf("%03d%03d%03d", $1,$2,$3); }';
 }
 
-function download {
-  curl -L -o shelly-flash.zip "$1"
-}
-
 function write_flash {
-  f_device=$1
-  f_lfw=$2
-  f_durl=$3
-  f_official=$4
-  flashed=false
-  if [ $f_official == false ]; then
-    download "$f_durl"
-    flashcmd="curl -F file=@shelly-flash.zip http://$f_device/update"
+  local device=$1
+  local lfw=$2
+  local durl=$3
+  local official=$4
+  local flashed=false
+  if [ $official == false ]; then
+    curl -L -o shelly-flash.zip $durl
+    flashcmd="curl -F file=@shelly-flash.zip http://$device/update"
   else
-    flashcmd="curl http://$f_device/ota?url=$f_dlurl"
+    flashcmd="curl http://$device/ota?url=$dlurl"
   fi
-  if [ -f shelly-flash.zip ] || [ $f_official == "true" ];then
+  if [ -f shelly-flash.zip ] || [ $official == "true" ];then
     while true; do
-      read -p "Are you sure you want to flash $f_device to firmware version $f_lfw ? " yn
+      read -p "Are you sure you want to flash $device to firmware version $lfw ? " yn
       case $yn in
         [Yy]* ) echo "Now Flashing.."; $($flashcmd); break;;
         [Nn]* ) echo "Skipping..";break;;
@@ -93,25 +89,25 @@ function write_flash {
       esac
     done
   fi
-  echo "waiting for $f_device to reboot"
+  echo "waiting for $device to reboot"
   sleep 10
-  if [ $f_official == "false" ]; then
-    if [ $(curl -qs -m 5 http://$f_device/rpc/Shelly.GetInfo | jq -r .version) == $f_lfw ];then
-      echo "Successfully flashed $f_device to $f_lfw"
+  if [ $official == "false" ]; then
+    if [ $(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo | jq -r .version) == $lfw ];then
+      echo "Successfully flashed $device to $lfw"
     else
       echo "Flash failed!!!"
     fi
     rm -f shelly-flash.zip
   else
-    if [ $(curl -qs -m 5 http://$f_device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $f_lfw ];then
+    if [ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ];then
       flashed=true
-      echo "Successfully flashed $f_device to $f_lfw"
+      echo "Successfully flashed $device to $lfw"
     else
-      echo "still waiting for $f_device to reboot"
+      echo "still waiting for $device to reboot"
       sleep 10
     fi
-    if [ flashed == true ] || [ $(curl -qs -m 5 http://$f_device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $f_lfw ];then
-      echo "Successfully flashed $f_device to $f_lfw"
+    if [ flashed == true ] || [ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ];then
+      echo "Successfully flashed $device to $lfw"
     else
       echo "Flash failed!!!"
     fi
@@ -120,17 +116,16 @@ function write_flash {
 }
 
 function probe_info {
-  official=false
+  local official=false
   flash=null
-  p_device="$1"
-  p_action="$2"
-  p_do_all="$3"
-  p_dry_run="$4"
+  local device="$1"
+  local action="$2"
+  local dry_run="$3"
   lfw=$(echo "$release_info" | jq -r .tag_name)
-  info=$(curl -qs -m 5 http://$p_device/rpc/Shelly.GetInfo)||info="error"
+  info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
   if [[ $info == "error" ]]; then
-    echo "Could not resolve host: $p_device"
-    if [[ -z $p_device ]]; then
+    echo "Could not resolve host: $device"
+    if [[ -z $device ]]; then
       read -p "Press enter to continue"
       continue
     else
@@ -138,8 +133,8 @@ function probe_info {
     fi
   fi
   if [[ $info == "Not Found" ]]; then
-    info=$(curl -qsS -m 5 http://$p_device/Shelly.GetInfo)
-    if [[ -z $p_device ]]; then
+    info=$(curl -qsS -m 5 http://$device/Shelly.GetInfo)
+    if [[ -z $device ]]; then
       continue
     fi
   fi
@@ -186,7 +181,7 @@ function probe_info {
         model="ShellyRGBW2";;
       *) ;;
     esac
-    dlurl="http://rojer.me/files/shelly/shelly-homekit-$model.zip"
+    dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
     if [ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]; then
       unset dlurl
     fi
@@ -195,9 +190,9 @@ function probe_info {
     lfw=0
   fi
 
-  if [ $p_action != "list" ]; then
+  if [ $action != "list" ]; then
     clear
-    echo "Host: $p_device"
+    echo "Host: $device"
     echo "Model: $model"
     echo "Current: $cfw"
     echo "Latest: $lfw"
@@ -216,7 +211,7 @@ function probe_info {
     fi
     if [ $perform_flash == true ] && [ $dry_run == false ]; then
       while true; do
-        read -p "Do you wish to flash $p_device to firmware version $lfw ? " yn
+        read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
           [Yy]* )  flash="yes"; break;;
           [Nn]* ) flash="no";break;;
@@ -227,15 +222,15 @@ function probe_info {
       echo "Would have been converted to HomeKit firmware..."
       read -p "Press enter to continue"
     elif [ -z $dlurl ]; then
-      echo "$model IS NOT SUPPORTED YET..."
+      echo "$model Is not supported yet..."
       read -p "Press enter to continue"
     else
-      echo "$p_device DOSE NOT NEED UPDATING..."
+      echo "$device Dose not need updating..."
       read -p "Press enter to continue"
     fi
 
     if [ "$flash" = "yes" ]; then
-      write_flash $p_device $lfw $dlurl $official
+      write_flash $device $lfw $dlurl $official
     elif [ "$flash" = "no" ]; then
       echo "Skipping Flash..."
       read -p "Press enter to continue"
@@ -244,7 +239,7 @@ function probe_info {
     if [ -z $dlurl ]; then
       lfw="Not Supported"
     fi
-    echo "Host: $p_device"
+    echo "Host: $device"
     echo "Model: $model"
     echo "Current: $cfw"
     echo "Latest: $lfw"
@@ -253,16 +248,16 @@ function probe_info {
 }
 
 function device_scan {
-  ds_device=$1
-  ds_action=$2
-  ds_do_all=$3
-  ds_dry_run=$4
-  if [ $ds_do_all == false ]; then
-    probe_info $ds_device $ds_action $ds_do_all $ds_dry_run
+  local device=$1
+  local action=$2
+  local do_all=$3
+  local dry_run=$4
+  if [ $do_all == false ]; then
+    probe_info $device $action $dry_run
   else
     echo -e '\033[1mScanning for Shelly devices...\033[0m'
     for device in $(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}'); do
-      probe_info $device.local $ds_action $ds_do_all $ds_dry_run
+      probe_info $device.local $action $dry_run
     done
   fi
 }
@@ -312,7 +307,6 @@ elif [[ ! -z $@ ]] && [ $do_all == true ]; then
   exit 1
 fi
 
-# TODO: the rest of it
 release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
 if [[ ! -z $@ ]];then
   for device in $@; do
