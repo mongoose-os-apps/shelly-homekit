@@ -272,7 +272,7 @@ function probe_info {
     elif [ -z $dlurl ]; then
       echo "$model is not supported yet..."
     else
-      echo "$device dose not need updating..."
+      echo "$device does not need updating..."
     fi
 
     if [ "$flash" = "yes" ]; then
