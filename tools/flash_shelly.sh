@@ -189,24 +189,25 @@ function probe_info {
     flash_from_official=true
     cfw=$(echo "$info" | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
     type=$(echo "$info" | jq -r .type)
-    case $type in
-      SHSW-1)
-        model="Shelly1";;
-      SHSW-PM)
-        model="Shelly1PM";;
-      SHSW-25)
-        model="Shelly25";;
-      SHPLG-S)
-        model="ShellyPlugS";;
-      SHDM-1)
-        model="ShellyDimmer";;
-      SHRGBW2)
-        model="ShellyRGBW2";;
-      *) ;;
-    esac
     if [ $flash_to_official == false ]; then
+      case $type in
+        SHSW-1)
+          model="Shelly1";;
+        SHSW-PM)
+          model="Shelly1PM";;
+        SHSW-25)
+          model="Shelly25";;
+        SHPLG-S)
+          model="ShellyPlugS";;
+        SHDM-1)
+          model="ShellyDimmer";;
+        SHRGBW2)
+          model="ShellyRGBW2";;
+        *) ;;
+      esac
       dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
     else
+      model=$type
       dlurl=$(echo "$release_info" | jq -r '.data."'$type'".url')
     fi
     if [[ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]]; then
