@@ -111,7 +111,6 @@ function write_flash {
       echo "Flash failed!!!"
     fi
   fi
-  read -p "Press enter to continue"
 }
 
 function probe_info {
@@ -190,13 +189,11 @@ function probe_info {
   fi
 
   if [ $action != "list" ]; then
-    clear
     echo "Host: $device"
     echo "Model: $model"
     echo "Current: $cfw"
     echo "Latest: $lfw"
     echo "DURL: $dlurl"
-    echo ""
 
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
@@ -226,21 +223,18 @@ function probe_info {
         local keyword="converted to HomeKit firmware"
       fi
       echo "Would have been $keyword..."
-      read -p "Press enter to continue"
     elif [ -z $dlurl ]; then
       echo "$model is not supported yet..."
-      read -p "Press enter to continue"
     else
       echo "$device dose not need updating..."
-      read -p "Press enter to continue"
     fi
 
     if [ "$flash" = "yes" ]; then
       write_flash $device $lfw $dlurl $official
     elif [ "$flash" = "no" ]; then
       echo "Skipping Flash..."
-      read -p "Press enter to continue"
     fi
+    echo " "
   else
     if [ -z $dlurl ]; then
       lfw="Not Supported"
