@@ -116,6 +116,8 @@ function write_flash {
 }
 
 function probe_info {
+  local lfw=null
+  local cfw=null
   local flash=null
   local flash_from_official=false
   local device=$1
@@ -205,9 +207,11 @@ function probe_info {
           model="ShellyRGBW2";;
         *) ;;
       esac
+      lfw=$(echo "$release_info" | jq -r .tag_name)
       dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
     else
       model=$type
+      lfw=$(echo "$release_info" | jq -r '.data."'$type'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
       dlurl=$(echo "$release_info" | jq -r '.data."'$type'".url')
     fi
     if [[ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]]; then
