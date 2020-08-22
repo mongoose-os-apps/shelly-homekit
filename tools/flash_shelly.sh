@@ -85,14 +85,8 @@ function write_flash {
     flashcmd="curl -qsS http://$device/ota?url=$dlurl"
   fi
   if [ -f shelly-flash.zip ] || [ $official == "true" ];then
-    while true; do
-      read -p "Are you sure you want to flash $device to firmware version $lfw ? " yn
-      case $yn in
-        [Yy]* ) echo "Now Flashing.."; $($flashcmd); break;;
-        [Nn]* ) echo "Skipping..";break;;
-        * ) echo "Please answer yes or no.";;
-      esac
-    done
+    echo "Now Flashing.."
+    echo $($flashcmd)
   fi
   echo "waiting for $device to reboot"
   sleep 10
