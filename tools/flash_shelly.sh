@@ -215,14 +215,22 @@ function probe_info {
     fi
   fi
   if [ -z $dlurl ]; then
-    lfw=0
+    lfw="Not Supported"
   fi
 
   if [ $action != "list" ]; then
     echo "Host: $device"
     echo "Model: $model"
-    echo "Current: $cfw"
-    echo "Latest: $lfw"
+    if [ $flash_from_official == false ]; then
+      echo "Current: HomeKit $cfw"
+    else
+      echo "Current: Official $cfw"
+    fi
+    if [ $flash_to_official == false ]; then
+      echo "Latest: HomeKit $lfw"
+    else
+      echo "Latest: Official $lfw"
+    fi
     echo "DURL: $dlurl"
 
     cfw_V=$(convert_to_integer $cfw)
