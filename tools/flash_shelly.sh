@@ -24,9 +24,10 @@
 #
 #  Shelly HomeKit flashing script utility
 #  Usage: $0 -{l|a|n|h} $1{hostname(s) optional}
-#  -l      List info of shelly device."
+#  -l      List info of shelly device.
 #  -a      Run against all the devices on the network.
 #  -n      Do a dummy run through.
+#  -y      Do not ask any confirmation to perform the flash.
 #  -h      This help text.
 #
 #  usage: ./flash_shelly.sh -u
@@ -212,7 +213,7 @@ function probe_info {
     else
       perform_flash=false
     fi
-    if [ $perform_flash == true ] && [ $dry_run == false ]; then
+    if [ $perform_flash == true ] && [ $dry_run == false ] && [ $silent_run == false ]; then
       while true; do
         read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
@@ -221,6 +222,8 @@ function probe_info {
           * ) echo "Please answer yes or no.";;
         esac
       done
+    elif [ $perform_flash == true ] && [ $dry_run == false ] && [ $silent_run == true ]; then
+      flash="yes"
     elif [ $perform_flash == true ] && [ $dry_run == true ]; then
       if [ $official == false ]; then
         local keyword="upgraded from $cfw to version $lfw"
@@ -276,14 +279,16 @@ function help {
   echo " -l      List info of shelly device."
   echo " -a      Run against all the devices on the network."
   echo " -n      Do a dummy run through."
+  echo " -y      Do not ask any confirmation to perform the flash."
   echo " -h      This help text."
 }
 
 action=flash
 do_all=false
 dry_run=false
+silent_run=false
 
-while getopts ":ahln" opt; do
+while getopts ":ahlny" opt; do
   case ${opt} in
     a )
       do_all=true
@@ -293,6 +298,9 @@ while getopts ":ahln" opt; do
       ;;
     n )
       dry_run=true
+      ;;
+    y )
+      silent_run=true
       ;;
     h )
       help
