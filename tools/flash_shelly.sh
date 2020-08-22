@@ -78,10 +78,11 @@ function write_flash {
   local official=$4
   local flashed=false
   if [ $official == false ]; then
-    curl -L -o shelly-flash.zip $durl
-    flashcmd="curl -F file=@shelly-flash.zip http://$device/update"
+    echo "Downloading Firmware.."
+    curl  -qsS -L -o shelly-flash.zip $durl
+    flashcmd="curl -qsS -F file=@shelly-flash.zip http://$device/update"
   else
-    flashcmd="curl http://$device/ota?url=$dlurl"
+    flashcmd="curl -qsS http://$device/ota?url=$dlurl"
   fi
   if [ -f shelly-flash.zip ] || [ $official == "true" ];then
     while true; do
