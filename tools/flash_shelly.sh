@@ -209,7 +209,6 @@ function probe_info {
     else
       dlurl=$(echo "$release_info" | jq -r '.data."'$type'".url')
     fi
-    echo "DL: $dlurl"
     if [[ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]]; then
       unset dlurl
     fi
@@ -276,9 +275,9 @@ function probe_info {
     echo "Host: $device"
     echo "Model: $model"
     if [ $flash_from_official == false ]; then
-      echo "Current FW: HomeKit $cfw"
+      echo "Current: HomeKit $cfw"
     else
-      echo "Current FW: Official $cfw"
+      echo "Current: Official $cfw"
     fi
     if [ $flash_to_official == false ]; then
       echo "Latest: HomeKit $lfw"
