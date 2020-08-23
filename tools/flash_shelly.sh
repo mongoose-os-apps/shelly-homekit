@@ -340,6 +340,7 @@ function help {
   echo " -h                         This help text."
 }
 
+check=null
 action=flash
 do_all=false
 dry_run=false
