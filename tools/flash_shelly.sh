@@ -119,6 +119,7 @@ function probe_info {
   local info=null
   local lfw=null
   local cfw=null
+  local model=null
   local flash=null
   local flash_from_official=false
   local dfwtype=null
@@ -218,6 +219,7 @@ function probe_info {
       lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
       dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
     else
+      model=$type
       lfw=$(echo "$stock_release_info" | jq -r '.data."'$type'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
       dlurl=$(echo "$stock_release_info" | jq -r '.data."'$type'".url')
     fi
