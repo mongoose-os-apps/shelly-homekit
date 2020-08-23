@@ -23,16 +23,16 @@
 #  https://github.com/mongoose-os-apps/shelly-homekit/blob/master/README.md
 #
 #  Shelly HomeKit flashing script utility
-#  Usage: $0 -{l|a|n|h} $1{hostname(s) optional}
-#  -l      List info of shelly device.
-#  -a      Run against all the devices on the network.
-#  -n      Do a dummy run through.
-#  -y      Do not ask any confirmation to perform the flash.
-#  -o      Flash latest official firmware.
-#  -h      This help text.
+#  Usage: $0 -{m|l|a|n|y|h} $1{hostname(s) optional}
+#   -m {homekit|revert|keep}   Script mode.
+#   -l                         List info of shelly device.
+#   -a                         Run against all the devices on the network.
+#   -n                         Do a dummy run through.
+#   -y                         Do not ask any confirmation to perform the flash.
+#   -h                         This help text.
 #
-#  usage: ./flash_shelly.sh -u
-#  usage: ./flash_shelly.sh -u shelly1-034FFF.local
+#  usage: ./flash_shelly.sh -la
+#  usage: ./flash_shelly.sh shelly1-034FFF.local
 
 
 function check_brew {
@@ -77,22 +77,22 @@ function write_flash {
   local device=$1
   local lfw=$2
   local durl=$3
-  local flash_from_official=$4
+  local dfwtype=$4
 
-  if [ $flash_from_official == false ]; then
+  if [ $dfwtype == "homekit" ]; then
     echo "Downloading Firmware.."
     curl  -qsS -L -o shelly-flash.zip $durl
     flashcmd="curl -qsS -F file=@shelly-flash.zip http://$device/update"
   else
     flashcmd="curl -qsS http://$device/ota?url=$dlurl"
   fi
-  if [ -f shelly-flash.zip ] || [ $flash_from_official == "true" ];then
+  if [ -f shelly-flash.zip ] || [ $dfwtype == "stock" ];then
     echo "Now Flashing.."
     echo $($flashcmd)
   fi
   echo "waiting for $device to reboot"
   sleep 10
-  if [ $flash_from_official == "false" ]; then
+  if [ $dfwtype == "homekit" ]; then
     if [ $(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo | jq -r .version) == $lfw ];then
       echo "Successfully flashed $device to $lfw"
     else
@@ -116,14 +116,16 @@ function write_flash {
 }
 
 function probe_info {
+  local info=null
   local lfw=null
   local cfw=null
   local flash=null
   local flash_from_official=false
+  local dfwtype=null
   local device=$1
   local action=$2
   local dry_run=$3
-  local flash_to_official=$4
+  local mode=$4
 
   info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
   if [[ $info == "error" ]]; then
@@ -135,17 +137,23 @@ function probe_info {
       exit 1
     fi
   fi
+  dfwtype="homekit"
   if [[ $info == "Not Found" ]]; then
     info=$(curl -qsS -m 5 http://$device/Shelly.GetInfo)
+    dfwtype="stock"
     if [[ -z $device ]]; then
       continue
     fi
   fi
 
-  if [[ $(echo "$info" | jq -r .version) != "null" ]]; then
+  if [[ $mode == "keep" ]]; then
+    mode=$dfwtype
+  fi
+
+  if [[ $dfwtype == "homekit" ]]; then
     type=$(echo "$info" | jq -r .app)
     cfw=$(echo "$info" | jq -r .version)
-    if [ $flash_to_official == true ]; then
+    if [[ $mode == "stock" ]]; then
       case $type in
         switch1)
           model="SHSW-1";;
@@ -162,8 +170,8 @@ function probe_info {
         *) ;;
       esac
 
-      lfw=$(echo "$release_info" | jq -r '.data."'$model'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
-      dlurl=$(echo "$release_info" | jq -r '.data."'$model'".url')
+      lfw=$(echo "$stock_release_info" | jq -r '.data."'$model'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
+      dlurl=$(echo "$stock_release_info" | jq -r '.data."'$model'".url')
     else
       model=$(echo "$info" | jq -r .model)
       if [[ $model != *Shelly* ]]; then
@@ -184,14 +192,14 @@ function probe_info {
         esac
       fi
 
-      lfw=$(echo "$release_info" | jq -r .tag_name)
-      dlurl=$(echo "$release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+      lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
+      dlurl=$(echo "$homekit_release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
     fi
   else
     flash_from_official=true
     cfw=$(echo "$info" | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
     type=$(echo "$info" | jq -r .type)
-    if [ $flash_to_official == false ]; then
+    if [[ $mode == "homekit" ]]; then
       case $type in
         SHSW-1)
           model="Shelly1";;
@@ -207,12 +215,11 @@ function probe_info {
           model="ShellyRGBW2";;
         *) ;;
       esac
-      lfw=$(echo "$release_info" | jq -r .tag_name)
+      lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
       dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
     else
-      model=$type
-      lfw=$(echo "$release_info" | jq -r '.data."'$type'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
-      dlurl=$(echo "$release_info" | jq -r '.data."'$type'".url')
+      lfw=$(echo "$stock_release_info" | jq -r '.data."'$type'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
+      dlurl=$(echo "$stock_release_info" | jq -r '.data."'$type'".url')
     fi
     if [[ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]]; then
       unset dlurl
@@ -225,12 +232,12 @@ function probe_info {
   if [ $action != "list" ]; then
     echo "Host: $device"
     echo "Model: $model"
-    if [ $flash_from_official == false ]; then
+    if [ $dfwtype == "homekit" ]; then
       echo "Current: HomeKit $cfw"
     else
       echo "Current: Official $cfw"
     fi
-    if [ $flash_to_official == false ]; then
+    if [ $mode == "homekit" ]; then
       echo "Latest: HomeKit $lfw"
     else
       echo "Latest: Official $lfw"
@@ -240,11 +247,11 @@ function probe_info {
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
-    if [ $flash_from_official == false ] && [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ]; then
+    if [ $dfwtype == "homekit" ] && [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ]; then
       perform_flash=true
-    elif [ $flash_from_official == true ] && [[ ! -z $dlurl ]]; then
+    elif [ $dfwtype == "stock" ] && [[ ! -z $dlurl ]]; then
       perform_flash=true
-    elif [ $flash_to_official == true ]; then
+    elif [[ $mode == "stock" ]]; then
       perform_flash=true
     else
       perform_flash=false
@@ -261,9 +268,9 @@ function probe_info {
     elif [ $perform_flash == true ] && [ $dry_run == false ] && [ $silent_run == true ]; then
       flash="yes"
     elif [ $perform_flash == true ] && [ $dry_run == true ]; then
-      if [ $flash_to_official == true ] && [ $flash_from_official == false ]; then
+      if [[ $mode == "stock" ]] && [ $dfwtype == "homekit" ]; then
         local keyword="converted to Official firmware"
-      elif [ $flash_from_official == false ] || [ $flash_to_official == true ]; then
+      elif [ $dfwtype == "homekit" ] || [[ $mode == "stock" ]]; then
         local keyword="upgraded from $cfw to version $lfw"
       else
         local keyword="converted to HomeKit firmware"
@@ -272,11 +279,11 @@ function probe_info {
     elif [ -z $dlurl ]; then
       echo "$model is not supported yet..."
     else
-      echo "$device does not need updating..."
+      echo "$device dose not need updating..."
     fi
 
     if [ "$flash" = "yes" ]; then
-      write_flash $device $lfw $dlurl $flash_from_official
+      write_flash $device $lfw $dlurl $dfwtype
     elif [ "$flash" = "no" ]; then
       echo "Skipping Flash..."
     fi
@@ -287,12 +294,12 @@ function probe_info {
     fi
     echo "Host: $device"
     echo "Model: $model"
-    if [ $flash_from_official == false ]; then
+    if [ $dfwtype == "homekit" ]; then
       echo "Current: HomeKit $cfw"
     else
       echo "Current: Official $cfw"
     fi
-    if [ $flash_to_official == false ]; then
+    if [[ $mode == "homekit" ]]; then
       echo "Latest: HomeKit $lfw"
     else
       echo "Latest: Official $lfw"
@@ -306,39 +313,49 @@ function device_scan {
   local action=$2
   local do_all=$3
   local dry_run=$4
-  local flash_to_official=$5
+  local mode=$5
 
   if [ $do_all == false ]; then
-    probe_info $device $action $dry_run $flash_to_official
+    probe_info $device $action $dry_run $mode
   else
     echo -e '\033[1mScanning for Shelly devices...\033[0m'
     for device in $(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}'); do
-      probe_info $device.local $action $dry_run $flash_to_official
+      probe_info $device.local $action $dry_run $mode
     done
   fi
 }
 
 function help {
   echo "Shelly HomeKit flashing script utility"
-  echo "Usage: $0 -{l|a|n|y|o|h} $1{hostname(s) optional}"
-  echo " -l      List info of shelly device."
-  echo " -a      Run against all the devices on the network."
-  echo " -n      Do a dummy run through."
-  echo " -y      Do not ask any confirmation to perform the flash."
-  echo " -o      Flash latest official firmware."
-  echo " -h      This help text."
+  echo "Usage: $0 -{m|l|a|n|y|h} $1{hostname(s) optional}"
+  echo " -m {homekit|revert|keep}   Script mode."
+  echo " -l                         List info of shelly device."
+  echo " -a                         Run against all the devices on the network."
+  echo " -n                         Do a dummy run through."
+  echo " -y                         Do not ask any confirmation to perform the flash."
+  echo " -h                         This help text."
 }
 
-flash_to_official=false
 action=flash
 do_all=false
 dry_run=false
 silent_run=false
+mode="homekit"
 
-while getopts ":oahlny" opt; do
+while getopts ":alnyhm:" opt; do
   case ${opt} in
-    o )
-      flash_to_official=true
+    m )
+      if [ $OPTARG == "homekit" ]; then
+        mode="homekit"
+      elif [ $OPTARG == "revert" ]; then
+        mode="stock"
+      elif [ $OPTARG == "keep" ]; then
+        mode="keep"
+      else
+        echo "Invalid option"
+        help
+        exit 1
+      fi
       ;;
     a )
       do_all=true
@@ -373,17 +390,14 @@ elif [[ ! -z $@ ]] && [ $do_all == true ]; then
   exit 1
 fi
 
-if [ $flash_to_official = true ]; then
-  release_info=$(curl -qsS -m 5 https://api.shelly.cloud/files/firmware)
-else
-  release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
-fi
+stock_release_info=$(curl -qsS -m 5 https://api.shelly.cloud/files/firmware)
+homekit_release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
 
 if [[ ! -z $@ ]];then
   for device in $@; do
-    device_scan $device $action $do_all $dry_run $flash_to_official
+    device_scan $device $action $do_all $dry_run $mode
   done
 fi
 if [ $do_all == true ];then
-  device_scan null $action $do_all $dry_run $flash_to_official
+  device_scan null $action $do_all $dry_run $mode
 fi
