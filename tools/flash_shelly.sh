@@ -245,11 +245,17 @@ function probe_info {
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
-    if [ $cfw_type == "homekit" ] && [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ]; then
+    if [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ]; then
+      if [ $cfw_type == "homekit" ] && [ $mode == "homekit" ]; then
+        perform_flash=true
+      elif [ $cfw_type == "stock" ] && [ $mode == "stock" ]; then
+        perform_flash=true
+      elif [ $mode == "keep" ]; then
+        perform_flash=true
+      fi
+    elif [ $cfw_type == "stock" ] && [ $mode == "homekit" ] && [[ ! -z $dlurl ]]; then
       perform_flash=true
-    elif [ $cfw_type == "stock" ] && [[ ! -z $dlurl ]]; then
-      perform_flash=true
-    elif [[ $mode == "stock" ]]; then
+    elif [ $cfw_type == "homekit" ] && [ $mode == "stock" ] && [[ ! -z $dlurl ]]; then
       perform_flash=true
     else
       perform_flash=false
