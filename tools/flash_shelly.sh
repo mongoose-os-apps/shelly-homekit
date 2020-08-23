@@ -394,8 +394,12 @@ elif [[ ! -z $@ ]] && [ $do_all == true ]; then
   exit 1
 fi
 
-stock_release_info=$(curl -qsS -m 5 https://api.shelly.cloud/files/firmware)
-homekit_release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)
+stock_release_info=$(curl -qsS -m 5 https://api.shelly.cloud/files/firmware)||check="error"
+homekit_release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)||check="error"
+if [ $check == "error" ]; then
+  echo "Failed to lookup version information"
+  exit 1
+fi
 
 if [[ ! -z $@ ]];then
   for device in $@; do
