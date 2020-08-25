@@ -125,7 +125,7 @@ function write_flash {
 }
 
 function probe_info {
-  local flash=null
+  local flash=false
   local info=null      # firmware versions info
   local model=null     # device model
   local lfw=null       # latest firmware availible
@@ -271,8 +271,8 @@ function probe_info {
       while true; do
         read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
-          [Yy]* )  flash="yes"; break;;
-          [Nn]* ) flash="no";break;;
+          [Yy]* )  flash=true; break;;
+          [Nn]* ) flash=false;break;;
           * ) echo "Please answer yes or no.";;
         esac
       done
@@ -293,9 +293,9 @@ function probe_info {
       echo "$device dose not need updating..."
     fi
 
-    if [ "$flash" = "yes" ]; then
+    if [[ $flash == true ]]; then
       write_flash $device $lfw $dlurl $cfw_type $mode
-    elif [ "$flash" = "no" ]; then
+    else
       echo "Skipping Flash..."
     fi
     echo " "
