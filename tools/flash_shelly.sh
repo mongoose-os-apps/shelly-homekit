@@ -78,6 +78,7 @@ function write_flash {
   local lfw=$2
   local durl=$3
   local cfw_type=$4
+  local mode=$5
 
   if [ $cfw_type == "homekit" ]; then
     echo "Downloading Firmware.."
@@ -91,26 +92,34 @@ function write_flash {
     echo $($flashcmd)
   fi
   echo "waiting for $device to reboot"
-  sleep 10
-  if [ $cfw_type == "homekit" ]; then
-    if [ $(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo | jq -r .version) == $lfw ];then
+  sleep 15
+  if [[ $mode == "homekit" ]]; then
+    if [[ $(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo | jq -r .version) == $lfw ]];then
       echo "Successfully flashed $device to $lfw"
+      exit 0
     else
-      echo "Flash failed!!!"
+      echo "still waiting for $device to reboot"
+      sleep 15
+      if [[ $(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo | jq -r .version) == $lfw ]];then
+        echo "Successfully flashed $device to $lfw"
+        exit 0
+      else
+        echo "Flash failed!!!"
+      fi
     fi
     rm -f shelly-flash.zip
   else
-    if [ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ];then
-      flashed=true
+    if [[ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ]];then
       echo "Successfully flashed $device to $lfw"
+      exit 0
     else
       echo "still waiting for $device to reboot"
-      sleep 10
-    fi
-    if [ flashed == true ] || [ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ];then
-      echo "Successfully flashed $device to $lfw"
-    else
-      echo "Flash failed!!!"
+      sleep 15
+      if [ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ];then
+        echo "Successfully flashed $device to $lfw"
+      else
+        echo "Flash failed!!!"
+      fi
     fi
   fi
 }
@@ -219,11 +228,9 @@ function probe_info {
       lfw=$(echo "$stock_release_info" | jq -r '.data."'$type'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
       dlurl=$(echo "$stock_release_info" | jq -r '.data."'$type'".url')
     fi
-    if [[ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]]; then
-      unset dlurl
-    fi
   fi
-  if [ -z $dlurl ]; then
+  if [[ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]]; then
+    unset dlurl
     lfw="Not Supported"
   fi
 
@@ -245,7 +252,11 @@ function probe_info {
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
-    if [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ]; then
+    if [ $cfw_type == "stock" ] && [ $mode == "homekit" ] && [[ ! -z $dlurl ]]; then
+      perform_flash=true
+    elif [ $cfw_type == "homekit" ] && [ $mode == "stock" ] && [[ ! -z $dlurl ]]; then
+      perform_flash=true
+    elif [ $(echo "$lfw_V $cfw_V -p" | dc) -ge 1 ]; then
       if [ $cfw_type == "homekit" ] && [ $mode == "homekit" ]; then
         perform_flash=true
       elif [ $cfw_type == "stock" ] && [ $mode == "stock" ]; then
@@ -253,14 +264,10 @@ function probe_info {
       elif [ $mode == "keep" ]; then
         perform_flash=true
       fi
-    elif [ $cfw_type == "stock" ] && [ $mode == "homekit" ] && [[ ! -z $dlurl ]]; then
-      perform_flash=true
-    elif [ $cfw_type == "homekit" ] && [ $mode == "stock" ] && [[ ! -z $dlurl ]]; then
-      perform_flash=true
     else
       perform_flash=false
     fi
-    if [ $perform_flash == true ] && [ $dry_run == false ] && [ $silent_run == false ]; then
+    if [[ $perform_flash == true ]] && [[ $dry_run == false ]] && [[ $silent_run == false ]]; then
       while true; do
         read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
@@ -269,9 +276,9 @@ function probe_info {
           * ) echo "Please answer yes or no.";;
         esac
       done
-    elif [ $perform_flash == true ] && [ $dry_run == false ] && [ $silent_run == true ]; then
+    elif [[ $perform_flash == true ]] && [[ $dry_run == false ]] && [[ $silent_run == true ]]; then
       flash="yes"
-    elif [ $perform_flash == true ] && [ $dry_run == true ]; then
+    elif [[ $perform_flash == true ]] && [[ $dry_run == true ]]; then
       if [[ $mode == "stock" ]] && [ $cfw_type == "homekit" ]; then
         local keyword="converted to Official firmware"
       elif [ $cfw_type == "homekit" ] || [[ $mode == "stock" ]]; then
@@ -287,7 +294,7 @@ function probe_info {
     fi
 
     if [ "$flash" = "yes" ]; then
-      write_flash $device $lfw $dlurl $cfw_type
+      write_flash $device $lfw $dlurl $cfw_type $mode
     elif [ "$flash" = "no" ]; then
       echo "Skipping Flash..."
     fi
