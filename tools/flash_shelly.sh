@@ -298,7 +298,7 @@ function probe_info {
         esac
       done
     elif [[ $perform_flash == true ]] && [[ $dry_run == false ]] && [[ $silent_run == true ]]; then
-      flash="yes"
+      flash=true
     elif [[ $perform_flash == true ]] && [[ $dry_run == true ]]; then
       if [[ $mode == "stock" ]] && [ $cfw_type == "homekit" ]; then
         local keyword="converted to Official firmware"
@@ -309,14 +309,18 @@ function probe_info {
       fi
       echo "Would have been $keyword..."
     elif [ -z $dlurl ]; then
-      echo "$model is not supported yet..."
+      echo "$model is not supported yet.."
+      echo " "
+      continue
     else
       echo "$device dose not need updating..."
+      echo " "
+      continue
     fi
 
     if [[ $flash == true ]]; then
       write_flash $device $lfw $dlurl $cfw_type $mode
-    else
+    elif [[ $dry_run == false ]]; then
       echo "Skipping Flash..."
     fi
     echo " "
