@@ -81,6 +81,7 @@ if [ "$(which jq  2>/dev/null)" == "" ]; then
   echo $($installer jq 2>/dev/null)
 fi
 
+arch=$(uname -s)
 if [[ $arch != "Darwin" ]] && [ "$(which avahi-utils  2>/dev/null)" == "" ]; then
     check_installer
     echo -e '\033[1mInstalling avahi-utils...\033[0m'
@@ -374,7 +375,6 @@ function help {
   echo " -h                         This help text."
 }
 
-arch=$(uname -s)
 check=null
 action=flash
 do_all=false
