@@ -35,6 +35,18 @@
 #  usage: ./flash_shelly.sh shelly1-034FFF.local
 
 
+function check_installer {
+  if [[ $arch == "Darwin" ]]; then
+    check_brew
+    installer="brew install "
+  elif [ "$(which apt-get 2>/dev/null)" != "" ]; then
+    installer="sudo apt-get install "
+  else
+    installer="sudo yum install "
+  fi
+  return 0
+}
+
 function check_brew {
   if [ "$(which brew 2>/dev/null)" != "" ]; then
     return 0
@@ -51,21 +63,22 @@ function check_brew {
 
   echo -e '\033[1mInstalling brew...\033[0m'
   echo -e '\033[1mPlease follow instructions...\033[0m'
-  echo -e '\033[1mYou will be asked for your password to install breww...\033[0m'
+  echo -e '\033[1mYou may be asked for your password...\033[0m'
   echo -e '\033[1m \033[0m'
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 }
 
 if [ "$(which timeout 2>/dev/null)" == "" ]; then
-  check_brew
   echo -e '\033[1mInstalling coreutils...\033[0m'
-  brew install coreutils
+  echo -e '\033[1mYou may be asked for your password...\033[0m'
+  echo $($installer coreutils 2>/dev/null)
 fi
 
 if [ "$(which jq  2>/dev/null)" == "" ]; then
-  check_brew
+  check_installer
   echo -e '\033[1mInstalling jq...\033[0m'
-  brew install jq
+  echo -e '\033[1mYou may be asked for your password...\033[0m'
+  echo $($installer jq 2>/dev/null)
 fi
 
 function convert_to_integer {
@@ -320,6 +333,7 @@ function probe_info {
 }
 
 function device_scan {
+  local device_list=null
   local device=$1
   local action=$2
   local do_all=$3
@@ -330,7 +344,13 @@ function device_scan {
     probe_info $device $action $dry_run $mode
   else
     echo -e '\033[1mScanning for Shelly devices...\033[0m'
-    for device in $(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}'); do
+    if [[ $arch == "Darwin" ]]; then
+      device_list=$(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}' 2>/dev/null)
+    else
+      device_list=$(timeout 2 avahi-browse -pd local _http._tcp 2>/dev/null)
+      device_list=$(echo $device_list | sed 's#+#\n#g' | awk -F';' '{print $4}' | awk '/shelly/ {print $1}' 2>/dev/null)
+    fi
+    for device in $device_list; do
       probe_info $device.local $action $dry_run $mode
     done
   fi
@@ -347,6 +367,7 @@ function help {
   echo " -h                         This help text."
 }
 
+arch=$(uname -s)
 check=null
 action=flash
 do_all=false
@@ -401,6 +422,7 @@ elif [[ ! -z $@ ]] && [ $do_all == true ]; then
   help
   exit 1
 fi
+
 
 stock_release_info=$(curl -qsS -m 5 https://api.shelly.cloud/files/firmware)||check="error"
 homekit_release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)||check="error"
