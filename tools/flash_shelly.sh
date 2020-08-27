@@ -81,6 +81,13 @@ if [ "$(which jq  2>/dev/null)" == "" ]; then
   echo $($installer jq 2>/dev/null)
 fi
 
+if [[ $arch != "Darwin" ]] && [ "$(which avahi-utils  2>/dev/null)" == "" ]; then
+    check_installer
+    echo -e '\033[1mInstalling avahi-utils...\033[0m'
+    echo -e '\033[1mYou may be asked for your password...\033[0m'
+    echo $($installer avahi-utils 2>/dev/null)
+fi
+
 function convert_to_integer {
   echo "$@" | awk -F "." '{ printf("%03d%03d%03d", $1,$2,$3); }';
 }
