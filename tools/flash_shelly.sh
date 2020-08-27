@@ -82,7 +82,7 @@ if [ "$(which jq  2>/dev/null)" == "" ]; then
 fi
 
 arch=$(uname -s)
-if [[ $arch != "Darwin" ]] && [ "$(which avahi-utils  2>/dev/null)" == "" ]; then
+if [[ $arch != "Darwin" ]] && [ "$(which avahi-browse 2>/dev/null)" == "" ]; then
     check_installer
     echo -e '\033[1mInstalling avahi-utils...\033[0m'
     echo -e '\033[1mYou may be asked for your password...\033[0m'
