@@ -71,14 +71,14 @@ function check_brew {
 if [ "$(which timeout 2>/dev/null)" == "" ]; then
   echo -e '\033[1mInstalling coreutils...\033[0m'
   echo -e '\033[1mYou may be asked for your password...\033[0m'
-  echo $($installer coreutils 2>/dev/null)
+  echo $($installer coreutils)
 fi
 
 if [ "$(which jq  2>/dev/null)" == "" ]; then
   check_installer
   echo -e '\033[1mInstalling jq...\033[0m'
   echo -e '\033[1mYou may be asked for your password...\033[0m'
-  echo $($installer jq 2>/dev/null)
+  echo $($installer jq)
 fi
 
 arch=$(uname -s)
@@ -86,7 +86,7 @@ if [[ $arch != "Darwin" ]] && [ "$(which avahi-browse 2>/dev/null)" == "" ]; the
     check_installer
     echo -e '\033[1mInstalling avahi-utils...\033[0m'
     echo -e '\033[1mYou may be asked for your password...\033[0m'
-    echo $($installer avahi-utils 2>/dev/null)
+    echo $($installer avahi-utils)
 fi
 
 function convert_to_integer {
