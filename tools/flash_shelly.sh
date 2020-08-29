@@ -68,7 +68,7 @@ function check_brew {
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 }
 
-if [ "$(which timeout 2>/dev/null)" == "" ]; then
+if [[ $arch == "Darwin" ]] && [ "$(which timeout 2>/dev/null)" == "" ]; then
   echo -e '\033[1mInstalling coreutils...\033[0m'
   echo -e '\033[1mYou may be asked for your password...\033[0m'
   echo $($installer coreutils)
@@ -359,7 +359,7 @@ function device_scan {
     if [[ $arch == "Darwin" ]]; then
       device_list=$(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}' 2>/dev/null)
     else
-      device_list=$(timeout 2 avahi-browse -pd local _http._tcp 2>/dev/null)
+      device_list=$(avahi-browse -p -d local -t _http._tcp 2>/dev/null)
       device_list=$(echo $device_list | sed 's#+#\n#g' | awk -F';' '{print $4}' | awk '/shelly/ {print $1}' 2>/dev/null)
     fi
     for device in $device_list; do
