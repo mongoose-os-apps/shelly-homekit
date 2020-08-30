@@ -26,6 +26,11 @@ Reverting to stock firmware is also supported (see below).
 
   * See [here](docs/setup-ota.md) for detailed instructions.
 
+
+  * Script [here](tools/flash_shelly.sh) for an automateded way to update your devices.
+    * ./flash_shelly.sh hostname.local  (for single device)
+    * ./flash_shelly.sh -a  (for all devices for network)
+
 ## Setup
 
  * Before device can be added to a Home, setup code needs to be configured (via web interface). Pick any code.
@@ -50,7 +55,7 @@ Reverting to stock firmware is also supported (see below).
  Both of these methods will make device go int AP mode where they can be reconfigured.
 
  If the device does not appear in the list of accessories when adding, try resetting the HomeKit status from the web interface.
-
+ 
 ## LED indication
 
  Shelly2.5 and ShellyPlug-S have an LED that is used to indicate current status of the device
@@ -74,6 +79,9 @@ Reverting to stock firmware is also supported (see below).
   * [Shelly Plug S](http://api.shelly.cloud/firmware/SHPLG-S.zip)
 
  Download it and upload via web interface (this firmware does not support pulling from a remote URL).
+ 
+ Script [here](tools/flash_shelly.sh) for an automateded way to revert your devices to sock firmware.
+   * ./flash_shelly.sh -m revert hostname.local
 
 ## Contributions and Development
 
