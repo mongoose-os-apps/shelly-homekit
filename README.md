@@ -80,7 +80,7 @@ Reverting to stock firmware is also supported (see below).
 
  Download it and upload via web interface (this firmware does not support pulling from a remote URL).
  
- Script [here](tools/flash_shelly.sh) for an automated way to revert your devices to sock firmware.
+ Script [here](tools/flash_shelly.sh) for an automated way to revert your devices to stock firmware.
    * ./flash_shelly.sh -m revert hostname.local
 
 ## Contributions and Development
