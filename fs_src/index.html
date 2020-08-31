@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-  <link rel="stylesheet" type="text/css" href="style.css.gz">
+  <link rel="stylesheet" type="text/css" href="style.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="axios.min.js.gz"></script>
+  <script src="jquery.min.js.gz"></script>
   </head>
   <body onLoad="onLoad()">
-    <div class="container">
+    <div class="header">
      <br>
       <div class="logodiv">
         <img class="img" src="logo.png" alt=""></div>
           <div class="apl_thin">
-            shelly-HomeKit
+            shelly-<b>HomeKit</b>
           </div>
-    <h1 class="" id="device_id" style="visibility: hidden">shellyswitch25-XXXXXX</h1>
+    <h1 class="" id="device_id" style="visibility: none">shellyswitch25-XXXXXX</h1>
      <br>
       <button class="btn" id="refresh_btn">
         <span id="spinner"></span>
@@ -21,7 +22,7 @@
       </button>
             <button class="btn" id="reboot_btn">
               Reboot
-            </button>
+            </button> <p>
      <button disabled class="btndis" id="uptime_label">
        Uptime: <span id="uptime"></span>
      </button>
@@ -231,7 +232,6 @@
         </div>
       </div>
     </div>
-
     <div class="container" id="fw_container" style="visibility: hidden">
       <h1 class="">Firmware</h1>
       <div class="form">
@@ -243,6 +243,10 @@
           <div class="form-control">
             <label>Version:</label>
             <span id="app_version"></span>
+          </div>
+          <div class="form-control">
+            <label> </label>
+		<span class="app_version_online"></span>
           </div>
           <div class="form-control">
             <label>Build ID:</label>
@@ -258,6 +262,34 @@
         </div>
       </div>
     </div>
+    <div class="footer" id="legal_container" style="visibility: none">
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>
+Copyright (c) 2020 Deomid "rojer" Ryabkov <p> All rights reserved <p> <p> Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 <p> <p> Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.<p> 
+	      </label>
+            <span id="app_name"></span>
+          </div>
+    </div>
+
+<script>
+
+try { 
+    $.getJSON('https://api.github.com/repos/mongoose-os-apps/shelly-homekit/tags', function(data) {
+        var online_version = `${data[0].name}`
+            if (app_version === online_version) {
+                var verCheck = "Your software is up to date.";
+            } else {
+                var verCheck = "A new update is now available. (" + online_version + ")" ;
+            }                 
+        $(".app_version_online").html(verCheck);
+    });
+}
+catch (e) {
+}
+</script>
+
 <script>
 
 var host = "";
