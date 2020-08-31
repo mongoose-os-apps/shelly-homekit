@@ -278,7 +278,7 @@ Copyright (c) 2020 Deomid "rojer" Ryabkov <p> All rights reserved <p> <p> Licens
 try { 
     $.getJSON('https://api.github.com/repos/mongoose-os-apps/shelly-homekit/tags', function(data) {
         var online_version = `${data[0].name}`
-            if (app_version === online_version) {
+            if (app_version == online_version) {
                 var verCheck = "Your software is up to date.";
             } else {
                 var verCheck = "A new update is now available. (" + online_version + ")" ;
