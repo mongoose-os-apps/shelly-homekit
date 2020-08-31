@@ -32,7 +32,7 @@
 #   -h                         This help text.
 #
 #  usage: ./flash_shelly.sh -la
-#  usage: ./flash_shelly.sh shelly1-034FFF.local
+#  usage: ./flash_shelly.sh shelly1-034FFF
 
 
 function check_installer {
@@ -353,6 +353,9 @@ function device_scan {
   local mode=$5
 
   if [ $do_all == false ]; then
+    if [[ $device != *.local* ]]; then
+      device=$device.local
+    fi
     probe_info $device $action $dry_run $mode
   else
     echo -e '\033[1mScanning for Shelly devices...\033[0m'
