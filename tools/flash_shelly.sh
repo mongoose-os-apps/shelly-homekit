@@ -313,7 +313,7 @@ function probe_info {
       echo " "
       continue
     else
-      echo "$device dose not need updating..."
+      echo "$device does not need updating..."
       echo " "
       continue
     fi
