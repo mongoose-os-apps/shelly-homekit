@@ -28,8 +28,8 @@ Reverting to stock firmware is also supported (see below).
 
 
   * Script [here](tools/flash_shelly.sh) for an automated way to update your devices.
-    * ./flash_shelly.sh hostname.local  (for single device)
-    * ./flash_shelly.sh -a  (for all devices for network)
+    * ./flash_shelly.sh hostname  (for single device)
+    * ./flash_shelly.sh -a  (for all devices on the network)
 
 ## Setup
 
@@ -55,7 +55,7 @@ Reverting to stock firmware is also supported (see below).
  Both of these methods will make device go int AP mode where they can be reconfigured.
 
  If the device does not appear in the list of accessories when adding, try resetting the HomeKit status from the web interface.
- 
+
 ## LED indication
 
  Shelly2.5 and ShellyPlug-S have an LED that is used to indicate current status of the device
@@ -71,7 +71,7 @@ Reverting to stock firmware is also supported (see below).
 
  It is possible to revert back to stock firmware.
 
- Stock firmware for can be downloaded from the offical site:
+ Stock firmware for can be downloaded from the official site:
   * [Shelly 1](http://api.shelly.cloud/firmware/SHSW-1.zip)
   * [Shelly 1PM](http://api.shelly.cloud/firmware/SHSW-PM.zip)
   * [Shelly 2](http://api.shelly.cloud/firmware/SHSW-21.zip)
@@ -79,9 +79,9 @@ Reverting to stock firmware is also supported (see below).
   * [Shelly Plug S](http://api.shelly.cloud/firmware/SHPLG-S.zip)
 
  Download it and upload via web interface (this firmware does not support pulling from a remote URL).
- 
+
  Script [here](tools/flash_shelly.sh) for an automated way to revert your devices to stock firmware.
-   * ./flash_shelly.sh -m revert hostname.local
+   * ./flash_shelly.sh -m revert hostname
 
 ## Contributions and Development
 
