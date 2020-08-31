@@ -162,9 +162,9 @@ function probe_info {
     echo "Could not resolve host: $device"
     if [[ -z $device ]]; then
       read -p "Press enter to continue"
-      continue
+      return 0
     else
-      exit 1
+      return 1
     fi
   fi
   cfw_type="homekit"
@@ -172,7 +172,7 @@ function probe_info {
     info=$(curl -qsS -m 5 http://$device/Shelly.GetInfo)
     cfw_type="stock"
     if [[ -z $device ]]; then
-      continue
+      return 0
     fi
   fi
 
@@ -293,7 +293,7 @@ function probe_info {
         read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
           [Yy]* )  flash=true; break;;
-          [Nn]* ) flash=false;break;;
+          [Nn]* ) flash=false; break;;
           * ) echo "Please answer yes or no.";;
         esac
       done
@@ -311,11 +311,11 @@ function probe_info {
     elif [ -z $dlurl ]; then
       echo "$model is not supported yet.."
       echo " "
-      continue
+      return 0
     else
-      echo "$device dose not need updating..."
+      echo "$device does not need updating..."
       echo " "
-      continue
+      return 0
     fi
 
     if [[ $flash == true ]]; then
@@ -366,7 +366,7 @@ function device_scan {
       device_list=$(echo $device_list | sed 's#+#\n#g' | awk -F';' '{print $4}' | awk '/shelly/ {print $1}' 2>/dev/null)
     fi
     for device in $device_list; do
-      probe_info $device.local $action $dry_run $mode
+      probe_info $device.local $action $dry_run $mode || continue
     done
   fi
 }
@@ -447,7 +447,7 @@ fi
 
 if [[ ! -z $@ ]];then
   for device in $@; do
-    device_scan $device $action $do_all $dry_run $mode
+    device_scan $device $action $do_all $dry_run $mode || continue
   done
 fi
 if [ $do_all == true ];then
