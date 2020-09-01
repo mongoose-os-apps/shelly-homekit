@@ -15,41 +15,15 @@
  * limitations under the License.
  */
 
+#include "HAP.h"
+
 #include "shelly_common.h"
 
 namespace shelly {
 
-class Output {
+class Service {
  public:
-  virtual bool GetState() = 0;
-  virtual Status SetState(bool on) = 0;
-};
-
-class OutputPowerMeter {
- public:
-  virtual StatusOr<float> GetPowerW() = 0;
-  virtual StatusOr<float> GetEnergyWH() = 0;
-};
-
-class MeteredOutput : public Output, OutputPowerMeter {
- public:
-};
-
-class OutputPin : public Output {
- public:
-  OutputPin(int id, int pin, bool on_value, bool initial_state);
-  virtual ~OutputPin();
-
-  // Output interface impl.
-  bool GetState() override;
-  Status SetState(bool on) override;
-
- private:
-  const int id_;
-  const int pin_;
-  const bool on_value_;
-
-  OutputPin(const OutputPin &other) = delete;
+  virtual const HAPService *GetHAPService() const = 0;
 };
 
 }  // namespace shelly

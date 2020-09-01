@@ -15,41 +15,32 @@
  * limitations under the License.
  */
 
+#include "mgos_sys_config.h"
+
 #include "shelly_common.h"
+#include "shelly_component.h"
+#include "shelly_hap.h"
+#include "shelly_input.h"
+#include "shelly_output.h"
 
 namespace shelly {
 
-class Output {
+class HAPSwitch : public Component, Service {
  public:
-  virtual bool GetState() = 0;
-  virtual Status SetState(bool on) = 0;
-};
+  HAPSwitch(Input *in, Output *out, const struct mgos_config_sw *cfg);
+  virtual ~HAPSwitch();
 
-class OutputPowerMeter {
- public:
-  virtual StatusOr<float> GetPowerW() = 0;
-  virtual StatusOr<float> GetEnergyWH() = 0;
-};
-
-class MeteredOutput : public Output, OutputPowerMeter {
- public:
-};
-
-class OutputPin : public Output {
- public:
-  OutputPin(int id, int pin, bool on_value, bool initial_state);
-  virtual ~OutputPin();
-
-  // Output interface impl.
-  bool GetState() override;
-  Status SetState(bool on) override;
+  StatusOr<std::string> GetInfo() const override;
+  const HAPService *GetHAPService() const override;
 
  private:
-  const int id_;
-  const int pin_;
-  const bool on_value_;
+  Input *in_;
+  Output *out_;
+  const struct mgos_config_sw *cfg_;
 
-  OutputPin(const OutputPin &other) = delete;
+  HAPService svc_;
+
+  HAPSwitch(const HAPSwitch &other) = delete;
 };
 
 }  // namespace shelly

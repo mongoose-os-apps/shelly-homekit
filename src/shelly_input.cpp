@@ -22,10 +22,12 @@
 
 namespace shelly {
 
-InputPin::InputPin(int id, int pin, bool on_value, enum mgos_gpio_pull_type pull)
+InputPin::InputPin(int id, int pin, bool on_value,
+                   enum mgos_gpio_pull_type pull)
     : id_(id), pin_(pin), on_value_(on_value) {
   mgos_gpio_setup_input(pin_, pull);
-  mgos_gpio_set_button_handler(pin_, pull, MGOS_GPIO_INT_EDGE_ANY, 20, GPIOIntHandler, this);
+  mgos_gpio_set_button_handler(pin_, pull, MGOS_GPIO_INT_EDGE_ANY, 20,
+                               GPIOIntHandler, this);
 }
 
 InputPin::~InputPin() {
@@ -42,7 +44,7 @@ void InputPin::SetHandler(HandlerFn h) {
 
 // static
 void InputPin::GPIOIntHandler(int pin, void *arg) {
-  static_cast<InputPin*>(arg)->HandleGPIOInt();
+  static_cast<InputPin *>(arg)->HandleGPIOInt();
   (void) pin;
 }
 
