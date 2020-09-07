@@ -139,7 +139,18 @@ function write_flash {
       if [ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ];then
         echo "Successfully flashed $device to $lfw"
       else
+        if [ $(echo "$info" | jq -r .type) == "SHRGBW2" ]; then
+          echo " "
+          echo "To finalise flash process you will need to switch 'Modes' in the device WebUI,"
+          echo "WARNING!! If you are using this device in conjunction with Homebridge it will"
+          echo "result in ALL scenes / automations to be removed within HomeKit."
+          echo "Goto http://$device in your web browser"
+          echo "Goto settings section"
+          echo "Goto 'Device Type' and switch modes"
+          echo "Once mode has been changed, you can switch it back to your preferred mode."
+        else
         echo "Flash failed!!!"
+        fi
       fi
     fi
   fi
