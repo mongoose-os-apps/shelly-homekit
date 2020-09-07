@@ -149,7 +149,7 @@ function write_flash {
           echo "Goto 'Device Type' and switch modes"
           echo "Once mode has been changed, you can switch it back to your preferred mode."
         else
-        echo "Flash failed!!!"
+          echo "Flash failed!!!"
         fi
       fi
     fi
