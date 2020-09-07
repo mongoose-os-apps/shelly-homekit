@@ -51,7 +51,7 @@ void InputPin::GPIOIntHandler(int pin, void *arg) {
 void InputPin::HandleGPIOInt() {
   bool cur_state = (mgos_gpio_read(pin_) == on_value_);
   LOG(LL_INFO, ("Input %d: %s", id_, OnOff(cur_state)));
-  if (handler_) handler_(InputEvent::CHANGE, cur_state);
+  if (handler_) handler_(Event::CHANGE, cur_state);
 }
 
 }  // namespace shelly

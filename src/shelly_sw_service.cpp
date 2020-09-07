@@ -18,6 +18,9 @@
 #include "shelly_sw_service.h"
 #include "shelly_sw_service_internal.h"
 
+#include "shelly_common.h"
+#include "shelly_hap_chars.h"
+
 #include <math.h>
 
 #include "mgos.h"
@@ -196,6 +199,26 @@ static void shelly_sw_read_power(void *arg) {
 }
 #endif
 
+HAPError shelly_sw_handle_on_read(
+    struct shelly_sw_service_ctx *ctx, HAPAccessoryServerRef *server,
+    const HAPBoolCharacteristicReadRequest *request, bool *value) {
+  const struct mgos_config_sw *cfg = ctx->cfg;
+  *value = ctx->info.state;
+  LOG(LL_INFO, ("%s: READ -> %d", cfg->name, ctx->info.state));
+  ctx->hap_server = server;
+  ctx->hap_accessory = request->accessory;
+  return kHAPError_None;
+}
+
+HAPError shelly_sw_handle_on_write(
+    struct shelly_sw_service_ctx *ctx, HAPAccessoryServerRef *server,
+    const HAPBoolCharacteristicWriteRequest *request, bool value) {
+  ctx->hap_server = server;
+  ctx->hap_accessory = request->accessory;
+  shelly_sw_set_state_ctx(ctx, value, "HAP");
+  return kHAPError_None;
+}
+
 HAPService *shelly_sw_service_create(
 #ifdef MGOS_HAVE_ADE7953
     struct mgos_ade7953 *ade7953, int ade7953_channel,
@@ -210,6 +233,7 @@ HAPService *shelly_sw_service_create(
     LOG(LL_ERROR, ("Switch ID too big!"));
     return NULL;
   }
+  struct shelly_sw_service_ctx *ctx = &s_ctx[cfg->id];
   HAPService *svc = (HAPService *) calloc(1, sizeof(*svc));
   if (svc == NULL) return NULL;
   svc->name = cfg->name;
@@ -221,38 +245,63 @@ HAPService *shelly_sw_service_create(
   const char *svc_type_name = NULL;
   switch (cfg->svc_type) {
     default:
-    case SHELLY_SW_TYPE_SWITCH:
+    case SHELLY_SW_TYPE_SWITCH: {
       iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * cfg->id);
       svc->iid = iid++;
       svc->serviceType = &kHAPServiceType_Switch;
       svc->debugDescription = kHAPServiceDebugDescription_Switch;
-      chars[0] = shelly_sw_name_char(iid++);
-      chars[1] = shelly_sw_on_char(iid++);
+      auto *name_char = new shelly::ShellyHAPStringCharacteristic(
+          iid++, &kHAPCharacteristicType_Name, 64, cfg->name,
+          kHAPCharacteristicDebugDescription_Name);
+      chars[0] = name_char->GetBase();
+      auto *on_char = new shelly::ShellyHAPBoolCharacteristic(
+          iid++, &kHAPCharacteristicType_On,
+          std::bind(&shelly_sw_handle_on_read, ctx, shelly::_1, shelly::_2,
+                    shelly::_3),
+          std::bind(&shelly_sw_handle_on_write, ctx, shelly::_1, shelly::_2,
+                    shelly::_3),
+          kHAPCharacteristicDebugDescription_On);
+      chars[1] = on_char->GetBase();
       svc_type_name = "switch";
       break;
-    case SHELLY_SW_TYPE_OUTLET:
+    }
+    case SHELLY_SW_TYPE_OUTLET: {
       iid = IID_BASE_OUTLET + (IID_STEP_OUTLET * cfg->id);
       svc->iid = iid++;
       svc->serviceType = &kHAPServiceType_Outlet;
       svc->debugDescription = kHAPServiceDebugDescription_Outlet;
-      chars[0] = shelly_sw_name_char(iid++);
-      chars[1] = shelly_sw_on_char(iid++);
+      auto *name_char = new shelly::ShellyHAPStringCharacteristic(
+          iid++, &kHAPCharacteristicType_Name, 64, cfg->name,
+          kHAPCharacteristicDebugDescription_Name);
+      chars[0] = name_char->GetBase();
+      auto *on_char = new shelly::ShellyHAPBoolCharacteristic(
+          iid++, &kHAPCharacteristicType_On,
+          std::bind(&shelly_sw_handle_on_read, ctx, shelly::_1, shelly::_2,
+                    shelly::_3),
+          std::bind(&shelly_sw_handle_on_write, ctx, shelly::_1, shelly::_2,
+                    shelly::_3),
+          kHAPCharacteristicDebugDescription_On);
+      chars[1] = on_char->GetBase();
       chars[2] = shelly_sw_in_use_char(iid++);
       svc_type_name = "outlet";
       break;
-    case SHELLY_SW_TYPE_LOCK:
+    }
+    case SHELLY_SW_TYPE_LOCK: {
       iid = IID_BASE_LOCK + (IID_STEP_LOCK * cfg->id);
       svc->iid = iid++;
       svc->serviceType = &kHAPServiceType_LockMechanism;
       svc->debugDescription = kHAPServiceDebugDescription_LockMechanism;
-      chars[0] = shelly_sw_name_char(iid++);
+      auto *name_char = new shelly::ShellyHAPStringCharacteristic(
+          iid++, &kHAPCharacteristicType_Name, 64, cfg->name,
+          kHAPCharacteristicDebugDescription_Name);
+      chars[0] = name_char->GetBase();
       chars[1] = shelly_sw_lock_cur_state(iid++);
       chars[2] = shelly_sw_lock_tgt_state(iid++);
       svc_type_name = "lock";
       break;
+    }
   }
   svc->characteristics = chars;
-  struct shelly_sw_service_ctx *ctx = &s_ctx[cfg->id];
   ctx->cfg = cfg;
   ctx->hap_service = svc;
   ctx->auto_off_timer_id = MGOS_INVALID_TIMER_ID;

@@ -25,14 +25,10 @@ class Output {
   virtual Status SetState(bool on) = 0;
 };
 
-class OutputPowerMeter {
+class PowerMeter {
  public:
   virtual StatusOr<float> GetPowerW() = 0;
   virtual StatusOr<float> GetEnergyWH() = 0;
-};
-
-class MeteredOutput : public Output, OutputPowerMeter {
- public:
 };
 
 class OutputPin : public Output {

@@ -23,7 +23,7 @@ namespace shelly {
 
 class Input {
  public:
-  enum class InputEvent {
+  enum class Event {
     CHANGE = 0,
     // TODO:
     // SINGLE = 1,
@@ -31,7 +31,7 @@ class Input {
   };
   virtual StatusOr<bool> GetState() = 0;
 
-  typedef std::function<void(InputEvent ev, bool state)> HandlerFn;
+  typedef std::function<void(Event ev, bool state)> HandlerFn;
   virtual void SetHandler(HandlerFn h) = 0;
 };
 

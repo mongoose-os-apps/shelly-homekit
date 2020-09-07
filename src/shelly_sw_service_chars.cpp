@@ -65,7 +65,7 @@ const HAPCharacteristic *shelly_sw_name_char(uint16_t iid) {
   return c;
 };
 
-HAPError shelly_sw_handle_on_read(
+static HAPError shelly_sw_handle_on_read(
     HAPAccessoryServerRef *server,
     const HAPBoolCharacteristicReadRequest *request, bool *value,
     void *context) {
@@ -79,7 +79,7 @@ HAPError shelly_sw_handle_on_read(
   return kHAPError_None;
 }
 
-HAPError shelly_sw_handle_on_write(
+static HAPError shelly_sw_handle_on_write(
     HAPAccessoryServerRef *server,
     const HAPBoolCharacteristicWriteRequest *request, bool value,
     void *context) {

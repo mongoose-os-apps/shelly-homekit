@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
+#include <vector>
+
 #include "mgos_sys_config.h"
 
 #include "shelly_common.h"
 #include "shelly_component.h"
 #include "shelly_hap.h"
+#include "shelly_hap_chars.h"
 #include "shelly_input.h"
 #include "shelly_output.h"
 
@@ -27,16 +30,22 @@ namespace shelly {
 
 class HAPSwitch : public Component, Service {
  public:
-  HAPSwitch(Input *in, Output *out, const struct mgos_config_sw *cfg);
+  HAPSwitch(Input *in, Output *out, PowerMeter *out_pm,
+            const struct mgos_config_sw *cfg);
   virtual ~HAPSwitch();
 
   StatusOr<std::string> GetInfo() const override;
   const HAPService *GetHAPService() const override;
 
  private:
+  void InputEventHandler(Input::Event ev, bool state);
+
   Input *in_;
   Output *out_;
+  PowerMeter *out_pm_;
   const struct mgos_config_sw *cfg_;
+
+  std::vector<std::unique_ptr<const ShellyHAPCharacteristic>> chars_;
 
   HAPService svc_;
 

@@ -29,6 +29,8 @@ namespace shelly {
 using mgos::Status;
 using mgos::StatusOr;
 
+using namespace std::placeholders;  // _1, _2, ...
+
 inline const char *OnOff(bool on) {
   return (on ? "on" : "off");
 }

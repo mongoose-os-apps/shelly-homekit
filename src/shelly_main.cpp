@@ -485,9 +485,6 @@ bool shelly_app_init() {
 
   shelly_debug_init(&s_kvs, &s_tcpm);
 
-  std::string s = mgos::JSONPrintfString("{a: %d, b: %Q}", 1, "2");
-  LOG(LL_INFO, ("s = %s", s.c_str()));
-
   return true;
 }
 
