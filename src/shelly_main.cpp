@@ -52,6 +52,8 @@
 #define BTN_DOWN 0
 #endif
 
+namespace shelly {
+
 static HAPIPSession sessions[NUM_SESSIONS];
 static uint8_t scratch_buf[SCRATCH_BUF_SIZE];
 static HAPIPAccessoryServerStorage s_ip_storage = {
@@ -152,7 +154,10 @@ static bool shelly_start_hap_server(bool quiet) {
     return true;
   }
   if (mgos_hap_config_valid()) {
-    LOG(LL_INFO, ("=== Accessory provisioned, starting HAP server"));
+    uint16_t cn;
+    if (HAPAccessoryServerGetCN(&s_kvs, &cn) == kHAPError_None) {
+      LOG(LL_INFO, ("=== Accessory provisioned, starting HAP server (CN %d)", cn));
+    }
     HAPAccessoryServerStart(&s_server, &s_accessory);
     return true;
   } else if (!quiet) {
@@ -364,6 +369,21 @@ static bool shelly_cfg_migrate(void) {
   return changed;
 }
 
+static void reboot_cb(int ev, void *ev_data, void *userdata) {
+  // Increment CN on every reboot, because why not.
+  // This will cover firmware update as well as other configuration changes.
+  if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+    LOG(LL_ERROR, ("Failed to increment configuration number"));
+  }
+  uint16_t cn;
+  if (HAPAccessoryServerGetCN(&s_kvs, &cn) == kHAPError_None) {
+    LOG(LL_INFO, ("New CN: %d", cn));
+  }
+  (void) ev;
+  (void) ev_data;
+  (void) userdata;
+}
+
 bool shelly_app_init() {
 #ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
@@ -400,15 +420,6 @@ bool shelly_app_init() {
       .fileName = KVS_FILE_NAME,
   };
   HAPPlatformKeyValueStoreCreate(&s_kvs, &kvs_opts);
-
-#ifdef MGOS_HAVE_OTA_COMMON
-  if (mgos_ota_is_first_boot()) {
-    // Increment CN on firmware update, as required by the spec.
-    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
-      LOG(LL_ERROR, ("Failed to increment configuration number"));
-    }
-  }
-#endif
 
   // Accessory setup.
   static const HAPPlatformAccessorySetupOptions as_opts = {};
@@ -485,11 +496,15 @@ bool shelly_app_init() {
 
   shelly_debug_init(&s_kvs, &s_tcpm);
 
+  mgos_event_add_handler(MGOS_EVENT_REBOOT, reboot_cb, NULL);
+
   return true;
 }
 
+} // namespace shelly
+
 extern "C" {
 enum mgos_app_init_result mgos_app_init(void) {
-  return shelly_app_init() ? MGOS_APP_INIT_SUCCESS : MGOS_APP_INIT_ERROR;
+  return shelly::shelly_app_init() ? MGOS_APP_INIT_SUCCESS : MGOS_APP_INIT_ERROR;
 }
 }

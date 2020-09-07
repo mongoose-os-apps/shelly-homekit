@@ -95,10 +95,10 @@ struct ShellyHAPScalarCharacteristic : ShellyHAPCharacteristic {
     base_.characteristicType = type;
     base_.debugDescription = debug_description;
     base_.properties.readable = true;
+    base_.properties.supportsEventNotification = true;
     base_.callbacks.handleRead = ShellyHAPScalarCharacteristic::HandleReadCB;
     if (write_handler) {
       base_.properties.writable = true;
-      base_.properties.supportsEventNotification = true;
       /* ???
       base_.properties.ble.supportsBroadcastNotification = true;
       base_.properties.ble.supportsDisconnectedNotification = true;

@@ -24,6 +24,8 @@
 struct mgos_ade7953;
 #endif
 
+namespace shelly {
+
 enum shelly_sw_svc_type {
   SHELLY_SW_TYPE_SWITCH = 0,
   SHELLY_SW_TYPE_OUTLET = 1,
@@ -60,3 +62,5 @@ struct shelly_sw_info {
 bool shelly_sw_get_info(int id, struct shelly_sw_info *info);
 
 bool shelly_sw_set_state(int id, bool new_state, const char *source);
+
+} // namespace shelly

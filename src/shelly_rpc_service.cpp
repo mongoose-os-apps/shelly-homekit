@@ -26,6 +26,8 @@
 #include "shelly_debug.h"
 #include "shelly_sw_service.h"
 
+namespace shelly {
+
 static HAPAccessoryServerRef *s_server;
 static HAPPlatformKeyValueStoreRef s_kvs;
 static HAPPlatformTCPStreamManagerRef s_tcpm;
@@ -188,3 +190,5 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                      shelly_get_debug_info_handler, NULL);
   return true;
 }
+
+} // namespace shelly
