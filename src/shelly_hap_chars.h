@@ -45,7 +45,7 @@ class ShellyHAPCharacteristic {
   static std::vector<ShellyHAPCharacteristic *> instances_;
 };
 
-class ShellyHAPStringCharacteristic : ShellyHAPCharacteristic {
+class ShellyHAPStringCharacteristic : public ShellyHAPCharacteristic {
  public:
   ShellyHAPStringCharacteristic(uint16_t iid, const HAPUUID *type,
                                 uint16_t max_length,
@@ -73,7 +73,7 @@ class ShellyHAPStringCharacteristic : ShellyHAPCharacteristic {
 
 template <class ValType, class HAPBaseClass, class HAPReadRequestType,
           class HAPWriteRequestType>
-struct ShellyHAPScalarCharacteristic : ShellyHAPCharacteristic {
+struct ShellyHAPScalarCharacteristic : public ShellyHAPCharacteristic {
  public:
   typedef std::function<HAPError(HAPAccessoryServerRef *server,
                                  const HAPReadRequestType *request,

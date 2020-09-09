@@ -22,7 +22,7 @@ namespace shelly {
 class Output {
  public:
   virtual bool GetState() = 0;
-  virtual Status SetState(bool on) = 0;
+  virtual Status SetState(bool on, const char *source) = 0;
 };
 
 class PowerMeter {
@@ -38,7 +38,7 @@ class OutputPin : public Output {
 
   // Output interface impl.
   bool GetState() override;
-  Status SetState(bool on) override;
+  Status SetState(bool on, const char *source) override;
 
  private:
   const int id_;

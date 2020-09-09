@@ -34,11 +34,13 @@ bool OutputPin::GetState() {
   return (mgos_gpio_read_out(pin_) == on_value_);
 }
 
-Status OutputPin::SetState(bool on) {
+Status OutputPin::SetState(bool on, const char *source) {
   bool cur_state = GetState();
   if (on == cur_state) return Status::OK();
-  LOG(LL_INFO, ("Output %d: %s -> %s", id_, OnOff(cur_state), OnOff(on)));
   mgos_gpio_write(pin_, (on ? on_value_ : !on_value_));
+  if (source == nullptr) source = "";
+  LOG(LL_INFO,
+      ("Output %d: %s -> %s (%s)", id_, OnOff(cur_state), OnOff(on), source));
   return Status::OK();
 }
 

@@ -109,12 +109,10 @@ void shelly_sw_set_state_ctx(struct shelly_sw_service_ctx *ctx, bool new_state,
   ctx->info.state = new_state;
   if (ctx->hap_server != NULL) {
     if (cfg->svc_type == SHELLY_SW_TYPE_LOCK) {
-      HAPAccessoryServerRaiseEvent(ctx->hap_server,
-                                   ctx->state_notify_char,
+      HAPAccessoryServerRaiseEvent(ctx->hap_server, ctx->state_notify_char,
                                    ctx->hap_service, ctx->hap_accessory);
     }
-    HAPAccessoryServerRaiseEvent(ctx->hap_server,
-                                 ctx->state_notify_char,
+    HAPAccessoryServerRaiseEvent(ctx->hap_server, ctx->state_notify_char,
                                  ctx->hap_service, ctx->hap_accessory);
   }
   if (cfg->state != new_state) {
@@ -232,8 +230,7 @@ static HAPError shelly_sw_handle_on_write(
 }
 
 static HAPError shelly_sw_handle_lock_cur_state_read(
-    struct shelly_sw_service_ctx *ctx,
-    HAPAccessoryServerRef *server,
+    struct shelly_sw_service_ctx *ctx, HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
   *value = (ctx->info.state ? 0 : 1);
   ctx->hap_server = server;
@@ -242,14 +239,12 @@ static HAPError shelly_sw_handle_lock_cur_state_read(
 }
 
 static HAPError shelly_sw_handle_lock_tgt_state_write(
-    struct shelly_sw_service_ctx *ctx,
-    HAPAccessoryServerRef *server,
+    struct shelly_sw_service_ctx *ctx, HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
   ctx->hap_server = server;
   ctx->hap_accessory = request->accessory;
   shelly_sw_set_state_ctx(ctx, (value == 0), "HAP");
-  HAPAccessoryServerRaiseEvent(ctx->hap_server,
-                               ctx->tgt_state_notify_char,
+  HAPAccessoryServerRaiseEvent(ctx->hap_server, ctx->tgt_state_notify_char,
                                ctx->hap_service, ctx->hap_accessory);
   return kHAPError_None;
 }
@@ -326,8 +321,7 @@ HAPService *shelly_sw_service_create(
       chars[1] = on_char->GetBase();
       auto *in_use_char = new shelly::ShellyHAPBoolCharacteristic(
           iid++, &kHAPCharacteristicType_OutletInUse,
-          std::bind(&shelly_sw_handle_in_use_read, ctx, _1, _2, _3),
-          nullptr,
+          std::bind(&shelly_sw_handle_in_use_read, ctx, _1, _2, _3), nullptr,
           kHAPCharacteristicDebugDescription_OutletInUse);
       chars[2] = in_use_char->GetBase();
       ctx->state_notify_char = on_char->GetBase();
@@ -346,8 +340,7 @@ HAPService *shelly_sw_service_create(
       auto *cur_state_char = new shelly::ShellyHAPUInt8Characteristic(
           iid++, &kHAPCharacteristicType_LockCurrentState, 0, 3, 1,
           std::bind(&shelly_sw_handle_lock_cur_state_read, ctx, _1, _2, _3),
-          nullptr,
-          kHAPCharacteristicDebugDescription_LockCurrentState);
+          nullptr, kHAPCharacteristicDebugDescription_LockCurrentState);
       chars[1] = cur_state_char->GetBase();
       auto *tgt_state_char = new shelly::ShellyHAPUInt8Characteristic(
           iid++, &kHAPCharacteristicType_LockTargetState, 0, 3, 1,
@@ -397,4 +390,4 @@ HAPService *shelly_sw_service_create(
   return svc;
 }
 
-} // namespace shelly
+}  // namespace shelly

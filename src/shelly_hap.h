@@ -23,7 +23,15 @@ namespace shelly {
 
 class Service {
  public:
+  Service() {
+  }
+  virtual ~Service() {
+  }
+  virtual Status Init() = 0;
   virtual const HAPService *GetHAPService() const = 0;
+
+ private:
+  Service(const Service &other) = delete;
 };
 
 }  // namespace shelly

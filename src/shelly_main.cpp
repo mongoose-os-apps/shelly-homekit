@@ -156,7 +156,8 @@ static bool shelly_start_hap_server(bool quiet) {
   if (mgos_hap_config_valid()) {
     uint16_t cn;
     if (HAPAccessoryServerGetCN(&s_kvs, &cn) == kHAPError_None) {
-      LOG(LL_INFO, ("=== Accessory provisioned, starting HAP server (CN %d)", cn));
+      LOG(LL_INFO,
+          ("=== Accessory provisioned, starting HAP server (CN %d)", cn));
     }
     HAPAccessoryServerStart(&s_server, &s_accessory);
     return true;
@@ -501,10 +502,11 @@ bool shelly_app_init() {
   return true;
 }
 
-} // namespace shelly
+}  // namespace shelly
 
 extern "C" {
 enum mgos_app_init_result mgos_app_init(void) {
-  return shelly::shelly_app_init() ? MGOS_APP_INIT_SUCCESS : MGOS_APP_INIT_ERROR;
+  return shelly::shelly_app_init() ? MGOS_APP_INIT_SUCCESS
+                                   : MGOS_APP_INIT_ERROR;
 }
 }

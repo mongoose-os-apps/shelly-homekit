@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-#include "shelly_common.h"
+#include <vector>
 
+#include "mgos_event.h"
 #include "mgos_gpio.h"
+
+#include "shelly_common.h"
 
 namespace shelly {
 
@@ -28,21 +31,36 @@ class Input {
     // TODO:
     // SINGLE = 1,
     // DOUBLE = 2,
+    RESET = 4,
   };
-  virtual StatusOr<bool> GetState() = 0;
+  Input();
+  virtual ~Input();
 
+  virtual bool GetState() = 0;
+
+  typedef int HandlerID;
+  static constexpr HandlerID kInvalidHandlerID = -1;
   typedef std::function<void(Event ev, bool state)> HandlerFn;
-  virtual void SetHandler(HandlerFn h) = 0;
+  HandlerID AddHandler(HandlerFn h);
+  void RemoveHandler(HandlerID hi);
+
+ protected:
+  void CallHandlers(Event ev, bool state);
+
+ private:
+  std::vector<HandlerFn> handlers_;
+
+  Input(const Input &other) = delete;
 };
 
 class InputPin : public Input {
  public:
-  InputPin(int id, int pin, bool on_value, enum mgos_gpio_pull_type pull);
+  InputPin(int id, int pin, bool on_value, enum mgos_gpio_pull_type pull,
+           bool enable_reset);
   virtual ~InputPin();
 
   // Input interface impl.
-  StatusOr<bool> GetState() override;
-  virtual void SetHandler(HandlerFn h) override;
+  bool GetState() override;
 
  private:
   static void GPIOIntHandler(int pin, void *arg);
@@ -52,8 +70,10 @@ class InputPin : public Input {
   const int id_;
   const int pin_;
   const bool on_value_;
+  const bool enable_reset_;
 
-  HandlerFn handler_;
+  int change_cnt_;         // State change counter for reset.
+  double last_change_ts_;  // Timestamp of last change (uptime).
 
   InputPin(const InputPin &other) = delete;
 };

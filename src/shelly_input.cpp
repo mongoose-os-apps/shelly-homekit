@@ -22,9 +22,43 @@
 
 namespace shelly {
 
+Input::Input() {
+}
+
+Input::~Input() {
+}
+
+Input::HandlerID Input::AddHandler(HandlerFn h) {
+  int i;
+  for (i = 0; i < (int) handlers_.size(); i++) {
+    if (handlers_[i] == nullptr) {
+      handlers_[i] = h;
+      return i;
+    }
+  }
+  handlers_.push_back(h);
+  return i;
+}
+
+void Input::RemoveHandler(HandlerID hi) {
+  if (hi < 0) return;
+  handlers_[hi] = nullptr;
+}
+
+void Input::CallHandlers(Event ev, bool state) {
+  for (auto &h : handlers_) {
+    h(ev, state);
+  }
+}
+
 InputPin::InputPin(int id, int pin, bool on_value,
-                   enum mgos_gpio_pull_type pull)
-    : id_(id), pin_(pin), on_value_(on_value) {
+                   enum mgos_gpio_pull_type pull, bool enable_reset)
+    : id_(id),
+      pin_(pin),
+      on_value_(on_value),
+      enable_reset_(enable_reset),
+      change_cnt_(0),
+      last_change_ts_(0) {
   mgos_gpio_setup_input(pin_, pull);
   mgos_gpio_set_button_handler(pin_, pull, MGOS_GPIO_INT_EDGE_ANY, 20,
                                GPIOIntHandler, this);
@@ -34,12 +68,8 @@ InputPin::~InputPin() {
   mgos_gpio_remove_int_handler(pin_, nullptr, nullptr);
 }
 
-StatusOr<bool> InputPin::GetState() {
+bool InputPin::GetState() {
   return (mgos_gpio_read(pin_) == on_value_);
-}
-
-void InputPin::SetHandler(HandlerFn h) {
-  handler_ = h;
 }
 
 // static
@@ -51,7 +81,22 @@ void InputPin::GPIOIntHandler(int pin, void *arg) {
 void InputPin::HandleGPIOInt() {
   bool cur_state = (mgos_gpio_read(pin_) == on_value_);
   LOG(LL_INFO, ("Input %d: %s", id_, OnOff(cur_state)));
-  if (handler_) handler_(Event::CHANGE, cur_state);
+  CallHandlers(Event::CHANGE, cur_state);
+  double now = mgos_uptime();
+  if (enable_reset_) {
+    if (now - last_change_ts_ > 10) {
+      change_cnt_ = 0;
+    }
+    change_cnt_++;
+    if (change_cnt_ >= 10) {
+      LOG(LL_INFO, ("%d: Reset sequence detected", id_));
+      change_cnt_ = 0;
+      CallHandlers(Event::RESET, cur_state);
+      // mgos_gpio_blink(ctx->cfg->out_gpio, 100, 100);
+      // mgos_set_timer(600, 0, do_reset, ctx);
+    }
+  }
+  last_change_ts_ = now;
 }
 
 }  // namespace shelly

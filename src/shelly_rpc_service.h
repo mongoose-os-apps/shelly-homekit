@@ -23,4 +23,4 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm);
 
-} // namespace shelly
+}  // namespace shelly

@@ -63,4 +63,4 @@ bool shelly_sw_get_info(int id, struct shelly_sw_info *info);
 
 bool shelly_sw_set_state(int id, bool new_state, const char *source);
 
-} // namespace shelly
+}  // namespace shelly

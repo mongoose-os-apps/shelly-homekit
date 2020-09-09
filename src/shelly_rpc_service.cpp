@@ -191,4 +191,4 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   return true;
 }
 
-} // namespace shelly
+}  // namespace shelly

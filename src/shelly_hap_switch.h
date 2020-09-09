@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
+#include <memory>
 #include <vector>
 
 #include "mgos_sys_config.h"
+#include "mgos_timers.h"
 
 #include "shelly_common.h"
 #include "shelly_component.h"
@@ -30,24 +32,84 @@ namespace shelly {
 
 class HAPSwitch : public Component, Service {
  public:
+  struct Info {
+    bool state;
+    float apower;
+    float aenergy;
+  };
+
+  enum class ServiceType {
+    SWITCH = 0,
+    OUTLET = 1,
+    LOCK = 2,
+  };
+
+  enum class InMode {
+    MOMENTARY = 0,
+    TOGGLE = 1,
+    EDGE = 2,
+    DETACHED = 3,
+  };
+
+  enum class InitialState {
+    OFF = 0,
+    ON = 1,
+    LAST = 2,
+    INPUT = 3,
+  };
+
   HAPSwitch(Input *in, Output *out, PowerMeter *out_pm,
-            const struct mgos_config_sw *cfg);
+            const struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
+            const HAPAccessory *accessory);
   virtual ~HAPSwitch();
 
   StatusOr<std::string> GetInfo() const override;
   const HAPService *GetHAPService() const override;
 
+  Status Init() override;
+
+  void SetState(bool new_state, const char *source);
+
  private:
   void InputEventHandler(Input::Event ev, bool state);
 
-  Input *in_;
-  Output *out_;
-  PowerMeter *out_pm_;
-  const struct mgos_config_sw *cfg_;
+  void SetStateInternal(bool new_state, const char *source, bool is_auto_off);
 
-  std::vector<std::unique_ptr<const ShellyHAPCharacteristic>> chars_;
+  static void AutoOffTimerCB(void *ctx);
+
+  void SaveState();
+
+  HAPError HandleOnRead(HAPAccessoryServerRef *server,
+                        const HAPBoolCharacteristicReadRequest *request,
+                        bool *value);
+  HAPError HandleOnWrite(HAPAccessoryServerRef *server,
+                         const HAPBoolCharacteristicWriteRequest *request,
+                         bool value);
+  HAPError HandleOutletInUseRead(
+      HAPAccessoryServerRef *server,
+      const HAPBoolCharacteristicReadRequest *request, bool *value);
+  HAPError HandleLockCurrentStateRead(
+      HAPAccessoryServerRef *server,
+      const HAPUInt8CharacteristicReadRequest *request, uint8_t *value);
+  HAPError HandleLockTargetStateWrite(
+      HAPAccessoryServerRef *server,
+      const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
+
+  Input *const in_;
+  Output *const out_;
+  PowerMeter *const out_pm_;
+  const struct mgos_config_sw *const cfg_;
+  HAPAccessoryServerRef *const server_;
+  const HAPAccessory *const accessory_;
 
   HAPService svc_;
+  Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
+  HAPCharacteristic *state_notify_char_ = nullptr;
+  HAPCharacteristic *tgt_state_notify_char_ = nullptr;
+  std::vector<std::unique_ptr<ShellyHAPCharacteristic>> chars_;
+  std::vector<HAPCharacteristic *> hap_chars_;
+
+  mgos_timer_id auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
 
   HAPSwitch(const HAPSwitch &other) = delete;
 };
