@@ -89,8 +89,8 @@ static HAPAccessoryServerRef s_server;
 static HAPPlatform s_platform = {
     .keyValueStore = &s_kvs,
     .accessorySetup = &s_accessory_setup,
-    .setupDisplay = NULL,
-    .setupNFC = NULL,
+    .setupDisplay = nullptr,
+    .setupNFC = nullptr,
     .ip =
         {
             .tcpStreamManager = &s_tcpm,
@@ -107,41 +107,36 @@ static HAPPlatform s_platform = {
         },
 };
 
-HAPError shelly_identify_cb(HAPAccessoryServerRef *server,
-                            const HAPAccessoryIdentifyRequest *request,
-                            void *context);
-
-static HAPAccessory s_accessory = {
-    .aid = 1,
-    .category = kHAPAccessoryCategory_Switches,
-    .name = NULL,  // Set from config,
-    .manufacturer = CS_STRINGIFY_MACRO(PRODUCT_VENDOR),
-    .model = CS_STRINGIFY_MACRO(PRODUCT_MODEL),
-    .serialNumber = NULL,     // Set from config.
-    .firmwareVersion = NULL,  // Set from build_id.
-    .hardwareVersion = CS_STRINGIFY_MACRO(PRODUCT_HW_REV),
-    .services = NULL,  // Set later
-    .callbacks = {.identify = shelly_identify_cb},
-};
-
-HAPSwitch *g_sw1 = nullptr, *g_sw2 = nullptr;
-
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
 
-static void check_led(int pin, bool led_on);
+static void CheckLED(int pin, bool led_act);
 
-HAPError shelly_identify_cb(HAPAccessoryServerRef *server,
-                            const HAPAccessoryIdentifyRequest *request,
-                            void *context) {
+HAPError IdentifyCB(HAPAccessoryServerRef *server,
+                    const HAPAccessoryIdentifyRequest *request, void *context) {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
   s_identify_count = 3;
-  check_led(LED_GPIO, LED_ON);
+  CheckLED(LED_GPIO, LED_ON);
   (void) server;
   (void) request;
   (void) context;
   return kHAPError_None;
 }
+
+static HAPAccessory s_accessory = {
+    .aid = 1,
+    .category = kHAPAccessoryCategory_Switches,
+    .name = nullptr,  // Set from config,
+    .manufacturer = CS_STRINGIFY_MACRO(PRODUCT_VENDOR),
+    .model = CS_STRINGIFY_MACRO(PRODUCT_MODEL),
+    .serialNumber = nullptr,     // Set from config.
+    .firmwareVersion = nullptr,  // Set from build_id.
+    .hardwareVersion = CS_STRINGIFY_MACRO(PRODUCT_HW_REV),
+    .services = nullptr,  // Set later
+    .callbacks = {.identify = IdentifyCB},
+};
+
+HAPSwitch *g_sw1 = nullptr, *g_sw2 = nullptr;
 
 static void shelly_hap_server_state_update_cb(HAPAccessoryServerRef *server,
                                               void *context) {
@@ -149,7 +144,7 @@ static void shelly_hap_server_state_update_cb(HAPAccessoryServerRef *server,
   (void) context;
 }
 
-static bool shelly_start_hap_server(bool quiet) {
+static bool StartHAPServer(bool quiet) {
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
     return true;
   }
@@ -167,7 +162,21 @@ static bool shelly_start_hap_server(bool quiet) {
   return false;
 }
 
-static void check_btn(int pin, bool btn_down) {
+static void DoReset(void *arg) {
+  intptr_t out_gpio = (intptr_t) arg;
+  if (out_gpio >= 0) {
+    mgos_gpio_blink(out_gpio, 0, 0);
+  }
+  LOG(LL_INFO, ("Performing reset"));
+#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
+  mgos_sys_config_set_wifi_sta_enable(false);
+  mgos_sys_config_set_wifi_ap_enable(true);
+  mgos_sys_config_save(&mgos_sys_config, false, nullptr);
+  mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
+#endif
+}
+
+static void CheckButton(int pin, bool btn_down) {
   if (pin < 0) return;
   bool pressed = (mgos_gpio_read(pin) == btn_down);
   if (!pressed) {
@@ -179,17 +188,11 @@ static void check_btn(int pin, bool btn_down) {
   s_btn_pressed_count++;
   LOG(LL_INFO, ("Button pressed, %d", s_btn_pressed_count));
   if (s_btn_pressed_count == 10) {
-    LOG(LL_INFO, ("Re-enabling AP"));
-#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
-    mgos_sys_config_set_wifi_sta_enable(false);
-    mgos_sys_config_set_wifi_ap_enable(true);
-    mgos_sys_config_save(&mgos_sys_config, false, NULL);
-    mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
-#endif
+    DoReset((void *) -1);
   }
 }
 
-static void check_led(int pin, bool led_act) {
+static void CheckLED(int pin, bool led_act) {
   if (pin < 0) return;
   int on_ms = 0, off_ms = 0;
   static int s_on_ms = 0, s_off_ms = 0;
@@ -272,19 +275,23 @@ out:
   }
 }
 
-static void shelly_status_timer_cb(void *arg) {
-  HAPPlatformTCPStreamManagerStats tcpm_stats = {};
-  HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
-  LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u, RAM: %lu, %lu free",
-                mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
-                (unsigned) tcpm_stats.numActiveTCPStreams,
-                (unsigned) tcpm_stats.maxNumTCPStreams,
-                (unsigned long) mgos_get_heap_size(),
-                (unsigned long) mgos_get_free_heap_size()));
+static void StatusTimerCB(void *arg) {
+  static uint8_t s_cnt = 0;
+  if (++s_cnt % 8 == 0) {
+    HAPPlatformTCPStreamManagerStats tcpm_stats = {};
+    HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
+    LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u, RAM: %lu, %lu free",
+                  mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
+                  (unsigned) tcpm_stats.numActiveTCPStreams,
+                  (unsigned) tcpm_stats.maxNumTCPStreams,
+                  (unsigned long) mgos_get_heap_size(),
+                  (unsigned long) mgos_get_free_heap_size()));
+    s_cnt = 0;
+  }
   /* If provisioning information has been provided, start the server. */
-  shelly_start_hap_server(true /* quiet */);
-  check_btn(BTN_GPIO, BTN_DOWN);
-  check_led(LED_GPIO, LED_ON);
+  StartHAPServer(true /* quiet */);
+  CheckButton(BTN_GPIO, BTN_DOWN);
+  CheckLED(LED_GPIO, LED_ON);
 #ifdef MGOS_HAVE_OTA_COMMON
   // If committed, set up inactive app slot as location for core dumps.
   static bool s_cd_area_set = false;
@@ -350,20 +357,6 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
-static void DoReset(void *arg) {
-  intptr_t out_gpio = (intptr_t) arg;
-  if (out_gpio >= 0) {
-    mgos_gpio_blink(out_gpio, 0, 0);
-  }
-  LOG(LL_INFO, ("Performing reset"));
-#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
-  mgos_sys_config_set_wifi_sta_enable(false);
-  mgos_sys_config_set_wifi_ap_enable(true);
-  mgos_sys_config_save(&mgos_sys_config, false, NULL);
-  mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
-#endif
-}
-
 static void HandleInputResetSequence(InputPin *in, Input::Event ev,
                                      bool cur_state) {
   if (ev != Input::Event::RESET) return;
@@ -404,7 +397,7 @@ bool shelly_app_init() {
 
   if (shelly_cfg_migrate()) {
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
-                         NULL /* msg */);
+                         nullptr /* msg */);
   }
 
   std::vector<PowerMeter *> pms;
@@ -413,7 +406,7 @@ bool shelly_app_init() {
     pms = pmss.ValueOrDie();
   } else {
     LOG(LL_INFO,
-        ("Power meter init failed: %s", pmss.status().error_message()));
+        ("Power meter init failed: %s", pmss.status().error_message().c_str()));
   }
 
   // Key-value store.
@@ -442,7 +435,7 @@ bool shelly_app_init() {
   s_accessory.name = mgos_sys_config_get_device_id();
   s_accessory.firmwareVersion = mgos_sys_ro_vars_get_fw_version();
   s_accessory.serialNumber = mgos_sys_config_get_device_sn();
-  if (s_accessory.serialNumber == NULL) {
+  if (s_accessory.serialNumber == nullptr) {
     static char sn[13] = "????????????";
     mgos_expand_mac_address_placeholders(sn);
     s_accessory.serialNumber = sn;
@@ -501,12 +494,12 @@ bool shelly_app_init() {
 
   // Initialize accessory server.
   HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
-                           &s_callbacks, NULL /* context */);
+                           &s_callbacks, nullptr /* context */);
 
-  shelly_start_hap_server(false /* quiet */);
+  StartHAPServer(false /* quiet */);
 
-  // Timer for periodic status.
-  mgos_set_timer(5000, MGOS_TIMER_REPEAT, shelly_status_timer_cb, NULL);
+  // House-keeping timer.
+  mgos_set_timer(1000, MGOS_TIMER_REPEAT, StatusTimerCB, nullptr);
 
   mgos_hap_add_rpc_service(&s_server, &s_accessory, &s_kvs);
 
@@ -518,7 +511,7 @@ bool shelly_app_init() {
 
   shelly_debug_init(&s_kvs, &s_tcpm);
 
-  mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, NULL);
+  mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
 
   return true;
 }
