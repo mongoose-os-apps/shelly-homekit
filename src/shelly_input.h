@@ -29,11 +29,11 @@ namespace shelly {
 class Input {
  public:
   enum class Event {
-    CHANGE = 0,
+    kChange = 0,
     // TODO:
     // SINGLE = 1,
     // DOUBLE = 2,
-    RESET = 4,
+    kReset = 4,
   };
   Input();
   virtual ~Input();

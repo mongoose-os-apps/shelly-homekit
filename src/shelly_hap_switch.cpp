@@ -98,7 +98,7 @@ Status HAPSwitch::Init() {
   const char *svc_type_name = NULL;
   switch (static_cast<ServiceType>(cfg_->svc_type)) {
     default:
-    case ServiceType::SWITCH: {
+    case ServiceType::kSwitch: {
       uint16_t iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * cfg_->id);
       svc_.iid = iid++;
       svc_.serviceType = &kHAPServiceType_Switch;
@@ -124,7 +124,7 @@ Status HAPSwitch::Init() {
       svc_type_name = "switch";
       break;
     }
-    case ServiceType::OUTLET: {
+    case ServiceType::kOutlet: {
       uint16_t iid = IID_BASE_OUTLET + (IID_STEP_OUTLET * cfg_->id);
       svc_.iid = iid++;
       svc_.serviceType = &kHAPServiceType_Outlet;
@@ -158,7 +158,7 @@ Status HAPSwitch::Init() {
       svc_type_name = "outlet";
       break;
     }
-    case ServiceType::LOCK: {
+    case ServiceType::kLock: {
       uint16_t iid = IID_BASE_LOCK + (IID_STEP_LOCK * cfg_->id);
       svc_.iid = iid++;
       svc_.serviceType = &kHAPServiceType_LockMechanism;
@@ -200,17 +200,18 @@ Status HAPSwitch::Init() {
   hap_chars_.push_back(nullptr);
   svc_.characteristics = hap_chars_.data();
   switch (static_cast<InitialState>(cfg_->initial_state)) {
-    case InitialState::OFF:
+    case InitialState::kOff:
       SetState(false, "init");
       break;
-    case InitialState::ON:
+    case InitialState::kOn:
       SetState(true, "init");
       break;
-    case InitialState::LAST:
+    case InitialState::kLast:
       SetState(cfg_->state, "init");
       break;
-    case InitialState::INPUT:
-      if (in_ != nullptr && cfg_->in_mode == static_cast<int>(InMode::TOGGLE)) {
+    case InitialState::kInput:
+      if (in_ != nullptr &&
+          cfg_->in_mode == static_cast<int>(InMode::kToggle)) {
         SetState(in_->GetState(), "init");
       }
       break;
@@ -271,20 +272,20 @@ void HAPSwitch::AutoOffTimerCB(void *ctx) {
 }
 
 void HAPSwitch::InputEventHandler(Input::Event ev, bool state) {
-  if (ev != Input::Event::CHANGE) return;
+  if (ev != Input::Event::kChange) return;
   switch (static_cast<InMode>(cfg_->in_mode)) {
-    case InMode::MOMENTARY:
+    case InMode::kMomentary:
       if (state) {  // Only on 0 -> 1 transitions.
         SetState(!out_->GetState(), "button");
       }
       break;
-    case InMode::TOGGLE:
+    case InMode::kToggle:
       SetState(state, "switch");
       break;
-    case InMode::EDGE:
+    case InMode::kEdge:
       SetState(!out_->GetState(), "button");
       break;
-    case InMode::DETACHED:
+    case InMode::kDetached:
       // Nothing to do
       break;
   }

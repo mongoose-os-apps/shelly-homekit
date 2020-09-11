@@ -85,7 +85,7 @@ void InputPin::GPIOIntHandler(int pin, void *arg) {
 void InputPin::HandleGPIOInt() {
   bool cur_state = (mgos_gpio_read(pin_) == on_value_);
   LOG(LL_INFO, ("Input %d: %s", id_, OnOff(cur_state)));
-  CallHandlers(Event::CHANGE, cur_state);
+  CallHandlers(Event::kChange, cur_state);
   double now = mgos_uptime();
   if (enable_reset_) {
     if (now - last_change_ts_ > 10) {
@@ -94,7 +94,7 @@ void InputPin::HandleGPIOInt() {
     change_cnt_++;
     if (change_cnt_ >= 10) {
       change_cnt_ = 0;
-      CallHandlers(Event::RESET, cur_state);
+      CallHandlers(Event::kReset, cur_state);
     }
   }
   last_change_ts_ = now;

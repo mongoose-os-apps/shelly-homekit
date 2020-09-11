@@ -36,23 +36,23 @@ namespace shelly {
 class HAPSwitch : public Component, Service {
  public:
   enum class ServiceType {
-    SWITCH = 0,
-    OUTLET = 1,
-    LOCK = 2,
+    kSwitch = 0,
+    kOutlet = 1,
+    kLock = 2,
   };
 
   enum class InMode {
-    MOMENTARY = 0,
-    TOGGLE = 1,
-    EDGE = 2,
-    DETACHED = 3,
+    kMomentary = 0,
+    kToggle = 1,
+    kEdge = 2,
+    kDetached = 3,
   };
 
   enum class InitialState {
-    OFF = 0,
-    ON = 1,
-    LAST = 2,
-    INPUT = 3,
+    kOff = 0,
+    kOn = 1,
+    kLast = 2,
+    kInput = 3,
   };
 
   HAPSwitch(Input *in, Output *out, PowerMeter *out_pm,

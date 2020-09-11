@@ -327,13 +327,13 @@ static bool shelly_cfg_migrate(void) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
-          static_cast<int>(HAPSwitch::InitialState::LAST));
+          static_cast<int>(HAPSwitch::InitialState::kLast));
     }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
     if (mgos_sys_config_get_sw2_persist_state()) {
       mgos_sys_config_set_sw2_initial_state(
-          static_cast<int>(HAPSwitch::InitialState::LAST));
+          static_cast<int>(HAPSwitch::InitialState::kLast));
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(1);
@@ -359,7 +359,7 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
 
 static void HandleInputResetSequence(InputPin *in, Input::Event ev,
                                      bool cur_state) {
-  if (ev != Input::Event::RESET) return;
+  if (ev != Input::Event::kReset) return;
   LOG(LL_INFO, ("%d: Reset sequence detected", in->id()));
   intptr_t out_gpio = -1;
   switch (in->id()) {
