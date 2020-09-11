@@ -25,10 +25,6 @@
 #endif
 #include "mgos_rpc.h"
 
-#ifdef MGOS_HAVE_ADE7953
-#include "mgos_ade7953.h"
-#endif
-
 #include "HAP.h"
 #include "HAPAccessoryServer+Internal.h"
 #include "HAPPlatform+Init.h"
@@ -128,8 +124,7 @@ static HAPAccessory s_accessory = {
     .callbacks = {.identify = shelly_identify_cb},
 };
 
-HAPSwitch *g_sw1 = nullptr;
-HAPSwitch *g_sw2 = nullptr;
+HAPSwitch *g_sw1 = nullptr, *g_sw2 = nullptr;
 
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
@@ -277,10 +272,6 @@ out:
   }
 }
 
-#ifdef MGOS_HAVE_ADE7953
-struct mgos_ade7953 *s_ade7953 = NULL;
-#endif
-
 static void shelly_status_timer_cb(void *arg) {
   HAPPlatformTCPStreamManagerStats tcpm_stats = {};
   HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
@@ -290,20 +281,6 @@ static void shelly_status_timer_cb(void *arg) {
                 (unsigned) tcpm_stats.maxNumTCPStreams,
                 (unsigned long) mgos_get_heap_size(),
                 (unsigned long) mgos_get_free_heap_size()));
-#if defined(MGOS_HAVE_ADE7953) && defined(SHELLY_PRINT_POWER_STATS)
-  float f = 0, v = 0, ia = 0, ib = 0, aea = 0, aeb = 0, apa = 0, apb = 0;
-  mgos_ade7953_get_frequency(s_ade7953, &f);
-  mgos_ade7953_get_voltage(s_ade7953, &v);
-  mgos_ade7953_get_current(s_ade7953, 0, &ia);
-  mgos_ade7953_get_current(s_ade7953, 1, &ib);
-  mgos_ade7953_get_apower(s_ade7953, 0, &apa);
-  mgos_ade7953_get_apower(s_ade7953, 1, &apb);
-  mgos_ade7953_get_aenergy(s_ade7953, 0, false /* reset */, &aea);
-  mgos_ade7953_get_aenergy(s_ade7953, 1, false /* reset */, &aeb);
-  LOG(LL_INFO, ("  V=%.3fV f=%.2fHz | IA=%.3fA APA=%.3f AEA=%.3f | "
-                "IB=%.3fA APB=%.3f AEB=%.3f",
-                v, f, ia, apa, aea, ib, apb, aeb));
-#endif
   /* If provisioning information has been provided, start the server. */
   shelly_start_hap_server(true /* quiet */);
   check_btn(BTN_GPIO, BTN_DOWN);
@@ -430,17 +407,14 @@ bool shelly_app_init() {
                          NULL /* msg */);
   }
 
-#ifdef MGOS_HAVE_ADE7953
-  const struct mgos_ade7953_config ade7953_cfg = {
-      .voltage_scale = .0000382602,
-      .voltage_offset = -0.068,
-      .current_scale = {0.00000949523, 0.00000949523},
-      .current_offset = {-0.017, -0.017},
-      .apower_scale = {(1 / 164.0), (1 / 164.0)},
-      .aenergy_scale = {(1 / 25240.0), (1 / 25240.0)},
-  };
-  s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
-#endif
+  std::vector<PowerMeter *> pms;
+  auto pmss = PowerMeterInit();
+  if (pmss.ok()) {
+    pms = pmss.ValueOrDie();
+  } else {
+    LOG(LL_INFO,
+        ("Power meter init failed: %s", pmss.status().error_message()));
+  }
 
   // Key-value store.
   static const HAPPlatformKeyValueStoreOptions kvs_opts = {
@@ -488,7 +462,14 @@ bool shelly_app_init() {
     auto *in2 = new InputPin(2, sw2_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true);
     auto *out2 =
         new OutputPin(2, sw2_cfg->out_gpio, sw2_cfg->out_on_value, false);
-    g_sw2 = new HAPSwitch(in2, out2, nullptr, sw2_cfg, &s_server, &s_accessory);
+    PowerMeter *pm2 = nullptr;
+    for (auto pm : pms) {
+      if (pm->id() == 2) {
+        pm2 = pm;
+        break;
+      }
+    }
+    g_sw2 = new HAPSwitch(in2, out2, pm2, sw2_cfg, &s_server, &s_accessory);
     if (g_sw2 != nullptr && g_sw2->Init().ok()) {
       services[i++] = g_sw2->GetHAPService();
     }
@@ -501,7 +482,14 @@ bool shelly_app_init() {
     auto *in1 = new InputPin(1, sw1_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true);
     auto *out1 =
         new OutputPin(1, sw1_cfg->out_gpio, sw1_cfg->out_on_value, false);
-    g_sw1 = new HAPSwitch(in1, out1, nullptr, sw1_cfg, &s_server, &s_accessory);
+    PowerMeter *pm1 = nullptr;
+    for (auto pm : pms) {
+      if (pm->id() == 1) {
+        pm1 = pm;
+        break;
+      }
+    }
+    g_sw1 = new HAPSwitch(in1, out1, pm1, sw1_cfg, &s_server, &s_accessory);
     if (g_sw1 != nullptr && g_sw1->Init().ok()) {
       services[i++] = g_sw1->GetHAPService();
     }

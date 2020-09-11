@@ -29,6 +29,7 @@
 #include "shelly_hap_chars.h"
 #include "shelly_input.h"
 #include "shelly_output.h"
+#include "shelly_pm.h"
 
 namespace shelly {
 

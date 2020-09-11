@@ -19,8 +19,6 @@
 
 #include <cstring>
 
-#include "mgos.h"
-
 namespace shelly {
 
 ShellyHAPCharacteristic::ShellyHAPCharacteristic() {
@@ -82,7 +80,6 @@ HAPError ShellyHAPStringCharacteristic::HandleReadCB(
       (ShellyHAPStringCharacteristic *) FindInstance(
           (const HAPCharacteristic *) request->characteristic);
   size_t n = std::min(maxValueBytes - 1, c->value_.length());
-  LOG(LL_INFO, ("Name '%p'", c->value_.c_str()));
   std::memcpy(value, c->value_.data(), n);
   value[n] = '\0';
   (void) server;
