@@ -51,8 +51,8 @@ void Input::CallHandlers(Event ev, bool state) {
   }
 }
 
-InputPin::InputPin(int id, int pin, bool on_value,
-                   enum mgos_gpio_pull_type pull, bool enable_reset)
+InputPin::InputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
+                   bool enable_reset)
     : id_(id),
       pin_(pin),
       on_value_(on_value),
@@ -66,6 +66,10 @@ InputPin::InputPin(int id, int pin, bool on_value,
 
 InputPin::~InputPin() {
   mgos_gpio_remove_int_handler(pin_, nullptr, nullptr);
+}
+
+int InputPin::id() const {
+  return id_;
 }
 
 bool InputPin::GetState() {
@@ -89,11 +93,8 @@ void InputPin::HandleGPIOInt() {
     }
     change_cnt_++;
     if (change_cnt_ >= 10) {
-      LOG(LL_INFO, ("%d: Reset sequence detected", id_));
       change_cnt_ = 0;
       CallHandlers(Event::RESET, cur_state);
-      // mgos_gpio_blink(ctx->cfg->out_gpio, 100, 100);
-      // mgos_set_timer(600, 0, do_reset, ctx);
     }
   }
   last_change_ts_ = now;

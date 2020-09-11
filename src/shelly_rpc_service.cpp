@@ -24,7 +24,7 @@
 #include "HAPAccessoryServer+Internal.h"
 
 #include "shelly_debug.h"
-#include "shelly_sw_service.h"
+#include "shelly_main.h"
 
 namespace shelly {
 
@@ -32,9 +32,8 @@ static HAPAccessoryServerRef *s_server;
 static HAPPlatformKeyValueStoreRef s_kvs;
 static HAPPlatformTCPStreamManagerRef s_tcpm;
 
-static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
-                                    void *cb_arg, struct mg_rpc_frame_info *fi,
-                                    struct mg_str args) {
+static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                           struct mg_rpc_frame_info *fi, struct mg_str args) {
 #ifdef MGOS_HAVE_WIFI
   const char *ssid = mgos_sys_config_get_wifi_sta_ssid();
   const char *pass = mgos_sys_config_get_wifi_sta_pass();
@@ -42,12 +41,10 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
   bool hap_provisioned = !mgos_conf_str_empty(mgos_sys_config_get_hap_salt());
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
 #ifdef MGOS_CONFIG_HAVE_SW1
-  struct shelly_sw_info sw1;
-  shelly_sw_get_info(mgos_sys_config_get_sw1_id(), &sw1);
+  auto sw1_info = g_sw1->GetInfo();
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
-  struct shelly_sw_info sw2;
-  shelly_sw_get_info(mgos_sys_config_get_sw2_id(), &sw2);
+  auto sw2_info = g_sw2->GetInfo();
 #endif
   HAPPlatformTCPStreamManagerStats tcpm_stats = {};
   HAPPlatformTCPStreamManagerGetStats(s_tcpm, &tcpm_stats);
@@ -56,20 +53,10 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       "{id: %Q, app: %Q, model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_CONFIG_HAVE_SW1
-      "sw1: {id: %d, name: %Q, type: %d, in_mode: %d, initial: %d, "
-      "state: %B, auto_off: %B, auto_off_delay: %.3f"
-#ifdef SHELLY_HAVE_PM
-      ", apower: %.3f, aenergy: %.3f"
-#endif
-      "},"
+      "sw1: %s,"
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
-      "sw2: {id: %d, name: %Q, type: %d, in_mode: %d, initial: %d, "
-      "state: %B, auto_off: %B, auto_off_delay: %.3f"
-#ifdef SHELLY_HAVE_PM
-      ", apower: %.3f, aenergy: %.3f"
-#endif
-      "},"
+      "sw2: %s,"
 #endif
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
@@ -82,24 +69,10 @@ static void shelly_get_info_handler(struct mg_rpc_request_info *ri,
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
       (int) mgos_uptime(),
 #ifdef MGOS_CONFIG_HAVE_SW1
-      mgos_sys_config_get_sw1_id(), mgos_sys_config_get_sw1_name(),
-      mgos_sys_config_get_sw1_svc_type(), mgos_sys_config_get_sw1_in_mode(),
-      mgos_sys_config_get_sw1_initial_state(), sw1.state,
-      mgos_sys_config_get_sw1_auto_off(),
-      mgos_sys_config_get_sw1_auto_off_delay(),
-#ifdef SHELLY_HAVE_PM
-      sw1.apower, sw1.aenergy,
-#endif
+      (sw1_info.ok() ? sw1_info.ValueOrDie().c_str() : ""),
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
-      mgos_sys_config_get_sw2_id(), mgos_sys_config_get_sw2_name(),
-      mgos_sys_config_get_sw2_svc_type(), mgos_sys_config_get_sw2_in_mode(),
-      mgos_sys_config_get_sw2_initial_state(), sw2.state,
-      mgos_sys_config_get_sw2_auto_off(),
-      mgos_sys_config_get_sw2_auto_off_delay(),
-#ifdef SHELLY_HAVE_PM
-      sw2.apower, sw2.aenergy,
-#endif
+      (sw2_info.ok() ? sw2_info.ValueOrDie().c_str() : ""),
 #endif
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
@@ -123,10 +96,8 @@ static void set_handler(const char *str, int len, void *arg) {
   (void) arg;
 }
 
-static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
-                                      void *cb_arg,
-                                      struct mg_rpc_frame_info *fi,
-                                      struct mg_str args) {
+static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                             struct mg_rpc_frame_info *fi, struct mg_str args) {
   const char *msg = "";
 #ifdef MGOS_CONFIG_HAVE_SW1
   int old_sw1_svc_type = mgos_sys_config_get_sw1_svc_type();
@@ -163,15 +134,35 @@ static void shelly_set_config_handler(struct mg_rpc_request_info *ri,
   (void) fi;
 }
 
-static void shelly_get_debug_info_handler(struct mg_rpc_request_info *ri,
-                                          void *cb_arg,
-                                          struct mg_rpc_frame_info *fi,
-                                          struct mg_str args) {
+static void GetDebugInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                                struct mg_rpc_frame_info *fi,
+                                struct mg_str args) {
   std::string res;
   shelly_get_debug_info(&res);
   mg_rpc_send_responsef(ri, "{info: %Q}", res.c_str());
   (void) cb_arg;
   (void) args;
+  (void) fi;
+}
+
+static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                             struct mg_rpc_frame_info *fi, struct mg_str args) {
+  int id = -1;
+  bool state = false;
+
+  json_scanf(args.p, args.len, ri->args_fmt, &id, &state);
+
+  if (g_sw1 != nullptr && id == g_sw1->id()) {
+    g_sw1->SetState(state, "web");
+    mg_rpc_send_responsef(ri, NULL);
+  } else if (g_sw2 != nullptr && id == g_sw2->id()) {
+    g_sw2->SetState(state, "web");
+    mg_rpc_send_responsef(ri, NULL);
+  } else {
+    mg_rpc_send_errorf(ri, 400, "bad args");
+  }
+
+  (void) cb_arg;
   (void) fi;
 }
 
@@ -182,12 +173,13 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   s_kvs = kvs;
   s_tcpm = tcpm;
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
-                     shelly_get_info_handler, NULL);
+                     GetInfoHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
-                     "{config: %M, reboot: %B}", shelly_set_config_handler,
-                     NULL);
+                     "{config: %M, reboot: %B}", SetConfigHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
-                     shelly_get_debug_info_handler, NULL);
+                     GetDebugInfoHandler, NULL);
+  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
+                     "{id: %d, state: %B}", SetSwitchHandler, NULL);
   return true;
 }
 

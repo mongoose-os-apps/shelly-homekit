@@ -22,7 +22,7 @@
 
 namespace shelly {
 
-OutputPin::OutputPin(int id, int pin, bool on_value, bool initial_state)
+OutputPin::OutputPin(int id, int pin, int on_value, bool initial_state)
     : id_(id), pin_(pin), on_value_(on_value) {
   mgos_gpio_setup_output(pin_, (initial_state ? on_value_ : !on_value_));
 }

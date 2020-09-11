@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <memory>
 #include <vector>
 
@@ -32,12 +34,6 @@ namespace shelly {
 
 class HAPSwitch : public Component, Service {
  public:
-  struct Info {
-    bool state;
-    float apower;
-    float aenergy;
-  };
-
   enum class ServiceType {
     SWITCH = 0,
     OUTLET = 1,
@@ -63,6 +59,7 @@ class HAPSwitch : public Component, Service {
             const HAPAccessory *accessory);
   virtual ~HAPSwitch();
 
+  int id() const;
   StatusOr<std::string> GetInfo() const override;
   const HAPService *GetHAPService() const override;
 

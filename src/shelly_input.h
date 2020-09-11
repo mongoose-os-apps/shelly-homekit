@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <vector>
 
 #include "mgos_event.h"
@@ -55,9 +57,11 @@ class Input {
 
 class InputPin : public Input {
  public:
-  InputPin(int id, int pin, bool on_value, enum mgos_gpio_pull_type pull,
+  InputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
            bool enable_reset);
   virtual ~InputPin();
+
+  int id() const;
 
   // Input interface impl.
   bool GetState() override;
@@ -69,7 +73,7 @@ class InputPin : public Input {
 
   const int id_;
   const int pin_;
-  const bool on_value_;
+  const int on_value_;
   const bool enable_reset_;
 
   int change_cnt_;         // State change counter for reset.

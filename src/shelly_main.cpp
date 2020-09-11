@@ -38,8 +38,10 @@
 #include "HAPPlatformTCPStreamManager+Init.h"
 
 #include "shelly_debug.h"
+#include "shelly_hap_switch.h"
+#include "shelly_input.h"
+#include "shelly_output.h"
 #include "shelly_rpc_service.h"
-#include "shelly_sw_service.h"
 
 #define KVS_FILE_NAME "kvs.json"
 #define NUM_SESSIONS 9
@@ -125,6 +127,9 @@ static HAPAccessory s_accessory = {
     .services = NULL,  // Set later
     .callbacks = {.identify = shelly_identify_cb},
 };
+
+HAPSwitch *g_sw1 = nullptr;
+HAPSwitch *g_sw2 = nullptr;
 
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
@@ -332,36 +337,19 @@ bool mgos_sys_config_get_wifi_sta_enable(void) {
 }
 #endif
 
-static void shelly_set_switch_handler(struct mg_rpc_request_info *ri,
-                                      void *cb_arg,
-                                      struct mg_rpc_frame_info *fi,
-                                      struct mg_str args) {
-  int id = -1;
-  bool state = false;
-
-  json_scanf(args.p, args.len, ri->args_fmt, &id, &state);
-
-  if (shelly_sw_set_state(id, state, "web")) {
-    mg_rpc_send_responsef(ri, NULL);
-  } else {
-    mg_rpc_send_errorf(ri, 400, "bad args");
-  }
-
-  (void) cb_arg;
-  (void) fi;
-}
-
 static bool shelly_cfg_migrate(void) {
   bool changed = false;
   if (mgos_sys_config_get_shelly_cfg_version() == 0) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
-      mgos_sys_config_set_sw1_initial_state(SHELLY_SW_INITIAL_STATE_LAST);
+      mgos_sys_config_set_sw1_initial_state(
+          static_cast<int>(HAPSwitch::InitialState::LAST));
     }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
     if (mgos_sys_config_get_sw2_persist_state()) {
-      mgos_sys_config_set_sw2_initial_state(SHELLY_SW_INITIAL_STATE_LAST);
+      mgos_sys_config_set_sw2_initial_state(
+          static_cast<int>(HAPSwitch::InitialState::LAST));
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(1);
@@ -370,7 +358,7 @@ static bool shelly_cfg_migrate(void) {
   return changed;
 }
 
-static void reboot_cb(int ev, void *ev_data, void *userdata) {
+static void RebootCB(int ev, void *ev_data, void *userdata) {
   // Increment CN on every reboot, because why not.
   // This will cover firmware update as well as other configuration changes.
   if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
@@ -383,6 +371,44 @@ static void reboot_cb(int ev, void *ev_data, void *userdata) {
   (void) ev;
   (void) ev_data;
   (void) userdata;
+}
+
+static void DoReset(void *arg) {
+  intptr_t out_gpio = (intptr_t) arg;
+  if (out_gpio >= 0) {
+    mgos_gpio_blink(out_gpio, 0, 0);
+  }
+  LOG(LL_INFO, ("Performing reset"));
+#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
+  mgos_sys_config_set_wifi_sta_enable(false);
+  mgos_sys_config_set_wifi_ap_enable(true);
+  mgos_sys_config_save(&mgos_sys_config, false, NULL);
+  mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
+#endif
+}
+
+static void HandleInputResetSequence(InputPin *in, Input::Event ev,
+                                     bool cur_state) {
+  if (ev != Input::Event::RESET) return;
+  LOG(LL_INFO, ("%d: Reset sequence detected", in->id()));
+  intptr_t out_gpio = -1;
+  switch (in->id()) {
+#ifdef MGOS_CONFIG_HAVE_SW1
+    case 1:
+      out_gpio = mgos_sys_config_get_sw1_out_gpio();
+      break;
+#endif
+#ifdef MGOS_CONFIG_HAVE_SW2
+    case 2:
+      out_gpio = mgos_sys_config_get_sw2_out_gpio();
+      break;
+#endif
+  }
+  if (out_gpio >= 0) {
+    mgos_gpio_blink(out_gpio, 100, 100);
+  }
+  mgos_set_timer(600, 0, DoReset, (void *) out_gpio);
+  (void) cur_state;
 }
 
 bool shelly_app_init() {
@@ -457,20 +483,30 @@ bool shelly_app_init() {
   // Workaround for Shelly2.5: initing SW1 input (GPIO13) somehow causes
   // SW2 output (GPIO15) to turn on. Initializing SW2 first fixes it.
 #ifdef MGOS_CONFIG_HAVE_SW2
-  services[i] = shelly_sw_service_create(
-#ifdef MGOS_HAVE_ADE7953
-      s_ade7953, 0,
-#endif
-      mgos_sys_config_get_sw2());
-  if (services[i] != NULL) i++;
+  {
+    const auto *sw2_cfg = mgos_sys_config_get_sw2();
+    auto *in2 = new InputPin(2, sw2_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true);
+    auto *out2 =
+        new OutputPin(2, sw2_cfg->out_gpio, sw2_cfg->out_on_value, false);
+    g_sw2 = new HAPSwitch(in2, out2, nullptr, sw2_cfg, &s_server, &s_accessory);
+    if (g_sw2 != nullptr && g_sw2->Init().ok()) {
+      services[i++] = g_sw2->GetHAPService();
+    }
+    in2->AddHandler(std::bind(&HandleInputResetSequence, in2, _1, _2));
+  }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW1
-  services[i] = shelly_sw_service_create(
-#ifdef MGOS_HAVE_ADE7953
-      s_ade7953, 1,
-#endif
-      mgos_sys_config_get_sw1());
-  if (services[i] != NULL) i++;
+  {
+    const auto *sw1_cfg = mgos_sys_config_get_sw1();
+    auto *in1 = new InputPin(1, sw1_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true);
+    auto *out1 =
+        new OutputPin(1, sw1_cfg->out_gpio, sw1_cfg->out_on_value, false);
+    g_sw1 = new HAPSwitch(in1, out1, nullptr, sw1_cfg, &s_server, &s_accessory);
+    if (g_sw1 != nullptr && g_sw1->Init().ok()) {
+      services[i++] = g_sw1->GetHAPService();
+    }
+    in1->AddHandler(std::bind(&HandleInputResetSequence, in1, _1, _2));
+  }
 #endif
   s_accessory.services = services;
   LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
@@ -486,9 +522,6 @@ bool shelly_app_init() {
 
   mgos_hap_add_rpc_service(&s_server, &s_accessory, &s_kvs);
 
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
-                     "{id: %d, state: %B}", shelly_set_switch_handler, NULL);
-
   if (BTN_GPIO >= 0) {
     mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);
   }
@@ -497,7 +530,7 @@ bool shelly_app_init() {
 
   shelly_debug_init(&s_kvs, &s_tcpm);
 
-  mgos_event_add_handler(MGOS_EVENT_REBOOT, reboot_cb, NULL);
+  mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, NULL);
 
   return true;
 }

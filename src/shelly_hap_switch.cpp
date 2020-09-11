@@ -54,6 +54,10 @@ HAPSwitch::~HAPSwitch() {
   }
 }
 
+int HAPSwitch::id() const {
+  return cfg_->id;
+}
+
 StatusOr<std::string> HAPSwitch::GetInfo() const {
   std::string res = mgos::JSONPrintfString(
       "{id: %d, name: %Q, type: %d, in_mode: %d, initial: %d, "
@@ -104,8 +108,8 @@ Status HAPSwitch::Init() {
           new ShellyHAPStringCharacteristic(
               iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
               kHAPCharacteristicDebugDescription_Name));
-      chars_.emplace_back(std::move(name_char));
       hap_chars_.push_back(name_char->GetBase());
+      chars_.emplace_back(std::move(name_char));
       // On
       std::unique_ptr<ShellyHAPCharacteristic> on_char(
           new ShellyHAPBoolCharacteristic(
@@ -113,10 +117,10 @@ Status HAPSwitch::Init() {
               std::bind(&HAPSwitch::HandleOnRead, this, _1, _2, _3),
               std::bind(&HAPSwitch::HandleOnWrite, this, _1, _2, _3),
               kHAPCharacteristicDebugDescription_On));
-      chars_.emplace_back(std::move(on_char));
       hap_chars_.push_back(on_char->GetBase());
-
       state_notify_char_ = on_char->GetBase();
+      chars_.emplace_back(std::move(on_char));
+
       svc_type_name = "switch";
       break;
     }
@@ -130,8 +134,8 @@ Status HAPSwitch::Init() {
           new ShellyHAPStringCharacteristic(
               iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
               kHAPCharacteristicDebugDescription_Name));
-      chars_.emplace_back(std::move(name_char));
       hap_chars_.push_back(name_char->GetBase());
+      chars_.emplace_back(std::move(name_char));
       // On
       std::unique_ptr<ShellyHAPCharacteristic> on_char(
           new ShellyHAPBoolCharacteristic(
@@ -139,8 +143,9 @@ Status HAPSwitch::Init() {
               std::bind(&HAPSwitch::HandleOnRead, this, _1, _2, _3),
               std::bind(&HAPSwitch::HandleOnWrite, this, _1, _2, _3),
               kHAPCharacteristicDebugDescription_On));
-      chars_.emplace_back(std::move(on_char));
       hap_chars_.push_back(on_char->GetBase());
+      state_notify_char_ = on_char->GetBase();
+      chars_.emplace_back(std::move(on_char));
       // In Use
       std::unique_ptr<ShellyHAPCharacteristic> in_use_char(
           new ShellyHAPBoolCharacteristic(
@@ -148,9 +153,8 @@ Status HAPSwitch::Init() {
               std::bind(&HAPSwitch::HandleOutletInUseRead, this, _1, _2, _3),
               nullptr,  // write_handler
               kHAPCharacteristicDebugDescription_OutletInUse));
-      chars_.emplace_back(std::move(in_use_char));
       hap_chars_.push_back(in_use_char->GetBase());
-      state_notify_char_ = on_char->GetBase();
+      chars_.emplace_back(std::move(in_use_char));
       svc_type_name = "outlet";
       break;
     }
@@ -164,8 +168,8 @@ Status HAPSwitch::Init() {
           new ShellyHAPStringCharacteristic(
               iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
               kHAPCharacteristicDebugDescription_Name));
-      chars_.emplace_back(std::move(name_char));
       hap_chars_.push_back(name_char->GetBase());
+      chars_.emplace_back(std::move(name_char));
       // Current State
       std::unique_ptr<ShellyHAPCharacteristic> cur_state_char(
           new shelly::ShellyHAPUInt8Characteristic(
@@ -174,8 +178,9 @@ Status HAPSwitch::Init() {
                         _3),
               nullptr,  // write_handler
               kHAPCharacteristicDebugDescription_LockCurrentState));
-      chars_.emplace_back(std::move(cur_state_char));
       hap_chars_.push_back(cur_state_char->GetBase());
+      state_notify_char_ = cur_state_char->GetBase();
+      chars_.emplace_back(std::move(cur_state_char));
       // Target State
       std::unique_ptr<ShellyHAPCharacteristic> tgt_state_char(
           new shelly::ShellyHAPUInt8Characteristic(
@@ -185,14 +190,14 @@ Status HAPSwitch::Init() {
               std::bind(&HAPSwitch::HandleLockTargetStateWrite, this, _1, _2,
                         _3),
               kHAPCharacteristicDebugDescription_LockTargetState));
-      chars_.emplace_back(std::move(tgt_state_char));
       hap_chars_.push_back(tgt_state_char->GetBase());
-      state_notify_char_ = cur_state_char->GetBase();
       tgt_state_notify_char_ = tgt_state_char->GetBase();
+      chars_.emplace_back(std::move(tgt_state_char));
       svc_type_name = "lock";
       break;
     }
   }
+  hap_chars_.push_back(nullptr);
   svc_.characteristics = hap_chars_.data();
   switch (static_cast<InitialState>(cfg_->initial_state)) {
     case InitialState::OFF:
@@ -217,6 +222,9 @@ Status HAPSwitch::Init() {
     handler_id_ =
         in_->AddHandler(std::bind(&HAPSwitch::InputEventHandler, this, _1, _2));
   }
+  for (size_t i = 0; i < chars_.size(); i++) {
+    LOG(LL_INFO, ("%d: %p %p", (int) i, chars_[i]->GetBase(), hap_chars_[i]));
+  }
   return Status::OK();
 }
 
@@ -228,7 +236,11 @@ void HAPSwitch::SetStateInternal(bool new_state, const char *source,
                                  bool is_auto_off) {
   bool cur_state = out_->GetState();
   out_->SetState(new_state, source);
-  SaveState();
+  if (cfg_->state != new_state) {
+    ((struct mgos_config_sw *) cfg_)->state = new_state;
+    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                         NULL /* msg */);
+  }
   if (new_state == cur_state) return;
   HAPAccessoryServerRaiseEvent(server_, state_notify_char_, &svc_, accessory_);
 
@@ -256,13 +268,6 @@ void HAPSwitch::AutoOffTimerCB(void *ctx) {
     // Don't set state if auto off has been disabled during timer run
     sw->SetStateInternal(false, "auto_off", true /* is_auto_off */);
   }
-}
-
-void HAPSwitch::SaveState() {
-  bool cur_state = out_->GetState();
-  if (cfg_->state == cur_state) return;
-  ((struct mgos_config_sw *) cfg_)->state = cur_state;
-  mgos_sys_config_save(&mgos_sys_config, false /* try_once */, NULL /* msg */);
 }
 
 void HAPSwitch::InputEventHandler(Input::Event ev, bool state) {

@@ -17,37 +17,11 @@
 
 #pragma once
 
-#include "shelly_common.h"
+#include "shelly_hap_switch.h"
 
 namespace shelly {
 
-class Output {
- public:
-  virtual bool GetState() = 0;
-  virtual Status SetState(bool on, const char *source) = 0;
-};
-
-class PowerMeter {
- public:
-  virtual StatusOr<float> GetPowerW() = 0;
-  virtual StatusOr<float> GetEnergyWH() = 0;
-};
-
-class OutputPin : public Output {
- public:
-  OutputPin(int id, int pin, int on_value, bool initial_state);
-  virtual ~OutputPin();
-
-  // Output interface impl.
-  bool GetState() override;
-  Status SetState(bool on, const char *source) override;
-
- private:
-  const int id_;
-  const int pin_;
-  const int on_value_;
-
-  OutputPin(const OutputPin &other) = delete;
-};
+extern HAPSwitch *g_sw1;
+extern HAPSwitch *g_sw2;
 
 }  // namespace shelly
