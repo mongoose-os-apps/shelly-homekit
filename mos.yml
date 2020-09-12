@@ -31,7 +31,7 @@ config_schema:
   - ["sw.in_gpio", "i", -1, {"Input sensing pin"}]
   - ["sw.in_mode", "i", 1, {"0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
   - ["sw.state", "b", false, {"State of the switch"}]
-  - ["sw.svc_type", "i", 0, {"HAP service type, 0 = switch, 1 = outlet, 2 = lock"}]
+  - ["sw.svc_type", "i", 0, {"HAP service type, -1 = disable, 0 = switch, 1 = outlet, 2 = lock"}]
   - ["sw.initial_state", "i", 3, {"Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
   - ["sw.auto_off", "b", false, {"Whether the switch should automatically turn OFF after turning ON"}]
   - ["sw.auto_off_delay", "d", 0, {"Delay for automatically turning OFF, in seconds"}]

@@ -36,6 +36,7 @@ namespace shelly {
 class HAPSwitch : public Component, Service {
  public:
   enum class ServiceType {
+    kDisabled = -1,
     kSwitch = 0,
     kOutlet = 1,
     kLock = 2,
@@ -56,7 +57,7 @@ class HAPSwitch : public Component, Service {
   };
 
   HAPSwitch(Input *in, Output *out, PowerMeter *out_pm,
-            const struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
+            struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
             const HAPAccessory *accessory);
   virtual ~HAPSwitch();
 
@@ -65,7 +66,10 @@ class HAPSwitch : public Component, Service {
     return Type::kSwitch;
   }
   StatusOr<std::string> GetInfo() const override;
+  Status SetConfig(const std::string &config_json,
+                   bool *restart_required) override;
 
+  // HAP Service interface impl.
   const HAPService *GetHAPService() const override;
 
   Status Init() override;
@@ -100,7 +104,7 @@ class HAPSwitch : public Component, Service {
   Input *const in_;
   Output *const out_;
   PowerMeter *const out_pm_;
-  const struct mgos_config_sw *const cfg_;
+  struct mgos_config_sw *cfg_;
   HAPAccessoryServerRef *const server_;
   const HAPAccessory *const accessory_;
 

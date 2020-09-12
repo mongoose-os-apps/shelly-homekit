@@ -22,9 +22,19 @@
 
 namespace shelly {
 
-OutputPin::OutputPin(int id, int pin, int on_value, bool initial_state)
-    : id_(id), pin_(pin), on_value_(on_value) {
-  mgos_gpio_setup_output(pin_, (initial_state ? on_value_ : !on_value_));
+Output::Output(int id) : id_(id) {
+}
+
+Output::~Output() {
+}
+
+int Output::id() const {
+  return id_;
+}
+
+OutputPin::OutputPin(int id, int pin, int on_value)
+    : Output(id), pin_(pin), on_value_(on_value) {
+  mgos_gpio_set_mode(pin_, MGOS_GPIO_MODE_OUTPUT);
 }
 
 OutputPin::~OutputPin() {
@@ -36,11 +46,11 @@ bool OutputPin::GetState() {
 
 Status OutputPin::SetState(bool on, const char *source) {
   bool cur_state = GetState();
-  if (on == cur_state) return Status::OK();
   mgos_gpio_write(pin_, (on ? on_value_ : !on_value_));
+  if (on == cur_state) return Status::OK();
   if (source == nullptr) source = "";
   LOG(LL_INFO,
-      ("Output %d: %s -> %s (%s)", id_, OnOff(cur_state), OnOff(on), source));
+      ("Output %d: %s -> %s (%s)", id(), OnOff(cur_state), OnOff(on), source));
   return Status::OK();
 }
 

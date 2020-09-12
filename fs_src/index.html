@@ -146,6 +146,7 @@
           <div class="form-control">
             <label>Type:</label>
             <select id="svc_type">
+              <option id="svc_type_-1" value="-1">Disabled</option>
               <option id="svc_type_0" value="0">Switch</option>
               <option id="svc_type_1" value="1">Outlet</option>
               <option id="svc_type_2" value="2">Lock</option>
@@ -272,7 +273,7 @@ el("wifi_save_btn").onclick = function() {
     },
     reboot: true,
   };
-  axios.post(host + "/rpc/Shelly.SetConfig", data).then(function(res) {
+  axios.post(host + "/rpc/Config.Set", data).then(function(res) {
     document.body.innerHTML =
       "<div class='container'><h1>Rebooting...</h1>" +
       "<p>Device is rebooting and connecting to " + wifiSSID.value + "." +
@@ -339,7 +340,6 @@ function nDigitString(num, digits) {
 }
 
 function swSetConfig(c) {
-  var cfgKey = "sw" + c.data.id;
   var name = el(c, "name").value;
   var svcType = el(c, "svc_type").value;
   var inMode = el(c, "in_mode").value;
@@ -360,25 +360,23 @@ function swSetConfig(c) {
 
   spinner.className = "spin";
   var data = {
-    config: {},
-  };
-  data.config[cfgKey] = {
-    name: name,
-    svc_type: parseInt(svcType),
-    in_mode: parseInt(inMode),
-    initial_state: parseInt(initialState),
-    auto_off: autoOff,
-    auto_off_delay: dateStringToSeconds(autoOffDelay)
+    id: c.data.id,
+    config: {
+      name: name,
+      svc_type: parseInt(svcType),
+      in_mode: parseInt(inMode),
+      initial_state: parseInt(initialState),
+      auto_off: autoOff,
+      auto_off_delay: dateStringToSeconds(autoOffDelay)
+    },
   };
   console.log("swSetConfig:", data);
   axios.post(host + "/rpc/Shelly.SetConfig", data)
     .then(function(res) {
       spinner.className = "";
       getInfo();
-      if (res.data.msg) {
-        alert(res.data.msg);
-      }
     }).catch(function(err) {
+      spinner.className = "";
       if (err.response) {
         err = err.response.data.message;
       }

@@ -22,10 +22,14 @@
 
 namespace shelly {
 
-Input::Input() {
+Input::Input(int id) : id_(id) {
 }
 
 Input::~Input() {
+}
+
+int Input::id() const {
+  return id_;
 }
 
 Input::HandlerID Input::AddHandler(HandlerFn h) {
@@ -53,7 +57,7 @@ void Input::CallHandlers(Event ev, bool state) {
 
 InputPin::InputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
                    bool enable_reset)
-    : id_(id),
+    : Input(id),
       pin_(pin),
       on_value_(on_value),
       enable_reset_(enable_reset),
@@ -68,10 +72,6 @@ InputPin::~InputPin() {
   mgos_gpio_remove_int_handler(pin_, nullptr, nullptr);
 }
 
-int InputPin::id() const {
-  return id_;
-}
-
 bool InputPin::GetState() {
   return (mgos_gpio_read(pin_) == on_value_);
 }
@@ -84,7 +84,7 @@ void InputPin::GPIOIntHandler(int pin, void *arg) {
 
 void InputPin::HandleGPIOInt() {
   bool cur_state = (mgos_gpio_read(pin_) == on_value_);
-  LOG(LL_INFO, ("Input %d: %s", id_, OnOff(cur_state)));
+  LOG(LL_INFO, ("Input %d: %s", id(), OnOff(cur_state)));
   CallHandlers(Event::kChange, cur_state);
   double now = mgos_uptime();
   if (enable_reset_) {

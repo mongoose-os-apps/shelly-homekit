@@ -33,6 +33,14 @@ static HAPAccessoryServerRef *s_server;
 static HAPPlatformKeyValueStoreRef s_kvs;
 static HAPPlatformTCPStreamManagerRef s_tcpm;
 
+static void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st) {
+  if (st.ok()) {
+    mg_rpc_send_responsef(ri, nullptr);
+    return;
+  }
+  mg_rpc_send_errorf(ri, st.error_code(), "%s", st.error_message().c_str());
+}
+
 static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                            struct mg_rpc_frame_info *fi, struct mg_str args) {
 #ifdef MGOS_HAVE_WIFI
@@ -88,49 +96,43 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) args;
 }
 
-static void set_handler(const char *str, int len, void *arg) {
-  char *acl_copy = (mgos_sys_config_get_conf_acl() != NULL
-                        ? strdup(mgos_sys_config_get_conf_acl())
-                        : NULL);
-  mgos_conf_parse(mg_mk_str_n(str, len), acl_copy, mgos_config_schema(),
-                  &mgos_sys_config);
-  free(acl_copy);
-  (void) arg;
-}
-
 static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                              struct mg_rpc_frame_info *fi, struct mg_str args) {
-  const char *msg = "";
-#ifdef MGOS_CONFIG_HAVE_SW1
-  int old_sw1_svc_type = mgos_sys_config_get_sw1_svc_type();
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-  int old_sw2_svc_type = mgos_sys_config_get_sw2_svc_type();
-#endif
-  bool reboot = false;
+  int id = -1;
+  struct json_token config_tok = JSON_INVALID_TOKEN;
 
-  json_scanf(args.p, args.len, ri->args_fmt, set_handler, NULL, &reboot);
+  json_scanf(args.p, args.len, ri->args_fmt, &id, &config_tok);
 
-#ifdef MGOS_CONFIG_HAVE_SW1
-  if (mgos_sys_config_get_sw1_svc_type() != old_sw1_svc_type) {
-    if (HAPAccessoryServerIncrementCN(s_kvs) == kHAPError_None) {
-      msg = "Please reboot the device for changes to take effect";
+  if (config_tok.len == 0) {
+    mg_rpc_send_errorf(ri, 400, "%s is required", "config");
+    return;
+  }
+
+  Component *c = nullptr;
+  for (auto &cp : g_components) {
+    if (cp->id() == id) {
+      c = cp.get();
+      break;
     }
   }
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-  if (mgos_sys_config_get_sw2_svc_type() != old_sw2_svc_type) {
-    if (HAPAccessoryServerIncrementCN(s_kvs) == kHAPError_None) {
-      msg = "Please reboot the device for changes to take effect";
-    }
+  if (c == nullptr) {
+    mg_rpc_send_errorf(ri, 400, "component not found");
+    return;
   }
-#endif
 
-  mgos_sys_config_save(&mgos_sys_config, false /* try once */, NULL);
-
-  mg_rpc_send_responsef(ri, "{msg: %Q}", msg);
-
-  if (reboot) mgos_system_restart_after(300);
+  bool restart_required = false;
+  auto st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
+                         &restart_required);
+  if (st.ok()) {
+    mgos_sys_config_save(&mgos_sys_config, false /* try once */, NULL);
+    if (restart_required) {
+      LOG(LL_INFO, ("Configuration change requires server restart"));
+      RestartHAPServer();
+    }
+    mg_rpc_send_responsef(ri, nullptr);
+  } else {
+    SendStatusResp(ri, st);
+  }
 
   (void) cb_arg;
   (void) fi;
@@ -162,7 +164,7 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     mg_rpc_send_responsef(ri, NULL);
     return;
   }
-  mg_rpc_send_errorf(ri, 400, "switch not found");
+  mg_rpc_send_errorf(ri, 400, "component not found");
 
   (void) cb_arg;
   (void) fi;
@@ -177,7 +179,7 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                      GetInfoHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
-                     "{config: %M, reboot: %B}", SetConfigHandler, NULL);
+                     "{id: %d, config: %T}", SetConfigHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
                      GetDebugInfoHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",

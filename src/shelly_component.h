@@ -27,17 +27,15 @@ class Component {
     kSwitch = 0,
   };
 
-  explicit Component(int id) : id_(id) {
-  }
-  virtual ~Component() {
-  }
+  explicit Component(int id);
+  virtual ~Component();
 
-  int id() const {
-    return id_;
-  }
+  int id() const;
 
   virtual Type type() const = 0;
   virtual StatusOr<std::string> GetInfo() const = 0;
+  virtual Status SetConfig(const std::string &config_json,
+                           bool *restart_required) = 0;
 
  private:
   const int id_;

@@ -31,8 +31,7 @@
 namespace shelly {
 
 HAPSwitch::HAPSwitch(Input *in, Output *out, PowerMeter *out_pm,
-                     const struct mgos_config_sw *cfg,
-                     HAPAccessoryServerRef *server,
+                     struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
                      const HAPAccessory *accessory)
     : Component(cfg->id),
       in_(in),
@@ -76,7 +75,53 @@ StatusOr<std::string> HAPSwitch::GetInfo() const {
   return res;
 }
 
+Status HAPSwitch::SetConfig(const std::string &config_json,
+                            bool *restart_required) {
+  struct mgos_config_sw cfg = *cfg_;
+  cfg.name = nullptr;
+  json_scanf(config_json.c_str(), config_json.size(),
+             "{name: %Q, svc_type: %d, in_mode: %d, initial_state: %d, "
+             "auto_off: %B, auto_off_delay: %lf}",
+             &cfg.name, &cfg.svc_type, &cfg.in_mode, &cfg.initial_state,
+             &cfg.auto_off, &cfg.auto_off_delay);
+  std::unique_ptr<char> name_owner((char *) cfg.name);
+  // Validation.
+  if (cfg.name == nullptr || strlen(cfg.name) > 64) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
+                        "name (too long, max 64)");
+  }
+  if (cfg.svc_type < -1 || cfg.svc_type > 2) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "svc_type");
+  }
+  if (cfg.in_mode < 0 || cfg.in_mode > 3) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
+  }
+  if (cfg.initial_state < 0 || cfg.initial_state > 3) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
+  }
+  cfg.auto_off = (cfg.auto_off != 0);
+  if (cfg.initial_state < 0 || cfg.initial_state > 3) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
+  }
+  // Now copy over.
+  *restart_required = false;
+  if (cfg_->name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
+    mgos_conf_set_str(&cfg_->name, cfg.name);
+    *restart_required = true;
+  }
+  if (cfg_->svc_type != cfg.svc_type) {
+    cfg_->svc_type = cfg.svc_type;
+    *restart_required = true;
+  }
+  cfg_->in_mode = cfg.in_mode;
+  cfg_->initial_state = cfg.initial_state;
+  cfg_->auto_off = cfg.auto_off;
+  cfg_->auto_off_delay = cfg.auto_off_delay;
+  return Status::OK();
+}
+
 const HAPService *HAPSwitch::GetHAPService() const {
+  if (cfg_->svc_type < 0) return nullptr;
   return &svc_;
 }
 
@@ -93,7 +138,10 @@ Status HAPSwitch::Init() {
   svc_.properties.primaryService = true;
   const char *svc_type_name = NULL;
   switch (static_cast<ServiceType>(cfg_->svc_type)) {
-    default:
+    case ServiceType::kDisabled: {
+      svc_type_name = "disabled";
+      break;
+    }
     case ServiceType::kSwitch: {
       uint16_t iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * cfg_->id);
       svc_.iid = iid++;
@@ -219,9 +267,6 @@ Status HAPSwitch::Init() {
     handler_id_ =
         in_->AddHandler(std::bind(&HAPSwitch::InputEventHandler, this, _1, _2));
   }
-  for (size_t i = 0; i < chars_.size(); i++) {
-    LOG(LL_INFO, ("%d: %p %p", (int) i, chars_[i]->GetBase(), hap_chars_[i]));
-  }
   return Status::OK();
 }
 
@@ -234,12 +279,15 @@ void HAPSwitch::SetStateInternal(bool new_state, const char *source,
   bool cur_state = out_->GetState();
   out_->SetState(new_state, source);
   if (cfg_->state != new_state) {
-    ((struct mgos_config_sw *) cfg_)->state = new_state;
+    cfg_->state = new_state;
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          NULL /* msg */);
   }
   if (new_state == cur_state) return;
-  HAPAccessoryServerRaiseEvent(server_, state_notify_char_, &svc_, accessory_);
+  if (state_notify_char_ != nullptr) {
+    HAPAccessoryServerRaiseEvent(server_, state_notify_char_, &svc_,
+                                 accessory_);
+  }
 
   if (auto_off_timer_id_ != MGOS_INVALID_TIMER_ID) {
     // Cancel timer if state changes so that only the last timer is triggered if

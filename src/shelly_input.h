@@ -35,9 +35,10 @@ class Input {
     // DOUBLE = 2,
     kReset = 4,
   };
-  Input();
+  explicit Input(int id);
   virtual ~Input();
 
+  int id() const;
   virtual bool GetState() = 0;
 
   typedef int HandlerID;
@@ -50,6 +51,7 @@ class Input {
   void CallHandlers(Event ev, bool state);
 
  private:
+  const int id_;
   std::vector<HandlerFn> handlers_;
 
   Input(const Input &other) = delete;
@@ -61,8 +63,6 @@ class InputPin : public Input {
            bool enable_reset);
   virtual ~InputPin();
 
-  int id() const;
-
   // Input interface impl.
   bool GetState() override;
 
@@ -71,7 +71,6 @@ class InputPin : public Input {
 
   void HandleGPIOInt();
 
-  const int id_;
   const int pin_;
   const int on_value_;
   const bool enable_reset_;

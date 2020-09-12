@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#include <memory>
-#include <vector>
-
 #include "shelly_component.h"
 
 namespace shelly {
 
-extern std::vector<std::unique_ptr<Component>> g_components;
+Component::Component(int id) : id_(id) {
+}
 
-void RestartHAPServer();
+Component::~Component() {
+}
+
+int Component::id() const {
+  return id_;
+}
 
 }  // namespace shelly

@@ -113,6 +113,7 @@ static HAPPlatform s_platform = {
         },
 };
 
+static bool s_recreate_services = false;
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
 
@@ -142,33 +143,26 @@ static HAPAccessory s_accessory = {
     .callbacks = {.identify = IdentifyCB},
 };
 
-static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 static std::vector<std::unique_ptr<Input>> s_inputs;
 static std::vector<std::unique_ptr<Output>> s_outputs;
+static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 std::vector<std::unique_ptr<Component>> g_components;
 
-static void shelly_hap_server_state_update_cb(HAPAccessoryServerRef *server,
-                                              void *context) {
-  LOG(LL_INFO, ("HAP server state: %d", HAPAccessoryServerGetState(server)));
-  (void) context;
+template <class T>
+T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
+  for (auto &v : vv) {
+    if (v->id() == id) return v.get();
+  }
+  return nullptr;
 }
-
-static bool StartHAPServer(bool quiet) {
-  if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
-    return true;
-  }
-  if (mgos_hap_config_valid()) {
-    uint16_t cn;
-    if (HAPAccessoryServerGetCN(&s_kvs, &cn) == kHAPError_None) {
-      LOG(LL_INFO,
-          ("=== Accessory provisioned, starting HAP server (CN %d)", cn));
-    }
-    HAPAccessoryServerStart(&s_server, &s_accessory);
-    return true;
-  } else if (!quiet) {
-    LOG(LL_INFO, ("=== Accessory not provisioned"));
-  }
-  return false;
+Input *FindInput(int id) {
+  return FindById(s_inputs, id);
+}
+Output *FindOutput(int id) {
+  return FindById(s_outputs, id);
+}
+PowerMeter *FindPM(int id) {
+  return FindById(s_pms, id);
 }
 
 static void DoReset(void *arg) {
@@ -183,6 +177,107 @@ static void DoReset(void *arg) {
   mgos_sys_config_save(&mgos_sys_config, false, nullptr);
   mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
 #endif
+}
+
+static void HandleInputResetSequence(InputPin *in, Input::Event ev,
+                                     bool cur_state) {
+  if (ev != Input::Event::kReset) return;
+  LOG(LL_INFO, ("%d: Reset sequence detected", in->id()));
+  intptr_t out_gpio = -1;
+  switch (in->id()) {
+#ifdef MGOS_CONFIG_HAVE_SW1
+    case 1:
+      out_gpio = mgos_sys_config_get_sw1_out_gpio();
+      break;
+#endif
+#ifdef MGOS_CONFIG_HAVE_SW2
+    case 2:
+      out_gpio = mgos_sys_config_get_sw2_out_gpio();
+      break;
+#endif
+  }
+  if (out_gpio >= 0) {
+    mgos_gpio_blink(out_gpio, 100, 100);
+  }
+  mgos_set_timer(600, 0, DoReset, (void *) out_gpio);
+  (void) cur_state;
+}
+
+const HAPService **CreateHAPServices() {
+  const HAPService **services =
+      (const HAPService **) calloc(3 + NUM_SWITCHES + 1, sizeof(*services));
+  services[0] = &mgos_hap_accessory_information_service;
+  services[1] = &mgos_hap_protocol_information_service;
+  services[2] = &mgos_hap_pairing_service;
+  int i = 3;
+#ifdef MGOS_CONFIG_HAVE_SW1
+  {
+    auto *sw1_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw1();
+    std::unique_ptr<HAPSwitch> sw1(new HAPSwitch(FindInput(1), FindOutput(1),
+                                                 FindPM(1), sw1_cfg, &s_server,
+                                                 &s_accessory));
+    if (sw1 != nullptr && sw1->Init().ok()) {
+      const HAPService *svc = sw1->GetHAPService();
+      if (svc != nullptr) services[i++] = svc;
+      g_components.push_back(std::move(sw1));
+    }
+  }
+#endif
+#ifdef MGOS_CONFIG_HAVE_SW2
+  {
+    auto *sw2_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw2();
+    std::unique_ptr<HAPSwitch> sw2(new HAPSwitch(FindInput(2), FindOutput(2),
+                                                 FindPM(2), sw2_cfg, &s_server,
+                                                 &s_accessory));
+    if (sw2 != nullptr && sw2->Init().ok()) {
+      const HAPService *svc = sw2->GetHAPService();
+      if (svc != nullptr) services[i++] = svc;
+      g_components.push_back(std::move(sw2));
+    }
+  }
+#endif
+  (void) HandleInputResetSequence;
+  LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
+  return services;
+}
+
+static bool StartHAPServer(bool quiet) {
+  if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
+    return true;
+  }
+  if (!mgos_hap_config_valid()) {
+    if (!quiet) {
+      LOG(LL_INFO, ("=== Accessory not provisioned"));
+    }
+  }
+  if (s_accessory.services != nullptr && s_recreate_services) {
+    LOG(LL_INFO, ("=== Re-creating services"));
+    free((void *) s_accessory.services);
+    s_accessory.services = nullptr;
+    g_components.clear();
+    s_recreate_services = false;
+    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+      LOG(LL_ERROR, ("Failed to increment configuration number"));
+    }
+  }
+  uint16_t cn;
+  if (HAPAccessoryServerGetCN(&s_kvs, &cn) == kHAPError_None) {
+    LOG(LL_INFO,
+        ("=== Accessory provisioned, starting HAP server (CN %d)", cn));
+  }
+
+  if (s_accessory.services == nullptr) {
+    s_accessory.services = CreateHAPServices();
+  }
+
+  HAPAccessoryServerStart(&s_server, &s_accessory);
+  return true;
+}
+
+static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server,
+                                   void *context) {
+  LOG(LL_INFO, ("HAP server state: %d", HAPAccessoryServerGetState(server)));
+  (void) context;
 }
 
 static void CheckButton(int pin, bool btn_down) {
@@ -242,7 +337,8 @@ static void CheckLED(int pin, bool led_act) {
   }
 #endif
   // HAP server status (if WiFi is provisioned).
-  if (HAPAccessoryServerGetState(&s_server) == kHAPAccessoryServerState_Idle) {
+  if (HAPAccessoryServerGetState(&s_server) !=
+      kHAPAccessoryServerState_Running) {
     off_ms = 875;
     on_ms = 25;
     LOG(LL_DEBUG, ("LED: HAP provisioning"));
@@ -366,31 +462,15 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
-static void HandleInputResetSequence(InputPin *in, Input::Event ev,
-                                     bool cur_state) {
-  if (ev != Input::Event::kReset) return;
-  LOG(LL_INFO, ("%d: Reset sequence detected", in->id()));
-  intptr_t out_gpio = -1;
-  switch (in->id()) {
-#ifdef MGOS_CONFIG_HAVE_SW1
-    case 1:
-      out_gpio = mgos_sys_config_get_sw1_out_gpio();
-      break;
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-    case 2:
-      out_gpio = mgos_sys_config_get_sw2_out_gpio();
-      break;
-#endif
+void RestartHAPServer() {
+  s_recreate_services = true;
+  if (HAPAccessoryServerGetState(&s_server) ==
+      kHAPAccessoryServerState_Running) {
+    HAPAccessoryServerStop(&s_server);
   }
-  if (out_gpio >= 0) {
-    mgos_gpio_blink(out_gpio, 100, 100);
-  }
-  mgos_set_timer(600, 0, DoReset, (void *) out_gpio);
-  (void) cur_state;
 }
 
-bool shelly_app_init() {
+bool InitApp() {
 #ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
     LOG(LL_INFO, ("Performing cleanup"));
@@ -409,6 +489,34 @@ bool shelly_app_init() {
                          nullptr /* msg */);
   }
 
+  // Initialize inputs, outputs and other peripherals.
+  //
+  // Note for Shelly2.5: SW2 output (GPIO15) must be initialized before
+  // SW1 input (GPIO13), doing it in reverse turns on SW2.
+#ifdef MGOS_CONFIG_HAVE_SW2
+  {
+    const auto *sw2_cfg = mgos_sys_config_get_sw2();
+    std::unique_ptr<InputPin> in2(
+        new InputPin(2, sw2_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true));
+    std::unique_ptr<OutputPin> out2(
+        new OutputPin(2, sw2_cfg->out_gpio, sw2_cfg->out_on_value));
+    in2->AddHandler(std::bind(&HandleInputResetSequence, in2.get(), _1, _2));
+    s_outputs.push_back(std::move(out2));
+    s_inputs.push_back(std::move(in2));
+  }
+#endif
+#ifdef MGOS_CONFIG_HAVE_SW1
+  {
+    const auto *sw1_cfg = mgos_sys_config_get_sw1();
+    std::unique_ptr<InputPin> in1(
+        new InputPin(1, sw1_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true));
+    std::unique_ptr<OutputPin> out1(
+        new OutputPin(1, sw1_cfg->out_gpio, sw1_cfg->out_on_value));
+    in1->AddHandler(std::bind(&HandleInputResetSequence, in1.get(), _1, _2));
+    s_outputs.push_back(std::move(out1));
+    s_inputs.push_back(std::move(in1));
+  }
+#endif
   auto pmss = PowerMeterInit();
   if (pmss.ok()) {
     s_pms = pmss.MoveValueOrDie();
@@ -438,7 +546,7 @@ bool shelly_app_init() {
   static const HAPPlatformServiceDiscoveryOptions sd_opts = {};
   HAPPlatformServiceDiscoveryCreate(&s_service_discovery, &sd_opts);
 
-  s_callbacks.handleUpdatedState = shelly_hap_server_state_update_cb;
+  s_callbacks.handleUpdatedState = HAPServerStateUpdateCB;
 
   s_accessory.name = mgos_sys_config_get_device_id();
   s_accessory.firmwareVersion = mgos_sys_ro_vars_get_fw_version();
@@ -448,68 +556,6 @@ bool shelly_app_init() {
     mgos_expand_mac_address_placeholders(sn);
     s_accessory.serialNumber = sn;
   }
-
-  const HAPService **services =
-      (const HAPService **) calloc(3 + NUM_SWITCHES + 1, sizeof(*services));
-  services[0] = &mgos_hap_accessory_information_service;
-  services[1] = &mgos_hap_protocol_information_service;
-  services[2] = &mgos_hap_pairing_service;
-  int i = 3;
-  // Workaround for Shelly2.5: initing SW1 input (GPIO13) somehow causes
-  // SW2 output (GPIO15) to turn on. Initializing SW2 first fixes it.
-#ifdef MGOS_CONFIG_HAVE_SW2
-  {
-    const auto *sw2_cfg = mgos_sys_config_get_sw2();
-    std::unique_ptr<InputPin> in2(
-        new InputPin(2, sw2_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true));
-    std::unique_ptr<OutputPin> out2(
-        new OutputPin(2, sw2_cfg->out_gpio, sw2_cfg->out_on_value, false));
-    PowerMeter *pm2 = nullptr;
-    for (auto &pm : s_pms) {
-      if (pm->id() == 2) {
-        pm2 = pm.get();
-        break;
-      }
-    }
-    std::unique_ptr<HAPSwitch> sw2(new HAPSwitch(
-        in2.get(), out2.get(), pm2, sw2_cfg, &s_server, &s_accessory));
-    if (sw2 != nullptr && sw2->Init().ok()) {
-      services[i++] = sw2->GetHAPService();
-      g_components.push_back(std::move(sw2));
-    }
-    in2->AddHandler(std::bind(&HandleInputResetSequence, in2.get(), _1, _2));
-    s_outputs.push_back(std::move(out2));
-    s_inputs.push_back(std::move(in2));
-  }
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW1
-  {
-    const auto *sw1_cfg = mgos_sys_config_get_sw1();
-    std::unique_ptr<InputPin> in1(
-        new InputPin(1, sw1_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true));
-    std::unique_ptr<OutputPin> out1(
-        new OutputPin(1, sw1_cfg->out_gpio, sw1_cfg->out_on_value, false));
-    PowerMeter *pm1 = nullptr;
-    for (auto &pm : s_pms) {
-      if (pm->id() == 1) {
-        pm1 = pm.get();
-        break;
-      }
-    }
-    std::unique_ptr<HAPSwitch> sw1(new HAPSwitch(
-        in1.get(), out1.get(), pm1, sw1_cfg, &s_server, &s_accessory));
-    if (sw1 != nullptr && sw1->Init().ok()) {
-      services[i++] = sw1->GetHAPService();
-      g_components.insert(g_components.begin(), std::move(sw1));
-    }
-    in1->AddHandler(std::bind(&HandleInputResetSequence, in1.get(), _1, _2));
-    s_outputs.push_back(std::move(out1));
-    s_inputs.push_back(std::move(in1));
-  }
-#endif
-  (void) HandleInputResetSequence;
-  s_accessory.services = services;
-  LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
 
   // Initialize accessory server.
   HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
@@ -539,7 +585,6 @@ bool shelly_app_init() {
 
 extern "C" {
 enum mgos_app_init_result mgos_app_init(void) {
-  return shelly::shelly_app_init() ? MGOS_APP_INIT_SUCCESS
-                                   : MGOS_APP_INIT_ERROR;
+  return (shelly::InitApp() ? MGOS_APP_INIT_SUCCESS : MGOS_APP_INIT_ERROR);
 }
 }

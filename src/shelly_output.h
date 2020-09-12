@@ -23,20 +23,21 @@ namespace shelly {
 
 class Output {
  public:
-  Output() {
-  }
-  virtual ~Output() {
-  }
+  explicit Output(int id);
+  virtual ~Output();
+
+  int id() const;
   virtual bool GetState() = 0;
   virtual Status SetState(bool on, const char *source) = 0;
 
  private:
+  const int id_;
   Output(const Output &other) = delete;
 };
 
 class OutputPin : public Output {
  public:
-  OutputPin(int id, int pin, int on_value, bool initial_state);
+  OutputPin(int id, int pin, int on_value);
   virtual ~OutputPin();
 
   // Output interface impl.
@@ -44,7 +45,6 @@ class OutputPin : public Output {
   Status SetState(bool on, const char *source) override;
 
  private:
-  const int id_;
   const int pin_;
   const int on_value_;
 
