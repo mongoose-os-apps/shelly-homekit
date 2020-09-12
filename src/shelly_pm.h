@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "shelly_common.h"
@@ -25,11 +26,18 @@ namespace shelly {
 
 class PowerMeter {
  public:
+  PowerMeter() {
+  }
+  virtual ~PowerMeter() {
+  }
   virtual int id() const = 0;
   virtual StatusOr<float> GetPowerW() = 0;
   virtual StatusOr<float> GetEnergyWH() = 0;
+
+ private:
+  PowerMeter(const PowerMeter &other) = delete;
 };
 
-StatusOr<std::vector<PowerMeter *>> PowerMeterInit();
+StatusOr<std::vector<std::unique_ptr<PowerMeter>>> PowerMeterInit();
 
 }  // namespace shelly

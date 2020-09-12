@@ -34,7 +34,8 @@ HAPSwitch::HAPSwitch(Input *in, Output *out, PowerMeter *out_pm,
                      const struct mgos_config_sw *cfg,
                      HAPAccessoryServerRef *server,
                      const HAPAccessory *accessory)
-    : in_(in),
+    : Component(cfg->id),
+      in_(in),
       out_(out),
       out_pm_(out_pm),
       cfg_(cfg),
@@ -54,26 +55,21 @@ HAPSwitch::~HAPSwitch() {
   }
 }
 
-int HAPSwitch::id() const {
-  return cfg_->id;
-}
-
 StatusOr<std::string> HAPSwitch::GetInfo() const {
-  std::string res = mgos::JSONPrintfString(
-      "{id: %d, name: %Q, type: %d, in_mode: %d, initial: %d, "
+  std::string res = mgos::JSONPrintStringf(
+      "{id: %d, type: %d, name: %Q, svc_type: %d, in_mode: %d, initial: %d, "
       "state: %B, auto_off: %B, auto_off_delay: %.3f",
-      cfg_->id, (cfg_->name ? cfg_->name : ""), cfg_->svc_type, cfg_->in_mode,
-      cfg_->initial_state, out_->GetState(), cfg_->auto_off,
+      id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type,
+      cfg_->in_mode, cfg_->initial_state, out_->GetState(), cfg_->auto_off,
       cfg_->auto_off_delay);
   if (out_pm_ != nullptr) {
     auto power = out_pm_->GetPowerW();
-    auto energy = out_pm_->GetEnergyWH();
     if (power.ok()) {
-      res.append(mgos::JSONPrintfString(", apower: %.3f", power.ValueOrDie()));
+      mgos::JSONAppendStringf(&res, ", apower: %.3f", power.ValueOrDie());
     }
+    auto energy = out_pm_->GetEnergyWH();
     if (energy.ok()) {
-      res.append(
-          mgos::JSONPrintfString(", aenergy: %.3f", energy.ValueOrDie()));
+      mgos::JSONAppendStringf(&res, ", aenergy: %.3f", energy.ValueOrDie());
     }
   }
   res.append("}");
@@ -90,7 +86,7 @@ Status HAPSwitch::Init() {
     mgos_gpio_setup_output(cfg_->out_gpio, !cfg_->out_on_value);
     return Status::OK();
   }
-  if (cfg_->id >= NUM_SWITCHES) {
+  if (cfg_->id == 0 || cfg_->id > NUM_SWITCHES) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Switch ID too big!");
   }
   svc_.name = cfg_->name;
@@ -264,7 +260,6 @@ void HAPSwitch::SetStateInternal(bool new_state, const char *source,
 void HAPSwitch::AutoOffTimerCB(void *ctx) {
   HAPSwitch *sw = static_cast<HAPSwitch *>(ctx);
   sw->auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
-  LOG(LL_INFO, ("%d: Auto-off timer fired", sw->cfg_->id));
   if (sw->cfg_->auto_off) {
     // Don't set state if auto off has been disabled during timer run
     sw->SetStateInternal(false, "auto_off", true /* is_auto_off */);

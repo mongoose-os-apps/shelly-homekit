@@ -17,11 +17,13 @@
 
 #pragma once
 
-#include "shelly_hap_switch.h"
+#include <memory>
+#include <vector>
+
+#include "shelly_component.h"
 
 namespace shelly {
 
-extern HAPSwitch *g_sw1;
-extern HAPSwitch *g_sw2;
+extern std::vector<std::unique_ptr<Component>> g_components;
 
 }  // namespace shelly

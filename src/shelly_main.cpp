@@ -71,11 +71,17 @@ static HAPAccessoryServerOptions s_server_options = {
     .ip =
         {
             .transport = &kHAPAccessoryServerTransport_IP,
+#ifndef __clang__
+            .available = 0,
+#endif
             .accessoryServerStorage = &s_ip_storage,
         },
     .ble =
         {
             .transport = nullptr,
+#ifndef __clang__
+            .available = 0,
+#endif
             .accessoryServerStorage = nullptr,
             .preferredAdvertisingInterval = 0,
             .preferredNotificationDuration = 0,
@@ -136,7 +142,10 @@ static HAPAccessory s_accessory = {
     .callbacks = {.identify = IdentifyCB},
 };
 
-HAPSwitch *g_sw1 = nullptr, *g_sw2 = nullptr;
+static std::vector<std::unique_ptr<PowerMeter>> s_pms;
+static std::vector<std::unique_ptr<Input>> s_inputs;
+static std::vector<std::unique_ptr<Output>> s_outputs;
+std::vector<std::unique_ptr<Component>> g_components;
 
 static void shelly_hap_server_state_update_cb(HAPAccessoryServerRef *server,
                                               void *context) {
@@ -400,10 +409,9 @@ bool shelly_app_init() {
                          nullptr /* msg */);
   }
 
-  std::vector<PowerMeter *> pms;
   auto pmss = PowerMeterInit();
   if (pmss.ok()) {
-    pms = pmss.ValueOrDie();
+    s_pms = pmss.MoveValueOrDie();
   } else {
     LOG(LL_INFO,
         ("Power meter init failed: %s", pmss.status().error_message().c_str()));
@@ -452,43 +460,54 @@ bool shelly_app_init() {
 #ifdef MGOS_CONFIG_HAVE_SW2
   {
     const auto *sw2_cfg = mgos_sys_config_get_sw2();
-    auto *in2 = new InputPin(2, sw2_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true);
-    auto *out2 =
-        new OutputPin(2, sw2_cfg->out_gpio, sw2_cfg->out_on_value, false);
+    std::unique_ptr<InputPin> in2(
+        new InputPin(2, sw2_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true));
+    std::unique_ptr<OutputPin> out2(
+        new OutputPin(2, sw2_cfg->out_gpio, sw2_cfg->out_on_value, false));
     PowerMeter *pm2 = nullptr;
-    for (auto pm : pms) {
+    for (auto &pm : s_pms) {
       if (pm->id() == 2) {
-        pm2 = pm;
+        pm2 = pm.get();
         break;
       }
     }
-    g_sw2 = new HAPSwitch(in2, out2, pm2, sw2_cfg, &s_server, &s_accessory);
-    if (g_sw2 != nullptr && g_sw2->Init().ok()) {
-      services[i++] = g_sw2->GetHAPService();
+    std::unique_ptr<HAPSwitch> sw2(new HAPSwitch(
+        in2.get(), out2.get(), pm2, sw2_cfg, &s_server, &s_accessory));
+    if (sw2 != nullptr && sw2->Init().ok()) {
+      services[i++] = sw2->GetHAPService();
+      g_components.push_back(std::move(sw2));
     }
-    in2->AddHandler(std::bind(&HandleInputResetSequence, in2, _1, _2));
+    in2->AddHandler(std::bind(&HandleInputResetSequence, in2.get(), _1, _2));
+    s_outputs.push_back(std::move(out2));
+    s_inputs.push_back(std::move(in2));
   }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW1
   {
     const auto *sw1_cfg = mgos_sys_config_get_sw1();
-    auto *in1 = new InputPin(1, sw1_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true);
-    auto *out1 =
-        new OutputPin(1, sw1_cfg->out_gpio, sw1_cfg->out_on_value, false);
+    std::unique_ptr<InputPin> in1(
+        new InputPin(1, sw1_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true));
+    std::unique_ptr<OutputPin> out1(
+        new OutputPin(1, sw1_cfg->out_gpio, sw1_cfg->out_on_value, false));
     PowerMeter *pm1 = nullptr;
-    for (auto pm : pms) {
+    for (auto &pm : s_pms) {
       if (pm->id() == 1) {
-        pm1 = pm;
+        pm1 = pm.get();
         break;
       }
     }
-    g_sw1 = new HAPSwitch(in1, out1, pm1, sw1_cfg, &s_server, &s_accessory);
-    if (g_sw1 != nullptr && g_sw1->Init().ok()) {
-      services[i++] = g_sw1->GetHAPService();
+    std::unique_ptr<HAPSwitch> sw1(new HAPSwitch(
+        in1.get(), out1.get(), pm1, sw1_cfg, &s_server, &s_accessory));
+    if (sw1 != nullptr && sw1->Init().ok()) {
+      services[i++] = sw1->GetHAPService();
+      g_components.insert(g_components.begin(), std::move(sw1));
     }
-    in1->AddHandler(std::bind(&HandleInputResetSequence, in1, _1, _2));
+    in1->AddHandler(std::bind(&HandleInputResetSequence, in1.get(), _1, _2));
+    s_outputs.push_back(std::move(out1));
+    s_inputs.push_back(std::move(in1));
   }
 #endif
+  (void) HandleInputResetSequence;
   s_accessory.services = services;
   LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
 

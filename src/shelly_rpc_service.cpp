@@ -24,6 +24,7 @@
 #include "HAPAccessoryServer+Internal.h"
 
 #include "shelly_debug.h"
+#include "shelly_hap_switch.h"
 #include "shelly_main.h"
 
 namespace shelly {
@@ -40,40 +41,21 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
   bool hap_provisioned = !mgos_conf_str_empty(mgos_sys_config_get_hap_salt());
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
-#ifdef MGOS_CONFIG_HAVE_SW1
-  auto sw1_info = g_sw1->GetInfo();
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-  auto sw2_info = g_sw2->GetInfo();
-#endif
   HAPPlatformTCPStreamManagerStats tcpm_stats = {};
   HAPPlatformTCPStreamManagerGetStats(s_tcpm, &tcpm_stats);
-  mg_rpc_send_responsef(
-      ri,
+  std::string res = mgos::JSONPrintStringf(
       "{id: %Q, app: %Q, model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
-#ifdef MGOS_CONFIG_HAVE_SW1
-      "sw1: %s,"
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-      "sw2: %s,"
-#endif
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
 #endif
       "hap_provisioned: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u}",
+      "hap_ip_conns_max: %u",
       mgos_sys_config_get_device_id(), MGOS_APP,
       CS_STRINGIFY_MACRO(PRODUCT_MODEL), mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
       (int) mgos_uptime(),
-#ifdef MGOS_CONFIG_HAVE_SW1
-      (sw1_info.ok() ? sw1_info.ValueOrDie().c_str() : ""),
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-      (sw2_info.ok() ? sw2_info.ValueOrDie().c_str() : ""),
-#endif
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
       (pass ? pass : ""),
@@ -81,6 +63,26 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       hap_provisioned, hap_paired, (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams);
+  mgos::JSONAppendStringf(&res, ", components: [");
+  bool first = true;
+  for (const auto &c : g_components) {
+    switch (c->type()) {
+      case Component::Type::kSwitch: {
+        const auto &is = c->GetInfo();
+        if (is.ok()) {
+          if (!first) res.append(", ");
+          res.append(is.ValueOrDie());
+          first = false;
+        }
+        break;
+      }
+    }
+  }
+
+  mgos::JSONAppendStringf(&res, "]}");
+
+  mg_rpc_send_responsef(ri, "%s", res.c_str());
+
   (void) cb_arg;
   (void) fi;
   (void) args;
@@ -152,15 +154,15 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 
   json_scanf(args.p, args.len, ri->args_fmt, &id, &state);
 
-  if (g_sw1 != nullptr && id == g_sw1->id()) {
-    g_sw1->SetState(state, "web");
+  for (auto &c : g_components) {
+    if (c->id() != id) continue;
+    if (c->type() != Component::Type::kSwitch) continue;
+    HAPSwitch *sw = static_cast<HAPSwitch *>(c.get());
+    sw->SetState(state, "web");
     mg_rpc_send_responsef(ri, NULL);
-  } else if (g_sw2 != nullptr && id == g_sw2->id()) {
-    g_sw2->SetState(state, "web");
-    mg_rpc_send_responsef(ri, NULL);
-  } else {
-    mg_rpc_send_errorf(ri, 400, "bad args");
+    return;
   }
+  mg_rpc_send_errorf(ri, 400, "switch not found");
 
   (void) cb_arg;
   (void) fi;

@@ -27,147 +27,9 @@
      </button>
      <br><br>
     </div>
-    <div class="container" id="sw1_container" style="display: none">
-      <h1>Switch 1</h1>
-      <div class="form">
-        <div class="">
-          <div class="form-control">
-            <label>Status:</label>
-            <span id="sw1_state">off</span>
-            <span id="sw1_power_stats"></span>
-          </div>
-          <div class="form-control">
-            <label></label>
-            <button class="btn" id="sw1_set_btn">
-              <span id="sw1_set_spinner"></span>
-              <label id="sw1_btn_label">Turn On</label>
-            </button>
-          </div>
-        </div>
-        <div class="">
-          <div class="form-control">
-            <label>Name:</label>
-            <input type="text" id="sw1_name">
-          </div>
-          <div class="form-control">
-            <label>Type:</label>
-            <select id="sw1_svc_type">
-              <option id="sw1_svc_type_0" value="0">Switch</option>
-              <option id="sw1_svc_type_1" value="1">Outlet</option>
-              <option id="sw1_svc_type_2" value="2">Lock</option>
-            </select>
-          </div>
-          <div class="form-control">
-            <label>Input Mode:</label>
-            <select id="sw1_in_mode">
-              <option id="sw1_in_mode_0" value="0">Momentary</option>
-              <option id="sw1_in_mode_1" value="1">Toggle</option>
-              <option id="sw1_in_mode_2" value="2">Edge</option>
-              <option id="sw1_in_mode_3" value="3">Detached</option>
-            </select>
-          </div>
-          <div class="form-control">
-            <label for="sw1_initial">Initial state:</label>
-            <select id="sw1_initial">
-              <option id="sw1_initial_0" value="0">Off</option>
-              <option id="sw1_initial_1" value="1">On</option>
-              <option id="sw1_initial_2" value="2">Last</option>
-              <option id="sw1_initial_3" value="3">Input</option>
-            </select>
-          </div>
-          <div class="form-control">
-            <label for="sw1_auto_off">Auto off:</label>
-              <label class="switch">
-                <input type="checkbox" id="sw1_auto_off">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div>
-            <label for="sw1_auto_off_delay">Auto off delay:</label>
-            <input type="text" id="sw1_auto_off_delay" placeholder="D:HH:MM:SS.sss" required
-                   pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
-          </div>
-          <div class="form-control">
-            <label></label>
-            <button class="btn" id="sw1_save_btn">
-              <span id="sw1_save_spinner"></span>
-              <label>Save</label>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="container" id="sw2_container" style="display: none">
-      <h1>Switch 2</h1>
-      <div class="form">
-        <div class="">
-          <div class="form-control">
-            <label>Status:</label>
-            <span id="sw2_state">off</span>
-            <span id="sw2_power_stats"></span>
-          </div>
-          <div class="form-control">
-            <label></label>
-            <button class="btn" id="sw2_set_btn">
-              <span id="sw2_set_spinner"></span>
-              <label id="sw2_btn_label">Turn On</label>
-            </button>
-          </div>
-        </div>
-        <div class="">
-          <div class="form-control">
-            <label>Name:</label>
-            <input type="text" id="sw2_name">
-          </div>
-          <div class="form-control">
-            <label>Type:</label>
-            <select id="sw2_svc_type">
-              <option id="sw2_svc_type_0" value="0">Switch</option>
-              <option id="sw2_svc_type_1" value="1">Outlet</option>
-              <option id="sw2_svc_type_2" value="2">Lock</option>
-            </select>
-          </div>
-          <div class="form-control">
-            <label>Input Mode:</label>
-            <select id="sw2_in_mode">
-              <option id="sw2_in_mode_0" value="0">Momentary</option>
-              <option id="sw2_in_mode_1" value="1">Toggle</option>
-              <option id="sw2_in_mode_2" value="2">Edge</option>
-              <option id="sw2_in_mode_3" value="3">Detached</option>
-            </select>
-          </div>
-          <div class="form-control">
-            <label for="sw2_initial">Initial state:</label>
-            <select id="sw2_initial">
-              <option id="sw2_initial_0" value="0">Off</option>
-              <option id="sw2_initial_1" value="1">On</option>
-              <option id="sw2_initial_2" value="2">Last</option>
-              <option id="sw2_initial_3" value="3">Input</option>
-            </select>
-          </div>
-          <div class="form-control">
-            <label for="sw2_auto_off">Auto off:</label>
-              <label class="switch">
-                <input type="checkbox" id="sw2_auto_off">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div>
-            <label for="sw2_auto_off_delay">Auto off delay:</label>
-            <input type="text" id="sw2_auto_off_delay" placeholder="D:HH:MM:SS.sss" required
-                   pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
-          </div>
-          <div class="form-control">
-            <label></label>
-            <button class="btn" id="sw2_save_btn">
-              <span id="sw2_save_spinner"></span>
-              <label>Save</label>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="components"></div>
+
     <div class="container" id="homekit_container" style="visibility: hidden">
       <h1 class="">HomeKit Settings</h1>
       <div class="form">
@@ -258,6 +120,78 @@
         </div>
       </div>
     </div>
+
+    <div class="container" id="sw_template" style="display: none">
+      <h1 id="head">Switch</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Status:</label>
+            <span id="state">off</span>
+            <span id="power_stats"></span>
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="toggle_btn">
+              <span id="set_spinner"></span>
+              <label id="btn_label">Turn On</label>
+            </button>
+          </div>
+        </div>
+        <div class="">
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>Type:</label>
+            <select id="svc_type">
+              <option id="svc_type_0" value="0">Switch</option>
+              <option id="svc_type_1" value="1">Outlet</option>
+              <option id="svc_type_2" value="2">Lock</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label>Input Mode:</label>
+            <select id="in_mode">
+              <option id="in_mode_0" value="0">Momentary</option>
+              <option id="in_mode_1" value="1">Toggle</option>
+              <option id="in_mode_2" value="2">Edge</option>
+              <option id="in_mode_3" value="3">Detached</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label for="initial">Initial state:</label>
+            <select id="initial">
+              <option id="initial_0" value="0">Off</option>
+              <option id="initial_1" value="1">On</option>
+              <option id="initial_2" value="2">Last</option>
+              <option id="initial_3" value="3">Input</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label for="auto_off">Auto off:</label>
+              <label class="switch">
+                <input type="checkbox" id="auto_off">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div>
+            <label for="auto_off_delay">Auto off delay:</label>
+            <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
+                   pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="save_btn">
+              <span id="save_spinner"></span>
+              <label>Save</label>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 <script>
 
 var host = "";
@@ -277,8 +211,12 @@ var hapResetSpinner = el("hap_reset_spinner");
 var sw1 = el("sw1_container");
 var sw2 = el("sw2_container");
 
-function el(id) {
-  return document.getElementById(id);
+function el(container, id) {
+  if (id === undefined) {
+    id = container;
+    container = document;
+  }
+  return container.querySelector("#" + id);
 }
 
 el("hap_save_btn").onclick = function() {
@@ -351,9 +289,10 @@ el("wifi_save_btn").onclick = function() {
   });
 };
 
-function sw_set_common(id, state, spinner) {
+function swSetState(c, newState) {
+  var spinner = el(c, "set_spinner");
   spinner.className = "spin";
-  axios.post(host + "/rpc/Shelly.SetSwitch", {id: id, state: state}).then(function(res) {
+  axios.post(host + "/rpc/Shelly.SetSwitch", {id: c.data.id, state: newState}).then(function(res) {
   }).catch(function(err) {
     if (err.response) {
       err = err.response.data.message;
@@ -365,74 +304,9 @@ function sw_set_common(id, state, spinner) {
   });
 }
 
-el("sw1_set_btn").onclick = function() {
-  sw_set_common(
-      sw1.sw_id,
-      !sw1.sw_state,
-      el("sw1_set_spinner"),
-  );
-}
-
-el("sw2_set_btn").onclick = function() {
-  sw_set_common(
-      sw2.sw_id,
-      !sw2.sw_state,
-      el("sw2_set_spinner"),
-  );
-}
-
-function sw_save_common(cfg_key, name, svc_type, in_mode, initial_state, auto_off, auto_off_delay, spinner) {
-  spinner.className = "spin";
-  var data = {
-    config: {},
-  };
-  data.config[cfg_key] = {
-    name: name,
-    svc_type: parseInt(svc_type),
-    in_mode: parseInt(in_mode),
-    initial_state: parseInt(initial_state),
-    auto_off: auto_off,
-    auto_off_delay: dateStringToSeconds(auto_off_delay)
-  };
-  axios.post(host + "/rpc/Shelly.SetConfig", data)
-    .then(function(res) {
-      spinner.className = "";
-      getInfo();
-      if (res.data.msg) {
-        alert(res.data.msg);
-      }
-    }).catch(function(err) {
-      if (err.response) {
-        err = err.response.data.message;
-      }
-      alert(err);
-    });
-}
-
-function isValid(swType) {
-  if (el(swType + "_name").value == "") {
-    alert("Name must not be empty");
-    return false;
-  }
-  if (el(swType + "_auto_off_delay").value && !autoOffDelayValid(swType)) {
-    alert("Auto off delay must follow 24 hour format D:HH:MM:SS.sss with a value between 10ms and 24 days.");
-    return false;
-  }
-  return true;
-}
-
-function autoOffDelayValid(swType) {
-  var auto_off = el(swType + "_auto_off").value;
-  if (auto_off) {
-    var auto_off_delay = el(swType + "_auto_off_delay");
-    var auto_off_delay_valid =
-      auto_off_delay.checkValidity() &&
-      (dateStringToSeconds(auto_off_delay.value) >= 0.010) &&
-      (dateStringToSeconds(auto_off_delay.value) <= 2147483.647);
-    return auto_off_delay_valid;
-  }
-
-  return true;
+function autoOffDelayValid(value) {
+  return (dateStringToSeconds(value) >= 0.010) &&
+         (dateStringToSeconds(value) <= 2147483.647);
 }
 
 function dateStringToSeconds(dateString) {
@@ -440,10 +314,10 @@ function dateStringToSeconds(dateString) {
   var dateStringParts = dateString.split(':');
   var secondsPart = dateStringParts[3].split('.')[0];
   var fractionPart = dateStringParts[3].split('.')[1];
-  var seconds = parseInt(dateStringParts[0]) * 24 * 3600 + 
-                parseInt(dateStringParts[1]) * 3600 + 
-                parseInt(dateStringParts[2]) * 60 + 
-                parseInt(secondsPart) + 
+  var seconds = parseInt(dateStringParts[0]) * 24 * 3600 +
+                parseInt(dateStringParts[1]) * 3600 +
+                parseInt(dateStringParts[2]) * 60 +
+                parseInt(secondsPart) +
                 parseFloat(fractionPart / 1000);
   return seconds;
 }
@@ -464,40 +338,104 @@ function nDigitString(num, digits) {
   return num.toString().padStart(digits, "0");
 }
 
-el("sw1_save_btn").onclick = function() {
-  if (isValid("sw1")){
-    sw_save_common(
-        "sw1",
-        el("sw1_name").value,
-        el("sw1_svc_type").value,
-        el("sw1_in_mode").value,
-        el("sw1_initial").value,
-        el("sw1_auto_off").checked,
-        el("sw1_auto_off_delay").value,
-        el("sw1_save_spinner"),
-    );
-  }
-}
+function swSetConfig(c) {
+  var cfgKey = "sw" + c.data.id;
+  var name = el(c, "name").value;
+  var svcType = el(c, "svc_type").value;
+  var inMode = el(c, "in_mode").value;
+  var initialState = el(c, "initial").value;
+  var autoOff = el(c, "auto_off").checked;
+  var autoOffDelay = el(c, "auto_off_delay").value;
+  var spinner = el(c, "save_spinner");
 
-el("sw2_save_btn").onclick = function() {
-  if (isValid("sw2")){
-    sw_save_common(
-        "sw2",
-        el("sw2_name").value,
-        el("sw2_svc_type").value,
-        el("sw2_in_mode").value,
-        el("sw2_initial").value,
-        el("sw2_auto_off").checked,
-        el("sw2_auto_off_delay").value,
-        el("sw2_save_spinner"),
-    );
+  if (name == "") {
+    alert("Name must not be empty");
+    return;
   }
+
+  if (autoOff && autoOffDelay && !autoOffDelayValid(autoOffDelay)) {
+    alert("Auto off delay must follow 24 hour format D:HH:MM:SS.sss with a value between 10ms and 24 days.");
+    return;
+  }
+
+  spinner.className = "spin";
+  var data = {
+    config: {},
+  };
+  data.config[cfgKey] = {
+    name: name,
+    svc_type: parseInt(svcType),
+    in_mode: parseInt(inMode),
+    initial_state: parseInt(initialState),
+    auto_off: autoOff,
+    auto_off_delay: dateStringToSeconds(autoOffDelay)
+  };
+  console.log("swSetConfig:", data);
+  axios.post(host + "/rpc/Shelly.SetConfig", data)
+    .then(function(res) {
+      spinner.className = "";
+      getInfo();
+      if (res.data.msg) {
+        alert(res.data.msg);
+      }
+    }).catch(function(err) {
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+    });
 }
 
 el("reboot_btn").onclick = function() {
   axios.get(host + "/rpc/Sys.Reboot").then(function(res) {
     alert("System is rebooting, please refresh the page.");
   });
+}
+
+function findOrAddContainer(cd) {
+  var elId = "c" + cd.type + "-" + cd.id;
+  var c = el(elId);
+  if (c) return c;
+  switch (cd.type) {
+    case 0: // Switch
+      c = el("sw_template").cloneNode(true);
+      c.id = elId;
+      el(c, "toggle_btn").onclick = function() { swSetState(c, !c.data.state); };
+      el(c, "save_btn").onclick = function() { swSetConfig(c); };
+      el(c, "auto_off").onchange = function() { el(c, "auto_off_delay").disabled = !this.checked; };
+      break;
+  }
+  if (c) {
+    c.style.display = "block";
+    el("components").appendChild(c);
+  }
+  return c;
+}
+
+function updateComponent(cd) {
+  var c = findOrAddContainer(cd);
+  switch (cd.type) {
+    case 0: // Switch
+      var headText = "Switch " + cd.id;
+      if (cd.name) {
+        headText += " (" + cd.name + ")";
+      }
+      el(c, "head").innerText = headText;
+      el(c, "name").value = cd.name;
+      el(c, "state").innerText = (cd.state ? "on" : "off");
+      if (cd.apower !== undefined) {
+        el(c, "power_stats").innerText = ", " + Math.round(cd.apower) + "W, " + cd.aenergy + "Wh";
+      }
+      el(c, "btn_label").innerText = "Turn " + (cd.state ? "Off" : "On");
+      el(c, "svc_type_" + cd.svc_type).selected = true;
+      el(c, "in_mode_" + cd.in_mode).selected = true;
+      el(c, "initial_" + cd.initial).selected = true;
+      el(c, "auto_off").checked = cd.auto_off;
+      el(c, "auto_off_delay").disabled = !cd.auto_off;
+      el(c, "auto_off_delay").value = secondsToDateString(cd.auto_off_delay);
+      c.data = cd;
+      break;
+  }
 }
 
 function getInfo() {
@@ -520,41 +458,8 @@ function getInfo() {
     el("app_version").innerText = data.version;
     el("app_build").innerText = data.fw_build;
     el("uptime").innerText = durationStr(data.uptime);
-    if (data.sw1) {
-      el("sw1_name").value = data.sw1.name;
-      el("sw1_state").innerText = (data.sw1.state ? "on" : "off");
-      if (data.sw1.apower !== undefined) {
-        el("sw1_power_stats").innerText =
-            ", " + Math.round(data.sw1.apower) + "W, " + data.sw1.aenergy + "Wh";
-      }
-      el("sw1_btn_label").innerText = "Turn " + (data.sw1.state ? "Off" : "On");
-      el("sw1_svc_type_" + data.sw1.type).selected = true;
-      el("sw1_in_mode_" + data.sw1.in_mode).selected = true;
-      el("sw1_initial_" + data.sw1.initial).selected = true;
-      el("sw1_auto_off").checked = data.sw1.auto_off;
-      el("sw1_auto_off_delay").disabled = !data.sw1.auto_off;
-      el("sw1_auto_off_delay").value = secondsToDateString(data.sw1.auto_off_delay);
-      sw1.sw_id = data.sw1.id;
-      sw1.sw_state = data.sw1.state;
-      sw1.style.display = "block";
-    }
-    if (data.sw2) {
-      el("sw2_name").value = data.sw2.name;
-      el("sw2_state").innerText = (data.sw2.state ? "on" : "off");
-      if (data.sw2.apower !== undefined) {
-        el("sw2_power_stats").innerText =
-            ", " + Math.round(data.sw2.apower) + "W, " + data.sw2.aenergy + "Wh";
-      }
-      el("sw2_btn_label").innerText = "Turn " + (data.sw2.state ? "Off" : "On");
-      el("sw2_svc_type_" + data.sw2.type).selected = true;
-      el("sw2_in_mode_" + data.sw2.in_mode).selected = true;
-      el("sw2_initial_" + data.sw2.initial).selected = true;
-      el("sw2_auto_off").checked = data.sw2.auto_off;
-      el("sw2_auto_off_delay").disabled = !data.sw2.auto_off;
-      el("sw2_auto_off_delay").value = secondsToDateString(data.sw2.auto_off_delay);
-      sw2.sw_id = data.sw2.id;
-      sw2.sw_state = data.sw2.state;
-      sw2.style.display = "block";
+    for (var i in data.components) {
+      updateComponent(data.components[i]);
     }
     el("homekit_container").style.visibility = "visible";
     el("wifi_container").style.visibility = "visible";
@@ -576,13 +481,6 @@ el("refresh_btn").onclick = getInfo;
 
 function onLoad() {
   getInfo();
-
-  el('sw1_auto_off').onchange = function() {
-    el('sw1_auto_off_delay').disabled = !this.checked;
-  };
-  el('sw2_auto_off').onchange = function() {
-    el('sw2_auto_off_delay').disabled = !this.checked;
-  };
 }
 
 function durationStr(d) {

@@ -23,8 +23,15 @@ namespace shelly {
 
 class Output {
  public:
+  Output() {
+  }
+  virtual ~Output() {
+  }
   virtual bool GetState() = 0;
   virtual Status SetState(bool on, const char *source) = 0;
+
+ private:
+  Output(const Output &other) = delete;
 };
 
 class OutputPin : public Output {

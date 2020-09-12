@@ -60,8 +60,12 @@ class HAPSwitch : public Component, Service {
             const HAPAccessory *accessory);
   virtual ~HAPSwitch();
 
-  int id() const;
+  // Component interface impl.
+  Type type() const override {
+    return Type::kSwitch;
+  }
   StatusOr<std::string> GetInfo() const override;
+
   const HAPService *GetHAPService() const override;
 
   Status Init() override;

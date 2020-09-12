@@ -15,13 +15,34 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "shelly_common.h"
 
 namespace shelly {
 
 class Component {
  public:
+  enum class Type {
+    kSwitch = 0,
+  };
+
+  explicit Component(int id) : id_(id) {
+  }
+  virtual ~Component() {
+  }
+
+  int id() const {
+    return id_;
+  }
+
+  virtual Type type() const = 0;
   virtual StatusOr<std::string> GetInfo() const = 0;
+
+ private:
+  const int id_;
+
+  Component(const Component &other) = delete;
 };
 
 }  // namespace shelly

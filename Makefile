@@ -26,6 +26,8 @@ upload: upload-Shelly1 upload-Shelly1PM upload-Shelly2 upload-Shelly25 upload-Sh
 
 upload-beta: upload-beta-Shelly1 upload-beta-Shelly1PM upload-beta-Shelly2 upload-beta-Shelly25 upload-beta-ShellyPlugS
 
+PLATFORM ?= esp8266
+
 Shelly1: build-Shelly1
 	@true
 
@@ -41,6 +43,11 @@ Shelly2: build-Shelly2
 Shelly25: build-Shelly25
 	@true
 
+ShellyU: PLATFORM=ubuntu
+ShellyU: MOS_BUILD_FLAGS=--build-var=ASAN=1
+ShellyU: build-ShellyU
+	@true
+
 fs/index.html.gz: fs_src/index.html
 	gzip -9 -c fs_src/index.html > fs/index.html.gz
 
@@ -48,7 +55,7 @@ fs/style.css.gz: fs_src/style.css
 	gzip -9 -c fs_src/style.css > fs/style.css.gz
 
 build-%: fs/index.html.gz fs/style.css.gz
-	$(MOS) build --platform=esp8266 --build-var=MODEL=$* \
+	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
 	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL)
 	cp $(BUILD_DIR)/fw.zip shelly-homekit-$*.zip
 
