@@ -30,10 +30,10 @@
 
 namespace shelly {
 
-HAPSwitch::HAPSwitch(Input *in, Output *out, PowerMeter *out_pm,
+HAPSwitch::HAPSwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
                      struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
                      const HAPAccessory *accessory)
-    : Component(cfg->id),
+    : Component(id),
       in_(in),
       out_(out),
       out_pm_(out_pm),
@@ -131,19 +131,17 @@ Status HAPSwitch::Init() {
     mgos_gpio_setup_output(cfg_->out_gpio, !cfg_->out_on_value);
     return Status::OK();
   }
-  if (cfg_->id == 0 || cfg_->id > NUM_SWITCHES) {
-    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Switch ID too big!");
-  }
   svc_.name = cfg_->name;
   svc_.properties.primaryService = true;
   const char *svc_type_name = NULL;
+  const int id1 = id() - 1;  // IDs used to start at 0, preserve compat.
   switch (static_cast<ServiceType>(cfg_->svc_type)) {
     case ServiceType::kDisabled: {
       svc_type_name = "disabled";
       break;
     }
     case ServiceType::kSwitch: {
-      uint16_t iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * cfg_->id);
+      uint16_t iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * id1);
       svc_.iid = iid++;
       svc_.serviceType = &kHAPServiceType_Switch;
       svc_.debugDescription = kHAPServiceDebugDescription_Switch;
@@ -169,7 +167,7 @@ Status HAPSwitch::Init() {
       break;
     }
     case ServiceType::kOutlet: {
-      uint16_t iid = IID_BASE_OUTLET + (IID_STEP_OUTLET * cfg_->id);
+      uint16_t iid = IID_BASE_OUTLET + (IID_STEP_OUTLET * id1);
       svc_.iid = iid++;
       svc_.serviceType = &kHAPServiceType_Outlet;
       svc_.debugDescription = kHAPServiceDebugDescription_Outlet;
@@ -203,7 +201,7 @@ Status HAPSwitch::Init() {
       break;
     }
     case ServiceType::kLock: {
-      uint16_t iid = IID_BASE_LOCK + (IID_STEP_LOCK * cfg_->id);
+      uint16_t iid = IID_BASE_LOCK + (IID_STEP_LOCK * id1);
       svc_.iid = iid++;
       svc_.serviceType = &kHAPServiceType_LockMechanism;
       svc_.debugDescription = kHAPServiceDebugDescription_LockMechanism;
@@ -300,7 +298,7 @@ void HAPSwitch::SetStateInternal(bool new_state, const char *source,
     auto_off_timer_id_ =
         mgos_set_timer(cfg_->auto_off_delay * 1000, 0, AutoOffTimerCB, this);
     LOG(LL_INFO,
-        ("%d: Set auto-off timer for %.3f", cfg_->id, cfg_->auto_off_delay));
+        ("%d: Set auto-off timer for %.3f", id(), cfg_->auto_off_delay));
   }
 }
 

@@ -205,7 +205,7 @@ static void HandleInputResetSequence(InputPin *in, Input::Event ev,
 
 const HAPService **CreateHAPServices() {
   const HAPService **services =
-      (const HAPService **) calloc(3 + NUM_SWITCHES + 1, sizeof(*services));
+      (const HAPService **) calloc(3 + 10, sizeof(*services));
   services[0] = &mgos_hap_accessory_information_service;
   services[1] = &mgos_hap_protocol_information_service;
   services[2] = &mgos_hap_pairing_service;
@@ -213,7 +213,7 @@ const HAPService **CreateHAPServices() {
 #ifdef MGOS_CONFIG_HAVE_SW1
   {
     auto *sw1_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw1();
-    std::unique_ptr<HAPSwitch> sw1(new HAPSwitch(FindInput(1), FindOutput(1),
+    std::unique_ptr<HAPSwitch> sw1(new HAPSwitch(1, FindInput(1), FindOutput(1),
                                                  FindPM(1), sw1_cfg, &s_server,
                                                  &s_accessory));
     if (sw1 != nullptr && sw1->Init().ok()) {
@@ -226,7 +226,7 @@ const HAPService **CreateHAPServices() {
 #ifdef MGOS_CONFIG_HAVE_SW2
   {
     auto *sw2_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw2();
-    std::unique_ptr<HAPSwitch> sw2(new HAPSwitch(FindInput(2), FindOutput(2),
+    std::unique_ptr<HAPSwitch> sw2(new HAPSwitch(2, FindInput(2), FindOutput(2),
                                                  FindPM(2), sw2_cfg, &s_server,
                                                  &s_accessory));
     if (sw2 != nullptr && sw2->Init().ok()) {
@@ -237,7 +237,6 @@ const HAPService **CreateHAPServices() {
   }
 #endif
   (void) HandleInputResetSequence;
-  LOG(LL_INFO, ("Exported %d of %d switches", i - 3, NUM_SWITCHES));
   return services;
 }
 

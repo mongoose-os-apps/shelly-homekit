@@ -56,7 +56,7 @@ class HAPSwitch : public Component, Service {
     kInput = 3,
   };
 
-  HAPSwitch(Input *in, Output *out, PowerMeter *out_pm,
+  HAPSwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
             struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
             const HAPAccessory *accessory);
   virtual ~HAPSwitch();
