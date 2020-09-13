@@ -22,6 +22,7 @@
 #include "shelly_common.h"
 
 namespace shelly {
+namespace hap {
 
 class Service {
  public:
@@ -36,4 +37,5 @@ class Service {
   Service(const Service &other) = delete;
 };
 
+}  // namespace hap
 }  // namespace shelly

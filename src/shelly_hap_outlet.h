@@ -20,13 +20,14 @@
 #include "shelly_switch.h"
 
 namespace shelly {
+namespace hap {
 
-class ShellyHAPOutlet : public ShellySwitch {
+class Outlet : public ShellySwitch {
  public:
-  ShellyHAPOutlet(int id, Input *in, Output *out, PowerMeter *out_pm,
-                  struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
-                  const HAPAccessory *accessory);
-  virtual ~ShellyHAPOutlet();
+  Outlet(int id, Input *in, Output *out, PowerMeter *out_pm,
+         struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
+         const HAPAccessory *accessory);
+  virtual ~Outlet();
 
   Status Init();
 
@@ -42,4 +43,5 @@ class ShellyHAPOutlet : public ShellySwitch {
                            bool *value);
 };
 
+}  // namespace hap
 }  // namespace shelly

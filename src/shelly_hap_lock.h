@@ -20,13 +20,14 @@
 #include "shelly_switch.h"
 
 namespace shelly {
+namespace hap {
 
-class ShellyHAPLock : public ShellySwitch {
+class Lock : public ShellySwitch {
  public:
-  ShellyHAPLock(int id, Input *in, Output *out, PowerMeter *out_pm,
-                struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
-                const HAPAccessory *accessory);
-  virtual ~ShellyHAPLock();
+  Lock(int id, Input *in, Output *out, PowerMeter *out_pm,
+       struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
+       const HAPAccessory *accessory);
+  virtual ~Lock();
 
   Status Init();
 
@@ -39,4 +40,5 @@ class ShellyHAPLock : public ShellySwitch {
       const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
 };
 
+}  // namespace hap
 }  // namespace shelly

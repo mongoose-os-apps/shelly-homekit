@@ -20,12 +20,13 @@
 #include <cstring>
 
 namespace shelly {
+namespace hap {
 
-ShellyHAPCharacteristic::ShellyHAPCharacteristic() {
+Characteristic::Characteristic() {
   instances_.push_back(this);
 }
 
-ShellyHAPCharacteristic::~ShellyHAPCharacteristic() {
+Characteristic::~Characteristic() {
   for (auto it = instances_.begin(); it != instances_.end(); it++) {
     if (*it == this) {
       instances_.erase(it);
@@ -35,8 +36,7 @@ ShellyHAPCharacteristic::~ShellyHAPCharacteristic() {
 }
 
 // static
-ShellyHAPCharacteristic *ShellyHAPCharacteristic::FindInstance(
-    const HAPCharacteristic *base) {
+Characteristic *Characteristic::FindInstance(const HAPCharacteristic *base) {
   for (auto *i : instances_) {
     if (i->GetBase() == base) return i;
   }
@@ -44,11 +44,12 @@ ShellyHAPCharacteristic *ShellyHAPCharacteristic::FindInstance(
 }
 
 // static
-std::vector<ShellyHAPCharacteristic *> ShellyHAPCharacteristic::instances_;
+std::vector<Characteristic *> Characteristic::instances_;
 
-ShellyHAPStringCharacteristic::ShellyHAPStringCharacteristic(
-    uint16_t iid, const HAPUUID *type, uint16_t max_length,
-    const std::string &initial_value, const char *debug_description)
+StringCharacteristic::StringCharacteristic(uint16_t iid, const HAPUUID *type,
+                                           uint16_t max_length,
+                                           const std::string &initial_value,
+                                           const char *debug_description)
     : value_(initial_value) {
   std::memset(&base_, 0, sizeof(base_));
   base_.format = kHAPCharacteristicFormat_String;
@@ -57,28 +58,27 @@ ShellyHAPStringCharacteristic::ShellyHAPStringCharacteristic(
   base_.debugDescription = debug_description;
   base_.constraints.maxLength = max_length;
   base_.properties.readable = true;
-  base_.callbacks.handleRead = ShellyHAPStringCharacteristic::HandleReadCB;
+  base_.callbacks.handleRead = StringCharacteristic::HandleReadCB;
 }
 
-ShellyHAPStringCharacteristic::~ShellyHAPStringCharacteristic() {
+StringCharacteristic::~StringCharacteristic() {
 }
 
-HAPCharacteristic *ShellyHAPStringCharacteristic::GetBase() {
+HAPCharacteristic *StringCharacteristic::GetBase() {
   return &base_;
 }
 
-void ShellyHAPStringCharacteristic::SetValue(const std::string &value) {
+void StringCharacteristic::SetValue(const std::string &value) {
   value_ = value;
 }
 
 // static
-HAPError ShellyHAPStringCharacteristic::HandleReadCB(
+HAPError StringCharacteristic::HandleReadCB(
     HAPAccessoryServerRef *server,
     const HAPStringCharacteristicReadRequest *request, char *value,
     size_t maxValueBytes, void *context) {
-  ShellyHAPStringCharacteristic *c =
-      (ShellyHAPStringCharacteristic *) FindInstance(
-          (const HAPCharacteristic *) request->characteristic);
+  StringCharacteristic *c = (StringCharacteristic *) FindInstance(
+      (const HAPCharacteristic *) request->characteristic);
   size_t n = std::min(maxValueBytes - 1, c->value_.length());
   std::memcpy(value, c->value_.data(), n);
   value[n] = '\0';
@@ -87,4 +87,5 @@ HAPError ShellyHAPStringCharacteristic::HandleReadCB(
   return kHAPError_None;
 }
 
+}  // namespace hap
 }  // namespace shelly

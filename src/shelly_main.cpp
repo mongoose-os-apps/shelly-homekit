@@ -213,16 +213,13 @@ static std::unique_ptr<ShellySwitch> CreateSwitchService(
   PowerMeter *pm = FindPM(id);
   switch (cfg->svc_type) {
     case 0:
-      sw.reset(
-          new ShellyHAPSwitch(id, in, out, pm, cfg, &s_server, &s_accessory));
+      sw.reset(new hap::Switch(id, in, out, pm, cfg, &s_server, &s_accessory));
       break;
     case 1:
-      sw.reset(
-          new ShellyHAPOutlet(id, in, out, pm, cfg, &s_server, &s_accessory));
+      sw.reset(new hap::Outlet(id, in, out, pm, cfg, &s_server, &s_accessory));
       break;
     case 2:
-      sw.reset(
-          new ShellyHAPLock(id, in, out, pm, cfg, &s_server, &s_accessory));
+      sw.reset(new hap::Lock(id, in, out, pm, cfg, &s_server, &s_accessory));
       break;
     default:
       sw.reset(new ShellySwitch(id, in, out, pm, cfg, &s_server, &s_accessory));
@@ -459,13 +456,13 @@ static bool shelly_cfg_migrate(void) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
-          static_cast<int>(ShellyHAPSwitch::InitialState::kLast));
+          static_cast<int>(ShellySwitch::InitialState::kLast));
     }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
     if (mgos_sys_config_get_sw2_persist_state()) {
       mgos_sys_config_set_sw2_initial_state(
-          static_cast<int>(ShellyHAPSwitch::InitialState::kLast));
+          static_cast<int>(ShellySwitch::InitialState::kLast));
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(1);

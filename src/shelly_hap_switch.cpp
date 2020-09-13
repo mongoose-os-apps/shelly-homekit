@@ -25,18 +25,18 @@
 #define IID_STEP_SWITCH 4
 
 namespace shelly {
+namespace hap {
 
-ShellyHAPSwitch::ShellyHAPSwitch(int id, Input *in, Output *out,
-                                 PowerMeter *out_pm, struct mgos_config_sw *cfg,
-                                 HAPAccessoryServerRef *server,
-                                 const HAPAccessory *accessory)
+Switch::Switch(int id, Input *in, Output *out, PowerMeter *out_pm,
+               struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
+               const HAPAccessory *accessory)
     : ShellySwitch(id, in, out, out_pm, cfg, server, accessory) {
 }
 
-ShellyHAPSwitch::~ShellyHAPSwitch() {
+Switch::~Switch() {
 }
 
-Status ShellyHAPSwitch::Init() {
+Status Switch::Init() {
   auto st = ShellySwitch::Init();
   if (!st.ok()) return st;
 
@@ -46,19 +46,17 @@ Status ShellyHAPSwitch::Init() {
   svc_.serviceType = &kHAPServiceType_Switch;
   svc_.debugDescription = kHAPServiceDebugDescription_Switch;
   // Name
-  std::unique_ptr<ShellyHAPCharacteristic> name_char(
-      new ShellyHAPStringCharacteristic(
-          iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
-          kHAPCharacteristicDebugDescription_Name));
+  std::unique_ptr<hap::Characteristic> name_char(new StringCharacteristic(
+      iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
+      kHAPCharacteristicDebugDescription_Name));
   hap_chars_.push_back(name_char->GetBase());
   chars_.emplace_back(std::move(name_char));
   // On
-  std::unique_ptr<ShellyHAPCharacteristic> on_char(
-      new ShellyHAPBoolCharacteristic(
-          iid++, &kHAPCharacteristicType_On,
-          std::bind(&ShellyHAPSwitch::HandleOnRead, this, _1, _2, _3),
-          std::bind(&ShellyHAPSwitch::HandleOnWrite, this, _1, _2, _3),
-          kHAPCharacteristicDebugDescription_On));
+  std::unique_ptr<hap::Characteristic> on_char(new BoolCharacteristic(
+      iid++, &kHAPCharacteristicType_On,
+      std::bind(&Switch::HandleOnRead, this, _1, _2, _3),
+      std::bind(&Switch::HandleOnWrite, this, _1, _2, _3),
+      kHAPCharacteristicDebugDescription_On));
   hap_chars_.push_back(on_char->GetBase());
   state_notify_char_ = on_char->GetBase();
   chars_.emplace_back(std::move(on_char));
@@ -69,22 +67,23 @@ Status ShellyHAPSwitch::Init() {
   return Status::OK();
 }
 
-HAPError ShellyHAPSwitch::HandleOnRead(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicReadRequest *request, bool *value) {
+HAPError Switch::HandleOnRead(HAPAccessoryServerRef *server,
+                              const HAPBoolCharacteristicReadRequest *request,
+                              bool *value) {
   *value = out_->GetState();
   (void) server;
   (void) request;
   return kHAPError_None;
 }
 
-HAPError ShellyHAPSwitch::HandleOnWrite(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicWriteRequest *request, bool value) {
+HAPError Switch::HandleOnWrite(HAPAccessoryServerRef *server,
+                               const HAPBoolCharacteristicWriteRequest *request,
+                               bool value) {
   SetState(value, "HAP");
   (void) server;
   (void) request;
   return kHAPError_None;
 }
 
+}  // namespace hap
 }  // namespace shelly

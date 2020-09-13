@@ -34,7 +34,7 @@
 namespace shelly {
 
 // Common base for Switch, Outlet and Lock services.
-class ShellySwitch : public Component, Service {
+class ShellySwitch : public Component, hap::Service {
  public:
   enum class InMode {
     kMomentary = 0,
@@ -90,7 +90,7 @@ class ShellySwitch : public Component, Service {
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
   HAPCharacteristic *state_notify_char_ = nullptr;
   HAPCharacteristic *tgt_state_notify_char_ = nullptr;
-  std::vector<std::unique_ptr<ShellyHAPCharacteristic>> chars_;
+  std::vector<std::unique_ptr<hap::Characteristic>> chars_;
   std::vector<HAPCharacteristic *> hap_chars_;
 
   mgos_timer_id auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;

@@ -21,18 +21,18 @@
 #define IID_STEP_OUTLET 5
 
 namespace shelly {
+namespace hap {
 
-ShellyHAPOutlet::ShellyHAPOutlet(int id, Input *in, Output *out,
-                                 PowerMeter *out_pm, struct mgos_config_sw *cfg,
-                                 HAPAccessoryServerRef *server,
-                                 const HAPAccessory *accessory)
+Outlet::Outlet(int id, Input *in, Output *out, PowerMeter *out_pm,
+               struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
+               const HAPAccessory *accessory)
     : ShellySwitch(id, in, out, out_pm, cfg, server, accessory) {
 }
 
-ShellyHAPOutlet::~ShellyHAPOutlet() {
+Outlet::~Outlet() {
 }
 
-Status ShellyHAPOutlet::Init() {
+Status Outlet::Init() {
   auto st = ShellySwitch::Init();
   if (!st.ok()) return st;
 
@@ -42,29 +42,26 @@ Status ShellyHAPOutlet::Init() {
   svc_.serviceType = &kHAPServiceType_Outlet;
   svc_.debugDescription = kHAPServiceDebugDescription_Outlet;
   // Name
-  std::unique_ptr<ShellyHAPCharacteristic> name_char(
-      new ShellyHAPStringCharacteristic(
-          iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
-          kHAPCharacteristicDebugDescription_Name));
+  std::unique_ptr<hap::Characteristic> name_char(new StringCharacteristic(
+      iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
+      kHAPCharacteristicDebugDescription_Name));
   hap_chars_.push_back(name_char->GetBase());
   chars_.emplace_back(std::move(name_char));
   // On
-  std::unique_ptr<ShellyHAPCharacteristic> on_char(
-      new ShellyHAPBoolCharacteristic(
-          iid++, &kHAPCharacteristicType_On,
-          std::bind(&ShellyHAPOutlet::HandleOnRead, this, _1, _2, _3),
-          std::bind(&ShellyHAPOutlet::HandleOnWrite, this, _1, _2, _3),
-          kHAPCharacteristicDebugDescription_On));
+  std::unique_ptr<hap::Characteristic> on_char(new BoolCharacteristic(
+      iid++, &kHAPCharacteristicType_On,
+      std::bind(&Outlet::HandleOnRead, this, _1, _2, _3),
+      std::bind(&Outlet::HandleOnWrite, this, _1, _2, _3),
+      kHAPCharacteristicDebugDescription_On));
   hap_chars_.push_back(on_char->GetBase());
   state_notify_char_ = on_char->GetBase();
   chars_.emplace_back(std::move(on_char));
   // In Use
-  std::unique_ptr<ShellyHAPCharacteristic> in_use_char(
-      new ShellyHAPBoolCharacteristic(
-          iid++, &kHAPCharacteristicType_OutletInUse,
-          std::bind(&ShellyHAPOutlet::HandleInUseRead, this, _1, _2, _3),
-          nullptr,  // write_handler
-          kHAPCharacteristicDebugDescription_OutletInUse));
+  std::unique_ptr<hap::Characteristic> in_use_char(new BoolCharacteristic(
+      iid++, &kHAPCharacteristicType_OutletInUse,
+      std::bind(&Outlet::HandleInUseRead, this, _1, _2, _3),
+      nullptr,  // write_handler
+      kHAPCharacteristicDebugDescription_OutletInUse));
   hap_chars_.push_back(in_use_char->GetBase());
   chars_.emplace_back(std::move(in_use_char));
 
@@ -74,25 +71,25 @@ Status ShellyHAPOutlet::Init() {
   return Status::OK();
 }
 
-HAPError ShellyHAPOutlet::HandleOnRead(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicReadRequest *request, bool *value) {
+HAPError Outlet::HandleOnRead(HAPAccessoryServerRef *server,
+                              const HAPBoolCharacteristicReadRequest *request,
+                              bool *value) {
   *value = out_->GetState();
   (void) server;
   (void) request;
   return kHAPError_None;
 }
 
-HAPError ShellyHAPOutlet::HandleOnWrite(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicWriteRequest *request, bool value) {
+HAPError Outlet::HandleOnWrite(HAPAccessoryServerRef *server,
+                               const HAPBoolCharacteristicWriteRequest *request,
+                               bool value) {
   SetState(value, "HAP");
   (void) server;
   (void) request;
   return kHAPError_None;
 }
 
-HAPError ShellyHAPOutlet::HandleInUseRead(
+HAPError Outlet::HandleInUseRead(
     HAPAccessoryServerRef *server,
     const HAPBoolCharacteristicReadRequest *request, bool *value) {
   *value = true;
@@ -101,4 +98,5 @@ HAPError ShellyHAPOutlet::HandleInUseRead(
   return kHAPError_None;
 }
 
+}  // namespace hap
 }  // namespace shelly

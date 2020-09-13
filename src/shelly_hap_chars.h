@@ -30,28 +30,28 @@
 #include "HAP.h"
 
 namespace shelly {
+namespace hap {
 
-class ShellyHAPCharacteristic {
+class Characteristic {
  public:
-  ShellyHAPCharacteristic();
-  virtual ~ShellyHAPCharacteristic();
+  Characteristic();
+  virtual ~Characteristic();
 
   virtual HAPCharacteristic *GetBase() = 0;
 
  protected:
-  static ShellyHAPCharacteristic *FindInstance(const HAPCharacteristic *base);
+  static Characteristic *FindInstance(const HAPCharacteristic *base);
 
  private:
-  static std::vector<ShellyHAPCharacteristic *> instances_;
+  static std::vector<Characteristic *> instances_;
 };
 
-class ShellyHAPStringCharacteristic : public ShellyHAPCharacteristic {
+class StringCharacteristic : public Characteristic {
  public:
-  ShellyHAPStringCharacteristic(uint16_t iid, const HAPUUID *type,
-                                uint16_t max_length,
-                                const std::string &initial_value,
-                                const char *debug_description = nullptr);
-  virtual ~ShellyHAPStringCharacteristic();
+  StringCharacteristic(uint16_t iid, const HAPUUID *type, uint16_t max_length,
+                       const std::string &initial_value,
+                       const char *debug_description = nullptr);
+  virtual ~StringCharacteristic();
 
   HAPCharacteristic *GetBase() override;
 
@@ -67,13 +67,12 @@ class ShellyHAPStringCharacteristic : public ShellyHAPCharacteristic {
 
   std::string value_;
 
-  ShellyHAPStringCharacteristic(const ShellyHAPStringCharacteristic &other) =
-      delete;
+  StringCharacteristic(const StringCharacteristic &other) = delete;
 };
 
 template <class ValType, class HAPBaseClass, class HAPReadRequestType,
           class HAPWriteRequestType>
-struct ShellyHAPScalarCharacteristic : public ShellyHAPCharacteristic {
+struct ScalarCharacteristic : public Characteristic {
  public:
   typedef std::function<HAPError(HAPAccessoryServerRef *server,
                                  const HAPReadRequestType *request,
@@ -84,10 +83,10 @@ struct ShellyHAPScalarCharacteristic : public ShellyHAPCharacteristic {
                                  ValType value)>
       WriteHandler;
 
-  ShellyHAPScalarCharacteristic(HAPCharacteristicFormat format, uint16_t iid,
-                                const HAPUUID *type, ReadHandler read_handler,
-                                WriteHandler write_handler = nullptr,
-                                const char *debug_description = nullptr)
+  ScalarCharacteristic(HAPCharacteristicFormat format, uint16_t iid,
+                       const HAPUUID *type, ReadHandler read_handler,
+                       WriteHandler write_handler = nullptr,
+                       const char *debug_description = nullptr)
       : read_handler_(read_handler), write_handler_(write_handler) {
     std::memset(&base_, 0, sizeof(base_));
     base_.format = format;
@@ -96,19 +95,18 @@ struct ShellyHAPScalarCharacteristic : public ShellyHAPCharacteristic {
     base_.debugDescription = debug_description;
     base_.properties.readable = true;
     base_.properties.supportsEventNotification = true;
-    base_.callbacks.handleRead = ShellyHAPScalarCharacteristic::HandleReadCB;
+    base_.callbacks.handleRead = ScalarCharacteristic::HandleReadCB;
     if (write_handler) {
       base_.properties.writable = true;
       /* ???
       base_.properties.ble.supportsBroadcastNotification = true;
       base_.properties.ble.supportsDisconnectedNotification = true;
       */
-      base_.callbacks.handleWrite =
-          ShellyHAPScalarCharacteristic::HandleWriteCB;
+      base_.callbacks.handleWrite = ScalarCharacteristic::HandleWriteCB;
     }
   }
 
-  virtual ~ShellyHAPScalarCharacteristic() {
+  virtual ~ScalarCharacteristic() {
   }
 
   HAPCharacteristic *GetBase() override {
@@ -122,18 +120,16 @@ struct ShellyHAPScalarCharacteristic : public ShellyHAPCharacteristic {
   static HAPError HandleReadCB(HAPAccessoryServerRef *server,
                                const HAPReadRequestType *request,
                                ValType *value, void *context) {
-    ShellyHAPScalarCharacteristic *c =
-        (ShellyHAPScalarCharacteristic *) FindInstance(
-            (const HAPCharacteristic *) request->characteristic);
+    ScalarCharacteristic *c = (ScalarCharacteristic *) FindInstance(
+        (const HAPCharacteristic *) request->characteristic);
     (void) context;
     return c->read_handler_(server, request, value);
   }
   static HAPError HandleWriteCB(HAPAccessoryServerRef *server,
                                 const HAPWriteRequestType *request,
                                 ValType value, void *context) {
-    ShellyHAPScalarCharacteristic *c =
-        (ShellyHAPScalarCharacteristic *) FindInstance(
-            (const HAPCharacteristic *) request->characteristic);
+    ScalarCharacteristic *c = (ScalarCharacteristic *) FindInstance(
+        (const HAPCharacteristic *) request->characteristic);
     (void) context;
     return c->write_handler_(server, request, value);
   }
@@ -141,48 +137,45 @@ struct ShellyHAPScalarCharacteristic : public ShellyHAPCharacteristic {
   const ReadHandler read_handler_;
   const WriteHandler write_handler_;
 
-  ShellyHAPScalarCharacteristic(const ShellyHAPScalarCharacteristic &other) =
-      delete;
+  ScalarCharacteristic(const ScalarCharacteristic &other) = delete;
 };
 
-struct ShellyHAPBoolCharacteristic
-    : public ShellyHAPScalarCharacteristic<bool, HAPBoolCharacteristic,
-                                           HAPBoolCharacteristicReadRequest,
-                                           HAPBoolCharacteristicWriteRequest> {
+struct BoolCharacteristic
+    : public ScalarCharacteristic<bool, HAPBoolCharacteristic,
+                                  HAPBoolCharacteristicReadRequest,
+                                  HAPBoolCharacteristicWriteRequest> {
  public:
-  ShellyHAPBoolCharacteristic(uint16_t iid, const HAPUUID *type,
-                              ReadHandler read_handler,
-                              WriteHandler write_handler = nullptr,
-                              const char *debug_description = nullptr)
-      : ShellyHAPScalarCharacteristic(kHAPCharacteristicFormat_Bool, iid, type,
-                                      read_handler, write_handler,
-                                      debug_description) {
+  BoolCharacteristic(uint16_t iid, const HAPUUID *type,
+                     ReadHandler read_handler,
+                     WriteHandler write_handler = nullptr,
+                     const char *debug_description = nullptr)
+      : ScalarCharacteristic(kHAPCharacteristicFormat_Bool, iid, type,
+                             read_handler, write_handler, debug_description) {
   }
-  virtual ~ShellyHAPBoolCharacteristic() {
+  virtual ~BoolCharacteristic() {
   }
 };
 
-class ShellyHAPUInt8Characteristic
-    : public ShellyHAPScalarCharacteristic<uint8_t, HAPUInt8Characteristic,
-                                           HAPUInt8CharacteristicReadRequest,
-                                           HAPUInt8CharacteristicWriteRequest> {
+class UInt8Characteristic
+    : public ScalarCharacteristic<uint8_t, HAPUInt8Characteristic,
+                                  HAPUInt8CharacteristicReadRequest,
+                                  HAPUInt8CharacteristicWriteRequest> {
  public:
-  ShellyHAPUInt8Characteristic(uint16_t iid, const HAPUUID *type, uint8_t min,
-                               uint8_t max, uint8_t step,
-                               ReadHandler read_handler,
-                               WriteHandler write_handler = nullptr,
-                               const char *debug_description = nullptr)
-      : ShellyHAPScalarCharacteristic(kHAPCharacteristicFormat_UInt8, iid, type,
-                                      read_handler, write_handler,
-                                      debug_description) {
+  UInt8Characteristic(uint16_t iid, const HAPUUID *type, uint8_t min,
+                      uint8_t max, uint8_t step, ReadHandler read_handler,
+                      WriteHandler write_handler = nullptr,
+                      const char *debug_description = nullptr)
+      : ScalarCharacteristic(kHAPCharacteristicFormat_UInt8, iid, type,
+                             read_handler, write_handler, debug_description) {
     base_.constraints.minimumValue = min;
     base_.constraints.maximumValue = max;
     base_.constraints.stepValue = step;
   }
-  virtual ~ShellyHAPUInt8Characteristic() {
+  virtual ~UInt8Characteristic() {
   }
 };
 
+}  // namespace hap
 }  // namespace shelly
 
 #ifdef __clang__

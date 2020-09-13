@@ -21,18 +21,18 @@
 #define IID_STEP_LOCK 4
 
 namespace shelly {
+namespace hap {
 
-ShellyHAPLock::ShellyHAPLock(int id, Input *in, Output *out, PowerMeter *out_pm,
-                             struct mgos_config_sw *cfg,
-                             HAPAccessoryServerRef *server,
-                             const HAPAccessory *accessory)
+Lock::Lock(int id, Input *in, Output *out, PowerMeter *out_pm,
+           struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
+           const HAPAccessory *accessory)
     : ShellySwitch(id, in, out, out_pm, cfg, server, accessory) {
 }
 
-ShellyHAPLock::~ShellyHAPLock() {
+Lock::~Lock() {
 }
 
-Status ShellyHAPLock::Init() {
+Status Lock::Init() {
   auto st = ShellySwitch::Init();
   if (!st.ok()) return st;
 
@@ -42,29 +42,26 @@ Status ShellyHAPLock::Init() {
   svc_.serviceType = &kHAPServiceType_LockMechanism;
   svc_.debugDescription = kHAPServiceDebugDescription_LockMechanism;
   // Name
-  std::unique_ptr<ShellyHAPCharacteristic> name_char(
-      new ShellyHAPStringCharacteristic(
-          iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
-          kHAPCharacteristicDebugDescription_Name));
+  std::unique_ptr<hap::Characteristic> name_char(new StringCharacteristic(
+      iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
+      kHAPCharacteristicDebugDescription_Name));
   hap_chars_.push_back(name_char->GetBase());
   chars_.emplace_back(std::move(name_char));
   // Current State
-  std::unique_ptr<ShellyHAPCharacteristic> cur_state_char(
-      new shelly::ShellyHAPUInt8Characteristic(
-          iid++, &kHAPCharacteristicType_LockCurrentState, 0, 3, 1,
-          std::bind(&ShellyHAPLock::HandleCurrentStateRead, this, _1, _2, _3),
-          nullptr,  // write_handler
-          kHAPCharacteristicDebugDescription_LockCurrentState));
+  std::unique_ptr<hap::Characteristic> cur_state_char(new UInt8Characteristic(
+      iid++, &kHAPCharacteristicType_LockCurrentState, 0, 3, 1,
+      std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
+      nullptr,  // write_handler
+      kHAPCharacteristicDebugDescription_LockCurrentState));
   hap_chars_.push_back(cur_state_char->GetBase());
   state_notify_char_ = cur_state_char->GetBase();
   chars_.emplace_back(std::move(cur_state_char));
   // Target State
-  std::unique_ptr<ShellyHAPCharacteristic> tgt_state_char(
-      new shelly::ShellyHAPUInt8Characteristic(
-          iid++, &kHAPCharacteristicType_LockTargetState, 0, 3, 1,
-          std::bind(&ShellyHAPLock::HandleCurrentStateRead, this, _1, _2, _3),
-          std::bind(&ShellyHAPLock::HandleTargetStateWrite, this, _1, _2, _3),
-          kHAPCharacteristicDebugDescription_LockTargetState));
+  std::unique_ptr<hap::Characteristic> tgt_state_char(new UInt8Characteristic(
+      iid++, &kHAPCharacteristicType_LockTargetState, 0, 3, 1,
+      std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
+      std::bind(&Lock::HandleTargetStateWrite, this, _1, _2, _3),
+      kHAPCharacteristicDebugDescription_LockTargetState));
   hap_chars_.push_back(tgt_state_char->GetBase());
   tgt_state_notify_char_ = tgt_state_char->GetBase();
   chars_.emplace_back(std::move(tgt_state_char));
@@ -75,7 +72,7 @@ Status ShellyHAPLock::Init() {
   return Status::OK();
 }
 
-HAPError ShellyHAPLock::HandleCurrentStateRead(
+HAPError Lock::HandleCurrentStateRead(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
   *value = (out_->GetState() ? 0 : 1);
@@ -84,7 +81,7 @@ HAPError ShellyHAPLock::HandleCurrentStateRead(
   return kHAPError_None;
 }
 
-HAPError ShellyHAPLock::HandleTargetStateWrite(
+HAPError Lock::HandleTargetStateWrite(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
   SetState((value == 0), "HAP");
@@ -95,4 +92,5 @@ HAPError ShellyHAPLock::HandleTargetStateWrite(
   return kHAPError_None;
 }
 
+}  // namespace hap
 }  // namespace shelly
