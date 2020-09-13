@@ -87,7 +87,7 @@ void InputPin::HandleGPIOInt() {
   LOG(LL_INFO, ("Input %d: %s", id(), OnOff(cur_state)));
   CallHandlers(Event::kChange, cur_state);
   double now = mgos_uptime();
-  if (enable_reset_) {
+  if (enable_reset_ && now < 60) {
     if (now - last_change_ts_ > 10) {
       change_cnt_ = 0;
     }
