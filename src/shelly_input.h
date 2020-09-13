@@ -21,6 +21,7 @@
 
 #include "mgos_event.h"
 #include "mgos_gpio.h"
+#include "mgos_timers.h"
 
 #include "shelly_common.h"
 
@@ -30,13 +31,15 @@ class Input {
  public:
   enum class Event {
     kChange = 0,
-    // TODO:
-    // SINGLE = 1,
-    // DOUBLE = 2,
+    kSingle = 1,
+    kDouble = 2,
+    kLong = 3,
     kReset = 4,
   };
   explicit Input(int id);
   virtual ~Input();
+
+  static const char *EventName(Event ev);
 
   int id() const;
   virtual bool GetState() = 0;
@@ -67,16 +70,37 @@ class InputPin : public Input {
   bool GetState() override;
 
  private:
+  static constexpr int kLongPressDurationMs = 1000;
+
+  enum class State {
+    kIdle = 0,
+    kWaitOffSingle = 1,
+    kWaitOnDouble = 2,
+    kWaitOffDouble = 3,
+    kWaitOffLong = 4,
+  };
+
   static void GPIOIntHandler(int pin, void *arg);
+  static void TimerCB(void *arg);
+
+  void SetTimer(int ms);
+  void ClearTimer();
+
+  void DetectReset(double now, bool cur_state);
 
   void HandleGPIOInt();
+  void HandleTimer();
 
   const int pin_;
   const int on_value_;
   const bool enable_reset_;
 
-  int change_cnt_;         // State change counter for reset.
-  double last_change_ts_;  // Timestamp of last change (uptime).
+  int change_cnt_ = 0;         // State change counter for reset.
+  double last_change_ts_ = 0;  // Timestamp of last change (uptime).
+
+  State state_ = State::kIdle;
+  int timer_cnt_ = 0;
+  mgos_timer_id timer_id_ = MGOS_INVALID_TIMER_ID;
 
   InputPin(const InputPin &other) = delete;
 };
