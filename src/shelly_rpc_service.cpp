@@ -74,16 +74,11 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
   for (const auto &c : g_components) {
-    switch (c->type()) {
-      case Component::Type::kSwitch: {
-        const auto &is = c->GetInfo();
-        if (is.ok()) {
-          if (!first) res.append(", ");
-          res.append(is.ValueOrDie());
-          first = false;
-        }
-        break;
-      }
+    const auto &is = c->GetInfo();
+    if (is.ok()) {
+      if (!first) res.append(", ");
+      res.append(is.ValueOrDie());
+      first = false;
     }
   }
 
@@ -158,11 +153,19 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 
   for (auto &c : g_components) {
     if (c->id() != id) continue;
-    if (c->type() != Component::Type::kSwitch) continue;
-    HAPSwitch *sw = static_cast<HAPSwitch *>(c.get());
-    sw->SetState(state, "web");
-    mg_rpc_send_responsef(ri, NULL);
-    return;
+    switch (c->type()) {
+      case Component::Type::kSwitch:
+      case Component::Type::kOutlet:
+      case Component::Type::kLock: {
+        ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
+        sw->SetState(state, "web");
+        mg_rpc_send_responsef(ri, NULL);
+        return;
+      }
+      default:
+        mg_rpc_send_errorf(ri, 400, "component not found");
+        return;
+    }
   }
   mg_rpc_send_errorf(ri, 400, "component not found");
 

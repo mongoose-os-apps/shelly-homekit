@@ -17,32 +17,26 @@
 
 #pragma once
 
-#include "shelly_common.h"
+#include "shelly_switch.h"
 
 namespace shelly {
 
-class Component {
+class ShellyHAPLock : public ShellySwitch {
  public:
-  enum class Type {
-    kSwitch = 0,
-    kOutlet = 1,
-    kLock = 2,
-  };
+  ShellyHAPLock(int id, Input *in, Output *out, PowerMeter *out_pm,
+                struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
+                const HAPAccessory *accessory);
+  virtual ~ShellyHAPLock();
 
-  explicit Component(int id);
-  virtual ~Component();
-
-  int id() const;
-
-  virtual Type type() const = 0;
-  virtual StatusOr<std::string> GetInfo() const = 0;
-  virtual Status SetConfig(const std::string &config_json,
-                           bool *restart_required) = 0;
+  Status Init();
 
  private:
-  const int id_;
-
-  Component(const Component &other) = delete;
+  HAPError HandleCurrentStateRead(
+      HAPAccessoryServerRef *server,
+      const HAPUInt8CharacteristicReadRequest *request, uint8_t *value);
+  HAPError HandleTargetStateWrite(
+      HAPAccessoryServerRef *server,
+      const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
 };
 
 }  // namespace shelly

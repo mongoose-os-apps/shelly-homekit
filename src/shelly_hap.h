@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "HAP.h"
 
 #include "shelly_common.h"

@@ -17,29 +17,16 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
-#include "mgos_sys_config.h"
-#include "mgos_timers.h"
-
-#include "shelly_common.h"
-#include "shelly_component.h"
-#include "shelly_hap.h"
-#include "shelly_hap_chars.h"
-#include "shelly_input.h"
-#include "shelly_output.h"
-#include "shelly_pm.h"
 #include "shelly_switch.h"
 
 namespace shelly {
 
-class ShellyHAPSwitch : public ShellySwitch {
+class ShellyHAPOutlet : public ShellySwitch {
  public:
-  ShellyHAPSwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
+  ShellyHAPOutlet(int id, Input *in, Output *out, PowerMeter *out_pm,
                   struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
                   const HAPAccessory *accessory);
-  virtual ~ShellyHAPSwitch();
+  virtual ~ShellyHAPOutlet();
 
   Status Init();
 
@@ -50,6 +37,9 @@ class ShellyHAPSwitch : public ShellySwitch {
   HAPError HandleOnWrite(HAPAccessoryServerRef *server,
                          const HAPBoolCharacteristicWriteRequest *request,
                          bool value);
+  HAPError HandleInUseRead(HAPAccessoryServerRef *server,
+                           const HAPBoolCharacteristicReadRequest *request,
+                           bool *value);
 };
 
 }  // namespace shelly

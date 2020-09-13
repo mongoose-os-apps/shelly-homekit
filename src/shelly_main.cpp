@@ -34,6 +34,8 @@
 #include "HAPPlatformTCPStreamManager+Init.h"
 
 #include "shelly_debug.h"
+#include "shelly_hap_lock.h"
+#include "shelly_hap_outlet.h"
 #include "shelly_hap_switch.h"
 #include "shelly_input.h"
 #include "shelly_output.h"
@@ -203,6 +205,36 @@ static void HandleInputResetSequence(InputPin *in, Input::Event ev,
   (void) cur_state;
 }
 
+static std::unique_ptr<ShellySwitch> CreateSwitchService(
+    int id, struct mgos_config_sw *cfg) {
+  std::unique_ptr<ShellySwitch> sw;
+  Input *in = FindInput(id);
+  Output *out = FindOutput(id);
+  PowerMeter *pm = FindPM(id);
+  switch (cfg->svc_type) {
+    case 0:
+      sw.reset(
+          new ShellyHAPSwitch(id, in, out, pm, cfg, &s_server, &s_accessory));
+      break;
+    case 1:
+      sw.reset(
+          new ShellyHAPOutlet(id, in, out, pm, cfg, &s_server, &s_accessory));
+      break;
+    case 2:
+      sw.reset(
+          new ShellyHAPLock(id, in, out, pm, cfg, &s_server, &s_accessory));
+      break;
+    default:
+      sw.reset(new ShellySwitch(id, in, out, pm, cfg, &s_server, &s_accessory));
+      break;
+  }
+  auto st = sw->Init();
+  if (!st.ok()) {
+    sw.reset();
+  }
+  return sw;
+}
+
 const HAPService **CreateHAPServices() {
   const HAPService **services =
       (const HAPService **) calloc(3 + 10, sizeof(*services));
@@ -213,10 +245,8 @@ const HAPService **CreateHAPServices() {
 #ifdef MGOS_CONFIG_HAVE_SW1
   {
     auto *sw1_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw1();
-    std::unique_ptr<HAPSwitch> sw1(new HAPSwitch(1, FindInput(1), FindOutput(1),
-                                                 FindPM(1), sw1_cfg, &s_server,
-                                                 &s_accessory));
-    if (sw1 != nullptr && sw1->Init().ok()) {
+    auto sw1 = CreateSwitchService(1, sw1_cfg);
+    if (sw1 != nullptr) {
       const HAPService *svc = sw1->GetHAPService();
       if (svc != nullptr) services[i++] = svc;
       g_components.push_back(std::move(sw1));
@@ -226,10 +256,8 @@ const HAPService **CreateHAPServices() {
 #ifdef MGOS_CONFIG_HAVE_SW2
   {
     auto *sw2_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw2();
-    std::unique_ptr<HAPSwitch> sw2(new HAPSwitch(2, FindInput(2), FindOutput(2),
-                                                 FindPM(2), sw2_cfg, &s_server,
-                                                 &s_accessory));
-    if (sw2 != nullptr && sw2->Init().ok()) {
+    auto sw2 = CreateSwitchService(2, sw2_cfg);
+    if (sw2 != nullptr) {
       const HAPService *svc = sw2->GetHAPService();
       if (svc != nullptr) services[i++] = svc;
       g_components.push_back(std::move(sw2));
@@ -431,13 +459,13 @@ static bool shelly_cfg_migrate(void) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
-          static_cast<int>(HAPSwitch::InitialState::kLast));
+          static_cast<int>(ShellyHAPSwitch::InitialState::kLast));
     }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
     if (mgos_sys_config_get_sw2_persist_state()) {
       mgos_sys_config_set_sw2_initial_state(
-          static_cast<int>(HAPSwitch::InitialState::kLast));
+          static_cast<int>(ShellyHAPSwitch::InitialState::kLast));
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(1);
