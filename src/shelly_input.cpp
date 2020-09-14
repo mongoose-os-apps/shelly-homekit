@@ -126,7 +126,8 @@ void InputPin::DetectReset(double now, bool cur_state) {
 
 void InputPin::HandleGPIOInt() {
   bool cur_state = GetState();
-  LOG(LL_DEBUG, ("Input %d: %s, st %d", id(), OnOff(cur_state), (int) state_));
+  LOG(LL_DEBUG, ("Input %d: %s (%d), st %d", id(), OnOff(cur_state),
+                 mgos_gpio_read(pin_), (int) state_));
   CallHandlers(Event::kChange, cur_state);
   double now = mgos_uptime();
   DetectReset(now, cur_state);

@@ -544,7 +544,7 @@ bool InitApp() {
   {
     const auto *sw2_cfg = mgos_sys_config_get_sw2();
     std::unique_ptr<InputPin> in2(
-        new InputPin(2, sw2_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true));
+        new InputPin(2, sw2_cfg->in_gpio, 1, MGOS_GPIO_PULL_NONE, true));
     std::unique_ptr<OutputPin> out2(
         new OutputPin(2, sw2_cfg->out_gpio, sw2_cfg->out_on_value));
     in2->AddHandler(std::bind(&HandleInputResetSequence, in2.get(), _1, _2));
@@ -556,7 +556,7 @@ bool InitApp() {
   {
     const auto *sw1_cfg = mgos_sys_config_get_sw1();
     std::unique_ptr<InputPin> in1(
-        new InputPin(1, sw1_cfg->in_gpio, 0, MGOS_GPIO_PULL_NONE, true));
+        new InputPin(1, sw1_cfg->in_gpio, 1, MGOS_GPIO_PULL_NONE, true));
     std::unique_ptr<OutputPin> out1(
         new OutputPin(1, sw1_cfg->out_gpio, sw1_cfg->out_on_value));
     in1->AddHandler(std::bind(&HandleInputResetSequence, in1.get(), _1, _2));
