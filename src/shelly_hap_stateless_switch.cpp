@@ -89,24 +89,34 @@ StatusOr<std::string> StatelessSwitch::GetInfo() const {
     last_ev_age = mgos_uptime() - last_ev_ts_;
   }
   return mgos::JSONPrintStringf(
-      "{id: %d, type: %d, name: %Q, last_ev: %d, last_ev_age: %.3f}", id(),
-      type(), (cfg_->name ? cfg_->name : ""), last_ev_, last_ev_age);
+      "{id: %d, type: %d, name: %Q, in_mode: %d, "
+      "last_ev: %d, last_ev_age: %.3f}",
+      id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->in_mode, last_ev_,
+      last_ev_age);
 }
 
 Status StatelessSwitch::SetConfig(const std::string &config_json,
                                   bool *restart_required) {
   char *name = nullptr;
-  json_scanf(config_json.c_str(), config_json.size(), "{name: %Q}", &name);
+  int in_mode = -1;
+  json_scanf(config_json.c_str(), config_json.size(), "{name: %Q, in_mode: %d}",
+             &name, &in_mode);
   std::unique_ptr<char> name_owner(name);
   *restart_required = false;
+  // Validation.
   if (name != nullptr && strlen(name) > 64) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
   }
+  if (in_mode < 0 || in_mode > 2) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
+  }
+  // Now copy over.
   if (name != nullptr && strcmp(name, cfg_->name) != 0) {
     mgos_conf_set_str(&cfg_->name, name);
     *restart_required = true;
   }
+  cfg_->in_mode = in_mode;
   return Status::OK();
 }
 
@@ -115,40 +125,55 @@ const HAPService *StatelessSwitch::GetHAPService() const {
 }
 
 void StatelessSwitch::InputEventHandler(Input::Event ev, bool state) {
-  switch (ev) {
-    case Input::Event::kSingle:
-    case Input::Event::kDouble:
-    case Input::Event::kLong:
-      last_ev_ = ev;
-      last_ev_ts_ = mgos_uptime();
-      HAPAccessoryServerRaiseEvent(server_, hap_chars_[1], &svc_, accessory_);
+  const auto in_mode = static_cast<InMode>(cfg_->in_mode);
+  switch (in_mode) {
+    // In momentary input mode we translate input events to HAP events directly.
+    case InMode::kMomentary:
+      switch (ev) {
+        case Input::Event::kSingle:
+          RaiseEvent(
+              kHAPCharacteristicValue_ProgrammableSwitchEvent_SinglePress);
+          break;
+        case Input::Event::kDouble:
+          RaiseEvent(
+              kHAPCharacteristicValue_ProgrammableSwitchEvent_DoublePress);
+          break;
+        case Input::Event::kLong:
+          RaiseEvent(kHAPCharacteristicValue_ProgrammableSwitchEvent_LongPress);
+          break;
+        case Input::Event::kChange:
+        case Input::Event::kReset:
+          // Ignore.
+          break;
+      }
       break;
-    case Input::Event::kChange:
-    case Input::Event::kReset:
-      // Ignore.
+    // In toggle switch input mode we translate changes to HAP events.
+    case InMode::kToggleShort:
+    case InMode::kToggleShortLong:
+      if (ev != Input::Event::kChange) break;
+      if (in_mode == InMode::kToggleShortLong && !state) {
+        RaiseEvent(kHAPCharacteristicValue_ProgrammableSwitchEvent_DoublePress);
+      } else {
+        RaiseEvent(kHAPCharacteristicValue_ProgrammableSwitchEvent_SinglePress);
+      }
       break;
   }
-  (void) state;
+}
+
+void StatelessSwitch::RaiseEvent(uint8_t ev) {
+  last_ev_ = ev;
+  last_ev_ts_ = mgos_uptime();
+  LOG(LL_INFO, ("Input %d: HAP event (mode %d): %d", id(), cfg_->in_mode, ev));
+  HAPAccessoryServerRaiseEvent(server_, hap_chars_[1], &svc_, accessory_);
 }
 
 HAPError StatelessSwitch::HandleEventRead(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
-  switch (last_ev_) {
-    case Input::Event::kSingle:
-      *value = kHAPCharacteristicValue_ProgrammableSwitchEvent_SinglePress;
-      break;
-    case Input::Event::kDouble:
-      *value = kHAPCharacteristicValue_ProgrammableSwitchEvent_DoublePress;
-      break;
-    case Input::Event::kLong:
-      *value = kHAPCharacteristicValue_ProgrammableSwitchEvent_LongPress;
-      break;
-    case Input::Event::kChange:
-    case Input::Event::kReset:
-      return kHAPError_InvalidState;
+  if (last_ev_ts_ == 0) {
+    return kHAPError_InvalidState;
   }
-
+  *value = last_ev_;
   (void) server;
   (void) request;
   return kHAPError_None;
