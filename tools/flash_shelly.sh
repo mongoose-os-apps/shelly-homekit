@@ -29,6 +29,7 @@
 #   -a                         Run against all the devices on the network.
 #   -n                         Do a dummy run through.
 #   -y                         Do not ask any confirmation to perform the flash.
+#   -V                         Force a particular version.
 #   -h                         This help text.
 #
 #  usage: ./flash_shelly.sh -la
@@ -213,7 +214,7 @@ function probe_info {
       lfw=$(echo "$stock_release_info" | jq -r '.data."'$model'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
       dlurl=$(echo "$stock_release_info" | jq -r '.data."'$model'".url')
     else
-      model=$(echo "$info" | jq -r .model)
+      model=$(echo "$info" | jq -r .model | sed 's#\.##g' | sed 's#-##g')
       if [[ $model != *Shelly* ]]; then
         case $type in
           switch1)
@@ -231,8 +232,13 @@ function probe_info {
           *) ;;
         esac
       fi
-      lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
-      dlurl=$(echo "$homekit_release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+      if [[ $forced_version == false ]]; then
+        lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
+        dlurl=$(echo "$homekit_release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+      else
+        lfw=$ffw
+        dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
+      fi
     fi
   else
     cfw=$(echo "$info" | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
@@ -253,7 +259,11 @@ function probe_info {
           model="ShellyRGBW2";;
         *) ;;
       esac
-      lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
+      if [[ $forced_version == false ]]; then
+        lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
+      else
+        lfw=$ffw
+      fi
       dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
     else
       model=$type
@@ -296,6 +306,8 @@ function probe_info {
       elif [ $mode == "keep" ]; then
         perform_flash=true
       fi
+    elif [ $forced_version == true ]; then
+      perform_flash=true
     else
       perform_flash=false
     fi
@@ -384,12 +396,13 @@ function device_scan {
 
 function help {
   echo "Shelly HomeKit flashing script utility"
-  echo "Usage: $0 -{m|l|a|n|y|h} $1{hostname(s) optional}"
+  echo "Usage: $0 -{m|l|a|n|y|V|h} $1{hostname(s) optional}"
   echo " -m {homekit|revert|keep}   Script mode."
   echo " -l                         List info of shelly device."
   echo " -a                         Run against all the devices on the network."
   echo " -n                         Do a dummy run through."
   echo " -y                         Do not ask any confirmation to perform the flash."
+  echo " -V                         Force a particular version."
   echo " -h                         This help text."
 }
 
@@ -398,9 +411,10 @@ action=flash
 do_all=false
 dry_run=false
 silent_run=false
+forced_version=false
 mode="homekit"
 
-while getopts ":alnyhm:" opt; do
+while getopts ":alnyhm:V:" opt; do
   case ${opt} in
     m )
       if [ $OPTARG == "homekit" ]; then
@@ -426,6 +440,10 @@ while getopts ":alnyhm:" opt; do
       ;;
     y )
       silent_run=true
+      ;;
+    V )
+      forced_version=true
+      ffw=$OPTARG
       ;;
     h )
       help
