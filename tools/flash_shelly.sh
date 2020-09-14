@@ -75,7 +75,7 @@ if [[ $arch == "Darwin" ]] && [ "$(which timeout 2>/dev/null)" == "" ]; then
   echo $($installer coreutils)
 fi
 
-if [ "$(which jq  2>/dev/null)" == "" ]; then
+if [ "$(which jq 2>/dev/null)" == "" ]; then
   check_installer
   echo -e '\033[1mInstalling jq...\033[0m'
   echo -e '\033[1mYou may be asked for your password...\033[0m'
@@ -113,47 +113,48 @@ function write_flash {
     echo "Now Flashing.."
     echo $($flashcmd)
   fi
-  echo "waiting for $device to reboot"
-  sleep 15
-  if [[ $mode == "homekit" ]]; then
-    if [[ $(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo | jq -r .version) == $lfw ]];then
-      echo "Successfully flashed $device to $lfw"
-      exit 0
+
+  sleep 10
+  n=1
+  while [ $n -le 30 ]; do
+    if [[ $mode == "homekit" ]]; then
+      onlinecheck=$(curl -qsf -m 5 http://$device/rpc/Shelly.GetInfo)||onlinecheck="error"
     else
-      echo "still waiting for $device to reboot"
-      sleep 15
-      if [[ $(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo | jq -r .version) == $lfw ]];then
-        echo "Successfully flashed $device to $lfw"
-        exit 0
+      onlinecheck=$(curl -qsf -m 5 http://$device/Shelly.GetInfo)||onlinecheck="error"
+    fi
+    if [[ $onlinecheck == "error" ]]; then
+      echo "waiting for $device to reboot"
+      sleep 2
+      n=$(( $n + 1 ))
+    else
+      if [[ $mode == "homekit" ]]; then
+         onlinecheck=$(echo $onlinecheck | jq -r .version)
       else
-        echo "Flash failed!!!"
+        onlinecheck=$(echo $onlinecheck | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
+      fi
+      n=31
+    fi
+  done
+
+  if [[ $onlinecheck == $lfw ]];then
+    echo "Successfully flashed $device to $lfw"
+    if [[ $mode == "homekit" ]]; then
+      rm -f shelly-flash.zip
+    else
+      if [ $(echo "$info" | jq -r .type) == "SHRGBW2" ]; then
+        echo " "
+        echo "To finalise flash process you will need to switch 'Modes' in the device WebUI,"
+        echo "WARNING!! If you are using this device in conjunction with Homebridge it will"
+        echo "result in ALL scenes / automations to be removed within HomeKit."
+        echo "Goto http://$device in your web browser"
+        echo "Goto settings section"
+        echo "Goto 'Device Type' and switch modes"
+        echo "Once mode has been changed, you can switch it back to your preferred mode."
       fi
     fi
-    rm -f shelly-flash.zip
   else
-    if [[ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ]];then
-      echo "Successfully flashed $device to $lfw"
-      exit 0
-    else
-      echo "still waiting for $device to reboot"
-      sleep 15
-      if [ $(curl -qs -m 5 http://$device/Shelly.GetInfo | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}') == $lfw ];then
-        echo "Successfully flashed $device to $lfw"
-      else
-        if [ $(echo "$info" | jq -r .type) == "SHRGBW2" ]; then
-          echo " "
-          echo "To finalise flash process you will need to switch 'Modes' in the device WebUI,"
-          echo "WARNING!! If you are using this device in conjunction with Homebridge it will"
-          echo "result in ALL scenes / automations to be removed within HomeKit."
-          echo "Goto http://$device in your web browser"
-          echo "Goto settings section"
-          echo "Goto 'Device Type' and switch modes"
-          echo "Once mode has been changed, you can switch it back to your preferred mode."
-        else
-          echo "Flash failed!!!"
-        fi
-      fi
-    fi
+    echo "Failed to flash $device to $lfw"
+    echo "Current: $onlinecheck"
   fi
 }
 
@@ -315,7 +316,7 @@ function probe_info {
       while true; do
         read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
-          [Yy]* )  flash=true; break;;
+          [Yy]* ) flash=true; break;;
           [Nn]* ) flash=false; break;;
           * ) echo "Please answer yes or no.";;
         esac
@@ -474,6 +475,7 @@ if [ $check == "error" ]; then
   exit 1
 fi
 
+echo "OS: $arch"
 if [[ ! -z $@ ]];then
   for device in $@; do
     device_scan $device $action $do_all $dry_run $mode || continue
