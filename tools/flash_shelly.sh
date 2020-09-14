@@ -231,8 +231,13 @@ function probe_info {
           *) ;;
         esac
       fi
-      lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
-      dlurl=$(echo "$homekit_release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+      if [[ $forced_version == false ]]; then
+        lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
+        dlurl=$(echo "$homekit_release_info" | jq -r '.assets[] | select(.name=="shelly-homekit-'$model'.zip").browser_download_url')
+      else
+        lfw=$ffw
+        dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
+      fi
     fi
   else
     cfw=$(echo "$info" | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
@@ -398,9 +403,10 @@ action=flash
 do_all=false
 dry_run=false
 silent_run=false
+forced_version=false
 mode="homekit"
 
-while getopts ":alnyhm:" opt; do
+while getopts ":alnyhm:f:" opt; do
   case ${opt} in
     m )
       if [ $OPTARG == "homekit" ]; then
@@ -426,6 +432,10 @@ while getopts ":alnyhm:" opt; do
       ;;
     y )
       silent_run=true
+      ;;
+    f )
+      forced_version=true
+      ffw=$OPTARG
       ;;
     h )
       help
