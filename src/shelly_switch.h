@@ -56,9 +56,7 @@ class ShellySwitch : public Component, hap::Service {
   virtual ~ShellySwitch();
 
   // Component interface impl.
-  Type type() const override {
-    return Type::kSwitch;
-  }
+  Type type() const override;
   StatusOr<std::string> GetInfo() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;

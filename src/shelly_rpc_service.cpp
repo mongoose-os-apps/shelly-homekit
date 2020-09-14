@@ -111,7 +111,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 
   Component *c = nullptr;
   for (auto &cp : g_components) {
-    if (cp->id() == id || (int) cp->type() != type) {
+    if (cp->id() == id && (int) cp->type() == type) {
       c = cp.get();
       break;
     }

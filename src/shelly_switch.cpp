@@ -51,6 +51,10 @@ ShellySwitch::~ShellySwitch() {
   }
 }
 
+Component::Type ShellySwitch::type() const {
+  return Type::kSwitch;
+}
+
 StatusOr<std::string> ShellySwitch::GetInfo() const {
   std::string res = mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, svc_type: %d, in_mode: %d, initial: %d, "
