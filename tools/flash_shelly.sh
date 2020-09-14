@@ -75,7 +75,7 @@ if [[ $arch == "Darwin" ]] && [ "$(which timeout 2>/dev/null)" == "" ]; then
   echo $($installer coreutils)
 fi
 
-if [ "$(which jq  2>/dev/null)" == "" ]; then
+if [ "$(which jq 2>/dev/null)" == "" ]; then
   check_installer
   echo -e '\033[1mInstalling jq...\033[0m'
   echo -e '\033[1mYou may be asked for your password...\033[0m'
@@ -315,7 +315,7 @@ function probe_info {
       while true; do
         read -p "Do you wish to flash $device to firmware version $lfw ? " yn
         case $yn in
-          [Yy]* )  flash=true; break;;
+          [Yy]* ) flash=true; break;;
           [Nn]* ) flash=false; break;;
           * ) echo "Please answer yes or no.";;
         esac
