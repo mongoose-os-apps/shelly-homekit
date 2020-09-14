@@ -213,7 +213,7 @@ function probe_info {
       lfw=$(echo "$stock_release_info" | jq -r '.data."'$model'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
       dlurl=$(echo "$stock_release_info" | jq -r '.data."'$model'".url')
     else
-      model=$(echo "$info" | jq -r .model)
+      model=$(echo "$info" | jq -r .model | sed 's#\.##g' | sed 's#-##g')
       if [[ $model != *Shelly* ]]; then
         case $type in
           switch1)
