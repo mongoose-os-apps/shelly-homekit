@@ -501,7 +501,14 @@ function updateComponent(cd) {
       el(c, "name").value = cd.name;
       var lastEvText = "n/a";
       if (cd.last_ev > 0) {
-        lastEvText = cd/last_ev + " (" + secondsToDateString(cd.last_ev_age) + " ago)";
+        var lastEv = cd.last_ev;
+        switch (cd.last_ev) {
+          case 1: lastEv = "single"; break;
+          case 2: lastEv = "double"; break;
+          case 3: lastEv = "long"; break;
+          default: lastEv = cd.last_ev;
+        }
+        lastEvText = lastEv + " (" + secondsToDateString(cd.last_ev_age) + " ago)";
       }
       el(c, "last_event").innerText = lastEvText;
       break;
