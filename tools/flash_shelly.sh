@@ -259,7 +259,11 @@ function probe_info {
           model="ShellyRGBW2";;
         *) ;;
       esac
-      lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
+      if [[ $forced_version == false ]]; then
+        lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
+      else
+        lfw=$ffw
+      fi
       dlurl="http://rojer.me/files/shelly/$lfw/shelly-homekit-$model.zip"
     else
       model=$type
@@ -302,6 +306,8 @@ function probe_info {
       elif [ $mode == "keep" ]; then
         perform_flash=true
       fi
+    elif [ $forced_version == true ]; then
+      perform_flash=true
     else
       perform_flash=false
     fi
