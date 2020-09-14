@@ -112,8 +112,8 @@ void InputPin::ClearTimer() {
 }
 
 void InputPin::DetectReset(double now, bool cur_state) {
-  if (enable_reset_ && now < 60) {
-    if (now - last_change_ts_ > 10) {
+  if (enable_reset_ && now < 30) {
+    if (now - last_change_ts_ > 5) {
       change_cnt_ = 0;
     }
     change_cnt_++;
