@@ -158,7 +158,13 @@ void InputPin::HandleGPIOInt() {
       }
       break;
     case State::kWaitOffLong:
-      if (!cur_state) state_ = State::kIdle;
+      if (!cur_state) {
+        ClearTimer();
+        if (timer_cnt_ == 1) {
+          CallHandlers(Event::kSingle, cur_state);
+        }
+        state_ = State::kIdle;
+      }
       break;
   }
   last_change_ts_ = now;
