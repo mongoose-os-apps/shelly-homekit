@@ -202,6 +202,14 @@
             <input type="text" id="name">
           </div>
           <div class="form-control">
+            <label>Input Mode:</label>
+            <select id="in_mode">
+              <option id="in_mode_0" value="0">Momentary</option>
+              <option id="in_mode_1" value="1">Toggle, on = off = single press</option>
+              <option id="in_mode_2" value="2">Toggle, on = single, off = double</option>
+            </select>
+          </div>
+          <div class="form-control">
             <label>Last Event:</label>
             <span id="last_event"></span>
           </div>
@@ -423,6 +431,7 @@ function sswSetConfig(c) {
     type: c.data.type,
     config: {
       name: name,
+      in_mode: parseInt(el(c, "in_mode").value),
     },
   };
   console.log("sswSetConfig:", data);
@@ -499,6 +508,7 @@ function updateComponent(cd) {
       if (cd.name) headText += " (" + cd.name + ")";
       el(c, "head").innerText = headText;
       el(c, "name").value = cd.name;
+      el(c, "in_mode_" + cd.in_mode).selected = true;
       var lastEvText = "n/a";
       if (cd.last_ev > 0) {
         var lastEv = cd.last_ev;

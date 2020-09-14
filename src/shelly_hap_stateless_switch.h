@@ -37,6 +37,12 @@ namespace hap {
 // Common base for Switch, Outlet and Lock services.
 class StatelessSwitch : public Component, Service {
  public:
+  enum class InMode {
+    kMomentary = 0,
+    kToggleShort = 1,
+    kToggleShortLong = 2,
+  };
+
   StatelessSwitch(int id, Input *in, struct mgos_config_ssw *cfg,
                   HAPAccessoryServerRef *server, const HAPAccessory *accessory);
   virtual ~StatelessSwitch();
@@ -57,6 +63,8 @@ class StatelessSwitch : public Component, Service {
  private:
   void InputEventHandler(Input::Event ev, bool state);
 
+  void RaiseEvent(uint8_t ev);
+
   HAPError HandleEventRead(HAPAccessoryServerRef *server,
                            const HAPUInt8CharacteristicReadRequest *request,
                            uint8_t *value);
@@ -75,7 +83,7 @@ class StatelessSwitch : public Component, Service {
   std::vector<std::unique_ptr<hap::Characteristic>> chars_;
   std::vector<HAPCharacteristic *> hap_chars_;
 
-  Input::Event last_ev_ = Input::Event::kChange;
+  uint8_t last_ev_ = 0;
   double last_ev_ts_ = 0;
 
   StatelessSwitch(const StatelessSwitch &other) = delete;
