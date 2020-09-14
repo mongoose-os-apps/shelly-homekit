@@ -474,6 +474,7 @@ if [ $check == "error" ]; then
   exit 1
 fi
 
+echo "OS: $arch"
 if [[ ! -z $@ ]];then
   for device in $@; do
     device_scan $device $action $do_all $dry_run $mode || continue
