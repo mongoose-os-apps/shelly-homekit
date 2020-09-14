@@ -27,6 +27,7 @@ class Component {
     kSwitch = 0,
     kOutlet = 1,
     kLock = 2,
+    kStatelessSwitch = 3,
   };
 
   explicit Component(int id);

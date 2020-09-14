@@ -21,9 +21,6 @@
 
 #include "shelly_hap_chars.h"
 
-#define IID_BASE_SWITCH 0x100
-#define IID_STEP_SWITCH 4
-
 namespace shelly {
 namespace hap {
 
@@ -55,6 +52,7 @@ Status Switch::Init() {
   std::unique_ptr<hap::Characteristic> on_char(new BoolCharacteristic(
       iid++, &kHAPCharacteristicType_On,
       std::bind(&Switch::HandleOnRead, this, _1, _2, _3),
+      true /* supports_notification */,
       std::bind(&Switch::HandleOnWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_On));
   hap_chars_.push_back(on_char->GetBase());

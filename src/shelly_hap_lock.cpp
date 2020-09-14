@@ -17,9 +17,6 @@
 
 #include "shelly_hap_lock.h"
 
-#define IID_BASE_LOCK 0x300
-#define IID_STEP_LOCK 4
-
 namespace shelly {
 namespace hap {
 
@@ -51,7 +48,7 @@ Status Lock::Init() {
   std::unique_ptr<hap::Characteristic> cur_state_char(new UInt8Characteristic(
       iid++, &kHAPCharacteristicType_LockCurrentState, 0, 3, 1,
       std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
-      nullptr,  // write_handler
+      true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_LockCurrentState));
   hap_chars_.push_back(cur_state_char->GetBase());
   state_notify_char_ = cur_state_char->GetBase();
@@ -60,6 +57,7 @@ Status Lock::Init() {
   std::unique_ptr<hap::Characteristic> tgt_state_char(new UInt8Characteristic(
       iid++, &kHAPCharacteristicType_LockTargetState, 0, 3, 1,
       std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
+      true /* supports_notification */,
       std::bind(&Lock::HandleTargetStateWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_LockTargetState));
   hap_chars_.push_back(tgt_state_char->GetBase());

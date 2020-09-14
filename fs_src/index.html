@@ -193,6 +193,29 @@
       </div>
     </div>
 
+    <div class="container" id="ssw_template" style="display: none">
+      <h1 id="head">Input</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>Last Event:</label>
+            <span id="last_event"></span>
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="save_btn">
+              <span id="save_spinner"></span>
+              <label>Save</label>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 <script>
 
 var host = "";
@@ -361,6 +384,7 @@ function swSetConfig(c) {
   spinner.className = "spin";
   var data = {
     id: c.data.id,
+    type: c.data.type,
     config: {
       name: name,
       svc_type: parseInt(svcType),
@@ -374,7 +398,38 @@ function swSetConfig(c) {
   axios.post(host + "/rpc/Shelly.SetConfig", data)
     .then(function(res) {
       spinner.className = "";
-      getInfo();
+      setTimeout(getInfo, 1100);
+    }).catch(function(err) {
+      spinner.className = "";
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+    });
+}
+
+function sswSetConfig(c) {
+  var name = el(c, "name").value;
+  var spinner = el(c, "save_spinner");
+
+  if (name == "") {
+    alert("Name must not be empty");
+    return;
+  }
+
+  spinner.className = "spin";
+  var data = {
+    id: c.data.id,
+    type: c.data.type,
+    config: {
+      name: name,
+    },
+  };
+  console.log("sswSetConfig:", data);
+  axios.post(host + "/rpc/Shelly.SetConfig", data)
+    .then(function(res) {
+      spinner.className = "";
+      setTimeout(getInfo, 1100);
     }).catch(function(err) {
       spinner.className = "";
       if (err.response) {
@@ -396,11 +451,18 @@ function findOrAddContainer(cd) {
   if (c) return c;
   switch (cd.type) {
     case 0: // Switch
+    case 1: // Outlet
+    case 2: // Lock
       c = el("sw_template").cloneNode(true);
       c.id = elId;
       el(c, "toggle_btn").onclick = function() { swSetState(c, !c.data.state); };
       el(c, "save_btn").onclick = function() { swSetConfig(c); };
       el(c, "auto_off").onchange = function() { el(c, "auto_off_delay").disabled = !this.checked; };
+      break;
+    case 3: // Stateless Programmable Switch (aka input in detached mode).
+      c = el("ssw_template").cloneNode(true);
+      c.id = elId;
+      el(c, "save_btn").onclick = function() { sswSetConfig(c); };
       break;
   }
   if (c) {
@@ -414,10 +476,10 @@ function updateComponent(cd) {
   var c = findOrAddContainer(cd);
   switch (cd.type) {
     case 0: // Switch
+    case 1: // Outlet
+    case 2: // Lock
       var headText = "Switch " + cd.id;
-      if (cd.name) {
-        headText += " (" + cd.name + ")";
-      }
+      if (cd.name) headText += " (" + cd.name + ")";
       el(c, "head").innerText = headText;
       el(c, "name").value = cd.name;
       el(c, "state").innerText = (cd.state ? "on" : "off");
@@ -431,15 +493,27 @@ function updateComponent(cd) {
       el(c, "auto_off").checked = cd.auto_off;
       el(c, "auto_off_delay").disabled = !cd.auto_off;
       el(c, "auto_off_delay").value = secondsToDateString(cd.auto_off_delay);
-      c.data = cd;
+      break;
+    case 3: // Stateless Programmable Switch (aka input in detached mode).
+      var headText = "Input " + cd.id;
+      if (cd.name) headText += " (" + cd.name + ")";
+      el(c, "head").innerText = headText;
+      el(c, "name").value = cd.name;
+      var lastEvText = "n/a";
+      if (cd.last_ev > 0) {
+        lastEvText = cd/last_ev + " (" + secondsToDateString(cd.last_ev_age) + " ago)";
+      }
+      el(c, "last_event").innerText = lastEvText;
       break;
   }
+  c.data = cd;
 }
 
 function getInfo() {
   spinner.className = "spin";
   axios.get(host + "/rpc/Shelly.GetInfo").then(function(res) {
     var data = res.data;
+    console.log(data);
     wifiEn.checked = data.wifi_en;
     wifiSSID.value = data.wifi_ssid;
     wifiPass.value = data.wifi_pass;
@@ -456,9 +530,13 @@ function getInfo() {
     el("app_version").innerText = data.version;
     el("app_build").innerText = data.fw_build;
     el("uptime").innerText = durationStr(data.uptime);
+    if (data.hap_cn != el("components").cn) {
+      el("components").innerHTML = "";
+    }
     for (var i in data.components) {
       updateComponent(data.components[i]);
     }
+    el("components").cn = data.hap_cn;
     el("homekit_container").style.visibility = "visible";
     el("wifi_container").style.visibility = "visible";
     el("fw_container").style.visibility = "visible";

@@ -83,7 +83,7 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
              &cfg.auto_off, &cfg.auto_off_delay);
   std::unique_ptr<char> name_owner((char *) cfg.name);
   // Validation.
-  if (cfg.name == nullptr || strlen(cfg.name) > 64) {
+  if (cfg.name != nullptr && strlen(cfg.name) > 64) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
   }
@@ -110,7 +110,13 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
     cfg_->svc_type = cfg.svc_type;
     *restart_required = true;
   }
-  cfg_->in_mode = cfg.in_mode;
+  if (cfg_->in_mode != cfg.in_mode) {
+    if (cfg_->in_mode == (int) InMode::kDetached ||
+        cfg.in_mode == (int) InMode::kDetached) {
+      *restart_required = true;
+    }
+    cfg_->in_mode = cfg.in_mode;
+  }
   cfg_->initial_state = cfg.initial_state;
   cfg_->auto_off = cfg.auto_off;
   cfg_->auto_off_delay = cfg.auto_off_delay;

@@ -51,13 +51,17 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
   HAPPlatformTCPStreamManagerStats tcpm_stats = {};
   HAPPlatformTCPStreamManagerGetStats(s_tcpm, &tcpm_stats);
+  uint16_t hap_cn;
+  if (HAPAccessoryServerGetCN(s_kvs, &hap_cn) != kHAPError_None) {
+    hap_cn = 0;
+  }
   std::string res = mgos::JSONPrintStringf(
       "{id: %Q, app: %Q, model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
 #endif
-      "hap_provisioned: %B, hap_paired: %B, "
+      "hap_cn: %d, hap_provisioned: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u",
       mgos_sys_config_get_device_id(), MGOS_APP,
@@ -68,7 +72,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
       (pass ? pass : ""),
 #endif
-      hap_provisioned, hap_paired, (unsigned) tcpm_stats.numPendingTCPStreams,
+      hap_cn, hap_provisioned, hap_paired,
+      (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams);
   mgos::JSONAppendStringf(&res, ", components: [");
@@ -94,9 +99,10 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                              struct mg_rpc_frame_info *fi, struct mg_str args) {
   int id = -1;
+  int type = -1;
   struct json_token config_tok = JSON_INVALID_TOKEN;
 
-  json_scanf(args.p, args.len, ri->args_fmt, &id, &config_tok);
+  json_scanf(args.p, args.len, ri->args_fmt, &id, &type, &config_tok);
 
   if (config_tok.len == 0) {
     mg_rpc_send_errorf(ri, 400, "%s is required", "config");
@@ -105,7 +111,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 
   Component *c = nullptr;
   for (auto &cp : g_components) {
-    if (cp->id() == id) {
+    if (cp->id() == id || (int) cp->type() != type) {
       c = cp.get();
       break;
     }
@@ -163,8 +169,7 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
         return;
       }
       default:
-        mg_rpc_send_errorf(ri, 400, "component not found");
-        return;
+        break;
     }
   }
   mg_rpc_send_errorf(ri, 400, "component not found");
@@ -182,7 +187,7 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                      GetInfoHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
-                     "{id: %d, config: %T}", SetConfigHandler, NULL);
+                     "{id: %d, type: %d, config: %T}", SetConfigHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
                      GetDebugInfoHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",

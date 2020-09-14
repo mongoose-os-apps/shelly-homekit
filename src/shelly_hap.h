@@ -21,6 +21,15 @@
 
 #include "shelly_common.h"
 
+#define IID_BASE_SWITCH 0x100
+#define IID_STEP_SWITCH 4
+#define IID_BASE_OUTLET 0x200
+#define IID_STEP_OUTLET 5
+#define IID_BASE_LOCK 0x300
+#define IID_STEP_LOCK 4
+#define IID_BASE_STATELESS_SWITCH 0x400
+#define IID_STEP_STATELESS_SWITCH 4
+
 namespace shelly {
 namespace hap {
 

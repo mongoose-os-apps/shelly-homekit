@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.0.12
+version: 2.1.0
 platform: esp8266
 
 libs_version: latest
@@ -34,6 +34,9 @@ config_schema:
   - ["sw.initial_state", "i", 3, {"Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
   - ["sw.auto_off", "b", false, {"Whether the switch should automatically turn OFF after turning ON"}]
   - ["sw.auto_off_delay", "d", 0, {"Delay for automatically turning OFF, in seconds"}]
+
+  - ["ssw", "o", {"Stateless Switch settings"}]
+  - ["ssw.name", "s", "", {"Name of the switch"}]
 
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
   # Deprecated settings, only kept to enable migration.
@@ -90,11 +93,13 @@ conds:
       config_schema:
         - ["device.id", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
-        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1", "sw", {"title": "SW1 settings"}]
         - ["sw1.id", 1]
         - ["sw1.name", "Shelly SW"]
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio", 5]
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Shelly Input"]
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
@@ -126,6 +131,8 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["sw1.out_gpio", 15]
         - ["sw1.in_gpio", 4]
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Shelly Input"]
 
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
@@ -155,6 +162,8 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["sw1.out_gpio", 15]
         - ["sw1.in_gpio", 13]
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Shelly Input"]
 
   - when: build_vars.MODEL == "Shelly2"
     apply:
@@ -183,11 +192,15 @@ conds:
         - ["sw1.name", "Shelly SW1"]
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio",  12]
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Shelly Input 1"]
         - ["sw2", "sw", {"title": "SW2 settings"}]
         - ["sw2.id", 2]
         - ["sw2.name", "Shelly SW2"]
         - ["sw2.out_gpio", 5]
         - ["sw2.in_gpio",  14]
+        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2.name", "Shelly Input 2"]
 
   - when: build_vars.MODEL == "Shelly25"
     apply:
@@ -226,11 +239,15 @@ conds:
         - ["sw1.name", "Shelly SW1"]
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio",  13]
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Shelly Input 1"]
         - ["sw2", "sw", {"title": "SW2 settings"}]
         - ["sw2.id", 2]
         - ["sw2.name", "Shelly SW2"]
         - ["sw2.out_gpio", 15]
         - ["sw2.in_gpio",  5]
+        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2.name", "Shelly Input 2"]
 
   - when: mos.platform != "ubuntu"
     apply:
@@ -265,5 +282,7 @@ conds:
         - ["sw1.name", "SW"]
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio",  5]
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "ShellyU Input"]
 
 manifest_version: 2020-01-29

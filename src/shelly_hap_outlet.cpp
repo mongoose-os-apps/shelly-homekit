@@ -17,9 +17,6 @@
 
 #include "shelly_hap_outlet.h"
 
-#define IID_BASE_OUTLET 0x200
-#define IID_STEP_OUTLET 5
-
 namespace shelly {
 namespace hap {
 
@@ -51,6 +48,7 @@ Status Outlet::Init() {
   std::unique_ptr<hap::Characteristic> on_char(new BoolCharacteristic(
       iid++, &kHAPCharacteristicType_On,
       std::bind(&Outlet::HandleOnRead, this, _1, _2, _3),
+      true /* supports_notification */,
       std::bind(&Outlet::HandleOnWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_On));
   hap_chars_.push_back(on_char->GetBase());
@@ -60,7 +58,7 @@ Status Outlet::Init() {
   std::unique_ptr<hap::Characteristic> in_use_char(new BoolCharacteristic(
       iid++, &kHAPCharacteristicType_OutletInUse,
       std::bind(&Outlet::HandleInUseRead, this, _1, _2, _3),
-      nullptr,  // write_handler
+      true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_OutletInUse));
   hap_chars_.push_back(in_use_char->GetBase());
   chars_.emplace_back(std::move(in_use_char));

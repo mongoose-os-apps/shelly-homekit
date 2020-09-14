@@ -85,6 +85,7 @@ struct ScalarCharacteristic : public Characteristic {
 
   ScalarCharacteristic(HAPCharacteristicFormat format, uint16_t iid,
                        const HAPUUID *type, ReadHandler read_handler,
+                       bool supports_notification,
                        WriteHandler write_handler = nullptr,
                        const char *debug_description = nullptr)
       : read_handler_(read_handler), write_handler_(write_handler) {
@@ -94,7 +95,7 @@ struct ScalarCharacteristic : public Characteristic {
     base_.characteristicType = type;
     base_.debugDescription = debug_description;
     base_.properties.readable = true;
-    base_.properties.supportsEventNotification = true;
+    base_.properties.supportsEventNotification = supports_notification;
     base_.callbacks.handleRead = ScalarCharacteristic::HandleReadCB;
     if (write_handler) {
       base_.properties.writable = true;
@@ -146,11 +147,12 @@ struct BoolCharacteristic
                                   HAPBoolCharacteristicWriteRequest> {
  public:
   BoolCharacteristic(uint16_t iid, const HAPUUID *type,
-                     ReadHandler read_handler,
+                     ReadHandler read_handler, bool supports_notification,
                      WriteHandler write_handler = nullptr,
                      const char *debug_description = nullptr)
       : ScalarCharacteristic(kHAPCharacteristicFormat_Bool, iid, type,
-                             read_handler, write_handler, debug_description) {
+                             read_handler, supports_notification, write_handler,
+                             debug_description) {
   }
   virtual ~BoolCharacteristic() {
   }
@@ -163,10 +165,12 @@ class UInt8Characteristic
  public:
   UInt8Characteristic(uint16_t iid, const HAPUUID *type, uint8_t min,
                       uint8_t max, uint8_t step, ReadHandler read_handler,
+                      bool supports_notification,
                       WriteHandler write_handler = nullptr,
                       const char *debug_description = nullptr)
       : ScalarCharacteristic(kHAPCharacteristicFormat_UInt8, iid, type,
-                             read_handler, write_handler, debug_description) {
+                             read_handler, supports_notification, write_handler,
+                             debug_description) {
     base_.constraints.minimumValue = min;
     base_.constraints.maximumValue = max;
     base_.constraints.stepValue = step;

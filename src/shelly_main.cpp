@@ -36,6 +36,7 @@
 #include "shelly_debug.h"
 #include "shelly_hap_lock.h"
 #include "shelly_hap_outlet.h"
+#include "shelly_hap_stateless_switch.h"
 #include "shelly_hap_switch.h"
 #include "shelly_input.h"
 #include "shelly_output.h"
@@ -149,6 +150,7 @@ static std::vector<std::unique_ptr<Input>> s_inputs;
 static std::vector<std::unique_ptr<Output>> s_outputs;
 static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 std::vector<std::unique_ptr<Component>> g_components;
+std::vector<const HAPService *> s_hap_services;
 
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
@@ -232,21 +234,30 @@ static std::unique_ptr<ShellySwitch> CreateSwitchService(
   return sw;
 }
 
-const HAPService **CreateHAPServices() {
-  const HAPService **services =
-      (const HAPService **) calloc(3 + 10, sizeof(*services));
-  services[0] = &mgos_hap_accessory_information_service;
-  services[1] = &mgos_hap_protocol_information_service;
-  services[2] = &mgos_hap_pairing_service;
-  int i = 3;
+std::vector<const HAPService *> CreateHAPServices() {
+  std::vector<const HAPService *> services;
+  services.push_back(&mgos_hap_accessory_information_service);
+  services.push_back(&mgos_hap_protocol_information_service);
+  services.push_back(&mgos_hap_pairing_service);
+  services.push_back(mgos_hap_service_label_service(1 /* numeric labels */));
 #ifdef MGOS_CONFIG_HAVE_SW1
   {
     auto *sw1_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw1();
     auto sw1 = CreateSwitchService(1, sw1_cfg);
     if (sw1 != nullptr) {
       const HAPService *svc = sw1->GetHAPService();
-      if (svc != nullptr) services[i++] = svc;
+      if (svc != nullptr) services.push_back(svc);
       g_components.push_back(std::move(sw1));
+    }
+    if (sw1_cfg->in_mode == (int) ShellySwitch::InMode::kDetached) {
+      LOG(LL_INFO, ("Creating a stateless switch for input %d", 1));
+      auto *ssw1_cfg = (struct mgos_config_ssw *) mgos_sys_config_get_ssw1();
+      std::unique_ptr<hap::StatelessSwitch> ssw1(new hap::StatelessSwitch(
+          1, FindInput(1), ssw1_cfg, &s_server, &s_accessory));
+      if (ssw1 != nullptr && ssw1->Init().ok()) {
+        services.push_back(ssw1->GetHAPService());
+        g_components.push_back(std::move(ssw1));
+      }
     }
   }
 #endif
@@ -256,11 +267,22 @@ const HAPService **CreateHAPServices() {
     auto sw2 = CreateSwitchService(2, sw2_cfg);
     if (sw2 != nullptr) {
       const HAPService *svc = sw2->GetHAPService();
-      if (svc != nullptr) services[i++] = svc;
+      if (svc != nullptr) services.push_back(svc);
       g_components.push_back(std::move(sw2));
+    }
+    if (sw2_cfg->in_mode == (int) ShellySwitch::InMode::kDetached) {
+      LOG(LL_INFO, ("Creating a stateless switch for input %d", 2));
+      auto *ssw2_cfg = (struct mgos_config_ssw *) mgos_sys_config_get_ssw2();
+      std::unique_ptr<hap::StatelessSwitch> ssw2(new hap::StatelessSwitch(
+          2, FindInput(2), ssw2_cfg, &s_server, &s_accessory));
+      if (ssw2 != nullptr && ssw2->Init().ok()) {
+        services.push_back(ssw2->GetHAPService());
+        g_components.push_back(std::move(ssw2));
+      }
     }
   }
 #endif
+  services.push_back(nullptr);
   (void) HandleInputResetSequence;
   return services;
 }
@@ -276,8 +298,8 @@ static bool StartHAPServer(bool quiet) {
   }
   if (s_accessory.services != nullptr && s_recreate_services) {
     LOG(LL_INFO, ("=== Re-creating services"));
-    free((void *) s_accessory.services);
     s_accessory.services = nullptr;
+    s_hap_services.clear();
     g_components.clear();
     s_recreate_services = false;
     if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
@@ -291,7 +313,8 @@ static bool StartHAPServer(bool quiet) {
   }
 
   if (s_accessory.services == nullptr) {
-    s_accessory.services = CreateHAPServices();
+    s_hap_services = CreateHAPServices();
+    s_accessory.services = s_hap_services.data();
   }
 
   HAPAccessoryServerStart(&s_server, &s_accessory);
