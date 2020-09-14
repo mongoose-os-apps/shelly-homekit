@@ -29,6 +29,7 @@
 #   -a                         Run against all the devices on the network.
 #   -n                         Do a dummy run through.
 #   -y                         Do not ask any confirmation to perform the flash.
+#   -V                         Force a particular version.
 #   -h                         This help text.
 #
 #  usage: ./flash_shelly.sh -la
@@ -389,12 +390,13 @@ function device_scan {
 
 function help {
   echo "Shelly HomeKit flashing script utility"
-  echo "Usage: $0 -{m|l|a|n|y|h} $1{hostname(s) optional}"
+  echo "Usage: $0 -{m|l|a|n|y|V|h} $1{hostname(s) optional}"
   echo " -m {homekit|revert|keep}   Script mode."
   echo " -l                         List info of shelly device."
   echo " -a                         Run against all the devices on the network."
   echo " -n                         Do a dummy run through."
   echo " -y                         Do not ask any confirmation to perform the flash."
+  echo " -V                         Force a particular version."
   echo " -h                         This help text."
 }
 
@@ -406,7 +408,7 @@ silent_run=false
 forced_version=false
 mode="homekit"
 
-while getopts ":alnyhm:f:" opt; do
+while getopts ":alnyhm:V:" opt; do
   case ${opt} in
     m )
       if [ $OPTARG == "homekit" ]; then
@@ -433,7 +435,7 @@ while getopts ":alnyhm:f:" opt; do
     y )
       silent_run=true
       ;;
-    f )
+    V )
       forced_version=true
       ffw=$OPTARG
       ;;
