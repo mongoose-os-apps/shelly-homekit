@@ -36,6 +36,7 @@ class Component {
   int id() const;
 
   virtual Type type() const = 0;
+  virtual Status Init() = 0;
   virtual StatusOr<std::string> GetInfo() const = 0;
   virtual Status SetConfig(const std::string &config_json,
                            bool *restart_required) = 0;

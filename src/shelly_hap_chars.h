@@ -56,6 +56,7 @@ class StringCharacteristic : public Characteristic {
   HAPCharacteristic *GetBase() override;
 
   void SetValue(const std::string &value);
+  const std::string &GetValue() const;
 
  private:
   static HAPError HandleReadCB(

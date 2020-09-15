@@ -25,8 +25,8 @@
 
 #include "shelly_common.h"
 #include "shelly_component.h"
-#include "shelly_hap.h"
 #include "shelly_hap_chars.h"
+#include "shelly_hap_service.h"
 #include "shelly_input.h"
 #include "shelly_output.h"
 #include "shelly_pm.h"

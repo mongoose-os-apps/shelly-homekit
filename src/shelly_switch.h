@@ -25,8 +25,8 @@
 
 #include "shelly_common.h"
 #include "shelly_component.h"
-#include "shelly_hap.h"
 #include "shelly_hap_chars.h"
+#include "shelly_hap_service.h"
 #include "shelly_input.h"
 #include "shelly_output.h"
 #include "shelly_pm.h"
@@ -34,7 +34,7 @@
 namespace shelly {
 
 // Common base for Switch, Outlet and Lock services.
-class ShellySwitch : public Component, hap::Service {
+class ShellySwitch : public Component, public hap::Service {
  public:
   enum class InMode {
     kMomentary = 0,
@@ -61,9 +61,6 @@ class ShellySwitch : public Component, hap::Service {
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
 
-  // HAP Service interface impl.
-  const HAPService *GetHAPService() const override;
-
   virtual Status Init() override;
 
   void SetState(bool new_state, const char *source);
@@ -84,12 +81,9 @@ class ShellySwitch : public Component, hap::Service {
   HAPAccessoryServerRef *const server_;
   const HAPAccessory *const accessory_;
 
-  HAPService svc_;
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
   HAPCharacteristic *state_notify_char_ = nullptr;
   HAPCharacteristic *tgt_state_notify_char_ = nullptr;
-  std::vector<std::unique_ptr<hap::Characteristic>> chars_;
-  std::vector<HAPCharacteristic *> hap_chars_;
 
   mgos_timer_id auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
 

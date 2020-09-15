@@ -25,8 +25,8 @@
 
 #include "shelly_common.h"
 #include "shelly_component.h"
-#include "shelly_hap.h"
 #include "shelly_hap_chars.h"
+#include "shelly_hap_service.h"
 #include "shelly_input.h"
 #include "shelly_output.h"
 #include "shelly_pm.h"
@@ -35,7 +35,7 @@ namespace shelly {
 namespace hap {
 
 // Common base for Switch, Outlet and Lock services.
-class StatelessSwitch : public Component, Service {
+class StatelessSwitch : public Component, public Service {
  public:
   enum class InMode {
     kMomentary = 0,
@@ -44,7 +44,8 @@ class StatelessSwitch : public Component, Service {
   };
 
   StatelessSwitch(int id, Input *in, struct mgos_config_ssw *cfg,
-                  HAPAccessoryServerRef *server, const HAPAccessory *accessory);
+                  HAPAccessoryServerRef *server, const HAPAccessory *accessory,
+                  const uint16_t label_service_iid = 0);
   virtual ~StatelessSwitch();
 
   Status Init() override;
@@ -57,31 +58,17 @@ class StatelessSwitch : public Component, Service {
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
 
-  // HAP Service interface impl.
-  const HAPService *GetHAPService() const override;
-
  private:
   void InputEventHandler(Input::Event ev, bool state);
 
   void RaiseEvent(uint8_t ev);
-
-  HAPError HandleEventRead(HAPAccessoryServerRef *server,
-                           const HAPUInt8CharacteristicReadRequest *request,
-                           uint8_t *value);
-
-  HAPError HandleServiceLabelIndexRead(
-      HAPAccessoryServerRef *server,
-      const HAPUInt8CharacteristicReadRequest *request, uint8_t *value);
 
   Input *const in_;
   struct mgos_config_ssw *cfg_;
   HAPAccessoryServerRef *const server_;
   const HAPAccessory *const accessory_;
 
-  HAPService svc_;
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
-  std::vector<std::unique_ptr<hap::Characteristic>> chars_;
-  std::vector<HAPCharacteristic *> hap_chars_;
 
   uint8_t last_ev_ = 0;
   double last_ev_ts_ = 0;

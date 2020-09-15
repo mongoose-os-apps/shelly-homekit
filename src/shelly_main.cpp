@@ -235,11 +235,13 @@ static std::unique_ptr<ShellySwitch> CreateSwitchService(
 }
 
 std::vector<const HAPService *> CreateHAPServices() {
+  static std::unique_ptr<hap::ServiceLabelService> sls;
   std::vector<const HAPService *> services;
   services.push_back(&mgos_hap_accessory_information_service);
   services.push_back(&mgos_hap_protocol_information_service);
   services.push_back(&mgos_hap_pairing_service);
-  services.push_back(mgos_hap_service_label_service(1 /* numeric labels */));
+  sls.reset(new hap::ServiceLabelService(1 /* numerals */));
+  services.push_back(sls->GetHAPService());
 #ifdef MGOS_CONFIG_HAVE_SW1
   {
     auto *sw1_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw1();
@@ -253,8 +255,9 @@ std::vector<const HAPService *> CreateHAPServices() {
       LOG(LL_INFO, ("Creating a stateless switch for input %d", 1));
       auto *ssw1_cfg = (struct mgos_config_ssw *) mgos_sys_config_get_ssw1();
       std::unique_ptr<hap::StatelessSwitch> ssw1(new hap::StatelessSwitch(
-          1, FindInput(1), ssw1_cfg, &s_server, &s_accessory));
+          1, FindInput(1), ssw1_cfg, &s_server, &s_accessory, sls->iid()));
       if (ssw1 != nullptr && ssw1->Init().ok()) {
+        sls->AddLink(ssw1->iid());
         services.push_back(ssw1->GetHAPService());
         g_components.push_back(std::move(ssw1));
       }
@@ -274,8 +277,9 @@ std::vector<const HAPService *> CreateHAPServices() {
       LOG(LL_INFO, ("Creating a stateless switch for input %d", 2));
       auto *ssw2_cfg = (struct mgos_config_ssw *) mgos_sys_config_get_ssw2();
       std::unique_ptr<hap::StatelessSwitch> ssw2(new hap::StatelessSwitch(
-          2, FindInput(2), ssw2_cfg, &s_server, &s_accessory));
+          2, FindInput(2), ssw2_cfg, &s_server, &s_accessory, sls->iid()));
       if (ssw2 != nullptr && ssw2->Init().ok()) {
+        sls->AddLink(ssw2->iid());
         services.push_back(ssw2->GetHAPService());
         g_components.push_back(std::move(ssw2));
       }

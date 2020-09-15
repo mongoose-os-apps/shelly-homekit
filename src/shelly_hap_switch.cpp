@@ -43,24 +43,24 @@ Status Switch::Init() {
   svc_.serviceType = &kHAPServiceType_Switch;
   svc_.debugDescription = kHAPServiceDebugDescription_Switch;
   // Name
-  std::unique_ptr<hap::Characteristic> name_char(new StringCharacteristic(
-      iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
-      kHAPCharacteristicDebugDescription_Name));
-  hap_chars_.push_back(name_char->GetBase());
-  chars_.emplace_back(std::move(name_char));
+  AddNameChar(iid++, cfg_->name);
   // On
-  std::unique_ptr<hap::Characteristic> on_char(new BoolCharacteristic(
+  auto *on_char = new BoolCharacteristic(
       iid++, &kHAPCharacteristicType_On,
-      std::bind(&Switch::HandleOnRead, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
+             bool *value) {
+        *value = out_->GetState();
+        return kHAPError_None;
+      },
       true /* supports_notification */,
-      std::bind(&Switch::HandleOnWrite, this, _1, _2, _3),
-      kHAPCharacteristicDebugDescription_On));
-  hap_chars_.push_back(on_char->GetBase());
+      [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicWriteRequest *,
+             bool value) {
+        SetState(value, "HAP");
+        return kHAPError_None;
+      },
+      kHAPCharacteristicDebugDescription_On);
   state_notify_char_ = on_char->GetBase();
-  chars_.emplace_back(std::move(on_char));
-
-  hap_chars_.push_back(nullptr);
-  svc_.characteristics = hap_chars_.data();
+  AddChar(on_char);
 
   return Status::OK();
 }

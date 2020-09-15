@@ -37,7 +37,6 @@ ShellySwitch::ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
       cfg_(cfg),
       server_(server),
       accessory_(accessory),
-      svc_({}),
       auto_off_timer_id_(MGOS_INVALID_TIMER_ID) {
 }
 
@@ -85,7 +84,7 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
              "auto_off: %B, auto_off_delay: %lf}",
              &cfg.name, &cfg.svc_type, &cfg.in_mode, &cfg.initial_state,
              &cfg.auto_off, &cfg.auto_off_delay);
-  std::unique_ptr<char> name_owner((char *) cfg.name);
+  mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
@@ -127,19 +126,12 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   return Status::OK();
 }
 
-const HAPService *ShellySwitch::GetHAPService() const {
-  if (cfg_->svc_type < 0) return nullptr;
-  return &svc_;
-}
-
 Status ShellySwitch::Init() {
   if (!cfg_->enable) {
     LOG(LL_INFO, ("'%s' is disabled", cfg_->name));
     mgos_gpio_setup_output(cfg_->out_gpio, !cfg_->out_on_value);
     return Status::OK();
   }
-  svc_.name = cfg_->name;
-  svc_.properties.primaryService = true;
   switch (static_cast<InitialState>(cfg_->initial_state)) {
     case InitialState::kOff:
       SetState(false, "init");

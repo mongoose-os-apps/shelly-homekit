@@ -17,9 +17,12 @@
 
 #pragma once
 
+#include <vector>
+
 #include "HAP.h"
 
 #include "shelly_common.h"
+#include "shelly_hap_chars.h"
 
 #define IID_BASE_SWITCH 0x100
 #define IID_STEP_SWITCH 4
@@ -29,21 +32,41 @@
 #define IID_STEP_LOCK 4
 #define IID_BASE_STATELESS_SWITCH 0x400
 #define IID_STEP_STATELESS_SWITCH 4
+#define IID_BASE_SERVICE_LABEL 0x1030
 
 namespace shelly {
 namespace hap {
 
 class Service {
  public:
-  Service() {
-  }
-  virtual ~Service() {
-  }
-  virtual Status Init() = 0;
-  virtual const HAPService *GetHAPService() const = 0;
+  Service();
+  Service(uint16_t iid, const HAPUUID *type, const char *debug_description);
+  virtual ~Service();
+
+  uint16_t iid() const;
+
+  void AddChar(Characteristic *ch);  // Takes ownership of ch.
+
+  void AddNameChar(uint16_t iid, const std::string &name);
+
+  void AddLink(uint16_t iid);
+
+  const HAPService *GetHAPService() const;
+
+ protected:
+  HAPService svc_;
+  std::vector<std::unique_ptr<hap::Characteristic>> chars_;
+  std::vector<HAPCharacteristic *> hap_chars_;
 
  private:
+  std::vector<uint16_t> links_;
   Service(const Service &other) = delete;
+};
+
+class ServiceLabelService : public Service {
+ public:
+  explicit ServiceLabelService(uint8_t ns);
+  virtual ~ServiceLabelService();
 };
 
 }  // namespace hap

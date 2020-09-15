@@ -38,9 +38,6 @@ class Outlet : public ShellySwitch {
   HAPError HandleOnWrite(HAPAccessoryServerRef *server,
                          const HAPBoolCharacteristicWriteRequest *request,
                          bool value);
-  HAPError HandleInUseRead(HAPAccessoryServerRef *server,
-                           const HAPBoolCharacteristicReadRequest *request,
-                           bool *value);
 };
 
 }  // namespace hap

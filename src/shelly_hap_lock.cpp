@@ -39,33 +39,24 @@ Status Lock::Init() {
   svc_.serviceType = &kHAPServiceType_LockMechanism;
   svc_.debugDescription = kHAPServiceDebugDescription_LockMechanism;
   // Name
-  std::unique_ptr<hap::Characteristic> name_char(new StringCharacteristic(
-      iid++, &kHAPCharacteristicType_Name, 64, cfg_->name,
-      kHAPCharacteristicDebugDescription_Name));
-  hap_chars_.push_back(name_char->GetBase());
-  chars_.emplace_back(std::move(name_char));
+  AddNameChar(iid++, cfg_->name);
   // Current State
-  std::unique_ptr<hap::Characteristic> cur_state_char(new UInt8Characteristic(
+  auto *cur_state_char = new UInt8Characteristic(
       iid++, &kHAPCharacteristicType_LockCurrentState, 0, 3, 1,
       std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
       true /* supports_notification */, nullptr /* write_handler */,
-      kHAPCharacteristicDebugDescription_LockCurrentState));
-  hap_chars_.push_back(cur_state_char->GetBase());
+      kHAPCharacteristicDebugDescription_LockCurrentState);
   state_notify_char_ = cur_state_char->GetBase();
-  chars_.emplace_back(std::move(cur_state_char));
+  AddChar(cur_state_char);
   // Target State
-  std::unique_ptr<hap::Characteristic> tgt_state_char(new UInt8Characteristic(
+  auto *tgt_state_char = new UInt8Characteristic(
       iid++, &kHAPCharacteristicType_LockTargetState, 0, 3, 1,
       std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
       true /* supports_notification */,
       std::bind(&Lock::HandleTargetStateWrite, this, _1, _2, _3),
-      kHAPCharacteristicDebugDescription_LockTargetState));
-  hap_chars_.push_back(tgt_state_char->GetBase());
+      kHAPCharacteristicDebugDescription_LockTargetState);
   tgt_state_notify_char_ = tgt_state_char->GetBase();
-  chars_.emplace_back(std::move(tgt_state_char));
-
-  hap_chars_.push_back(nullptr);
-  svc_.characteristics = hap_chars_.data();
+  AddChar(tgt_state_char);
 
   return Status::OK();
 }

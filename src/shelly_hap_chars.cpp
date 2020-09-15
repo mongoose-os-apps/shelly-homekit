@@ -72,6 +72,10 @@ void StringCharacteristic::SetValue(const std::string &value) {
   value_ = value;
 }
 
+const std::string &StringCharacteristic::GetValue() const {
+  return value_;
+}
+
 // static
 HAPError StringCharacteristic::HandleReadCB(
     HAPAccessoryServerRef *server,
