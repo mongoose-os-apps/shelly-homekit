@@ -1,9 +1,13 @@
-.PHONY: build format fs upload upload-beta Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
+MAKEFLAGS += --warn-undefined-variables
+
+.PHONY: build format release upload upload-beta Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
 
 MOS ?= mos
 LOCAL ?= 0
 CLEAN ?= 0
 VERBOSE ?= 0
+RELEASE ?= 0
+RELEASE_SUFFIX ?=
 MOS_BUILD_FLAGS ?=
 BUILD_DIR ?= ./build_$*
 
@@ -22,9 +26,8 @@ endif
 
 build: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS
 
-upload: upload-Shelly1 upload-Shelly1PM upload-Shelly2 upload-Shelly25 upload-ShellyPlugS
-
-upload-beta: upload-beta-Shelly1 upload-beta-Shelly1PM upload-beta-Shelly2 upload-beta-Shelly25 upload-beta-ShellyPlugS
+release:
+	$(MAKE) build CLEAN=1 RELEASE=1
 
 PLATFORM ?= esp8266
 
@@ -57,13 +60,15 @@ fs/style.css.gz: fs_src/style.css
 build-%: fs/index.html.gz fs/style.css.gz
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
 	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL)
-	cp $(BUILD_DIR)/fw.zip shelly-homekit-$*.zip
-
-upload-%:
-	scp shelly-homekit-$*.zip rojer.me:www/files/shelly/shelly-homekit-$*.zip
-
-upload-beta-%:
-	scp shelly-homekit-$*.zip rojer.me:www/files/shelly/beta/shelly-homekit-$*.zip
+ifeq "$(RELEASE)" "1"
+	dir=releases/`jq -r .build_version $(BUILD_DIR)/gen/build_info.json`$(RELEASE_SUFFIX) && \
+	  mkdir -p $$dir && \
+	  cp -v $(BUILD_DIR)/fw.zip $$dir/shelly-homekit-$*.zip && \
+	  cp -v $(BUILD_DIR)/objs/*.elf $$dir/shelly-homekit-$*.elf
+endif
 
 format:
-	clang-format -i src/shelly_*
+	clang-format -i src/*
+
+upload:
+	rsync -azv releases/* rojer.me:www/files/shelly/

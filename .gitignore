@@ -2,5 +2,6 @@ binlibs/
 build/
 build_*/
 deps/
+releases/
 .DS_Store
 *.zip
