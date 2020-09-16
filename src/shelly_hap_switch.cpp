@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_switch.h"
+#include "shelly_hap_switch.hpp"
 
 #include "mgos.h"
 
-#include "shelly_hap_chars.h"
+#include "shelly_hap_chars.hpp"
 
 namespace shelly {
 namespace hap {

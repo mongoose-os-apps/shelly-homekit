@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_lock.h"
+#include "shelly_hap_lock.hpp"
 
 namespace shelly {
 namespace hap {

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "shelly_common.h"
+#include "shelly_common.hpp"
 
 namespace shelly {
 

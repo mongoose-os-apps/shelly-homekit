@@ -23,14 +23,14 @@
 #include "mgos_sys_config.h"
 #include "mgos_timers.h"
 
-#include "shelly_common.h"
-#include "shelly_component.h"
-#include "shelly_hap_chars.h"
-#include "shelly_hap_service.h"
-#include "shelly_input.h"
-#include "shelly_output.h"
-#include "shelly_pm.h"
-#include "shelly_switch.h"
+#include "shelly_common.hpp"
+#include "shelly_component.hpp"
+#include "shelly_hap_chars.hpp"
+#include "shelly_hap_service.hpp"
+#include "shelly_input.hpp"
+#include "shelly_output.hpp"
+#include "shelly_pm.hpp"
+#include "shelly_switch.hpp"
 
 namespace shelly {
 namespace hap {

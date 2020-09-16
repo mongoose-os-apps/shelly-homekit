@@ -17,27 +17,38 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
-#include "shelly_common.h"
+#include "shelly_common.hpp"
 
 namespace shelly {
 
-class PowerMeter {
+class Output {
  public:
-  PowerMeter() {
-  }
-  virtual ~PowerMeter() {
-  }
-  virtual int id() const = 0;
-  virtual StatusOr<float> GetPowerW() = 0;
-  virtual StatusOr<float> GetEnergyWH() = 0;
+  explicit Output(int id);
+  virtual ~Output();
+
+  int id() const;
+  virtual bool GetState() = 0;
+  virtual Status SetState(bool on, const char *source) = 0;
 
  private:
-  PowerMeter(const PowerMeter &other) = delete;
+  const int id_;
+  Output(const Output &other) = delete;
 };
 
-StatusOr<std::vector<std::unique_ptr<PowerMeter>>> PowerMeterInit();
+class OutputPin : public Output {
+ public:
+  OutputPin(int id, int pin, int on_value);
+  virtual ~OutputPin();
+
+  // Output interface impl.
+  bool GetState() override;
+  Status SetState(bool on, const char *source) override;
+
+ private:
+  const int pin_;
+  const int on_value_;
+
+  OutputPin(const OutputPin &other) = delete;
+};
 
 }  // namespace shelly

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "shelly_switch.h"
+#include "shelly_switch.hpp"
 
 namespace shelly {
 namespace hap {

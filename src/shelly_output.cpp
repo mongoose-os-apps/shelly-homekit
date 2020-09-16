@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_output.h"
+#include "shelly_output.hpp"
 
 #include "mgos.h"
 #include "mgos_gpio.h"

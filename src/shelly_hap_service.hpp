@@ -21,8 +21,8 @@
 
 #include "HAP.h"
 
-#include "shelly_common.h"
-#include "shelly_hap_chars.h"
+#include "shelly_common.hpp"
+#include "shelly_hap_chars.hpp"
 
 #define IID_BASE_SWITCH 0x100
 #define IID_STEP_SWITCH 4

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_pm.h"
+#include "shelly_pm.hpp"
 
 #ifdef MGOS_HAVE_ADE7953
 

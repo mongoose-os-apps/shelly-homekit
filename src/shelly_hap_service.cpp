@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_service.h"
-#include "shelly_common.h"
+#include "shelly_hap_service.hpp"
+#include "shelly_common.hpp"
 
 namespace shelly {
 namespace hap {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_chars.h"
+#include "shelly_hap_chars.hpp"
 
 #include <cstring>
 

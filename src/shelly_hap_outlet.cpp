@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_outlet.h"
+#include "shelly_hap_outlet.hpp"
 
 namespace shelly {
 namespace hap {

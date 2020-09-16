@@ -23,7 +23,7 @@
 #include "mgos_gpio.h"
 #include "mgos_timers.h"
 
-#include "shelly_common.h"
+#include "shelly_common.hpp"
 
 namespace shelly {
 

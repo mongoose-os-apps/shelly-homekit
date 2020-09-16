@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_input.h"
+#include "shelly_input.hpp"
 
 #include "mgos.h"
 #include "mgos_gpio.h"

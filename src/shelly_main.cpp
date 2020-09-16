@@ -33,14 +33,14 @@
 #include "HAPPlatformServiceDiscovery+Init.h"
 #include "HAPPlatformTCPStreamManager+Init.h"
 
-#include "shelly_debug.h"
-#include "shelly_hap_lock.h"
-#include "shelly_hap_outlet.h"
-#include "shelly_hap_stateless_switch.h"
-#include "shelly_hap_switch.h"
-#include "shelly_input.h"
-#include "shelly_output.h"
-#include "shelly_rpc_service.h"
+#include "shelly_debug.hpp"
+#include "shelly_hap_lock.hpp"
+#include "shelly_hap_outlet.hpp"
+#include "shelly_hap_stateless_switch.hpp"
+#include "shelly_hap_switch.hpp"
+#include "shelly_input.hpp"
+#include "shelly_output.hpp"
+#include "shelly_rpc_service.hpp"
 
 #define KVS_FILE_NAME "kvs.json"
 #define NUM_SESSIONS 9

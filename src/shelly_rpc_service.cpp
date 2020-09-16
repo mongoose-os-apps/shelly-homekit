@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_rpc_service.h"
+#include "shelly_rpc_service.hpp"
 
 #include "mgos.h"
 #include "mgos_dns_sd.h"
@@ -23,9 +23,9 @@
 
 #include "HAPAccessoryServer+Internal.h"
 
-#include "shelly_debug.h"
-#include "shelly_hap_switch.h"
-#include "shelly_main.h"
+#include "shelly_debug.hpp"
+#include "shelly_hap_switch.hpp"
+#include "shelly_main.hpp"
 
 namespace shelly {
 

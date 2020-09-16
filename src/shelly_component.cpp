@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_component.h"
+#include "shelly_component.hpp"
 
 namespace shelly {
 

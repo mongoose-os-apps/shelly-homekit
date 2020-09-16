@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 
-#include "shelly_component.h"
+#include "shelly_component.hpp"
 
 namespace shelly {
 

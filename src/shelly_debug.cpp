@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_debug.h"
+#include "shelly_debug.hpp"
 
 #include "mgos.h"
 #include "mgos_http_server.h"
