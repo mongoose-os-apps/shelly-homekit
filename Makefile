@@ -1,6 +1,6 @@
 MAKEFLAGS += --warn-undefined-variables
 
-.PHONY: build format release upload upload-beta Shelly1 Shelly1PM Shelly25 Shelly2 Shelly-Plug-S
+.PHONY: build format release upload Shelly1 Shelly1PM Shelly25 Shelly2 ShellyPlugS
 
 MOS ?= mos
 LOCAL ?= 0
@@ -24,7 +24,7 @@ ifeq "$(VERBOSE)" "1"
   MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
-build: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS
+build: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyPlugS ShellyU
 
 release:
 	$(MAKE) build CLEAN=1 RELEASE=1
@@ -37,13 +37,13 @@ Shelly1: build-Shelly1
 Shelly1PM: build-Shelly1PM
 	@true
 
-ShellyPlugS: build-ShellyPlugS
-	@true
-
 Shelly2: build-Shelly2
 	@true
 
 Shelly25: build-Shelly25
+	@true
+
+ShellyPlugS: build-ShellyPlugS
 	@true
 
 ShellyU: PLATFORM=ubuntu
@@ -68,7 +68,7 @@ ifeq "$(RELEASE)" "1"
 endif
 
 format:
-	clang-format -i src/*
+	find src -name \*.cpp -o -name \*.hpp | xargs clang-format -i
 
 upload:
 	rsync -azv releases/* rojer.me:www/files/shelly/

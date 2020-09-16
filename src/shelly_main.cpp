@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include "shelly_main.hpp"
+
 #include "mgos.h"
 #include "mgos_app.h"
 #include "mgos_hap.h"
@@ -183,55 +185,63 @@ static void DoReset(void *arg) {
 #endif
 }
 
-static void HandleInputResetSequence(InputPin *in, Input::Event ev,
-                                     bool cur_state) {
+void HandleInputResetSequence(InputPin *in, int out_gpio, Input::Event ev,
+                              bool cur_state) {
   if (ev != Input::Event::kReset) return;
   LOG(LL_INFO, ("%d: Reset sequence detected", in->id()));
-  intptr_t out_gpio = -1;
-  switch (in->id()) {
-#ifdef MGOS_CONFIG_HAVE_SW1
-    case 1:
-      out_gpio = mgos_sys_config_get_sw1_out_gpio();
-      break;
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-    case 2:
-      out_gpio = mgos_sys_config_get_sw2_out_gpio();
-      break;
-#endif
-  }
   if (out_gpio >= 0) {
     mgos_gpio_blink(out_gpio, 100, 100);
   }
-  mgos_set_timer(600, 0, DoReset, (void *) out_gpio);
+  mgos_set_timer(600, 0, DoReset, (void *) (intptr_t) out_gpio);
   (void) cur_state;
 }
 
-static std::unique_ptr<ShellySwitch> CreateSwitchService(
-    int id, struct mgos_config_sw *cfg) {
+void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
+                     const struct mgos_config_ssw *ssw_cfg,
+                     std::vector<std::unique_ptr<Component>> *components,
+                     std::vector<const HAPService *> *services,
+                     hap::ServiceLabelService *sls,
+                     HAPAccessoryServerRef *server, HAPAccessory *accessory) {
   std::unique_ptr<ShellySwitch> sw;
   Input *in = FindInput(id);
   Output *out = FindOutput(id);
   PowerMeter *pm = FindPM(id);
-  switch (cfg->svc_type) {
+  struct mgos_config_sw *cfg = (struct mgos_config_sw *) sw_cfg;
+  switch (sw_cfg->svc_type) {
     case 0:
-      sw.reset(new hap::Switch(id, in, out, pm, cfg, &s_server, &s_accessory));
+      sw.reset(new hap::Switch(id, in, out, pm, cfg, server, accessory));
       break;
     case 1:
-      sw.reset(new hap::Outlet(id, in, out, pm, cfg, &s_server, &s_accessory));
+      sw.reset(new hap::Outlet(id, in, out, pm, cfg, server, accessory));
       break;
     case 2:
-      sw.reset(new hap::Lock(id, in, out, pm, cfg, &s_server, &s_accessory));
+      sw.reset(new hap::Lock(id, in, out, pm, cfg, server, accessory));
       break;
     default:
-      sw.reset(new ShellySwitch(id, in, out, pm, cfg, &s_server, &s_accessory));
+      sw.reset(new ShellySwitch(id, in, out, pm, cfg, server, accessory));
       break;
   }
   auto st = sw->Init();
   if (!st.ok()) {
     sw.reset();
   }
-  return sw;
+
+  if (sw != nullptr) {
+    const HAPService *svc = sw->GetHAPService();
+    if (svc != nullptr) services->push_back(svc);
+    components->push_back(std::move(sw));
+  }
+  if (sw_cfg->in_mode == (int) ShellySwitch::InMode::kDetached) {
+    LOG(LL_INFO, ("Creating a stateless switch for input %d", id));
+    std::unique_ptr<hap::StatelessSwitch> ssw(new hap::StatelessSwitch(
+        id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, server,
+        accessory, sls->iid()));
+    if (ssw != nullptr && ssw->Init().ok()) {
+      sls->AddLink(ssw->iid());
+      services->push_back(ssw->GetHAPService());
+      components->push_back(std::move(ssw));
+    }
+  }
 }
 
 std::vector<const HAPService *> CreateHAPServices() {
@@ -242,52 +252,9 @@ std::vector<const HAPService *> CreateHAPServices() {
   services.push_back(&mgos_hap_pairing_service);
   sls.reset(new hap::ServiceLabelService(1 /* numerals */));
   services.push_back(sls->GetHAPService());
-#ifdef MGOS_CONFIG_HAVE_SW1
-  {
-    auto *sw1_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw1();
-    auto sw1 = CreateSwitchService(1, sw1_cfg);
-    if (sw1 != nullptr) {
-      const HAPService *svc = sw1->GetHAPService();
-      if (svc != nullptr) services.push_back(svc);
-      g_components.push_back(std::move(sw1));
-    }
-    if (sw1_cfg->in_mode == (int) ShellySwitch::InMode::kDetached) {
-      LOG(LL_INFO, ("Creating a stateless switch for input %d", 1));
-      auto *ssw1_cfg = (struct mgos_config_ssw *) mgos_sys_config_get_ssw1();
-      std::unique_ptr<hap::StatelessSwitch> ssw1(new hap::StatelessSwitch(
-          1, FindInput(1), ssw1_cfg, &s_server, &s_accessory, sls->iid()));
-      if (ssw1 != nullptr && ssw1->Init().ok()) {
-        sls->AddLink(ssw1->iid());
-        services.push_back(ssw1->GetHAPService());
-        g_components.push_back(std::move(ssw1));
-      }
-    }
-  }
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW2
-  {
-    auto *sw2_cfg = (struct mgos_config_sw *) mgos_sys_config_get_sw2();
-    auto sw2 = CreateSwitchService(2, sw2_cfg);
-    if (sw2 != nullptr) {
-      const HAPService *svc = sw2->GetHAPService();
-      if (svc != nullptr) services.push_back(svc);
-      g_components.push_back(std::move(sw2));
-    }
-    if (sw2_cfg->in_mode == (int) ShellySwitch::InMode::kDetached) {
-      LOG(LL_INFO, ("Creating a stateless switch for input %d", 2));
-      auto *ssw2_cfg = (struct mgos_config_ssw *) mgos_sys_config_get_ssw2();
-      std::unique_ptr<hap::StatelessSwitch> ssw2(new hap::StatelessSwitch(
-          2, FindInput(2), ssw2_cfg, &s_server, &s_accessory, sls->iid()));
-      if (ssw2 != nullptr && ssw2->Init().ok()) {
-        sls->AddLink(ssw2->iid());
-        services.push_back(ssw2->GetHAPService());
-        g_components.push_back(std::move(ssw2));
-      }
-    }
-  }
-#endif
+  CreateComponents(&g_components, &services, sls.get(), &s_server,
+                   &s_accessory);
   services.push_back(nullptr);
-  (void) HandleInputResetSequence;
   return services;
 }
 
@@ -366,7 +333,7 @@ static void CheckLED(int pin, bool led_act) {
     s_identify_count--;
     goto out;
   }
-#if MGOS_HAVE_WIFI
+#ifdef MGOS_HAVE_WIFI
   // Are we connecting to wifi right now?
   switch (mgos_wifi_get_status()) {
     case MGOS_WIFI_CONNECTING:
@@ -394,7 +361,7 @@ static void CheckLED(int pin, bool led_act) {
     on_ms = 25;
     LOG(LL_DEBUG, ("LED: HAP provisioning"));
   } else {
-#if MGOS_HAVE_WIFI
+#ifdef MGOS_HAVE_WIFI
     // Indicate WiFi provisioning status.
     if (mgos_sys_config_get_wifi_ap_enable()) {
       LOG(LL_DEBUG, ("LED: WiFi provisioning"));
@@ -540,41 +507,7 @@ bool InitApp() {
                          nullptr /* msg */);
   }
 
-  // Initialize inputs, outputs and other peripherals.
-  //
-  // Note for Shelly2.5: SW2 output (GPIO15) must be initialized before
-  // SW1 input (GPIO13), doing it in reverse turns on SW2.
-#ifdef MGOS_CONFIG_HAVE_SW2
-  {
-    const auto *sw2_cfg = mgos_sys_config_get_sw2();
-    std::unique_ptr<InputPin> in2(
-        new InputPin(2, sw2_cfg->in_gpio, 1, MGOS_GPIO_PULL_NONE, true));
-    std::unique_ptr<OutputPin> out2(
-        new OutputPin(2, sw2_cfg->out_gpio, sw2_cfg->out_on_value));
-    in2->AddHandler(std::bind(&HandleInputResetSequence, in2.get(), _1, _2));
-    s_outputs.push_back(std::move(out2));
-    s_inputs.push_back(std::move(in2));
-  }
-#endif
-#ifdef MGOS_CONFIG_HAVE_SW1
-  {
-    const auto *sw1_cfg = mgos_sys_config_get_sw1();
-    std::unique_ptr<InputPin> in1(
-        new InputPin(1, sw1_cfg->in_gpio, 1, MGOS_GPIO_PULL_NONE, true));
-    std::unique_ptr<OutputPin> out1(
-        new OutputPin(1, sw1_cfg->out_gpio, sw1_cfg->out_on_value));
-    in1->AddHandler(std::bind(&HandleInputResetSequence, in1.get(), _1, _2));
-    s_outputs.push_back(std::move(out1));
-    s_inputs.push_back(std::move(in1));
-  }
-#endif
-  auto pmss = PowerMeterInit();
-  if (pmss.ok()) {
-    s_pms = pmss.MoveValueOrDie();
-  } else {
-    LOG(LL_INFO,
-        ("Power meter init failed: %s", pmss.status().error_message().c_str()));
-  }
+  CreatePeripherals(&s_inputs, &s_outputs, &s_pms);
 
   // Key-value store.
   static const HAPPlatformKeyValueStoreOptions kvs_opts = {

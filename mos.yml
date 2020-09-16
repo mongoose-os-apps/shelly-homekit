@@ -9,6 +9,7 @@ mongoose_os_version: latest
 
 sources:
   - src
+  - src/${build_vars.MODEL}
 
 filesystem:
   - fs
@@ -100,7 +101,7 @@ conds:
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio", 5]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Shelly Input"]
+        - ["ssw1.name", "Input"]
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
@@ -133,7 +134,7 @@ conds:
         - ["sw1.out_gpio", 15]
         - ["sw1.in_gpio", 4]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Shelly Input"]
+        - ["ssw1.name", "Input"]
 
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
@@ -164,7 +165,7 @@ conds:
         - ["sw1.out_gpio", 15]
         - ["sw1.in_gpio", 13]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Shelly Input"]
+        - ["ssw1.name", "Input"]
 
   - when: build_vars.MODEL == "Shelly2"
     apply:
@@ -194,14 +195,14 @@ conds:
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio",  12]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Shelly Input 1"]
+        - ["ssw1.name", "Input 1"]
         - ["sw2", "sw", {"title": "SW2 settings"}]
         - ["sw2.id", 2]
         - ["sw2.name", "Shelly SW2"]
         - ["sw2.out_gpio", 5]
         - ["sw2.in_gpio",  14]
         - ["ssw2", "ssw", {"title": "SSW2 settings"}]
-        - ["ssw2.name", "Shelly Input 2"]
+        - ["ssw2.name", "Input 2"]
 
   - when: build_vars.MODEL == "Shelly25"
     apply:
@@ -241,14 +242,14 @@ conds:
         - ["sw1.out_gpio", 4]
         - ["sw1.in_gpio",  13]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Shelly Input 1"]
+        - ["ssw1.name", "Input 1"]
         - ["sw2", "sw", {"title": "SW2 settings"}]
         - ["sw2.id", 2]
         - ["sw2.name", "Shelly SW2"]
         - ["sw2.out_gpio", 15]
         - ["sw2.in_gpio",  5]
         - ["ssw2", "ssw", {"title": "SSW2 settings"}]
-        - ["ssw2.name", "Shelly Input 2"]
+        - ["ssw2.name", "Input 2"]
 
   - when: mos.platform != "ubuntu"
     apply:
