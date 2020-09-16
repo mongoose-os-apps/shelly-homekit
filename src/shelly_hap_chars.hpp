@@ -44,6 +44,8 @@ class Characteristic {
 
  private:
   static std::vector<Characteristic *> instances_;
+
+  Characteristic(const Characteristic &other) = delete;
 };
 
 class StringCharacteristic : public Characteristic {

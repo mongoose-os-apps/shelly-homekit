@@ -118,41 +118,25 @@ static HAPPlatform s_platform = {
         },
 };
 
-static bool s_recreate_services = false;
+static bool s_recreate_acc = false;
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
 
 static void CheckLED(int pin, bool led_act);
 
-HAPError IdentifyCB(HAPAccessoryServerRef *server,
-                    const HAPAccessoryIdentifyRequest *request, void *context) {
+static HAPError IdentifyCB(const HAPAccessoryIdentifyRequest *request) {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
   s_identify_count = 3;
   CheckLED(LED_GPIO, LED_ON);
-  (void) server;
   (void) request;
-  (void) context;
   return kHAPError_None;
 }
-
-static HAPAccessory s_accessory = {
-    .aid = 1,
-    .category = kHAPAccessoryCategory_Switches,
-    .name = nullptr,  // Set from config,
-    .manufacturer = CS_STRINGIFY_MACRO(PRODUCT_VENDOR),
-    .model = CS_STRINGIFY_MACRO(PRODUCT_MODEL),
-    .serialNumber = nullptr,     // Set from config.
-    .firmwareVersion = nullptr,  // Set from build_id.
-    .hardwareVersion = CS_STRINGIFY_MACRO(PRODUCT_HW_REV),
-    .services = nullptr,  // Set later
-    .callbacks = {.identify = IdentifyCB},
-};
 
 static std::vector<std::unique_ptr<Input>> s_inputs;
 static std::vector<std::unique_ptr<Output>> s_outputs;
 static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 std::vector<std::unique_ptr<Component>> g_components;
-std::vector<const HAPService *> s_hap_services;
+static std::unique_ptr<hap::Accessory> s_acc;
 
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
@@ -199,26 +183,26 @@ void HandleInputResetSequence(InputPin *in, int out_gpio, Input::Event ev,
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_ssw *ssw_cfg,
                      std::vector<std::unique_ptr<Component>> *components,
-                     std::vector<const HAPService *> *services,
-                     hap::ServiceLabelService *sls,
-                     HAPAccessoryServerRef *server, HAPAccessory *accessory) {
+                     hap::Accessory *acc, hap::ServiceLabelService *sls,
+                     HAPAccessoryServerRef *svr) {
   std::unique_ptr<ShellySwitch> sw;
   Input *in = FindInput(id);
   Output *out = FindOutput(id);
   PowerMeter *pm = FindPM(id);
+  const HAPAccessory *hap_acc = acc->GetHAPAccessory();
   struct mgos_config_sw *cfg = (struct mgos_config_sw *) sw_cfg;
   switch (sw_cfg->svc_type) {
     case 0:
-      sw.reset(new hap::Switch(id, in, out, pm, cfg, server, accessory));
+      sw.reset(new hap::Switch(id, in, out, pm, cfg, svr, hap_acc));
       break;
     case 1:
-      sw.reset(new hap::Outlet(id, in, out, pm, cfg, server, accessory));
+      sw.reset(new hap::Outlet(id, in, out, pm, cfg, svr, hap_acc));
       break;
     case 2:
-      sw.reset(new hap::Lock(id, in, out, pm, cfg, server, accessory));
+      sw.reset(new hap::Lock(id, in, out, pm, cfg, svr, hap_acc));
       break;
     default:
-      sw.reset(new ShellySwitch(id, in, out, pm, cfg, server, accessory));
+      sw.reset(new ShellySwitch(id, in, out, pm, cfg, svr, hap_acc));
       break;
   }
   auto st = sw->Init();
@@ -227,69 +211,70 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
   }
 
   if (sw != nullptr) {
-    const HAPService *svc = sw->GetHAPService();
-    if (svc != nullptr) services->push_back(svc);
+    acc->AddHAPService(sw->GetHAPService());
     components->push_back(std::move(sw));
   }
   if (sw_cfg->in_mode == (int) ShellySwitch::InMode::kDetached) {
     LOG(LL_INFO, ("Creating a stateless switch for input %d", id));
     std::unique_ptr<hap::StatelessSwitch> ssw(new hap::StatelessSwitch(
-        id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, server,
-        accessory, sls->iid()));
+        id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, svr, hap_acc,
+        sls->iid()));
     if (ssw != nullptr && ssw->Init().ok()) {
       sls->AddLink(ssw->iid());
-      services->push_back(ssw->GetHAPService());
+      acc->AddHAPService(ssw->GetHAPService());
       components->push_back(std::move(ssw));
     }
   }
 }
 
-std::vector<const HAPService *> CreateHAPServices() {
-  static std::unique_ptr<hap::ServiceLabelService> sls;
-  std::vector<const HAPService *> services;
-  services.push_back(&mgos_hap_accessory_information_service);
-  services.push_back(&mgos_hap_protocol_information_service);
-  services.push_back(&mgos_hap_pairing_service);
-  sls.reset(new hap::ServiceLabelService(1 /* numerals */));
-  services.push_back(sls->GetHAPService());
-  CreateComponents(&g_components, &services, sls.get(), &s_server,
-                   &s_accessory);
-  services.push_back(nullptr);
-  return services;
+std::unique_ptr<hap::Accessory> CreateHAPAccessories() {
+  std::unique_ptr<hap::Accessory> acc(
+      new hap::Accessory(HAP_AID_PRIMARY, kHAPAccessoryCategory_Switches,
+                         mgos_sys_config_get_device_id(), &IdentifyCB));
+  acc->AddHAPService(&mgos_hap_accessory_information_service);
+  acc->AddHAPService(&mgos_hap_protocol_information_service);
+  acc->AddHAPService(&mgos_hap_pairing_service);
+  std::unique_ptr<hap::ServiceLabelService> sls(
+      new hap::ServiceLabelService(1 /* numerals */));
+  CreateComponents(&g_components, acc.get(), sls.get(), &s_server);
+  acc->AddService(std::move(sls));
+  return acc;
 }
 
 static bool StartHAPServer(bool quiet) {
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
     return true;
   }
-  if (!mgos_hap_config_valid()) {
-    if (!quiet) {
-      LOG(LL_INFO, ("=== Accessory not provisioned"));
-    }
-  }
-  if (s_accessory.services != nullptr && s_recreate_services) {
-    LOG(LL_INFO, ("=== Re-creating services"));
-    s_accessory.services = nullptr;
-    s_hap_services.clear();
+  if (s_acc != nullptr && s_recreate_acc) {
+    LOG(LL_INFO, ("=== Reconfiguring accessories"));
+    s_acc.reset();
     g_components.clear();
-    s_recreate_services = false;
+    s_recreate_acc = false;
     if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
       LOG(LL_ERROR, ("Failed to increment configuration number"));
     }
   }
+  if (s_acc == nullptr) {
+    LOG(LL_INFO, ("=== Creating accessories"));
+    s_acc = CreateHAPAccessories();
+  }
+  if (!mgos_hap_config_valid()) {
+    if (!quiet) {
+      LOG(LL_INFO, ("=== Accessory not provisioned"));
+    }
+    return false;
+  }
   uint16_t cn;
   if (HAPAccessoryServerGetCN(&s_kvs, &cn) == kHAPError_None) {
-    LOG(LL_INFO,
-        ("=== Accessory provisioned, starting HAP server (CN %d)", cn));
+    LOG(LL_INFO, ("=== Starting HAP server (CN %d)", cn));
   }
-
-  if (s_accessory.services == nullptr) {
-    s_hap_services = CreateHAPServices();
-    s_accessory.services = s_hap_services.data();
-  }
-
-  HAPAccessoryServerStart(&s_server, &s_accessory);
+  HAPAccessoryServerStart(&s_server, s_acc->GetHAPAccessory());
   return true;
+}
+
+static void StartHAPServerCB(HAPAccessoryServerRef *server) {
+  StartHAPServer(false /* quiet */);
+  (void) server;
 }
 
 static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server,
@@ -481,7 +466,7 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
 }
 
 void RestartHAPServer() {
-  s_recreate_services = true;
+  s_recreate_acc = true;
   if (HAPAccessoryServerGetState(&s_server) ==
       kHAPAccessoryServerState_Running) {
     HAPAccessoryServerStop(&s_server);
@@ -532,15 +517,6 @@ bool InitApp() {
 
   s_callbacks.handleUpdatedState = HAPServerStateUpdateCB;
 
-  s_accessory.name = mgos_sys_config_get_device_id();
-  s_accessory.firmwareVersion = mgos_sys_ro_vars_get_fw_version();
-  s_accessory.serialNumber = mgos_sys_config_get_device_sn();
-  if (s_accessory.serialNumber == nullptr) {
-    static char sn[13] = "????????????";
-    mgos_expand_mac_address_placeholders(sn);
-    s_accessory.serialNumber = sn;
-  }
-
   // Initialize accessory server.
   HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
                            &s_callbacks, nullptr /* context */);
@@ -550,7 +526,7 @@ bool InitApp() {
   // House-keeping timer.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, StatusTimerCB, nullptr);
 
-  mgos_hap_add_rpc_service(&s_server, &s_accessory, &s_kvs);
+  mgos_hap_add_rpc_service_cb(&s_server, StartHAPServerCB);
 
   if (BTN_GPIO >= 0) {
     mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);

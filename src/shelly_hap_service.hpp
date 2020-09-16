@@ -55,8 +55,8 @@ class Service {
 
  protected:
   HAPService svc_;
-  std::vector<std::unique_ptr<hap::Characteristic>> chars_;
-  std::vector<HAPCharacteristic *> hap_chars_;
+  std::vector<std::unique_ptr<Characteristic>> chars_;
+  std::vector<const HAPCharacteristic *> hap_chars_;
 
  private:
   std::vector<uint16_t> links_;

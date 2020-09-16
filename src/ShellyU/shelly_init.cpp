@@ -31,12 +31,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   (void) pms;
 }
 
-void CreateComponents(std::vector<std::unique_ptr<Component>> *components,
-                      std::vector<const HAPService *> *services,
-                      hap::ServiceLabelService *sls,
-                      HAPAccessoryServerRef *server, HAPAccessory *accessory) {
+void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
+                      hap::Accessory *acc, hap::ServiceLabelService *sls,
+                      HAPAccessoryServerRef *svr) {
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
-                  components, services, sls, server, accessory);
+                  comps, acc, sls, svr);
 }
 
 }  // namespace shelly

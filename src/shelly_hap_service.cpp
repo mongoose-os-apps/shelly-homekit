@@ -16,6 +16,7 @@
  */
 
 #include "shelly_hap_service.hpp"
+
 #include "shelly_common.hpp"
 
 namespace shelly {
@@ -40,7 +41,7 @@ uint16_t Service::iid() const {
 }
 
 void Service::AddChar(Characteristic *ch) {
-  if (hap_chars_.size() > 0) hap_chars_.pop_back();
+  if (!hap_chars_.empty()) hap_chars_.pop_back();
   chars_.emplace_back(std::unique_ptr<Characteristic>(ch));
   hap_chars_.push_back(ch->GetBase());
   hap_chars_.push_back(nullptr);

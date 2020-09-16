@@ -22,8 +22,12 @@
 namespace shelly {
 namespace hap {
 
+// static
+std::vector<Characteristic *> Characteristic::instances_;
+
 Characteristic::Characteristic() {
   instances_.push_back(this);
+  instances_.shrink_to_fit();
 }
 
 Characteristic::~Characteristic() {
@@ -42,9 +46,6 @@ Characteristic *Characteristic::FindInstance(const HAPCharacteristic *base) {
   }
   return nullptr;
 }
-
-// static
-std::vector<Characteristic *> Characteristic::instances_;
 
 StringCharacteristic::StringCharacteristic(uint16_t iid, const HAPUUID *type,
                                            uint16_t max_length,
