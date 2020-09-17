@@ -71,23 +71,5 @@ Status Outlet::Init() {
   return Status::OK();
 }
 
-HAPError Outlet::HandleOnRead(HAPAccessoryServerRef *server,
-                              const HAPBoolCharacteristicReadRequest *request,
-                              bool *value) {
-  *value = out_->GetState();
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError Outlet::HandleOnWrite(HAPAccessoryServerRef *server,
-                               const HAPBoolCharacteristicWriteRequest *request,
-                               bool value) {
-  SetState(value, "HAP");
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
 }  // namespace hap
 }  // namespace shelly

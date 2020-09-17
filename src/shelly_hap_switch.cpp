@@ -65,23 +65,5 @@ Status Switch::Init() {
   return Status::OK();
 }
 
-HAPError Switch::HandleOnRead(HAPAccessoryServerRef *server,
-                              const HAPBoolCharacteristicReadRequest *request,
-                              bool *value) {
-  *value = out_->GetState();
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError Switch::HandleOnWrite(HAPAccessoryServerRef *server,
-                               const HAPBoolCharacteristicWriteRequest *request,
-                               bool value) {
-  SetState(value, "HAP");
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
 }  // namespace hap
 }  // namespace shelly

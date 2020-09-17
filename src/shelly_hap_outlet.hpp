@@ -30,14 +30,6 @@ class Outlet : public ShellySwitch {
   virtual ~Outlet();
 
   Status Init();
-
- private:
-  HAPError HandleOnRead(HAPAccessoryServerRef *server,
-                        const HAPBoolCharacteristicReadRequest *request,
-                        bool *value);
-  HAPError HandleOnWrite(HAPAccessoryServerRef *server,
-                         const HAPBoolCharacteristicWriteRequest *request,
-                         bool value);
 };
 
 }  // namespace hap
