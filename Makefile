@@ -3,7 +3,8 @@ MAKEFLAGS += --warn-undefined-variables
 .PHONY: build format release upload Shelly1 Shelly1PM Shelly25 Shelly2 ShellyPlugS
 
 MOS ?= mos
-LOCAL ?= 0
+# Build locally by default if Docker is available.
+LOCAL ?= $(shell which docker> /dev/null && echo -n 1 || echo -n 0)
 CLEAN ?= 0
 VERBOSE ?= 0
 RELEASE ?= 0
