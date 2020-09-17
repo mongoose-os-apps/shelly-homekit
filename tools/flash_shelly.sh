@@ -16,7 +16,7 @@
 #  limitations under the License.
 #
 #  This script will probe for any shelly device on the network and it will
-#  attemp to update them to the latest firmware version availible.
+#  attemp to update them to the latest firmware version available.
 #  This script will not flash any firmware to a device that is not already on a
 #  version of this firmware, if you are looking to flash your device from stock
 #  or any other firmware please follow instructions here:
@@ -162,7 +162,7 @@ function probe_info {
   local flash=false
   local info=null      # firmware versions info
   local model=null     # device model
-  local lfw=null       # latest firmware availible
+  local lfw=null       # latest firmware available
   local cfw=null       # current firmware on device
   local cfw_type=null  # current firmware type
   local device=$1
@@ -274,7 +274,7 @@ function probe_info {
   fi
   if [[ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]]; then
     unset dlurl
-    lfw="Not Supported"
+    lfw="Not available"
   fi
 
   if [ $action != "list" ]; then
@@ -307,7 +307,7 @@ function probe_info {
       elif [ $mode == "keep" ]; then
         perform_flash=true
       fi
-    elif [ $forced_version == true ]; then
+    elif [ $forced_version == true ] && [ ! -z $dlurl ]; then
       perform_flash=true
     else
       perform_flash=false
@@ -333,7 +333,7 @@ function probe_info {
       fi
       echo "Would have been $keyword..."
     elif [ -z $dlurl ]; then
-      echo "$model is not supported yet.."
+      echo "$model version $ffw is not available yet.."
       echo " "
       return 0
     else
@@ -350,7 +350,7 @@ function probe_info {
     echo " "
   else
     if [ -z $dlurl ]; then
-      lfw="Not Supported"
+      lfw="Not available"
     fi
     echo "Host: $device"
     echo "Model: $model"
