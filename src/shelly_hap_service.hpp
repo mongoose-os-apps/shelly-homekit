@@ -24,26 +24,32 @@
 #include "shelly_common.hpp"
 #include "shelly_hap_chars.hpp"
 
-#define IID_BASE_SWITCH 0x100
-#define IID_STEP_SWITCH 4
-#define IID_BASE_OUTLET 0x200
-#define IID_STEP_OUTLET 5
-#define IID_BASE_LOCK 0x300
-#define IID_STEP_LOCK 4
-#define IID_BASE_STATELESS_SWITCH 0x400
-#define IID_STEP_STATELESS_SWITCH 4
-#define IID_BASE_SERVICE_LABEL 0x1030
+#define SHELLY_HAP_IID_BASE_SWITCH 0x100
+#define SHELLY_HAP_IID_STEP_SWITCH 4
+#define SHELLY_HAP_IID_BASE_OUTLET 0x200
+#define SHELLY_HAP_IID_STEP_OUTLET 5
+#define SHELLY_HAP_IID_BASE_LOCK 0x300
+#define SHELLY_HAP_IID_STEP_LOCK 4
+#define SHELLY_HAP_IID_BASE_STATELESS_SWITCH 0x400
+#define SHELLY_HAP_IID_STEP_STATELESS_SWITCH 4
+#define SHELLY_HAP_IID_BASE_SERVICE_LABEL 0x1030
 
 namespace shelly {
 namespace hap {
 
+class Accessory;
+
 class Service {
  public:
   Service();
-  Service(uint16_t iid, const HAPUUID *type, const char *debug_description);
+  Service(uint16_t iid, const HAPUUID *type, const char *debug_description,
+          bool hidden = false);
   virtual ~Service();
 
   uint16_t iid() const;
+
+  const Accessory *parent() const;
+  void set_parent(const Accessory *parent);
 
   void AddChar(Characteristic *ch);  // Takes ownership of ch.
 
@@ -57,9 +63,10 @@ class Service {
   HAPService svc_;
   std::vector<std::unique_ptr<Characteristic>> chars_;
   std::vector<const HAPCharacteristic *> hap_chars_;
+  std::vector<uint16_t> links_;
 
  private:
-  std::vector<uint16_t> links_;
+  const Accessory *parent_ = nullptr;
   Service(const Service &other) = delete;
 };
 

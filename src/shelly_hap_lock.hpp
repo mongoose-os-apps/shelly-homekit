@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "shelly_hap_chars.hpp"
 #include "shelly_switch.hpp"
 
 namespace shelly {
@@ -25,8 +26,7 @@ namespace hap {
 class Lock : public ShellySwitch {
  public:
   Lock(int id, Input *in, Output *out, PowerMeter *out_pm,
-       struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
-       const HAPAccessory *accessory);
+       struct mgos_config_sw *cfg);
   virtual ~Lock();
 
   Status Init();
@@ -38,6 +38,8 @@ class Lock : public ShellySwitch {
   HAPError HandleTargetStateWrite(
       HAPAccessoryServerRef *server,
       const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
+
+  Characteristic *tgt_state_notify_char_ = nullptr;
 };
 
 }  // namespace hap

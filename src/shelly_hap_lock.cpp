@@ -17,13 +17,14 @@
 
 #include "shelly_hap_lock.hpp"
 
+#include "shelly_hap_accessory.hpp"
+
 namespace shelly {
 namespace hap {
 
 Lock::Lock(int id, Input *in, Output *out, PowerMeter *out_pm,
-           struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
-           const HAPAccessory *accessory)
-    : ShellySwitch(id, in, out, out_pm, cfg, server, accessory) {
+           struct mgos_config_sw *cfg)
+    : ShellySwitch(id, in, out, out_pm, cfg) {
 }
 
 Lock::~Lock() {
@@ -34,7 +35,7 @@ Status Lock::Init() {
   if (!st.ok()) return st;
 
   const int id1 = id() - 1;  // IDs used to start at 0, preserve compat.
-  uint16_t iid = IID_BASE_LOCK + (IID_STEP_LOCK * id1);
+  uint16_t iid = SHELLY_HAP_IID_BASE_LOCK + (SHELLY_HAP_IID_STEP_LOCK * id1);
   svc_.iid = iid++;
   svc_.serviceType = &kHAPServiceType_LockMechanism;
   svc_.debugDescription = kHAPServiceDebugDescription_LockMechanism;
@@ -46,7 +47,7 @@ Status Lock::Init() {
       std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_LockCurrentState);
-  state_notify_char_ = cur_state_char->GetBase();
+  state_notify_char_ = cur_state_char;
   AddChar(cur_state_char);
   // Target State
   auto *tgt_state_char = new UInt8Characteristic(
@@ -55,7 +56,7 @@ Status Lock::Init() {
       true /* supports_notification */,
       std::bind(&Lock::HandleTargetStateWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_LockTargetState);
-  tgt_state_notify_char_ = tgt_state_char->GetBase();
+  tgt_state_notify_char_ = tgt_state_char;
   AddChar(tgt_state_char);
 
   return Status::OK();
@@ -74,8 +75,7 @@ HAPError Lock::HandleTargetStateWrite(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
   SetState((value == 0), "HAP");
-  HAPAccessoryServerRaiseEvent(server_, tgt_state_notify_char_, &svc_,
-                               accessory_);
+  tgt_state_notify_char_->RaiseEvent();
   (void) server;
   (void) request;
   return kHAPError_None;

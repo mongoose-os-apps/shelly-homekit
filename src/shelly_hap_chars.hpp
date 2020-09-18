@@ -32,18 +32,26 @@
 namespace shelly {
 namespace hap {
 
+class Service;
+
 class Characteristic {
  public:
   Characteristic();
   virtual ~Characteristic();
 
-  virtual HAPCharacteristic *GetBase() = 0;
+  const Service *parent() const;
+  void set_parent(const Service *parent);
+
+  virtual HAPCharacteristic *GetHAPCharacteristic() = 0;
+
+  void RaiseEvent();
 
  protected:
   static Characteristic *FindInstance(const HAPCharacteristic *base);
 
  private:
   static std::vector<Characteristic *> instances_;
+  const Service *parent_ = nullptr;
 
   Characteristic(const Characteristic &other) = delete;
 };
@@ -55,7 +63,7 @@ class StringCharacteristic : public Characteristic {
                        const char *debug_description = nullptr);
   virtual ~StringCharacteristic();
 
-  HAPCharacteristic *GetBase() override;
+  HAPCharacteristic *GetHAPCharacteristic() override;
 
   void SetValue(const std::string &value);
   const std::string &GetValue() const;
@@ -66,7 +74,7 @@ class StringCharacteristic : public Characteristic {
       const HAPStringCharacteristicReadRequest *request, char *value,
       size_t maxValueBytes, void *context);
 
-  HAPStringCharacteristic base_;
+  HAPStringCharacteristic char_;
 
   std::string value_;
 
@@ -92,33 +100,33 @@ struct ScalarCharacteristic : public Characteristic {
                        WriteHandler write_handler = nullptr,
                        const char *debug_description = nullptr)
       : read_handler_(read_handler), write_handler_(write_handler) {
-    std::memset(&base_, 0, sizeof(base_));
-    base_.format = format;
-    base_.iid = iid;
-    base_.characteristicType = type;
-    base_.debugDescription = debug_description;
-    base_.properties.readable = true;
-    base_.properties.supportsEventNotification = supports_notification;
-    base_.callbacks.handleRead = ScalarCharacteristic::HandleReadCB;
+    std::memset(&char_, 0, sizeof(char_));
+    char_.format = format;
+    char_.iid = iid;
+    char_.characteristicType = type;
+    char_.debugDescription = debug_description;
+    char_.properties.readable = true;
+    char_.properties.supportsEventNotification = supports_notification;
+    char_.callbacks.handleRead = ScalarCharacteristic::HandleReadCB;
     if (write_handler) {
-      base_.properties.writable = true;
+      char_.properties.writable = true;
       /* ???
-      base_.properties.ble.supportsBroadcastNotification = true;
-      base_.properties.ble.supportsDisconnectedNotification = true;
+      char_.properties.ble.supportsBroadcastNotification = true;
+      char_.properties.ble.supportsDisconnectedNotification = true;
       */
-      base_.callbacks.handleWrite = ScalarCharacteristic::HandleWriteCB;
+      char_.callbacks.handleWrite = ScalarCharacteristic::HandleWriteCB;
     }
   }
 
   virtual ~ScalarCharacteristic() {
   }
 
-  HAPCharacteristic *GetBase() override {
-    return &base_;
+  HAPCharacteristic *GetHAPCharacteristic() override {
+    return &char_;
   }
 
  protected:
-  HAPBaseClass base_;
+  HAPBaseClass char_;
 
  private:
   static HAPError HandleReadCB(HAPAccessoryServerRef *server,
@@ -174,9 +182,9 @@ class UInt8Characteristic
       : ScalarCharacteristic(kHAPCharacteristicFormat_UInt8, iid, type,
                              read_handler, supports_notification, write_handler,
                              debug_description) {
-    base_.constraints.minimumValue = min;
-    base_.constraints.maximumValue = max;
-    base_.constraints.stepValue = step;
+    char_.constraints.minimumValue = min;
+    char_.constraints.maximumValue = max;
+    char_.constraints.stepValue = step;
   }
   virtual ~UInt8Characteristic() {
   }

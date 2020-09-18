@@ -19,6 +19,9 @@
 
 #include <cstring>
 
+#include "shelly_hap_accessory.hpp"
+#include "shelly_hap_service.hpp"
+
 namespace shelly {
 namespace hap {
 
@@ -39,10 +42,27 @@ Characteristic::~Characteristic() {
   }
 }
 
+const Service *Characteristic::parent() const {
+  return parent_;
+}
+
+void Characteristic::set_parent(const Service *parent) {
+  parent_ = parent;
+}
+
+void Characteristic::RaiseEvent() {
+  const Service *svc = parent();
+  if (svc == nullptr) return;
+  const Accessory *acc = svc->parent();
+  if (acc == nullptr || acc->server() == nullptr) return;
+  HAPAccessoryServerRaiseEvent(acc->server(), GetHAPCharacteristic(),
+                               svc->GetHAPService(), acc->GetHAPAccessory());
+}
+
 // static
 Characteristic *Characteristic::FindInstance(const HAPCharacteristic *base) {
   for (auto *i : instances_) {
-    if (i->GetBase() == base) return i;
+    if (i->GetHAPCharacteristic() == base) return i;
   }
   return nullptr;
 }
@@ -52,21 +72,21 @@ StringCharacteristic::StringCharacteristic(uint16_t iid, const HAPUUID *type,
                                            const std::string &initial_value,
                                            const char *debug_description)
     : value_(initial_value) {
-  std::memset(&base_, 0, sizeof(base_));
-  base_.format = kHAPCharacteristicFormat_String;
-  base_.iid = iid;
-  base_.characteristicType = type;
-  base_.debugDescription = debug_description;
-  base_.constraints.maxLength = max_length;
-  base_.properties.readable = true;
-  base_.callbacks.handleRead = StringCharacteristic::HandleReadCB;
+  std::memset(&char_, 0, sizeof(char_));
+  char_.format = kHAPCharacteristicFormat_String;
+  char_.iid = iid;
+  char_.characteristicType = type;
+  char_.debugDescription = debug_description;
+  char_.constraints.maxLength = max_length;
+  char_.properties.readable = true;
+  char_.callbacks.handleRead = StringCharacteristic::HandleReadCB;
 }
 
 StringCharacteristic::~StringCharacteristic() {
 }
 
-HAPCharacteristic *StringCharacteristic::GetBase() {
-  return &base_;
+HAPCharacteristic *StringCharacteristic::GetHAPCharacteristic() {
+  return &char_;
 }
 
 void StringCharacteristic::SetValue(const std::string &value) {

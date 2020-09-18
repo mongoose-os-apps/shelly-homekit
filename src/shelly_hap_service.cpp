@@ -26,11 +26,12 @@ Service::Service() : svc_({}) {
 }
 
 Service::Service(uint16_t iid, const HAPUUID *type,
-                 const char *debug_description)
+                 const char *debug_description, bool hidden)
     : svc_({}) {
   svc_.iid = iid;
   svc_.serviceType = type;
   svc_.debugDescription = debug_description;
+  svc_.properties.hidden = hidden;
 }
 
 Service::~Service() {
@@ -40,10 +41,19 @@ uint16_t Service::iid() const {
   return svc_.iid;
 }
 
-void Service::AddChar(Characteristic *ch) {
+const Accessory *Service::parent() const {
+  return parent_;
+}
+
+void Service::set_parent(const Accessory *parent) {
+  parent_ = parent;
+}
+
+void Service::AddChar(Characteristic *c) {
+  c->set_parent(this);
+  chars_.emplace_back(c);
   if (!hap_chars_.empty()) hap_chars_.pop_back();
-  chars_.emplace_back(std::unique_ptr<Characteristic>(ch));
-  hap_chars_.push_back(ch->GetBase());
+  hap_chars_.push_back(c->GetHAPCharacteristic());
   hap_chars_.push_back(nullptr);
   svc_.characteristics = hap_chars_.data();
 }
@@ -70,7 +80,7 @@ const HAPService *Service::GetHAPService() const {
 }
 
 ServiceLabelService::ServiceLabelService(uint8_t ns) {
-  svc_.iid = IID_BASE_SERVICE_LABEL;
+  svc_.iid = SHELLY_HAP_IID_BASE_SERVICE_LABEL;
   svc_.serviceType = &kHAPServiceType_ServiceLabel;
   svc_.debugDescription = kHAPServiceDebugDescription_ServiceLabel;
   AddChar(new UInt8Characteristic(

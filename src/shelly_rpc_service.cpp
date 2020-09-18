@@ -78,7 +78,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       (unsigned) tcpm_stats.maxNumTCPStreams);
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
-  for (const auto &c : g_components) {
+  for (const auto *c : g_comps) {
     const auto &is = c->GetInfo();
     if (is.ok()) {
       if (!first) res.append(", ");
@@ -110,9 +110,9 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   }
 
   Component *c = nullptr;
-  for (auto &cp : g_components) {
+  for (auto *cp : g_comps) {
     if (cp->id() == id && (int) cp->type() == type) {
-      c = cp.get();
+      c = cp;
       break;
     }
   }
@@ -157,13 +157,13 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 
   json_scanf(args.p, args.len, ri->args_fmt, &id, &state);
 
-  for (auto &c : g_components) {
+  for (auto *c : g_comps) {
     if (c->id() != id) continue;
     switch (c->type()) {
       case Component::Type::kSwitch:
       case Component::Type::kOutlet:
       case Component::Type::kLock: {
-        ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
+        ShellySwitch *sw = static_cast<ShellySwitch *>(c);
         sw->SetState(state, "web");
         mg_rpc_send_responsef(ri, NULL);
         return;

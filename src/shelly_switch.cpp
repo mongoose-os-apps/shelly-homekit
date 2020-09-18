@@ -19,24 +19,21 @@
 
 #include "mgos.h"
 
+#include "shelly_hap_accessory.hpp"
 #include "shelly_hap_chars.hpp"
 
-#define IID_BASE_SWITCH 0x100
-#define IID_STEP_SWITCH 4
+#define SHELLY_HAP_IID_BASE_SWITCH 0x100
+#define SHELLY_HAP_IID_STEP_SWITCH 4
 
 namespace shelly {
 
 ShellySwitch::ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
-                           struct mgos_config_sw *cfg,
-                           HAPAccessoryServerRef *server,
-                           const HAPAccessory *accessory)
+                           struct mgos_config_sw *cfg)
     : Component(id),
       in_(in),
       out_(out),
       out_pm_(out_pm),
       cfg_(cfg),
-      server_(server),
-      accessory_(accessory),
       auto_off_timer_id_(MGOS_INVALID_TIMER_ID) {
 }
 
@@ -174,8 +171,7 @@ void ShellySwitch::SetStateInternal(bool new_state, const char *source,
   }
   if (new_state == cur_state) return;
   if (state_notify_char_ != nullptr) {
-    HAPAccessoryServerRaiseEvent(server_, state_notify_char_, &svc_,
-                                 accessory_);
+    state_notify_char_->RaiseEvent();
   }
 
   if (auto_off_timer_id_ != MGOS_INVALID_TIMER_ID) {

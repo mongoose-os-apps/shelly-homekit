@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.1.4
+version: 2.1.5
 platform: esp8266
 
 libs_version: latest
@@ -41,6 +41,7 @@ config_schema:
   - ["ssw.in_mode", "i", 0, {"0 - Momentary; 1 - Toggle, single press event on change; 2 - Toggle, on = single press, off = double press"}]
 
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
+  - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
   # Deprecated settings, only kept to enable migration.
   - ["sw.persist_state", "b", false, {"Deprecated"}]  # Since cfg v1
 

@@ -29,11 +29,13 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   (void) pms;
 }
 
-void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
-                      hap::Accessory *acc, hap::ServiceLabelService *sls,
+void CreateComponents(std::vector<Component *> *comps,
+                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  // Single switch with non-detached input = only one accessory.
+  bool to_pri_acc = (mgos_sys_config_get_sw1_in_mode() != 3);
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
-                  comps, acc, sls, svr);
+                  comps, accs, svr, to_pri_acc);
 }
 
 }  // namespace shelly

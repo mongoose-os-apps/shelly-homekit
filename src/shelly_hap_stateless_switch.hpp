@@ -44,7 +44,6 @@ class StatelessSwitch : public Component, public Service {
   };
 
   StatelessSwitch(int id, Input *in, struct mgos_config_ssw *cfg,
-                  HAPAccessoryServerRef *server, const HAPAccessory *accessory,
                   const uint16_t label_service_iid = 0);
   virtual ~StatelessSwitch();
 
@@ -65,8 +64,6 @@ class StatelessSwitch : public Component, public Service {
 
   Input *const in_;
   struct mgos_config_ssw *cfg_;
-  HAPAccessoryServerRef *const server_;
-  const HAPAccessory *const accessory_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
 

@@ -37,13 +37,18 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   PowerMeterInit(pms);
 }
 
-void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
-                      hap::Accessory *acc, hap::ServiceLabelService *sls,
+void CreateComponents(std::vector<Component *> *comps,
+                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  // Use legacy layout if upgraded from older version.
+  // However, presence of detached inputs overrides it.
+  bool to_pri_acc = (mgos_sys_config_get_shelly_legacy_hap_layout() &&
+                     mgos_sys_config_get_sw1_in_mode() != 3 &&
+                     mgos_sys_config_get_sw2_in_mode() != 3);
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
-                  comps, acc, sls, svr);
+                  comps, accs, svr, to_pri_acc);
   CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_ssw2(),
-                  comps, acc, sls, svr);
+                  comps, accs, svr, to_pri_acc);
 }
 
 }  // namespace shelly

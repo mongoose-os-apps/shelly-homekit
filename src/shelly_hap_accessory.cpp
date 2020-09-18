@@ -28,8 +28,9 @@ namespace hap {
 std::vector<Accessory *> Accessory::instances_;
 
 Accessory::Accessory(uint64_t aid, HAPAccessoryCategory category,
-                     const std::string &name, const IdentifyCB &identify_cb)
-    : name_(name), identify_cb_(identify_cb), acc_({}) {
+                     const std::string &name, const IdentifyCB &identify_cb,
+                     HAPAccessoryServerRef *server)
+    : name_(name), identify_cb_(identify_cb), server_(server), acc_({}) {
   acc_.aid = aid;
   acc_.category = category;
   acc_.name = name_.c_str();
@@ -57,7 +58,19 @@ Accessory::~Accessory() {
   }
 }
 
+HAPAccessoryServerRef *Accessory::server() const {
+  return server_;
+}
+void Accessory::set_server(HAPAccessoryServerRef *server) {
+  server_ = server;
+}
+
+void Accessory::SetCategory(HAPAccessoryCategory category) {
+  acc_.category = category;
+}
+
 void Accessory::AddService(std::unique_ptr<Service> svc) {
+  svc->set_parent(this);
   AddHAPService(svc->GetHAPService());
   svcs_.emplace_back(std::move(svc));
 }

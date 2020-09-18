@@ -19,25 +19,23 @@
 
 #include "mgos.h"
 
+#include "shelly_hap_accessory.hpp"
 #include "shelly_hap_chars.hpp"
 
 namespace shelly {
 namespace hap {
 
 StatelessSwitch::StatelessSwitch(int id, Input *in, struct mgos_config_ssw *cfg,
-                                 HAPAccessoryServerRef *server,
-                                 const HAPAccessory *accessory,
                                  const uint16_t label_service_iid)
     : Component(id),
       Service(
           // IDs used to start at 0, preserve compat.
-          (IID_BASE_STATELESS_SWITCH + (IID_STEP_STATELESS_SWITCH * (id - 1))),
+          (SHELLY_HAP_IID_BASE_STATELESS_SWITCH +
+           (SHELLY_HAP_IID_STEP_STATELESS_SWITCH * (id - 1))),
           &kHAPServiceType_StatelessProgrammableSwitch,
           kHAPServiceDebugDescription_StatelessProgrammableSwitch),
       in_(in),
-      cfg_(cfg),
-      server_(server),
-      accessory_(accessory) {
+      cfg_(cfg) {
   AddLink(label_service_iid);
 }
 
@@ -63,16 +61,18 @@ Status StatelessSwitch::Init() {
       },
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_ProgrammableSwitchEvent));
-  // Service Label Index
-  AddChar(new UInt8Characteristic(
-      iid++, &kHAPCharacteristicType_ServiceLabelIndex, 1, UINT8_MAX, 1,
-      [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
-             uint8_t *value) {
-        *value = id();
-        return kHAPError_None;
-      },
-      false /* supports_notification */, nullptr /* write_handler */,
-      kHAPCharacteristicDebugDescription_ServiceLabelIndex));
+  if (!links_.empty()) {
+    // Service Label Index
+    AddChar(new UInt8Characteristic(
+        iid++, &kHAPCharacteristicType_ServiceLabelIndex, 1, UINT8_MAX, 1,
+        [this](HAPAccessoryServerRef *,
+               const HAPUInt8CharacteristicReadRequest *, uint8_t *value) {
+          *value = id();
+          return kHAPError_None;
+        },
+        false /* supports_notification */, nullptr /* write_handler */,
+        kHAPCharacteristicDebugDescription_ServiceLabelIndex));
+  }
 
   handler_id_ = in_->AddHandler(
       std::bind(&StatelessSwitch::InputEventHandler, this, _1, _2));
@@ -157,7 +157,7 @@ void StatelessSwitch::RaiseEvent(uint8_t ev) {
   last_ev_ = ev;
   last_ev_ts_ = mgos_uptime();
   LOG(LL_INFO, ("Input %d: HAP event (mode %d): %d", id(), cfg_->in_mode, ev));
-  HAPAccessoryServerRaiseEvent(server_, hap_chars_[1], &svc_, accessory_);
+  chars_[1]->RaiseEvent();
 }
 
 }  // namespace hap

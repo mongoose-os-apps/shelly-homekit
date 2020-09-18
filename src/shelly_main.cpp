@@ -118,13 +118,14 @@ static HAPPlatform s_platform = {
         },
 };
 
-static bool s_recreate_acc = false;
+static bool s_recreate_accs = false;
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
 
 static void CheckLED(int pin, bool led_act);
 
-static HAPError IdentifyCB(const HAPAccessoryIdentifyRequest *request) {
+static HAPError AccessoryIdentifyCB(
+    const HAPAccessoryIdentifyRequest *request) {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
   s_identify_count = 3;
   CheckLED(LED_GPIO, LED_ON);
@@ -132,11 +133,12 @@ static HAPError IdentifyCB(const HAPAccessoryIdentifyRequest *request) {
   return kHAPError_None;
 }
 
+std::vector<Component *> g_comps;
 static std::vector<std::unique_ptr<Input>> s_inputs;
 static std::vector<std::unique_ptr<Output>> s_outputs;
 static std::vector<std::unique_ptr<PowerMeter>> s_pms;
-std::vector<std::unique_ptr<Component>> g_components;
-static std::unique_ptr<hap::Accessory> s_acc;
+static std::vector<std::unique_ptr<hap::Accessory>> s_accs;
+static std::vector<const HAPAccessory *> s_hap_accs;
 
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
@@ -182,82 +184,117 @@ void HandleInputResetSequence(InputPin *in, int out_gpio, Input::Event ev,
 
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_ssw *ssw_cfg,
-                     std::vector<std::unique_ptr<Component>> *components,
-                     hap::Accessory *acc, hap::ServiceLabelService *sls,
-                     HAPAccessoryServerRef *svr) {
+                     std::vector<Component *> *comps,
+                     std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                     HAPAccessoryServerRef *svr, bool to_pri_acc) {
   std::unique_ptr<ShellySwitch> sw;
   Input *in = FindInput(id);
   Output *out = FindOutput(id);
   PowerMeter *pm = FindPM(id);
-  const HAPAccessory *hap_acc = acc->GetHAPAccessory();
   struct mgos_config_sw *cfg = (struct mgos_config_sw *) sw_cfg;
+  uint64_t aid = 0;
+  HAPAccessoryCategory cat = kHAPAccessoryCategory_BridgedAccessory;
+  bool sw_hidden = false;
   switch (sw_cfg->svc_type) {
     case 0:
-      sw.reset(new hap::Switch(id, in, out, pm, cfg, svr, hap_acc));
+      cat = kHAPAccessoryCategory_Switches;
+      aid = SHELLY_HAP_AID_BASE_SWITCH + id;
+      sw.reset(new hap::Switch(id, in, out, pm, cfg));
       break;
     case 1:
-      sw.reset(new hap::Outlet(id, in, out, pm, cfg, svr, hap_acc));
+      cat = kHAPAccessoryCategory_Outlets;
+      aid = SHELLY_HAP_AID_BASE_OUTLET + id;
+      sw.reset(new hap::Outlet(id, in, out, pm, cfg));
       break;
     case 2:
-      sw.reset(new hap::Lock(id, in, out, pm, cfg, svr, hap_acc));
+      cat = kHAPAccessoryCategory_Locks;
+      aid = SHELLY_HAP_AID_BASE_LOCK + id;
+      sw.reset(new hap::Lock(id, in, out, pm, cfg));
       break;
     default:
-      sw.reset(new ShellySwitch(id, in, out, pm, cfg, svr, hap_acc));
+      sw.reset(new ShellySwitch(id, in, out, pm, cfg));
+      sw_hidden = true;
       break;
   }
   auto st = sw->Init();
   if (!st.ok()) {
-    sw.reset();
+    const std::string &s = st.ToString();
+    LOG(LL_ERROR, ("Error creating switch: %s", s.c_str()));
+    return;
   }
-
-  if (sw != nullptr) {
-    acc->AddHAPService(sw->GetHAPService());
-    components->push_back(std::move(sw));
+  comps->push_back(sw.get());
+  hap::Accessory *pri_acc = accs->front().get();
+  if (to_pri_acc) {
+    pri_acc->SetCategory(cat);
+    pri_acc->AddService(std::move(sw));
+    return;
   }
-  if (sw_cfg->in_mode == (int) ShellySwitch::InMode::kDetached) {
+  if (!sw_hidden) {
+    std::unique_ptr<hap::Accessory> acc(
+        new hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
+                           sw_cfg->name, &AccessoryIdentifyCB, svr));
+    acc->AddHAPService(&mgos_hap_accessory_information_service);
+    acc->AddService(std::move(sw));
+    accs->push_back(std::move(acc));
+  } else {
+    // This one will not be exported so shove it into primary,
+    // purely for ownership.
+    pri_acc->AddService(std::move(sw));
+  }
+  if (sw_cfg->in_mode == 3) {
     LOG(LL_INFO, ("Creating a stateless switch for input %d", id));
     std::unique_ptr<hap::StatelessSwitch> ssw(new hap::StatelessSwitch(
-        id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, svr, hap_acc,
-        sls->iid()));
+        id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, 0));
     if (ssw != nullptr && ssw->Init().ok()) {
-      sls->AddLink(ssw->iid());
-      acc->AddHAPService(ssw->GetHAPService());
-      components->push_back(std::move(ssw));
+      comps->push_back(ssw.get());
+      std::unique_ptr<hap::Accessory> acc(
+          new hap::Accessory(SHELLY_HAP_AID_BASE_STATELESS_SWITCH + id,
+                             kHAPAccessoryCategory_BridgedAccessory,
+                             ssw_cfg->name, &AccessoryIdentifyCB, svr));
+      acc->AddHAPService(&mgos_hap_accessory_information_service);
+      acc->AddService(std::move(ssw));
+      accs->push_back(std::move(acc));
     }
   }
 }
 
-std::unique_ptr<hap::Accessory> CreateHAPAccessories() {
-  std::unique_ptr<hap::Accessory> acc(
-      new hap::Accessory(HAP_AID_PRIMARY, kHAPAccessoryCategory_Switches,
-                         mgos_sys_config_get_device_id(), &IdentifyCB));
-  acc->AddHAPService(&mgos_hap_accessory_information_service);
-  acc->AddHAPService(&mgos_hap_protocol_information_service);
-  acc->AddHAPService(&mgos_hap_pairing_service);
-  std::unique_ptr<hap::ServiceLabelService> sls(
-      new hap::ServiceLabelService(1 /* numerals */));
-  CreateComponents(&g_components, acc.get(), sls.get(), &s_server);
-  acc->AddService(std::move(sls));
-  return acc;
+static void DisableLegacyHAPLayout() {
+  if (!mgos_sys_config_get_shelly_legacy_hap_layout()) return;
+  LOG(LL_INFO, ("Turning off legacy HAP layout"));
+  mgos_sys_config_set_shelly_legacy_hap_layout(false);
+  mgos_sys_config_save(&mgos_sys_config, false /* try_once */, nullptr);
 }
 
 static bool StartHAPServer(bool quiet) {
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
     return true;
   }
-  if (s_acc != nullptr && s_recreate_acc) {
+  if (!s_accs.empty() && s_recreate_accs) {
     LOG(LL_INFO, ("=== Reconfiguring accessories"));
-    s_acc.reset();
-    g_components.clear();
-    s_recreate_acc = false;
+    s_accs.clear();
+    s_hap_accs.clear();
+    g_comps.clear();
+    s_recreate_accs = false;
     if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
       LOG(LL_ERROR, ("Failed to increment configuration number"));
     }
+    // Structural change, disable legacy mode if enabled.
+    DisableLegacyHAPLayout();
   }
-  if (s_acc == nullptr) {
+  if (s_accs.empty()) {
     LOG(LL_INFO, ("=== Creating accessories"));
-    s_acc = CreateHAPAccessories();
+    std::unique_ptr<hap::Accessory> pri_acc(new hap::Accessory(
+        SHELLY_HAP_AID_PRIMARY, kHAPAccessoryCategory_Bridges,
+        mgos_sys_config_get_device_id(), &AccessoryIdentifyCB, &s_server));
+    pri_acc->AddHAPService(&mgos_hap_accessory_information_service);
+    pri_acc->AddHAPService(&mgos_hap_protocol_information_service);
+    pri_acc->AddHAPService(&mgos_hap_pairing_service);
+    s_accs.push_back(std::move(pri_acc));
+    CreateComponents(&g_comps, &s_accs, &s_server);
+    s_accs.shrink_to_fit();
+    g_comps.shrink_to_fit();
   }
+
   if (!mgos_hap_config_valid()) {
     if (!quiet) {
       LOG(LL_INFO, ("=== Accessory not provisioned"));
@@ -265,10 +302,24 @@ static bool StartHAPServer(bool quiet) {
     return false;
   }
   uint16_t cn;
-  if (HAPAccessoryServerGetCN(&s_kvs, &cn) == kHAPError_None) {
-    LOG(LL_INFO, ("=== Starting HAP server (CN %d)", cn));
+  if (HAPAccessoryServerGetCN(&s_kvs, &cn) != kHAPError_None) {
+    cn = 0;
   }
-  HAPAccessoryServerStart(&s_server, s_acc->GetHAPAccessory());
+  if (s_accs.size() == 1) {
+    LOG(LL_INFO, ("=== Starting HAP %s (CN %d)", "server", cn));
+    HAPAccessoryServerStart(&s_server, s_accs.front()->GetHAPAccessory());
+  } else {
+    for (auto it = s_accs.begin() + 1; it != s_accs.end(); it++) {
+      s_hap_accs.push_back((*it)->GetHAPAccessory());
+    }
+    LOG(LL_INFO, ("=== Starting HAP %s (CN %d, %d accessories)", "bridge", cn,
+                  (int) s_hap_accs.size()));
+    s_hap_accs.push_back(nullptr);
+    s_hap_accs.shrink_to_fit();
+    HAPAccessoryServerStartBridge(&s_server, s_accs.front()->GetHAPAccessory(),
+                                  s_hap_accs.data(),
+                                  false /* config changed */);
+  }
   return true;
 }
 
@@ -396,6 +447,12 @@ static void StatusTimerCB(void *arg) {
                   (unsigned long) mgos_get_free_heap_size()));
     s_cnt = 0;
   }
+  if (mgos_sys_config_get_shelly_legacy_hap_layout() &&
+      !HAPAccessoryServerIsPaired(&s_server)) {
+    DisableLegacyHAPLayout();
+    RestartHAPServer();
+    return;
+  }
   /* If provisioning information has been provided, start the server. */
   StartHAPServer(true /* quiet */);
   CheckButton(BTN_GPIO, BTN_DOWN);
@@ -447,6 +504,19 @@ static bool shelly_cfg_migrate(void) {
     mgos_sys_config_set_shelly_cfg_version(1);
     changed = true;
   }
+  if (mgos_sys_config_get_shelly_cfg_version() == 1) {
+#if defined(MGOS_CONFIG_HAVE_SW1) && defined(MGOS_CONFIG_HAVE_SW2)
+    // If already paired, preserve legacy layout.
+    // https://github.com/mongoose-os-apps/shelly-homekit/issues/9#issuecomment-694418580
+    if (HAPAccessoryServerIsPaired(&s_server) &&
+        mgos_sys_config_get_sw1_in_mode() != 3 &&
+        mgos_sys_config_get_sw2_in_mode() != 3) {
+      mgos_sys_config_set_shelly_legacy_hap_layout(true);
+    }
+#endif
+    mgos_sys_config_set_shelly_cfg_version(2);
+    changed = true;
+  }
   return changed;
 }
 
@@ -466,7 +536,7 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
 }
 
 void RestartHAPServer() {
-  s_recreate_acc = true;
+  s_recreate_accs = true;
   if (HAPAccessoryServerGetState(&s_server) ==
       kHAPAccessoryServerState_Running) {
     HAPAccessoryServerStop(&s_server);
@@ -486,13 +556,6 @@ bool InitApp() {
     remove("style.css");
   }
 #endif
-
-  if (shelly_cfg_migrate()) {
-    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
-                         nullptr /* msg */);
-  }
-
-  CreatePeripherals(&s_inputs, &s_outputs, &s_pms);
 
   // Key-value store.
   static const HAPPlatformKeyValueStoreOptions kvs_opts = {
@@ -520,6 +583,13 @@ bool InitApp() {
   // Initialize accessory server.
   HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
                            &s_callbacks, nullptr /* context */);
+
+  if (shelly_cfg_migrate()) {
+    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                         nullptr /* msg */);
+  }
+
+  CreatePeripherals(&s_inputs, &s_outputs, &s_pms);
 
   StartHAPServer(false /* quiet */);
 

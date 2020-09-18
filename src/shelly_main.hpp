@@ -31,7 +31,7 @@
 
 namespace shelly {
 
-extern std::vector<std::unique_ptr<Component>> g_components;
+extern std::vector<Component *> g_comps;
 
 Input *FindInput(int id);
 Output *FindOutput(int id);
@@ -39,9 +39,9 @@ PowerMeter *FindPM(int id);
 
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_ssw *ssw_cfg,
-                     std::vector<std::unique_ptr<Component>> *components,
-                     hap::Accessory *accessory, hap::ServiceLabelService *sls,
-                     HAPAccessoryServerRef *server);
+                     std::vector<Component *> *comps,
+                     std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                     HAPAccessoryServerRef *server, bool to_pri_acc);
 
 void HandleInputResetSequence(InputPin *in, int out_gpio, Input::Event ev,
                               bool cur_state);
@@ -54,8 +54,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms);
 
-void CreateComponents(std::vector<std::unique_ptr<Component>> *components,
-                      hap::Accessory *acc, hap::ServiceLabelService *sls,
+void CreateComponents(std::vector<Component *> *comps,
+                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr);
 
 }  // namespace shelly

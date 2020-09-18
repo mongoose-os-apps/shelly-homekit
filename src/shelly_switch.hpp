@@ -51,8 +51,7 @@ class ShellySwitch : public Component, public hap::Service {
   };
 
   ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
-               struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
-               const HAPAccessory *accessory);
+               struct mgos_config_sw *cfg);
   virtual ~ShellySwitch();
 
   // Component interface impl.
@@ -78,12 +77,9 @@ class ShellySwitch : public Component, public hap::Service {
   Output *const out_;
   PowerMeter *const out_pm_;
   struct mgos_config_sw *cfg_;
-  HAPAccessoryServerRef *const server_;
-  const HAPAccessory *const accessory_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
-  HAPCharacteristic *state_notify_char_ = nullptr;
-  HAPCharacteristic *tgt_state_notify_char_ = nullptr;
+  hap::Characteristic *state_notify_char_ = nullptr;
 
   mgos_timer_id auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
 

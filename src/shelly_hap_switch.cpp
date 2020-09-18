@@ -25,9 +25,8 @@ namespace shelly {
 namespace hap {
 
 Switch::Switch(int id, Input *in, Output *out, PowerMeter *out_pm,
-               struct mgos_config_sw *cfg, HAPAccessoryServerRef *server,
-               const HAPAccessory *accessory)
-    : ShellySwitch(id, in, out, out_pm, cfg, server, accessory) {
+               struct mgos_config_sw *cfg)
+    : ShellySwitch(id, in, out, out_pm, cfg) {
 }
 
 Switch::~Switch() {
@@ -38,7 +37,8 @@ Status Switch::Init() {
   if (!st.ok()) return st;
 
   const int id1 = id() - 1;  // IDs used to start at 0, preserve compat.
-  uint16_t iid = IID_BASE_SWITCH + (IID_STEP_SWITCH * id1);
+  uint16_t iid =
+      SHELLY_HAP_IID_BASE_SWITCH + (SHELLY_HAP_IID_STEP_SWITCH * id1);
   svc_.iid = iid++;
   svc_.serviceType = &kHAPServiceType_Switch;
   svc_.debugDescription = kHAPServiceDebugDescription_Switch;
@@ -59,7 +59,7 @@ Status Switch::Init() {
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_On);
-  state_notify_char_ = on_char->GetBase();
+  state_notify_char_ = on_char;
   AddChar(on_char);
 
   return Status::OK();

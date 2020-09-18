@@ -24,7 +24,11 @@
 #include "shelly_common.hpp"
 #include "shelly_hap_service.hpp"
 
-#define HAP_AID_PRIMARY 1
+#define SHELLY_HAP_AID_PRIMARY 0x1
+#define SHELLY_HAP_AID_BASE_SWITCH 0x100
+#define SHELLY_HAP_AID_BASE_OUTLET 0x200
+#define SHELLY_HAP_AID_BASE_LOCK 0x300
+#define SHELLY_HAP_AID_BASE_STATELESS_SWITCH 0x400
 
 namespace shelly {
 namespace hap {
@@ -35,8 +39,14 @@ class Accessory {
       IdentifyCB;
 
   Accessory(uint64_t aid, HAPAccessoryCategory category,
-            const std::string &name, const IdentifyCB &identify_cb);
+            const std::string &name, const IdentifyCB &identify_cb,
+            HAPAccessoryServerRef *server = nullptr);
   virtual ~Accessory();
+
+  HAPAccessoryServerRef *server() const;
+  void set_server(HAPAccessoryServerRef *server);
+
+  void SetCategory(HAPAccessoryCategory category);
 
   void AddService(std::unique_ptr<Service> svc);
   void AddHAPService(const HAPService *svc);
@@ -52,6 +62,7 @@ class Accessory {
 
   const std::string name_;
   const IdentifyCB identify_cb_;
+  HAPAccessoryServerRef *server_;
   HAPAccessory acc_;
 
   std::vector<std::unique_ptr<Service>> svcs_;
