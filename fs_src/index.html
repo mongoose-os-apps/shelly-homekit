@@ -449,7 +449,7 @@ function sswSetConfig(c) {
 }
 
 el("reboot_btn").onclick = function() {
-  axios.get(host + "/rpc/Sys.Reboot").then(function(res) {
+  axios.post(host + "/rpc/Sys.Reboot", {delay_ms: 500}).then(function(res) {
     alert("System is rebooting, please refresh the page.");
   });
 }

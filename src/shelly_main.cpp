@@ -118,6 +118,7 @@ static HAPPlatform s_platform = {
         },
 };
 
+static bool s_hap_enable = true;
 static bool s_recreate_accs = false;
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
@@ -266,6 +267,9 @@ static void DisableLegacyHAPLayout() {
 }
 
 static bool StartHAPServer(bool quiet) {
+  if (!s_hap_enable) {
+    return false;
+  }
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
     return true;
   }
@@ -521,14 +525,18 @@ static bool shelly_cfg_migrate(void) {
 }
 
 static void RebootCB(int ev, void *ev_data, void *userdata) {
-  // Increment CN on every reboot, because why not.
-  // This will cover firmware update as well as other configuration changes.
-  if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
-    LOG(LL_ERROR, ("Failed to increment configuration number"));
+  s_hap_enable = false;
+  if (HAPAccessoryServerGetState(&s_server) ==
+      kHAPAccessoryServerState_Running) {
+    HAPAccessoryServerStop(&s_server);
   }
-  uint16_t cn;
-  if (HAPAccessoryServerGetCN(&s_kvs, &cn) == kHAPError_None) {
-    LOG(LL_INFO, ("New CN: %d", cn));
+  if (ev == MGOS_EVENT_REBOOT) {
+    // Increment CN on every reboot, because why not.
+    // This will cover firmware update as well as other configuration changes.
+    uint16_t cn;
+    if (HAPAccessoryServerGetCN(&s_kvs, &cn) != kHAPError_None) {
+      cn = 0;
+    }
   }
   (void) ev;
   (void) ev_data;
@@ -607,6 +615,7 @@ bool InitApp() {
   shelly_debug_init(&s_kvs, &s_tcpm);
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
+  mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
 
   return true;
 }
