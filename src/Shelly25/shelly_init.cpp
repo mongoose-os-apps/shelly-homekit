@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include "shelly_main.hpp"
 
 namespace shelly {
@@ -40,15 +42,23 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  // Use legacy layout if upgraded from older version.
+  // Use legacy layout if upgraded from an older version (pre-2.1).
   // However, presence of detached inputs overrides it.
-  bool to_pri_acc = (mgos_sys_config_get_shelly_legacy_hap_layout() &&
-                     mgos_sys_config_get_sw1_in_mode() != 3 &&
-                     mgos_sys_config_get_sw2_in_mode() != 3);
-  CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
-                  comps, accs, svr, to_pri_acc);
-  CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_ssw2(),
-                  comps, accs, svr, to_pri_acc);
+  bool compat_20 = (mgos_sys_config_get_shelly_legacy_hap_layout() &&
+                    mgos_sys_config_get_sw1_in_mode() != 3 &&
+                    mgos_sys_config_get_sw2_in_mode() != 3);
+  if (!compat_20) {
+    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
+                    comps, accs, svr, false /* to_pri_acc */);
+    CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_ssw2(),
+                    comps, accs, svr, false /* to_pri_acc */);
+  } else {
+    CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_ssw2(),
+                    comps, accs, svr, true /* to_pri_acc */);
+    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
+                    comps, accs, svr, true /* to_pri_acc */);
+    std::reverse(comps->begin(), comps->end());
+  }
 }
 
 }  // namespace shelly
