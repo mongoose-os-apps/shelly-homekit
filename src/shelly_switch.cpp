@@ -126,7 +126,6 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
 Status ShellySwitch::Init() {
   if (!cfg_->enable) {
     LOG(LL_INFO, ("'%s' is disabled", cfg_->name));
-    mgos_gpio_setup_output(cfg_->out_gpio, !cfg_->out_on_value);
     return Status::OK();
   }
   switch (static_cast<InitialState>(cfg_->initial_state)) {
@@ -146,9 +145,8 @@ Status ShellySwitch::Init() {
       }
       break;
   }
-  LOG(LL_INFO,
-      ("Exporting '%s': type %d, GPIO out: %d, in: %d, state: %d", cfg_->name,
-       cfg_->svc_type, cfg_->out_gpio, cfg_->in_gpio, out_->GetState()));
+  LOG(LL_INFO, ("Exporting '%s': type %d, state: %d", cfg_->name,
+                cfg_->svc_type, out_->GetState()));
   if (in_ != nullptr) {
     handler_id_ = in_->AddHandler(
         std::bind(&ShellySwitch::InputEventHandler, this, _1, _2));
