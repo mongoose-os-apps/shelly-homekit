@@ -226,6 +226,10 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
   comps->push_back(sw.get());
   hap::Accessory *pri_acc = accs->front().get();
   if (to_pri_acc) {
+    // NB: this produces duplicate primary services on multi-switch devices in
+    // legacy mode. This is necessary to ensure accessory configuration remains
+    // exactly the same.
+    sw->set_primary(true);
     pri_acc->SetCategory(cat);
     pri_acc->AddService(std::move(sw));
     return;

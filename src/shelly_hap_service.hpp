@@ -48,6 +48,9 @@ class Service {
 
   uint16_t iid() const;
 
+  bool primary() const;
+  void set_primary(bool is_primary);
+
   const Accessory *parent() const;
   void set_parent(const Accessory *parent);
 

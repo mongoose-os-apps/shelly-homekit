@@ -41,6 +41,14 @@ uint16_t Service::iid() const {
   return svc_.iid;
 }
 
+bool Service::primary() const {
+  return svc_.properties.primaryService;
+}
+
+void Service::set_primary(bool is_primary) {
+  svc_.properties.primaryService = is_primary;
+}
+
 const Accessory *Service::parent() const {
   return parent_;
 }
