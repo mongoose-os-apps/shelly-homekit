@@ -6,7 +6,7 @@
   <script src="axios.min.js.gz"></script>
   </head>
   <body onLoad="onLoad()">
-    <div class="container">
+    <div class="header">
      <br>
       <div class="logodiv">
         <img class="img" src="logo.png" alt=""></div>
@@ -21,7 +21,7 @@
       </button>
             <button class="btn" id="reboot_btn">
               Reboot
-            </button>
+            </button> <p>
      <button disabled class="btndis" id="uptime_label">
        Uptime: <span id="uptime"></span>
      </button>
@@ -109,6 +109,10 @@
           <div class="form-control">
             <label>Build ID:</label>
             <span id="app_build"></span>
+          </div>
+		  <div class="form-control">
+            <label> </label>
+            <span id="app_version_online"></span>
           </div>
           <div class="form-control">
             <label>Update (<a href="https://github.com/mongoose-os-apps/shelly-homekit/releases">GitHub</a>):</label>
@@ -223,6 +227,15 @@
         </div>
       </div>
     </div>
+	<div class="footer" id="legal_container" style="visibility: none">
+  <div class="form">
+    <div class="">
+      <div class="form-control">
+      <label>
+Copyright (c) 2020 Deomid "rojer" Ryabkov <p> All rights reserved <p> <p> Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 <p> <p> Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.<p> 
+      </label>
+    </div>
+  </div>
 
 <script>
 
@@ -242,6 +255,11 @@ var hapResetSpinner = el("hap_reset_spinner");
 
 var sw1 = el("sw1_container");
 var sw2 = el("sw2_container");
+
+var apiVerUrl = 'https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases';
+var verCheck = '';
+var local_version;
+var online_version;
 
 function el(container, id) {
   if (id === undefined) {
@@ -558,6 +576,7 @@ function getInfo() {
     el("wifi_container").style.visibility = "visible";
     el("fw_container").style.visibility = "visible";
     el("device_id").style.visibility = "visible";
+	document.title = data.id;
     el("uptime_label").style.visibility = "visible";
     el("hap_conn_stats").innerText =
         data.hap_ip_conns_pending + "/" +
@@ -574,6 +593,11 @@ el("refresh_btn").onclick = getInfo;
 
 function onLoad() {
   getInfo();
+  versCheck();
+}
+
+function onunload() {
+  versCheck();
 }
 
 function durationStr(d) {
@@ -585,6 +609,28 @@ function durationStr(d) {
          nDigitString(hours, 2) + ":" +
          nDigitString(mins, 2) + ":" +
          nDigitString(secs, 2);
+}
+
+async function versCheck() {
+  axios.get(host + "/rpc/Shelly.GetInfo").then(function(localVers) {
+    var data = localVers.data;
+    local_version = data.version;  
+    fetch(apiVerUrl)
+      .then(function(response){
+        return response.json();
+      })
+    .then(function(data){
+      online_version = (data[0].tag_name); 
+        if (online_version == null) {
+           verCheck = "";
+        } else if (local_version == online_version) { 
+          verCheck = "Your software is up to date.";
+        } else {
+          verCheck = "Update " + online_version + " is now available.";
+        }
+      el('app_version_online').innerHTML = verCheck;
+    })
+  })
 }
 
 </script>
