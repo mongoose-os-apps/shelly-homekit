@@ -70,7 +70,7 @@ void Service::AddNameChar(uint16_t iid, const std::string &name) {
   auto *c =
       new StringCharacteristic(iid, &kHAPCharacteristicType_Name, 64, name,
                                kHAPCharacteristicDebugDescription_Name);
-  svc_.name = c->GetValue().c_str();
+  svc_.name = c->value().c_str();
   AddChar(c);
 }
 
@@ -87,10 +87,9 @@ const HAPService *Service::GetHAPService() const {
   return &svc_;
 }
 
-ServiceLabelService::ServiceLabelService(uint8_t ns) {
-  svc_.iid = SHELLY_HAP_IID_BASE_SERVICE_LABEL;
-  svc_.serviceType = &kHAPServiceType_ServiceLabel;
-  svc_.debugDescription = kHAPServiceDebugDescription_ServiceLabel;
+ServiceLabelService::ServiceLabelService(uint8_t ns)
+    : Service(SHELLY_HAP_IID_BASE_SERVICE_LABEL, &kHAPServiceType_ServiceLabel,
+              kHAPServiceDebugDescription_ServiceLabel) {
   AddChar(new UInt8Characteristic(
       svc_.iid + 1, &kHAPCharacteristicType_ServiceLabelNamespace, 0, 1, 1,
       [ns](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,

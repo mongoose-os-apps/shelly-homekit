@@ -70,6 +70,7 @@ class Service {
 
  private:
   const Accessory *parent_ = nullptr;
+
   Service(const Service &other) = delete;
 };
 

@@ -54,8 +54,6 @@ class Accessory {
   const HAPAccessory *GetHAPAccessory() const;
 
  private:
-  static std::vector<Accessory *> instances_;
-  static Accessory *FindInstance(const HAPAccessory *base);
   static HAPError Identify(HAPAccessoryServerRef *server,
                            const HAPAccessoryIdentifyRequest *request,
                            void *context);
@@ -63,7 +61,11 @@ class Accessory {
   const std::string name_;
   const IdentifyCB identify_cb_;
   HAPAccessoryServerRef *server_;
-  HAPAccessory acc_;
+
+  struct HAPAccessoryWithInstance {
+    HAPAccessory acc;
+    Accessory *inst;
+  } hai_;
 
   std::vector<std::unique_ptr<Service>> svcs_;
   std::vector<const HAPService *> hap_svcs_;

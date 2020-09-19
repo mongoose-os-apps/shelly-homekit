@@ -36,21 +36,39 @@ class Service;
 
 class Characteristic {
  public:
-  Characteristic();
+  Characteristic(uint16_t iid, HAPCharacteristicFormat format,
+                 const HAPUUID *type, const char *debug_description = nullptr);
   virtual ~Characteristic();
 
   const Service *parent() const;
   void set_parent(const Service *parent);
 
-  virtual HAPCharacteristic *GetHAPCharacteristic() = 0;
+  virtual const HAPCharacteristic *GetHAPCharacteristic() {
+    return hap_charactristic();
+  }
+
+  const HAPCharacteristic *hap_charactristic();
 
   void RaiseEvent();
 
  protected:
-  static Characteristic *FindInstance(const HAPCharacteristic *base);
+  struct HAPCharacteristicWithInstance {
+    union AllHAPCHaracteristicTypes {
+      HAPDataCharacteristic data;
+      HAPBoolCharacteristic bool_;
+      HAPUInt8Characteristic uint8;
+      HAPUInt16Characteristic uint16;
+      HAPUInt32Characteristic uint32;
+      HAPUInt64Characteristic uint64;
+      HAPIntCharacteristic int_;
+      HAPFloatCharacteristic float_;
+      HAPStringCharacteristic string;
+      HAPTLV8Characteristic tlv8;
+    } char_;
+    Characteristic *inst;  // Pointer back to the instance.
+  } hap_char_;
 
  private:
-  static std::vector<Characteristic *> instances_;
   const Service *parent_ = nullptr;
 
   Characteristic(const Characteristic &other) = delete;
@@ -63,10 +81,8 @@ class StringCharacteristic : public Characteristic {
                        const char *debug_description = nullptr);
   virtual ~StringCharacteristic();
 
-  HAPCharacteristic *GetHAPCharacteristic() override;
-
-  void SetValue(const std::string &value);
-  const std::string &GetValue() const;
+  const std::string &value() const;
+  void set_value(const std::string &value);
 
  private:
   static HAPError HandleReadCB(
@@ -74,13 +90,10 @@ class StringCharacteristic : public Characteristic {
       const HAPStringCharacteristicReadRequest *request, char *value,
       size_t maxValueBytes, void *context);
 
-  HAPStringCharacteristic char_;
-
   std::string value_;
-
-  StringCharacteristic(const StringCharacteristic &other) = delete;
 };
 
+// Template class that can be used to create scalar-value characteristics.
 template <class ValType, class HAPBaseClass, class HAPReadRequestType,
           class HAPWriteRequestType>
 struct ScalarCharacteristic : public Characteristic {
@@ -99,57 +112,50 @@ struct ScalarCharacteristic : public Characteristic {
                        bool supports_notification,
                        WriteHandler write_handler = nullptr,
                        const char *debug_description = nullptr)
-      : read_handler_(read_handler), write_handler_(write_handler) {
-    std::memset(&char_, 0, sizeof(char_));
-    char_.format = format;
-    char_.iid = iid;
-    char_.characteristicType = type;
-    char_.debugDescription = debug_description;
-    char_.properties.readable = true;
-    char_.properties.supportsEventNotification = supports_notification;
-    char_.callbacks.handleRead = ScalarCharacteristic::HandleReadCB;
+      : Characteristic(iid, format, type, debug_description),
+        read_handler_(read_handler),
+        write_handler_(write_handler) {
+    HAPBaseClass *c = reinterpret_cast<HAPBaseClass *>(&hap_char_.char_);
+    c->properties.readable = true;
+    c->properties.supportsEventNotification = supports_notification;
+    c->callbacks.handleRead = ScalarCharacteristic::HandleReadCB;
     if (write_handler) {
-      char_.properties.writable = true;
+      c->properties.writable = true;
       /* ???
-      char_.properties.ble.supportsBroadcastNotification = true;
-      char_.properties.ble.supportsDisconnectedNotification = true;
+      c->properties.ble.supportsBroadcastNotification = true;
+      c->properties.ble.supportsDisconnectedNotification = true;
       */
-      char_.callbacks.handleWrite = ScalarCharacteristic::HandleWriteCB;
+      c->callbacks.handleWrite = ScalarCharacteristic::HandleWriteCB;
     }
   }
 
   virtual ~ScalarCharacteristic() {
   }
 
-  HAPCharacteristic *GetHAPCharacteristic() override {
-    return &char_;
-  }
-
- protected:
-  HAPBaseClass char_;
-
  private:
   static HAPError HandleReadCB(HAPAccessoryServerRef *server,
                                const HAPReadRequestType *request,
                                ValType *value, void *context) {
-    ScalarCharacteristic *c = (ScalarCharacteristic *) FindInstance(
-        (const HAPCharacteristic *) request->characteristic);
+    auto *hci = reinterpret_cast<const HAPCharacteristicWithInstance *>(
+        request->characteristic);
+    auto *c = static_cast<const ScalarCharacteristic *>(hci->inst);
     (void) context;
-    return c->read_handler_(server, request, value);
+    return const_cast<ScalarCharacteristic *>(c)->read_handler_(server, request,
+                                                                value);
   }
   static HAPError HandleWriteCB(HAPAccessoryServerRef *server,
                                 const HAPWriteRequestType *request,
                                 ValType value, void *context) {
-    ScalarCharacteristic *c = (ScalarCharacteristic *) FindInstance(
-        (const HAPCharacteristic *) request->characteristic);
+    auto *hci = reinterpret_cast<const HAPCharacteristicWithInstance *>(
+        request->characteristic);
+    auto *c = static_cast<const ScalarCharacteristic *>(hci->inst);
     (void) context;
-    return c->write_handler_(server, request, value);
+    return const_cast<ScalarCharacteristic *>(c)->write_handler_(
+        server, request, value);
   }
 
   const ReadHandler read_handler_;
   const WriteHandler write_handler_;
-
-  ScalarCharacteristic(const ScalarCharacteristic &other) = delete;
 };
 
 struct BoolCharacteristic
@@ -182,9 +188,10 @@ class UInt8Characteristic
       : ScalarCharacteristic(kHAPCharacteristicFormat_UInt8, iid, type,
                              read_handler, supports_notification, write_handler,
                              debug_description) {
-    char_.constraints.minimumValue = min;
-    char_.constraints.maximumValue = max;
-    char_.constraints.stepValue = step;
+    HAPUInt8Characteristic *c = &hap_char_.char_.uint8;
+    c->constraints.minimumValue = min;
+    c->constraints.maximumValue = max;
+    c->constraints.stepValue = step;
   }
   virtual ~UInt8Characteristic() {
   }

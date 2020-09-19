@@ -19,27 +19,28 @@
 
 #include <cstring>
 
+#include "HAPCharacteristic.h"
+
 #include "shelly_hap_accessory.hpp"
 #include "shelly_hap_service.hpp"
 
 namespace shelly {
 namespace hap {
 
-// static
-std::vector<Characteristic *> Characteristic::instances_;
-
-Characteristic::Characteristic() {
-  instances_.push_back(this);
-  instances_.shrink_to_fit();
+Characteristic::Characteristic(uint16_t iid, HAPCharacteristicFormat format,
+                               const HAPUUID *type,
+                               const char *debug_description)
+    : hap_char_({}) {
+  HAPBaseCharacteristic *c =
+      reinterpret_cast<HAPBaseCharacteristic *>(&hap_char_.char_);
+  c->iid = iid;
+  c->format = format;
+  c->characteristicType = type;
+  c->debugDescription = debug_description;
+  hap_char_.inst = this;
 }
 
 Characteristic::~Characteristic() {
-  for (auto it = instances_.begin(); it != instances_.end(); it++) {
-    if (*it == this) {
-      instances_.erase(it);
-      break;
-    }
-  }
 }
 
 const Service *Characteristic::parent() const {
@@ -48,6 +49,10 @@ const Service *Characteristic::parent() const {
 
 void Characteristic::set_parent(const Service *parent) {
   parent_ = parent;
+}
+
+const HAPCharacteristic *Characteristic::hap_charactristic() {
+  return static_cast<const HAPCharacteristic *>(&hap_char_);
 }
 
 void Characteristic::RaiseEvent() {
@@ -59,42 +64,28 @@ void Characteristic::RaiseEvent() {
                                svc->GetHAPService(), acc->GetHAPAccessory());
 }
 
-// static
-Characteristic *Characteristic::FindInstance(const HAPCharacteristic *base) {
-  for (auto *i : instances_) {
-    if (i->GetHAPCharacteristic() == base) return i;
-  }
-  return nullptr;
-}
-
 StringCharacteristic::StringCharacteristic(uint16_t iid, const HAPUUID *type,
                                            uint16_t max_length,
                                            const std::string &initial_value,
                                            const char *debug_description)
-    : value_(initial_value) {
-  std::memset(&char_, 0, sizeof(char_));
-  char_.format = kHAPCharacteristicFormat_String;
-  char_.iid = iid;
-  char_.characteristicType = type;
-  char_.debugDescription = debug_description;
-  char_.constraints.maxLength = max_length;
-  char_.properties.readable = true;
-  char_.callbacks.handleRead = StringCharacteristic::HandleReadCB;
+    : Characteristic(iid, kHAPCharacteristicFormat_String, type,
+                     debug_description),
+      value_(initial_value) {
+  HAPStringCharacteristic *c = &hap_char_.char_.string;
+  c->constraints.maxLength = max_length;
+  c->properties.readable = true;
+  c->callbacks.handleRead = StringCharacteristic::HandleReadCB;
 }
 
 StringCharacteristic::~StringCharacteristic() {
 }
 
-HAPCharacteristic *StringCharacteristic::GetHAPCharacteristic() {
-  return &char_;
-}
-
-void StringCharacteristic::SetValue(const std::string &value) {
-  value_ = value;
-}
-
-const std::string &StringCharacteristic::GetValue() const {
+const std::string &StringCharacteristic::value() const {
   return value_;
+}
+
+void StringCharacteristic::set_value(const std::string &value) {
+  value_ = value;
 }
 
 // static
@@ -102,8 +93,9 @@ HAPError StringCharacteristic::HandleReadCB(
     HAPAccessoryServerRef *server,
     const HAPStringCharacteristicReadRequest *request, char *value,
     size_t maxValueBytes, void *context) {
-  StringCharacteristic *c = (StringCharacteristic *) FindInstance(
-      (const HAPCharacteristic *) request->characteristic);
+  auto *hci = reinterpret_cast<const HAPCharacteristicWithInstance *>(
+      request->characteristic);
+  auto *c = static_cast<const StringCharacteristic *>(hci->inst);
   size_t n = std::min(maxValueBytes - 1, c->value_.length());
   std::memcpy(value, c->value_.data(), n);
   value[n] = '\0';

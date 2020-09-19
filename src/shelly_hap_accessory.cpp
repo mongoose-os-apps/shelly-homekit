@@ -24,38 +24,29 @@
 namespace shelly {
 namespace hap {
 
-// static
-std::vector<Accessory *> Accessory::instances_;
-
 Accessory::Accessory(uint64_t aid, HAPAccessoryCategory category,
                      const std::string &name, const IdentifyCB &identify_cb,
                      HAPAccessoryServerRef *server)
-    : name_(name), identify_cb_(identify_cb), server_(server), acc_({}) {
-  acc_.aid = aid;
-  acc_.category = category;
-  acc_.name = name_.c_str();
-  acc_.manufacturer = CS_STRINGIFY_MACRO(PRODUCT_VENDOR);
-  acc_.model = CS_STRINGIFY_MACRO(PRODUCT_MODEL);
-  acc_.serialNumber = mgos_sys_config_get_device_sn();
-  if (acc_.serialNumber == nullptr) {
+    : name_(name), identify_cb_(identify_cb), server_(server), hai_({}) {
+  HAPAccessory *a = &hai_.acc;
+  a->aid = aid;
+  a->category = category;
+  a->name = name_.c_str();
+  a->manufacturer = CS_STRINGIFY_MACRO(PRODUCT_VENDOR);
+  a->model = CS_STRINGIFY_MACRO(PRODUCT_MODEL);
+  a->serialNumber = mgos_sys_config_get_device_sn();
+  if (a->serialNumber == nullptr) {
     static char sn[13] = "????????????";
     mgos_expand_mac_address_placeholders(sn);
-    acc_.serialNumber = sn;
+    a->serialNumber = sn;
   }
-  acc_.firmwareVersion = mgos_sys_ro_vars_get_fw_version();
-  acc_.hardwareVersion = CS_STRINGIFY_MACRO(PRODUCT_HW_REV);
-  instances_.push_back(this);
-  instances_.shrink_to_fit();
-  acc_.callbacks.identify = &Accessory::Identify;
+  a->firmwareVersion = mgos_sys_ro_vars_get_fw_version();
+  a->hardwareVersion = CS_STRINGIFY_MACRO(PRODUCT_HW_REV);
+  a->callbacks.identify = &Accessory::Identify;
+  hai_.inst = this;
 }
 
 Accessory::~Accessory() {
-  for (auto it = instances_.begin(); it != instances_.end(); it++) {
-    if (*it == this) {
-      instances_.erase(it);
-      break;
-    }
-  }
 }
 
 HAPAccessoryServerRef *Accessory::server() const {
@@ -66,7 +57,7 @@ void Accessory::set_server(HAPAccessoryServerRef *server) {
 }
 
 void Accessory::SetCategory(HAPAccessoryCategory category) {
-  acc_.category = category;
+  hai_.acc.category = category;
 }
 
 void Accessory::AddService(std::unique_ptr<Service> svc) {
@@ -80,27 +71,22 @@ void Accessory::AddHAPService(const HAPService *svc) {
   if (!hap_svcs_.empty()) hap_svcs_.pop_back();
   hap_svcs_.push_back(svc);
   hap_svcs_.push_back(nullptr);
-  acc_.services = hap_svcs_.data();
+  hap_svcs_.shrink_to_fit();
+  hai_.acc.services = hap_svcs_.data();
 }
 
 const HAPAccessory *Accessory::GetHAPAccessory() const {
   if (hap_svcs_.empty()) return nullptr;
-  return &acc_;
-}
-
-// static
-Accessory *Accessory::FindInstance(const HAPAccessory *base) {
-  for (auto *i : instances_) {
-    if (i->GetHAPAccessory() == base) return i;
-  }
-  return nullptr;
+  return &hai_.acc;
 }
 
 // static
 HAPError Accessory::Identify(HAPAccessoryServerRef *server,
                              const HAPAccessoryIdentifyRequest *request,
                              void *context) {
-  Accessory *a = FindInstance(request->accessory);
+  auto *ai =
+      reinterpret_cast<const HAPAccessoryWithInstance *>(request->accessory);
+  auto *a = ai->inst;
   if (a->identify_cb_ == nullptr) {
     return kHAPError_Unknown;
   }
