@@ -35,7 +35,7 @@
 #  usage: ./flash_shelly.sh -la
 #  usage: ./flash_shelly.sh shelly1-034FFF
 
-
+arch=$(uname -s)
 function check_installer {
   if [[ $arch == "Darwin" ]]; then
     check_brew
@@ -69,10 +69,20 @@ function check_brew {
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 }
 
-if [[ $arch == "Darwin" ]] && [ "$(which timeout 2>/dev/null)" == "" ]; then
-  echo -e '\033[1mInstalling coreutils...\033[0m'
-  echo -e '\033[1mYou may be asked for your password...\033[0m'
-  echo $($installer coreutils)
+if [[ $arch == "Darwin" ]]; then
+  if [ "$(which timeout 2>/dev/null)" == "" ]; then
+    check_installer
+    echo -e '\033[1mInstalling coreutils...\033[0m'
+    echo -e '\033[1mYou may be asked for your password...\033[0m'
+    echo $($installer coreutils)
+  fi
+else
+  if [ "$(which avahi-browse 2>/dev/null)" == "" ]; then
+    check_installer
+    echo -e '\033[1mInstalling avahi-utils...\033[0m'
+    echo -e '\033[1mYou may be asked for your password...\033[0m'
+    echo $($installer avahi-utils)
+  fi
 fi
 
 if [ "$(which jq 2>/dev/null)" == "" ]; then
@@ -80,14 +90,6 @@ if [ "$(which jq 2>/dev/null)" == "" ]; then
   echo -e '\033[1mInstalling jq...\033[0m'
   echo -e '\033[1mYou may be asked for your password...\033[0m'
   echo $($installer jq)
-fi
-
-arch=$(uname -s)
-if [[ $arch != "Darwin" ]] && [ "$(which avahi-browse 2>/dev/null)" == "" ]; then
-    check_installer
-    echo -e '\033[1mInstalling avahi-utils...\033[0m'
-    echo -e '\033[1mYou may be asked for your password...\033[0m'
-    echo $($installer avahi-utils)
 fi
 
 function convert_to_integer {
