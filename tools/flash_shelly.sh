@@ -372,11 +372,12 @@ function probe_info {
 
 function device_scan {
   local device_list=null
-  local device=$1
+  local device=$1 | sed 's#\,##g'
   local action=$2
   local do_all=$3
   local dry_run=$4
   local mode=$5
+  local exclude=$6
 
   if [ $do_all == false ]; then
     if [[ $device != *.local* ]]; then
@@ -391,6 +392,13 @@ function device_scan {
       device_list=$(avahi-browse -p -d local -t _http._tcp 2>/dev/null)
       device_list=$(echo $device_list | sed 's#+#\n#g' | awk -F';' '{print $4}' | awk '/shelly/ {print $1}' 2>/dev/null)
     fi
+
+    if [ $exclude == true ]; then
+      dl=$device
+      for d in $dl; do
+        device_list=${device_list//$d/}
+      done
+    fi
     for device in $device_list; do
       probe_info $device.local $action $dry_run $mode || continue
     done
@@ -398,11 +406,12 @@ function device_scan {
 }
 
 function help {
-  echo "Shelly HomeKit flashing script utility"
-  echo "Usage: $0 -{m|l|a|n|y|V|h} $1{hostname(s) optional}"
+  echo -e "${WHITE}Shelly HomeKit flashing script utility${NC}"
+  echo "Usage: $0 -{m|l|a|e|n|y|V|h} $1{hostname(s) optional}"
   echo " -m {homekit|revert|keep}   Script mode."
   echo " -l                         List info of shelly device."
   echo " -a                         Run against all the devices on the network."
+  echo " -e                         Exclude hosts from found devices."
   echo " -n                         Do a dummy run through."
   echo " -y                         Do not ask any confirmation to perform the flash."
   echo " -V                         Force a particular version."
@@ -415,9 +424,10 @@ do_all=false
 dry_run=false
 silent_run=false
 forced_version=false
+exclude=false
 mode="homekit"
 
-while getopts ":alnyhm:V:" opt; do
+while getopts ":aelnyhm:V:" opt; do
   case ${opt} in
     m )
       if [ $OPTARG == "homekit" ]; then
@@ -434,6 +444,9 @@ while getopts ":alnyhm:V:" opt; do
       ;;
     a )
       do_all=true
+      ;;
+    e )
+      exclude=true
       ;;
     l )
       action=list
@@ -464,7 +477,10 @@ shift $((OPTIND -1))
 if [ $# == 0 -a $do_all == false ]; then
   help
   exit 1
-elif [[ ! -z $@ ]] && [ $do_all == true ]; then
+elif [[ ! -z $@ ]] && [ $do_all == true ] && [ $exclude == false ]; then
+  help
+  exit 1
+elif [[ -z $@ ]] && [ $do_all == true ] && [ $exclude == true ]; then
   help
   exit 1
 fi
@@ -478,11 +494,15 @@ if [ $check == "error" ]; then
 fi
 
 echo "OS: $arch"
-if [[ ! -z $@ ]];then
+if [[ ! -z $@ ]] && [ $exclude == false ];then
   for device in $@; do
-    device_scan $device $action $do_all $dry_run $mode || continue
+    device_scan $device $action $do_all $dry_run $mode $exclude || continue
   done
 fi
-if [ $do_all == true ];then
-  device_scan null $action $do_all $dry_run $mode
+if [ $do_all == true ] && [ $exclude == false ];then
+  device_scan null $action $do_all $dry_run $mode $exclude
+fi
+if [ $do_all == true ] && [ $exclude == true ];then
+  device=$@
+  device_scan "$@" $action $do_all $dry_run $mode $exclude
 fi
