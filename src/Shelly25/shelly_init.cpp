@@ -17,6 +17,9 @@
 
 #include <algorithm>
 
+#include "mgos_hap.h"
+
+#include "shelly_hap_window_covering.hpp"
 #include "shelly_main.hpp"
 
 namespace shelly {
@@ -42,6 +45,23 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  if (mgos_sys_config_get_wc_enable()) {
+    const int id = 1;
+    auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc();
+    std::unique_ptr<hap::WindowCovering> wc(
+        new hap::WindowCovering(id, FindInput(1), FindInput(2), FindOutput(1),
+                                FindOutput(2), FindPM(1), FindPM(2), wc_cfg));
+    if (wc != nullptr && wc->Init().ok()) {
+      comps->push_back(wc.get());
+      std::unique_ptr<hap::Accessory> acc(new hap::Accessory(
+          SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
+          kHAPAccessoryCategory_BridgedAccessory, wc_cfg->name, nullptr, svr));
+      acc->AddHAPService(&mgos_hap_accessory_information_service);
+      acc->AddService(std::move(wc));
+      accs->push_back(std::move(acc));
+    }
+    return;
+  }
   // Use legacy layout if upgraded from an older version (pre-2.1).
   // However, presence of detached inputs overrides it.
   bool compat_20 = (mgos_sys_config_get_shelly_legacy_hap_layout() &&
