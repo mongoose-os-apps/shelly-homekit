@@ -35,6 +35,14 @@
 #  usage: ./flash_shelly.sh -la
 #  usage: ./flash_shelly.sh shelly1-034FFF
 
+WHITE='\033[1m' # Bright White
+RED='\033[1;91m' # Bright Purple
+GREEN='\033[1;92m' # Bright Green
+YELLOW='\033[1;93m' # Bright Yellow
+BLUE='\033[1;94m' # Bright Blue
+PURPLE='\033[1;95m' # Bright Purple
+NC='\033[0m' # Normal Color
+
 arch=$(uname -s)
 function check_installer {
   if [[ $arch == "Darwin" ]]; then
@@ -62,33 +70,32 @@ function check_brew {
     esac
   done
 
-  echo -e '\033[1mInstalling brew...\033[0m'
-  echo -e '\033[1mPlease follow instructions...\033[0m'
-  echo -e '\033[1mYou may be asked for your password...\033[0m'
-  echo -e '\033[1m \033[0m'
+  echo -e "${WHITE}Installing brew...${NC}"
+  echo -e "${WHITE}Please follow instructions...${NC}"
+  echo -e "${WHITE}You may be asked for your password...${NC}"
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 }
 
 if [[ $arch == "Darwin" ]]; then
   if [ "$(which timeout 2>/dev/null)" == "" ]; then
     check_installer
-    echo -e '\033[1mInstalling coreutils...\033[0m'
-    echo -e '\033[1mYou may be asked for your password...\033[0m'
+    echo -e "${WHITE}Installing coreutils...${NC}"
+    echo -e "${WHITE}You may be asked for your password...${NC}"
     echo $($installer coreutils)
   fi
 else
   if [ "$(which avahi-browse 2>/dev/null)" == "" ]; then
     check_installer
-    echo -e '\033[1mInstalling avahi-utils...\033[0m'
-    echo -e '\033[1mYou may be asked for your password...\033[0m'
+    echo -e "${WHITE}Installing avahi-utils...${NC}"
+    echo -e "${WHITE}You may be asked for your password...${NC}"
     echo $($installer avahi-utils)
   fi
 fi
 
 if [ "$(which jq 2>/dev/null)" == "" ]; then
   check_installer
-  echo -e '\033[1mInstalling jq...\033[0m'
-  echo -e '\033[1mYou may be asked for your password...\033[0m'
+  echo -e "${WHITE}Installing jq...${NC}"
+  echo -e "${WHITE}You may be asked for your password...${NC}"
   echo $($installer jq)
 fi
 
@@ -103,21 +110,23 @@ function write_flash {
   local durl=$3
   local cfw_type=$4
   local mode=$5
+  local host=$(echo $device | sed 's#\.local##g')
 
   if [ $cfw_type == "homekit" ]; then
-    echo "Downloading Firmware.."
+    echo "Downloading Firmware..."
     curl  -qsS -L -o shelly-flash.zip $durl
     flashcmd="curl -qsS -F file=@shelly-flash.zip http://$device/update"
   else
     flashcmd="curl -qsS http://$device/ota?url=$dlurl"
   fi
   if [ -f shelly-flash.zip ] || [ $cfw_type == "stock" ];then
-    echo "Now Flashing.."
+    echo "Now Flashing..."
     echo $($flashcmd)
   fi
 
   sleep 10
   n=1
+  waittextshown=false
   while [ $n -le 30 ]; do
     if [[ $mode == "homekit" ]]; then
       onlinecheck=$(curl -qsf -m 5 http://$device/rpc/Shelly.GetInfo)||onlinecheck="error"
@@ -125,7 +134,10 @@ function write_flash {
       onlinecheck=$(curl -qsf -m 5 http://$device/Shelly.GetInfo)||onlinecheck="error"
     fi
     if [[ $onlinecheck == "error" ]]; then
-      echo "waiting for $device to reboot"
+      if [[ $waittextshown == false ]]; then
+        echo "waiting for $host to reboot"
+        waittextshown=true
+      fi
       sleep 2
       n=$(( $n + 1 ))
     else
@@ -139,14 +151,13 @@ function write_flash {
   done
 
   if [[ $onlinecheck == $lfw ]];then
-    echo "Successfully flashed $device to $lfw"
+    echo -e "${GREEN}Successfully flashed $host to $lfw${NC}"
     if [[ $mode == "homekit" ]]; then
       rm -f shelly-flash.zip
     else
       if [ $(echo "$info" | jq -r .type) == "SHRGBW2" ]; then
-        echo " "
-        echo "To finalise flash process you will need to switch 'Modes' in the device WebUI,"
-        echo "WARNING!! If you are using this device in conjunction with Homebridge it will"
+        echo -e "\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,"
+        echo -e "${WHITE}WARNING!!${NC} If you are using this device in conjunction with Homebridge it will"
         echo "result in ALL scenes / automations to be removed within HomeKit."
         echo "Goto http://$device in your web browser"
         echo "Goto settings section"
@@ -155,7 +166,7 @@ function write_flash {
       fi
     fi
   else
-    echo "Failed to flash $device to $lfw"
+    echo -e "${RED}Failed to flash $host to $lfw${NC}"
     echo "Current: $onlinecheck"
   fi
 }
@@ -171,10 +182,11 @@ function probe_info {
   local action=$2
   local dry_run=$3
   local mode=$4
+  local host=$(echo $device | sed 's#\.local##g')
 
   info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
   if [[ $info == "error" ]]; then
-    echo "Could not resolve host: $device"
+    echo "Could not resolve host: $host"
     if [[ -z $device ]]; then
       read -p "Press enter to continue"
       return 0
@@ -276,24 +288,24 @@ function probe_info {
   fi
   if [[ ! $(curl --head --silent --fail $dlurl 2> /dev/null) ]]; then
     unset dlurl
-    lfw="Not available"
+    lfw="${RED}Not available${NC}"
+  fi
+
+  echo -e "\n${WHITE}Host:${NC} $host"
+  echo -e "${WHITE}Model:${NC} $model"
+  if [ $cfw_type == "homekit" ]; then
+    echo -e "${WHITE}Current:${NC} HomeKit $cfw"
+  else
+    echo -e "${WHITE}Current:${NC} Official $cfw"
+  fi
+  if [ $mode == "homekit" ]; then
+    echo -e "${WHITE}Latest:${NC} HomeKit ${YELLOW}$lfw${NC}"
+  else
+    echo -e "${WHITE}Latest:${NC} Official ${YELLOW}$lfw${NC}"
   fi
 
   if [ $action != "list" ]; then
-    echo "Host: $device"
-    echo "Model: $model"
-    if [ $cfw_type == "homekit" ]; then
-      echo "Current: HomeKit $cfw"
-    else
-      echo "Current: Official $cfw"
-    fi
-    if [ $mode == "homekit" ]; then
-      echo "Latest: HomeKit $lfw"
-    else
-      echo "Latest: Official $lfw"
-    fi
-    echo "DURL: $dlurl"
-
+    # echo "DURL: $dlurl" # only needed when debugging
     cfw_V=$(convert_to_integer $cfw)
     lfw_V=$(convert_to_integer $lfw)
 
@@ -316,7 +328,7 @@ function probe_info {
     fi
     if [[ $perform_flash == true ]] && [[ $dry_run == false ]] && [[ $silent_run == false ]]; then
       while true; do
-        read -p "Do you wish to flash $device to firmware version $lfw ? " yn
+        read -p "Do you wish to flash $host to firmware version $lfw ? " yn
         case $yn in
           [Yy]* ) flash=true; break;;
           [Nn]* ) flash=false; break;;
@@ -335,12 +347,15 @@ function probe_info {
       fi
       echo "Would have been $keyword..."
     elif [ -z $dlurl ]; then
-      echo "$model version $ffw is not available yet.."
-      echo " "
+      if [ ! -z $ffw ];then
+        keyword="Version $ffw is not available yet..."
+      else
+        keyword="Is not supported yet..."
+      fi
+      echo "$keyword$"
       return 0
     else
-      echo "$device does not need updating..."
-      echo " "
+      echo "Does not need updating..."
       return 0
     fi
 
@@ -349,24 +364,6 @@ function probe_info {
     elif [[ $dry_run == false ]]; then
       echo "Skipping Flash..."
     fi
-    echo " "
-  else
-    if [ -z $dlurl ]; then
-      lfw="Not available"
-    fi
-    echo "Host: $device"
-    echo "Model: $model"
-    if [ $cfw_type == "homekit" ]; then
-      echo "Current: HomeKit $cfw"
-    else
-      echo "Current: Official $cfw"
-    fi
-    if [[ $mode == "homekit" ]]; then
-      echo "Latest: HomeKit $lfw"
-    else
-      echo "Latest: Official $lfw"
-    fi
-    echo " "
   fi
 }
 
@@ -385,7 +382,7 @@ function device_scan {
     fi
     probe_info $device $action $dry_run $mode
   else
-    echo -e '\033[1mScanning for Shelly devices...\033[0m'
+    echo -e "${WHITE}Scanning for Shelly devices...${NC}"
     if [[ $arch == "Darwin" ]]; then
       device_list=$(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}' 2>/dev/null)
     else
@@ -489,11 +486,11 @@ fi
 stock_release_info=$(curl -qsS -m 5 https://api.shelly.cloud/files/firmware)||check="error"
 homekit_release_info=$(curl -qsS -m 5 https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases/latest)||check="error"
 if [ $check == "error" ]; then
-  echo "Failed to lookup version information"
+  echo -e "${RED}Failed to lookup version information${NC}"
   exit 1
 fi
 
-echo "OS: $arch"
+echo -e "${PURPLE}OS: $arch${NC}"
 if [[ ! -z $@ ]] && [ $exclude == false ];then
   for device in $@; do
     device_scan $device $action $do_all $dry_run $mode $exclude || continue
