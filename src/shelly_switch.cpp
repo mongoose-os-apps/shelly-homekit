@@ -168,8 +168,8 @@ void ShellySwitch::SetStateInternal(bool new_state, const char *source,
                          NULL /* msg */);
   }
   if (new_state == cur_state) return;
-  if (state_notify_char_ != nullptr) {
-    state_notify_char_->RaiseEvent();
+  for (auto *c : state_notify_chars_) {
+    c->RaiseEvent();
   }
 
   if (auto_off_timer_id_ != MGOS_INVALID_TIMER_ID) {

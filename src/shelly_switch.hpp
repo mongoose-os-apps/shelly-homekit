@@ -79,7 +79,7 @@ class ShellySwitch : public Component, public hap::Service {
   struct mgos_config_sw *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
-  hap::Characteristic *state_notify_char_ = nullptr;
+  std::vector<hap::Characteristic *> state_notify_chars_;
 
   mgos_timer_id auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
 

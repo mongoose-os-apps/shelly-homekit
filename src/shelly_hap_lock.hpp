@@ -38,8 +38,6 @@ class Lock : public ShellySwitch {
   HAPError HandleTargetStateWrite(
       HAPAccessoryServerRef *server,
       const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
-
-  Characteristic *tgt_state_notify_char_ = nullptr;
 };
 
 }  // namespace hap

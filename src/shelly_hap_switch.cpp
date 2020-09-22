@@ -59,7 +59,7 @@ Status Switch::Init() {
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_On);
-  state_notify_char_ = on_char;
+  state_notify_chars_.push_back(on_char);
   AddChar(on_char);
 
   return Status::OK();
