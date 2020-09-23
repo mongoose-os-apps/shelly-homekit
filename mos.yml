@@ -314,6 +314,40 @@ conds:
         - origin: https://github.com/mongoose-os-libs/rpc-service-ota
         - origin: https://github.com/mongoose-os-libs/wifi
 
+  - when: build_vars.MODEL == "ShellyI3"
+    apply:
+      name: ix3
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: esp8266-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+        - origin: https://github.com/mongoose-os-libs/rpc-service-gpio
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x1000
+        MGOS_ROOT_FS_TYPE: SPIFFS
+        MGOS_MBEDTLS_ENABLE_ATCA: 0
+      cdefs:
+        PRODUCT_MODEL: '"Shelly-i3"'
+        PRODUCT_HW_REV: '"1.0"'
+        MG_ENABLE_SSL: 0
+        # HAP_LOG_LEVEL: 0
+        LED_GPIO: 5
+        LED_ON: 0
+        BTN_GPIO: 4
+        BTN_DOWN: 0
+      config_schema:
+        - ["device.id", "shellyix3-????????????"]
+        - ["wifi.ap.ssid", "shellyix3-????????????"]
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Input 1"]
+        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2.name", "Input 2"]
+        - ["ssw3", "ssw", {"title": "SSW3 settings"}]
+        - ["ssw3.name", "Input 3"]
+
   - when: mos.platform == "ubuntu"
     apply:
       cdefs:
