@@ -22,6 +22,9 @@
 
 namespace shelly {
 
+// static
+constexpr Input::HandlerID Input::kInvalidHandlerID;
+
 Input::Input(int id) : id_(id) {
 }
 
