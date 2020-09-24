@@ -35,4 +35,8 @@ inline const char *OnOff(bool on) {
   return (on ? "on" : "off");
 }
 
+inline const char *YesNo(bool yes) {
+  return (yes ? "yes" : "no");
+}
+
 }  // namespace shelly

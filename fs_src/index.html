@@ -230,6 +230,30 @@
       </div>
     </div>
 
+    <div class="container" id="wc_template" style="display: none">
+      <h1 id="head">Window</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>Status:</label>
+            <span id="state"></span>
+            <span id="pos"></span>
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="save_btn">
+              <span id="save_spinner"></span>
+              <label>Save</label>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 <script>
 
 var lastInfo = null;
@@ -479,6 +503,11 @@ function findOrAddContainer(cd) {
       c.id = elId;
       el(c, "save_btn").onclick = function() { sswSetConfig(c); };
       break;
+    case 4: // Window Covering
+      c = el("wc_template").cloneNode(true);
+      c.id = elId;
+      el(c, "save_btn").onclick = function() { wcSetConfig(c); };
+      break;
   }
   if (c) {
     c.style.display = "block";
@@ -489,6 +518,7 @@ function findOrAddContainer(cd) {
 
 function updateComponent(cd) {
   var c = findOrAddContainer(cd);
+  if (!c) return;
   switch (cd.type) {
     case 0: // Switch
     case 1: // Outlet
@@ -527,6 +557,18 @@ function updateComponent(cd) {
         lastEvText = lastEv + " (" + secondsToDateString(cd.last_ev_age) + " ago)";
       }
       el(c, "last_event").innerText = lastEvText;
+      break;
+    case 4: // Window Covering
+      var headText = "Window " + cd.id;
+      if (cd.name) headText += " (" + cd.name + ")";
+      el(c, "head").innerText = headText;
+      el(c, "name").value = cd.name;
+      el(c, "state").innerText = cd.state_str;
+      if (cd.cal_state == 1) {
+        el(c, "pos").innerText = cd.cur_pos + " " + cd.tgt_pos;
+      } else {
+        el(c, "pos").innerText = "not calibrated";
+      }
       break;
   }
   c.data = cd;

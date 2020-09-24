@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "mgos_sys_config.h"
-#include "mgos_timers.h"
+#include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
@@ -52,21 +52,69 @@ class WindowCovering : public Component, public Service {
                    bool *restart_required) override;
 
  private:
-  void HandleInputEvent(int index, Input::Event ev, bool state);
+  enum class State {
+    kIdle = 0,
+    // Calibration states.
+    kPreCal0 = 10,
+    kCal0 = 11,
+    kPostCal0 = 12,
+    kPreCal1 = 13,
+    kCal1 = 14,
+    kPostCal1 = 15,
+    // Movement states
+    kMove = 20,
+    kMoving = 21,
+    kStop = 22,
+    kStopping = 23,
+    // Error states
+    kError = 100,
+  };
 
-  HAPError HandleTargetPositionWrite(
-      HAPAccessoryServerRef *server,
-      const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
+  enum class Direction {
+    kNone = 0,
+    kOpen = 1,
+    kClose = 2,
+  };
+
+  static constexpr float kNotSet = -1;
+  static constexpr float kFullyOpen = 100;
+  static constexpr float kFullyClosed = 0;
+
+  static const char *StateStr(State state);
+
+  void SaveState();
+
+  void SetState(State new_state);
+  void SetCurPos(float new_cur_pos);
+  Status SetTgtPos(float new_tgt_pos);
+
+  Direction GetDesiredMoveDirection();
+  void Move(Direction dir);
+
+  void RunOnce();
+
+  void HandleInputEvent(int index, Input::Event ev, bool state);
 
   std::vector<Input *> inputs_;
   std::vector<Output *> outputs_;
   std::vector<PowerMeter *> pms_;
   struct mgos_config_wc *cfg_;
 
-  uint8_t cur_pos_ = 0;
-  uint8_t tgt_pos_ = 0;
-
   std::vector<Input::HandlerID> input_handlers_;
+  mgos::ScopedTimer state_timer_;
+
+  float cur_pos_ = kNotSet;
+  float tgt_pos_ = kNotSet;
+
+  State state_ = State::kIdle;
+
+  float p_sum_ = 0;
+  int p_num_ = 0;
+  int64_t begin_ = 0, end_ = 0;
+  float move_start_pos_ = 0;
+  float last_notify_pos_ = 0;
+  float move_ms_per_pct_ = 0;
+  Direction move_dir_ = Direction::kNone;
 };
 
 }  // namespace hap

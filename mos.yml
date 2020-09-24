@@ -203,7 +203,7 @@ conds:
           version: master # Until 2.18 is out.
       build_vars:
         FLASH_SIZE: 2097152
-        FS_SIZE: 262144
+        FS_SIZE: 131072
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
         MGOS_MBEDTLS_ENABLE_ATCA: 0

@@ -53,12 +53,18 @@ void CreateComponents(std::vector<Component *> *comps,
                                 FindOutput(2), FindPM(1), FindPM(2), wc_cfg));
     if (wc != nullptr && wc->Init().ok()) {
       comps->push_back(wc.get());
-      std::unique_ptr<hap::Accessory> acc(new hap::Accessory(
-          SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
-          kHAPAccessoryCategory_BridgedAccessory, wc_cfg->name, nullptr, svr));
-      acc->AddHAPService(&mgos_hap_accessory_information_service);
-      acc->AddService(std::move(wc));
-      accs->push_back(std::move(acc));
+      /*
+            std::unique_ptr<hap::Accessory> acc(new hap::Accessory(
+                SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
+                kHAPAccessoryCategory_BridgedAccessory, wc_cfg->name, nullptr,
+         svr)); acc->AddHAPService(&mgos_hap_accessory_information_service);
+            acc->AddService(std::move(wc));
+            accs->push_back(std::move(acc));
+      */
+      hap::Accessory *pri_acc = (*accs)[0].get();
+      wc->set_primary(true);
+      pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
+      pri_acc->AddService(std::move(wc));
     }
     return;
   }
