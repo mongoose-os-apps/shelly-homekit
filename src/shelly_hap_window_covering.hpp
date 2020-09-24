@@ -80,13 +80,15 @@ class WindowCovering : public Component, public Service {
   static constexpr float kFullyOpen = 100;
   static constexpr float kFullyClosed = 0;
 
+  static float TrimPos(float pos);
+
   static const char *StateStr(State state);
 
   void SaveState();
 
   void SetState(State new_state);
   void SetCurPos(float new_cur_pos);
-  Status SetTgtPos(float new_tgt_pos);
+  void SetTgtPos(float new_tgt_pos, const char *src);
 
   Direction GetDesiredMoveDirection();
   void Move(Direction dir);
@@ -103,18 +105,23 @@ class WindowCovering : public Component, public Service {
   std::vector<Input::HandlerID> input_handlers_;
   mgos::ScopedTimer state_timer_;
 
+  Characteristic *cur_pos_char_ = nullptr;
+  Characteristic *tgt_pos_char_ = nullptr;
+  Characteristic *pos_state_char_ = nullptr;
+
   float cur_pos_ = kNotSet;
   float tgt_pos_ = kNotSet;
 
   State state_ = State::kIdle;
 
-  float p_sum_ = 0;
   int p_num_ = 0;
+  float p_sum_ = 0;
   int64_t begin_ = 0, end_ = 0;
   float move_start_pos_ = 0;
   float last_notify_pos_ = 0;
   float move_ms_per_pct_ = 0;
-  Direction move_dir_ = Direction::kNone;
+  Direction moving_dir_ = Direction::kNone;
+  Direction ext_move_dir_ = Direction::kNone;
 };
 
 }  // namespace hap
