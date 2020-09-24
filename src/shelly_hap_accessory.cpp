@@ -40,7 +40,19 @@ Accessory::Accessory(uint64_t aid, HAPAccessoryCategory category,
     mgos_expand_mac_address_placeholders(sn);
     a->serialNumber = sn;
   }
-  a->firmwareVersion = mgos_sys_ro_vars_get_fw_version();
+  // Sanitize firmware version for HAP, it must be x.y.z and nothing else.
+  // Strip any additional components after '-'.
+  const char *p;
+  for (p = mgos_sys_ro_vars_get_fw_version(); *p != '\0' && (isdigit(*p) || *p == '.'); p++) {
+    fw_version_.append(p, 1);
+  }
+  if (*p != '\0') {
+    a->firmwareVersion = fw_version_.c_str();
+    fw_version_.shrink_to_fit();
+  } else {
+    a->firmwareVersion = mgos_sys_ro_vars_get_fw_version();
+    fw_version_.clear();
+  }
   a->hardwareVersion = CS_STRINGIFY_MACRO(PRODUCT_HW_REV);
   a->callbacks.identify = &Accessory::Identify;
   hai_.inst = this;

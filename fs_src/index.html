@@ -240,14 +240,31 @@
           </div>
           <div class="form-control">
             <label>Status:</label>
-            <span id="state"></span>
+            <span id="state"></span> pos
             <span id="pos"></span>
           </div>
           <div class="form-control">
+            <label>Calibration:</label>
+            <span id="cal"></span>
+          </div>
+          <div class="form-control" id="dfl_btns">
             <label></label>
             <button class="btn" id="save_btn">
               <span id="save_spinner"></span>
               <label>Save</label>
+            </button>
+            <button class="btn" id="cal_btn">
+              <span id="cal_spinner"></span>
+              <label>Calibrate</label>
+            </button>
+          </div>
+          <div class="form-control" id="cal_btns">
+            <label></label>
+            <button class="btn" id="open_btn">
+              <label>Fully Open</label>
+            </button>
+            <button class="btn" id="closed_btn">
+              <label>Fully Closed</label>
             </button>
           </div>
         </div>
@@ -259,6 +276,7 @@
 var lastInfo = null;
 var host = "";
 
+var autoRefresh = false;
 var spinner = el("spinner");
 
 var wifiEn = el("wifi_en");
@@ -478,6 +496,37 @@ function sswSetConfig(c) {
     });
 }
 
+function wcSetConfig(c, cfg, spinner) {
+  if (!cfg) {
+    var name = el(c, "name").value;
+    if (name == "") {
+      alert("Name must not be empty");
+      return;
+    }
+    cfg = {
+      name: name,
+    };
+  }
+  if (spinner) spinner.className = "spin";
+  var data = {
+    id: c.data.id,
+    type: c.data.type,
+    config: cfg,
+  };
+  console.log("wcSetConfig:", data);
+  axios.post(host + "/rpc/Shelly.SetConfig", data)
+    .then(function(res) {
+      if (spinner) spinner.className = "";
+      setTimeout(getInfo, 1100);
+    }).catch(function(err) {
+      if (spinner) spinner.className = "";
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+    });
+}
+
 el("reboot_btn").onclick = function() {
   axios.post(host + "/rpc/Sys.Reboot", {delay_ms: 500}).then(function(res) {
     alert("System is rebooting, please refresh the page.");
@@ -506,7 +555,13 @@ function findOrAddContainer(cd) {
     case 4: // Window Covering
       c = el("wc_template").cloneNode(true);
       c.id = elId;
-      el(c, "save_btn").onclick = function() { wcSetConfig(c); };
+      el(c, "save_btn").onclick = function() { wcSetConfig(c, null, el(c, "save_spinner")); };
+      el(c, "cal_btn").onclick = function() {
+        wcSetConfig(c, {state: 10}, null);
+        el(c, "cal_spinner").className = "spin";
+      };
+      el(c, "open_btn").onclick = function() { wcSetConfig(c, {cal_result: 100}, null) };
+      el(c, "closed_btn").onclick = function() { wcSetConfig(c, {cal_result: 0}, null) };
       break;
   }
   if (c) {
@@ -564,10 +619,33 @@ function updateComponent(cd) {
       el(c, "head").innerText = headText;
       el(c, "name").value = cd.name;
       el(c, "state").innerText = cd.state_str;
-      if (cd.cal_state == 1) {
-        el(c, "pos").innerText = cd.cur_pos + " " + cd.tgt_pos;
+      if (cd.cal_done == 1) {
+        if (cd.cur_pos != cd.tgt_pos) {
+          el(c, "pos").innerText = cd.cur_pos + " -> " + cd.tgt_pos;
+        } else {
+          el(c, "pos").innerText = cd.cur_pos;
+        }
+        el(c, "cal").innerText = "open: " + cd.open_output_id + ", " +
+                                 "close: " + cd.close_output_id + ", " +
+                                 "movement time: " + cd.move_time_ms / 1000 + " s, "
+                                 "avg power: " + cd.move_power;
       } else {
-        el(c, "pos").innerText = "not calibrated";
+        el(c, "pos").innerText = "n/a";
+        el(c, "cal").innerText = "not calibrated";
+      }
+      if (cd.state_str == "postcal0") {
+        el(c, "dfl_btns").style.display = "none";
+        el(c, "cal_btns").style.display = "block";
+      } else {
+        el(c, "dfl_btns").style.display = "block";
+        el(c, "cal_btns").style.display = "none";
+      }
+      if (cd.state >= 10 && cd.state < 20) {  // Calibration is ongoing.
+        el(c, "cal_spinner").className = "spin";
+        el(c, "cal").innerText = "in progress";
+        autoRefresh = true;
+      } else {
+        el(c, "cal_spinner").className = "";
       }
       break;
   }
@@ -595,6 +673,7 @@ function getInfo() {
     if (data.hap_cn != el("components").cn) {
       el("components").innerHTML = "";
     }
+    autoRefresh = false;
     for (var i in data.components) {
       updateComponent(data.components[i]);
     }
@@ -624,6 +703,7 @@ el("refresh_btn").onclick = getInfo;
 
 function onLoad() {
   getInfo();
+  setInterval(function() { if (autoRefresh) getInfo(); }, 5000);
 }
 
 function durationStr(d) {

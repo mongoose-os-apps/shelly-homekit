@@ -70,6 +70,7 @@ class Accessory {
 
   std::vector<std::unique_ptr<Service>> svcs_;
   std::vector<const HAPService *> hap_svcs_;
+  std::string fw_version_;
 
   Accessory(const Accessory &other) = delete;
 };
