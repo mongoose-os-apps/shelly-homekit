@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.2.0-a1
+version: 2.2.0-alpha1
 platform: esp8266
 
 libs_version: latest
@@ -211,7 +211,7 @@ conds:
           version: master # Until 2.18 is out.
       build_vars:
         FLASH_SIZE: 2097152
-        FS_SIZE: 131072
+        FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
         MGOS_MBEDTLS_ENABLE_ATCA: 0

@@ -43,7 +43,8 @@ Accessory::Accessory(uint64_t aid, HAPAccessoryCategory category,
   // Sanitize firmware version for HAP, it must be x.y.z and nothing else.
   // Strip any additional components after '-'.
   const char *p;
-  for (p = mgos_sys_ro_vars_get_fw_version(); *p != '\0' && (isdigit(*p) || *p == '.'); p++) {
+  for (p = mgos_sys_ro_vars_get_fw_version();
+       *p != '\0' && (isdigit(*p) || *p == '.'); p++) {
     fw_version_.append(p, 1);
   }
   if (*p != '\0') {

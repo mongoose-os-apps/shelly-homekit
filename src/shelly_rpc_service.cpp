@@ -56,6 +56,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   if (HAPAccessoryServerGetCN(s_kvs, &hap_cn) != kHAPError_None) {
     hap_cn = 0;
   }
+  // XXX, TODO: do something better.
+  bool wc_avail = strcmp(CS_STRINGIFY_MACRO(PRODUCT_MODEL), "Shelly25");
   std::string res = mgos::JSONPrintStringf(
       "{id: %Q, app: %Q, model: %Q, stock_model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
@@ -64,7 +66,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u",
+      "hap_ip_conns_max: %u, wc_avail: %B, wc_enable: %B",
       mgos_sys_config_get_device_id(), MGOS_APP,
       CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
       mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
@@ -76,7 +78,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       hap_cn, hap_running, hap_paired,
       (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
-      (unsigned) tcpm_stats.maxNumTCPStreams);
+      (unsigned) tcpm_stats.maxNumTCPStreams, wc_avail,
+      mgos_sys_config_get_wc_enable());
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
   for (const auto *c : g_comps) {
@@ -101,14 +104,19 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                              struct mg_rpc_frame_info *fi, struct mg_str args) {
   int id = -1;
   int type = -1;
+  int8_t wc_enable = -1;
   struct json_token config_tok = JSON_INVALID_TOKEN;
 
-  json_scanf(args.p, args.len, ri->args_fmt, &id, &type, &config_tok);
+  json_scanf(args.p, args.len, ri->args_fmt, &id, &type, &config_tok,
+             &wc_enable);
 
-  if (config_tok.len == 0) {
-    mg_rpc_send_errorf(ri, 400, "%s is required", "config");
-    return;
-  }
+  Status st = Status::OK();
+  bool restart_required = false;
+  if (wc_enable == -1) {
+    if (config_tok.len == 0) {
+      mg_rpc_send_errorf(ri, 400, "%s is required", "config");
+      return;
+    }
 
   Status st = Status::OK();
   bool restart_required = false;
@@ -213,7 +221,8 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                      GetInfoHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
-                     "{id: %d, type: %d, config: %T}", SetConfigHandler, NULL);
+                     "{id: %d, type: %d, config: %T, wc_enable: %B}",
+                     SetConfigHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
                      GetDebugInfoHandler, NULL);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",

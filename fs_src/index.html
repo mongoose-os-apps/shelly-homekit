@@ -20,12 +20,11 @@
         <span id="spinner"></span>
         Refresh
       </button>
-            <button class="btn" id="reboot_btn">
-              Reboot
-            </button>
+      <button class="btn" id="reboot_btn">Reboot</button>
      <button disabled class="btndis" id="uptime_label">
        Uptime: <span id="uptime"></span>
      </button>
+      <button class="btn" id="wc_btn" style="visibility: hidden">Enable WC</button>
      <br><br>
     </div>
 
@@ -369,6 +368,18 @@ el("wifi_save_btn").onclick = function() {
   });
 };
 
+el("wc_btn").onclick = function() {
+  var data = {wc_enable: !el("wc_btn").cur};
+  axios.post(host + "/rpc/Shelly.SetConfig", data).then(function(res) {
+    setTimeout(getInfo, 1100);
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  });
+};
+
 function swSetState(c, newState) {
   var spinner = el(c, "set_spinner");
   spinner.className = "spin";
@@ -691,6 +702,11 @@ function getInfo() {
           data.hap_ip_conns_max + " max)";
     } else {
       el("hap_conn_stats").innerText = "server not running";
+    }
+    if (data.wc_avail) {
+      el("wc_btn").innerText = (!data.wc_enable ? "Enable" : "Disable") + " WC mode";
+      el("wc_btn").style.visibility = "visible";
+      el("wc_btn").cur = data.wc_enable;
     }
   }).catch(function(err) {
     alert(err);
