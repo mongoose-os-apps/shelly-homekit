@@ -109,21 +109,46 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     return;
   }
 
-  Component *c = nullptr;
-  for (auto *cp : g_comps) {
-    if (cp->id() == id && (int) cp->type() == type) {
-      c = cp;
-      break;
+  Status st = Status::OK();
+  bool restart_required = false;
+  if (id != -1 && type != -1) {
+    Component *c = nullptr;
+    for (auto *cp : g_comps) {
+      if (cp->id() == id && (int) cp->type() == type) {
+        c = cp;
+        break;
+      }
+    }
+    if (c == nullptr) {
+      mg_rpc_send_errorf(ri, 400, "component not found");
+      return;
+    }
+    st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
+                         &restart_required);
+  } else {
+    // Global config setting.
+    char *name_c = NULL;
+    json_scanf(args.p, args.len, "{config: {name: %Q}}", &name_c);
+    mgos::ScopedCPtr name_owner(name_c);
+    if (name_c != nullptr) {
+      mgos_expand_mac_address_placeholders(name_c);
+      std::string name(name_c);
+      if (name.length() > 64) {
+        mg_rpc_send_errorf(ri, 400, "invalid %s", "name");
+        return;
+      }
+      for (char c : name) {
+        if (!std::isalnum(c) && c != '-') {
+          mg_rpc_send_errorf(ri, 400, "invalid %s", "name");
+          return;
+        }
+      }
+      mgos_sys_config_set_device_id(name.c_str());
+      mgos_sys_config_set_dns_sd_host_name(nullptr);
+      mgos_dns_sd_set_host_name(name.c_str());
+      restart_required = true;
     }
   }
-  if (c == nullptr) {
-    mg_rpc_send_errorf(ri, 400, "component not found");
-    return;
-  }
-
-  bool restart_required = false;
-  auto st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
-                         &restart_required);
   if (st.ok()) {
     mgos_sys_config_save(&mgos_sys_config, false /* try once */, NULL);
     if (restart_required) {
