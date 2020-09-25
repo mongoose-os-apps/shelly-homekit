@@ -17,7 +17,7 @@
 
 #include "shelly_hap_window_covering.hpp"
 
-#include "mgos.h"
+#include "mgos.hpp"
 #include "mgos_system.hpp"
 
 namespace shelly {
