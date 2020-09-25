@@ -247,6 +247,7 @@ void WindowCovering::SetState(State new_state) {
       ("%d: State transition: %s -> %s (%d -> %d)", id(), StateStr(state_),
        StateStr(new_state), (int) state_, (int) new_state));
   state_ = new_state;
+  begin_ = mgos_uptime_micros();
 }
 
 void WindowCovering::SetCurPos(float new_cur_pos) {
@@ -333,7 +334,8 @@ void WindowCovering::RunOnce() {
         break;
       }
       const float p0 = p0v.ValueOrDie();
-      if (p0 < 1) {
+      LOG(LL_INFO, ("%d: P0 = %.3f", id(), p0));
+      if (p0 < 1 && (mgos_uptime_micros() - begin_ > 300000)) {
         outputs_[0]->SetState(false, ss);
         SetState(State::kPostCal0);
       }
@@ -345,7 +347,6 @@ void WindowCovering::RunOnce() {
     }
     case State::kPreCal1: {
       outputs_[1]->SetState(true, ss);
-      begin_ = mgos_uptime_micros();
       p_sum_ = 0;
       p_num_ = 0;
       SetState(State::kCal1);
@@ -360,10 +361,10 @@ void WindowCovering::RunOnce() {
       }
       const float p1 = p1v.ValueOrDie();
       LOG(LL_INFO, ("%d: P1 = %.3f", id(), p1));
-      if (p_num_ > 0 && p1 < 1) {
-        end_ = mgos_uptime_micros();
+      if (p_num_ > 1 && p1 < 1) {
+        int64_t end = mgos_uptime_micros();
         outputs_[1]->SetState(false, StateStr(state_));
-        int move_time_ms = (end_ - begin_) / 1000;
+        int move_time_ms = (end - begin_) / 1000;
         float move_power = p_sum_ / p_num_;
         LOG(LL_INFO, ("%d: calibration done, move_time %d, move_power %.3f",
                       id(), move_time_ms, move_power));
@@ -394,7 +395,6 @@ void WindowCovering::RunOnce() {
         break;
       }
       move_start_pos_ = cur_pos_;
-      begin_ = mgos_uptime_micros();
       Move(dir);
       SetState(State::kMoving);
       break;
@@ -424,8 +424,8 @@ void WindowCovering::RunOnce() {
           ((tgt_pos_ == kFullyOpen && moving_dir_ == Direction::kOpen) ||
            (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose))) {
         LOG(LL_DEBUG, ("Moving to %d, pm %.2f", (int) tgt_pos_, pm));
-        if (pm > 1) {
-          // Still moving.
+        if (pm > 1 || (mgos_uptime_micros() - begin_ < 300000)) {
+          // Still moving or ramping up.
           break;
         } else {
           SetCurPos(moving_dir_ == Direction::kOpen ? kFullyOpen

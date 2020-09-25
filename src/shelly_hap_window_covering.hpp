@@ -116,7 +116,7 @@ class WindowCovering : public Component, public Service {
 
   int p_num_ = 0;
   float p_sum_ = 0;
-  int64_t begin_ = 0, end_ = 0;
+  int64_t begin_ = 0;
   float move_start_pos_ = 0;
   float last_notify_pos_ = 0;
   float move_ms_per_pct_ = 0;
