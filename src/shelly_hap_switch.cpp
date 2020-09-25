@@ -17,7 +17,7 @@
 
 #include "shelly_hap_switch.hpp"
 
-#include "mgos.h"
+#include "mgos.hpp"
 
 #include "shelly_hap_chars.hpp"
 

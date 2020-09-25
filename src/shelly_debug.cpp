@@ -17,7 +17,7 @@
 
 #include "shelly_debug.hpp"
 
-#include "mgos.h"
+#include "mgos.hpp"
 #include "mgos_http_server.h"
 
 #include "HAPAccessoryServer+Internal.h"

@@ -17,7 +17,7 @@
 
 #include "shelly_rpc_service.hpp"
 
-#include "mgos.h"
+#include "mgos.hpp"
 #include "mgos_dns_sd.h"
 #include "mgos_rpc.h"
 

@@ -17,7 +17,7 @@
 
 #include "shelly_output.hpp"
 
-#include "mgos.h"
+#include "mgos.hpp"
 #include "mgos_gpio.h"
 
 namespace shelly {

@@ -19,7 +19,7 @@
 
 #include <cmath>
 
-#include "mgos.h"
+#include "mgos.hpp"
 #include "mgos_ade7953.h"
 
 namespace shelly {

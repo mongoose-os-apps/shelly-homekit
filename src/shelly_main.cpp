@@ -17,7 +17,7 @@
 
 #include "shelly_main.hpp"
 
-#include "mgos.h"
+#include "mgos.hpp"
 #include "mgos_app.h"
 #include "mgos_hap.h"
 #ifdef MGOS_HAVE_OTA_COMMON
