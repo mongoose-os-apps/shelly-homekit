@@ -418,11 +418,13 @@ void WindowCovering::RunOnce() {
         break;
       }
       Direction want_move_dir = GetDesiredMoveDirection();
-      // If moving to one of the limit positions, keep moving until no current
-      // is flowing.
-      if (want_move_dir == moving_dir_ &&
-          ((tgt_pos_ == kFullyOpen && moving_dir_ == Direction::kOpen) ||
-           (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose))) {
+      bool reverse =
+          (want_move_dir != moving_dir_ && want_move_dir != Direction::kNone);
+      // If moving to one of the limit positions, keep moving
+      // until no current is flowing.
+      if (((tgt_pos_ == kFullyOpen && moving_dir_ == Direction::kOpen) ||
+           (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose)) &&
+          !reverse) {
         LOG(LL_DEBUG, ("Moving to %d, pm %.2f", (int) tgt_pos_, pm));
         if (pm > 1 || (mgos_uptime_micros() - begin_ < 300000)) {
           // Still moving or ramping up.
