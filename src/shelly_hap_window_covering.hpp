@@ -90,6 +90,8 @@ class WindowCovering : public Component, public Service {
   void SetCurPos(float new_cur_pos);
   void SetTgtPos(float new_tgt_pos, const char *src);
 
+  void HAPSetTgtPos(float value);
+
   Direction GetDesiredMoveDirection();
   void Move(Direction dir);
 

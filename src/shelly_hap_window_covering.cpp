@@ -18,6 +18,7 @@
 #include "shelly_hap_window_covering.hpp"
 
 #include "mgos.h"
+#include "mgos_system.hpp"
 
 namespace shelly {
 namespace hap {
@@ -57,13 +58,16 @@ Status WindowCovering::Init() {
       iid++, &kHAPCharacteristicType_TargetPosition, 0, 100, 1,
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
-        *value = static_cast<uint8_t>(tgt_pos_ >= 0 ? tgt_pos_ : cur_pos_);
+        *value = tgt_pos_;
         return kHAPError_None;
       },
       true /* supports_notification */,
       [this](HAPAccessoryServerRef *,
              const HAPUInt8CharacteristicWriteRequest *, uint8_t value) {
-        SetTgtPos(value, "HAP");
+        // We need to decouple from the current invocation
+        // because we may want to raise a notification on the target position
+        // and we can't do that within the write callback.
+        mgos::InvokeCB(std::bind(&WindowCovering::HAPSetTgtPos, this, value));
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_TargetPosition);
@@ -104,7 +108,7 @@ Status WindowCovering::Init() {
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicWriteRequest *,
              bool value) {
         if (value) {
-          LOG(LL_INFO, ("%d: Hold position", id()));
+          LOG(LL_INFO, ("WC %d: Hold position", id()));
           ext_move_dir_ = Direction::kNone;
           SetState(State::kStop);
         }
@@ -114,8 +118,8 @@ Status WindowCovering::Init() {
   // Obstruction Detected
   AddChar(new BoolCharacteristic(
       iid++, &kHAPCharacteristicType_ObstructionDetected,
-      [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
-             bool *value) {
+      [](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
+         bool *value) {
         *value = false; /* TODO */
         return kHAPError_None;
       },
@@ -133,10 +137,10 @@ Status WindowCovering::Init() {
     }
   }
   if (cfg_->calibrated) {
-    LOG(LL_INFO, ("%d: mp %.2f, mt_ms %d, cur_pos %.2f", id(), cfg_->move_power,
-                  cfg_->move_time_ms, cur_pos_));
+    LOG(LL_INFO, ("WC %d: mp %.2f, mt_ms %d, cur_pos %.2f", id(),
+                  cfg_->move_power, cfg_->move_time_ms, cur_pos_));
   } else {
-    LOG(LL_INFO, ("%d: not calibrated", id()));
+    LOG(LL_INFO, ("WC %d: not calibrated", id()));
   }
   state_timer_.Reset(100, MGOS_TIMER_REPEAT);
   return Status::OK();
@@ -244,7 +248,7 @@ void WindowCovering::SaveState() {
 void WindowCovering::SetState(State new_state) {
   if (state_ == new_state) return;
   LOG(LL_INFO,
-      ("%d: State transition: %s -> %s (%d -> %d)", id(), StateStr(state_),
+      ("WC %d: State transition: %s -> %s (%d -> %d)", id(), StateStr(state_),
        StateStr(new_state), (int) state_, (int) new_state));
   state_ = new_state;
   begin_ = mgos_uptime_micros();
@@ -253,7 +257,8 @@ void WindowCovering::SetState(State new_state) {
 void WindowCovering::SetCurPos(float new_cur_pos) {
   new_cur_pos = TrimPos(new_cur_pos);
   if (new_cur_pos == cur_pos_) return;
-  LOG(LL_INFO, ("%d: Current pos %.2f -> %.2f", id(), cur_pos_, new_cur_pos));
+  LOG(LL_INFO,
+      ("WC %d: Current pos %.2f -> %.2f", id(), cur_pos_, new_cur_pos));
   cur_pos_ = new_cur_pos;
   cfg_->current_pos = cur_pos_;
   if (new_cur_pos == kFullyOpen || new_cur_pos == kFullyClosed ||
@@ -267,17 +272,32 @@ void WindowCovering::SetCurPos(float new_cur_pos) {
 void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
   new_tgt_pos = TrimPos(new_tgt_pos);
   if (new_tgt_pos == tgt_pos_) return;
-  LOG(LL_INFO,
-      ("%d: Target pos %.2f -> %.2f (%s)", id(), tgt_pos_, new_tgt_pos, src));
+  LOG(LL_INFO, ("WC %d: Target pos %.2f -> %.2f (%s)", id(), tgt_pos_,
+                new_tgt_pos, src));
   tgt_pos_ = new_tgt_pos;
   tgt_pos_char_->RaiseEvent();
+}
+
+void WindowCovering::HAPSetTgtPos(float value) {
+  // If already moving and the command has come to do a 180,
+  // this represents a tap on the tile by the user.
+  // In this case we just stop the movement.
+  if (moving_dir_ == Direction::kOpen && value == kFullyClosed) {
+    SetTgtPos(cur_pos_ + 1, "HAP");
+  } else if (moving_dir_ == Direction::kClose && value == kFullyOpen) {
+    SetTgtPos(cur_pos_ - 1, "HAP");
+  } else {
+    SetTgtPos(value, "HAP");
+  }
+  // Run state machine immediately to improve reaction time,
+  RunOnce();
 }
 
 WindowCovering::Direction WindowCovering::GetDesiredMoveDirection() {
   if (ext_move_dir_ != Direction::kNone) return ext_move_dir_;
   if (tgt_pos_ == kNotSet) return Direction::kNone;
   float pos_diff = tgt_pos_ - cur_pos_;
-  if (!cfg_->calibrated || std::abs(pos_diff) < 2) {
+  if (!cfg_->calibrated || std::abs(pos_diff) < 1) {
     return Direction::kNone;
   }
   return (pos_diff > 0 ? Direction::kOpen : Direction::kClose);
@@ -307,7 +327,7 @@ void WindowCovering::Move(Direction dir) {
 void WindowCovering::RunOnce() {
   const char *ss = StateStr(state_);
   if (state_ != State::kIdle) {
-    LOG(LL_DEBUG, ("%d: %s md %d emd %d pos %.2f -> %.2f", id(), ss,
+    LOG(LL_DEBUG, ("WC %d: %s md %d emd %d pos %.2f -> %.2f", id(), ss,
                    (int) moving_dir_, (int) ext_move_dir_, cur_pos_, tgt_pos_));
   }
   switch (state_) {
@@ -334,7 +354,7 @@ void WindowCovering::RunOnce() {
         break;
       }
       const float p0 = p0v.ValueOrDie();
-      LOG(LL_INFO, ("%d: P0 = %.3f", id(), p0));
+      LOG(LL_DEBUG, ("WC %d: P0 = %.3f", id(), p0));
       if (p0 < 1 && (mgos_uptime_micros() - begin_ > 300000)) {
         outputs_[0]->SetState(false, ss);
         SetState(State::kPostCal0);
@@ -360,13 +380,13 @@ void WindowCovering::RunOnce() {
         break;
       }
       const float p1 = p1v.ValueOrDie();
-      LOG(LL_INFO, ("%d: P1 = %.3f", id(), p1));
+      LOG(LL_DEBUG, ("WC %d: P1 = %.3f", id(), p1));
       if (p_num_ > 1 && p1 < 1) {
         int64_t end = mgos_uptime_micros();
         outputs_[1]->SetState(false, StateStr(state_));
         int move_time_ms = (end - begin_) / 1000;
         float move_power = p_sum_ / p_num_;
-        LOG(LL_INFO, ("%d: calibration done, move_time %d, move_power %.3f",
+        LOG(LL_INFO, ("WC %d: calibration done, move_time %d, move_power %.3f",
                       id(), move_time_ms, move_power));
         cfg_->move_time_ms = move_time_ms;
         cfg_->move_power = move_power;
