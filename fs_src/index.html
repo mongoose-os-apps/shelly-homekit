@@ -246,7 +246,21 @@
             <label>Calibration:</label>
             <span id="cal"></span>
           </div>
-          <div class="form-control" id="dfl_btns">
+          <div class="form-control">
+            <label>Swap Inputs:</label>
+              <label class="switch">
+                <input type="checkbox" id="swap_inputs">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Swap Outputs:</label>
+              <label class="switch">
+                <input type="checkbox" id="swap_outputs">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control" id="btns">
             <label></label>
             <button class="btn" id="save_btn">
               <span id="save_spinner"></span>
@@ -255,15 +269,6 @@
             <button class="btn" id="cal_btn">
               <span id="cal_spinner"></span>
               <label>Calibrate</label>
-            </button>
-          </div>
-          <div class="form-control" id="cal_btns">
-            <label></label>
-            <button class="btn" id="open_btn">
-              <label>Fully Open</label>
-            </button>
-            <button class="btn" id="closed_btn">
-              <label>Fully Closed</label>
             </button>
           </div>
         </div>
@@ -516,6 +521,8 @@ function wcSetConfig(c, cfg, spinner) {
     }
     cfg = {
       name: name,
+      swap_inputs: el(c, "swap_inputs").checked,
+      swap_outputs: el(c, "swap_outputs").checked,
     };
   }
   if (spinner) spinner.className = "spin";
@@ -571,8 +578,6 @@ function findOrAddContainer(cd) {
         wcSetConfig(c, {state: 10}, null);
         el(c, "cal_spinner").className = "spin";
       };
-      el(c, "open_btn").onclick = function() { wcSetConfig(c, {cal_result: 100}, null) };
-      el(c, "closed_btn").onclick = function() { wcSetConfig(c, {cal_result: 0}, null) };
       break;
   }
   if (c) {
@@ -630,6 +635,8 @@ function updateComponent(cd) {
       el(c, "head").innerText = headText;
       el(c, "name").value = cd.name;
       el(c, "state").innerText = cd.state_str;
+      el(c, "swap_inputs").checked = cd.swap_inputs;
+      el(c, "swap_outputs").checked = cd.swap_outputs;
       if (cd.cal_done == 1) {
         if (cd.cur_pos != cd.tgt_pos) {
           el(c, "pos").innerText = cd.cur_pos + " -> " + cd.tgt_pos;
@@ -643,13 +650,6 @@ function updateComponent(cd) {
       } else {
         el(c, "pos").innerText = "n/a";
         el(c, "cal").innerText = "not calibrated";
-      }
-      if (cd.state_str == "postcal0") {
-        el(c, "dfl_btns").style.display = "none";
-        el(c, "cal_btns").style.display = "block";
-      } else {
-        el(c, "dfl_btns").style.display = "block";
-        el(c, "cal_btns").style.display = "none";
       }
       if (cd.state >= 10 && cd.state < 20) {  // Calibration is ongoing.
         el(c, "cal_spinner").className = "spin";

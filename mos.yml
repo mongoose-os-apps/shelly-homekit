@@ -39,8 +39,9 @@ config_schema:
 
   - ["wc.enable", "b", false, {"title": "Enable windows covering (roller shutter) mode"}]
   - ["wc.name", "s", "Shutter 1", {"title": "Accessory name"}]
+  - ["wc.swap_inputs", "b", false, {"title": "Swap inputs (2 - open, 1 - close)"}]
+  - ["wc.swap_outputs", "b", false, {"title": "Swap outputs (2 - open, 1 - close)"}]
   - ["wc.calibrated", "b", false, {"title": "Calibration done"}]
-  - ["wc.open_out_idx", "i", 0, {"title": "Output index used for opening, 0 or 1. The other is used for closing."}]
   - ["wc.move_power", "d", 0.0, {"title": "Power consumption during movement, watts"}]
   - ["wc.move_time_ms", "i", 0, {"title": "Move time, in millseconds"}]
   - ["wc.current_pos", "d", 0.0, {"title": "Last position, percent: 0 - fully closed, 100 - fully open."}]

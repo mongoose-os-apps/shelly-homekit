@@ -53,6 +53,7 @@ class WindowCovering : public Component, public Service {
 
  private:
   enum class State {
+    kNone = -1,
     kIdle = 0,
     // Calibration states.
     kPreCal0 = 10,
@@ -79,6 +80,8 @@ class WindowCovering : public Component, public Service {
   static constexpr float kNotSet = -1;
   static constexpr float kFullyOpen = 100;
   static constexpr float kFullyClosed = 0;
+  static constexpr int kOpenOutIdx = 0;
+  static constexpr int kCloseOutIdx = 1;
 
   static float TrimPos(float pos);
 
@@ -97,14 +100,18 @@ class WindowCovering : public Component, public Service {
 
   void RunOnce();
 
-  void HandleInputEvent(int index, Input::Event ev, bool state);
+  void HandleOpenInputEvent(Input::Event ev, bool state);
+  void HandleCloseInputEvent(Input::Event ev, bool state);
+  void HandleInputEventCommon();
 
-  std::vector<Input *> inputs_;
-  std::vector<Output *> outputs_;
-  std::vector<PowerMeter *> pms_;
+  Input *in_open_, *in_close_;
+  Output *out_open_, *out_close_;
+  PowerMeter *pm_open_, *pm_close_;
   struct mgos_config_wc *cfg_;
 
   std::vector<Input::HandlerID> input_handlers_;
+  Input::HandlerID in_open_handler_ = Input::kInvalidHandlerID;
+  Input::HandlerID in_close_handler_ = Input::kInvalidHandlerID;
   mgos::ScopedTimer state_timer_;
 
   Characteristic *cur_pos_char_ = nullptr;
@@ -115,6 +122,7 @@ class WindowCovering : public Component, public Service {
   float tgt_pos_ = kNotSet;
 
   State state_ = State::kIdle;
+  State tgt_state_ = State::kNone;
 
   int p_num_ = 0;
   float p_sum_ = 0;
