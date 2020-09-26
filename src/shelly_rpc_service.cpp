@@ -56,8 +56,6 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   if (HAPAccessoryServerGetCN(s_kvs, &hap_cn) != kHAPError_None) {
     hap_cn = 0;
   }
-  // XXX, TODO: do something better.
-  bool wc_avail = strcmp(CS_STRINGIFY_MACRO(PRODUCT_MODEL), "Shelly25");
   std::string res = mgos::JSONPrintStringf(
       "{id: %Q, app: %Q, model: %Q, stock_model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
@@ -66,7 +64,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u, wc_avail: %B, wc_enable: %B",
+      "hap_ip_conns_max: %u, sys_mode: %d, rsh_avail: %B",
       mgos_sys_config_get_device_id(), MGOS_APP,
       CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
       mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
@@ -78,8 +76,13 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       hap_cn, hap_running, hap_paired,
       (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
-      (unsigned) tcpm_stats.maxNumTCPStreams, wc_avail,
-      mgos_sys_config_get_wc_enable());
+      (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
+#ifdef MGOS_SYS_CONFIG_HAVE_WC1
+      true
+#else
+      false
+#endif
+  );
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
   for (const auto *c : g_comps) {
@@ -104,41 +107,35 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                              struct mg_rpc_frame_info *fi, struct mg_str args) {
   int id = -1;
   int type = -1;
-  int8_t wc_enable = -1;
   struct json_token config_tok = JSON_INVALID_TOKEN;
 
-  json_scanf(args.p, args.len, ri->args_fmt, &id, &type, &config_tok,
-             &wc_enable);
+  json_scanf(args.p, args.len, ri->args_fmt, &id, &type, &config_tok);
+
+  if (config_tok.len == 0) {
+    mg_rpc_send_errorf(ri, 400, "%s is required", "config");
+    return;
+  }
 
   Status st = Status::OK();
   bool restart_required = false;
-  if (wc_enable == -1) {
-    if (config_tok.len == 0) {
-      mg_rpc_send_errorf(ri, 400, "%s is required", "config");
-      return;
-    }
-
-  Status st = Status::OK();
-  bool restart_required = false;
-  if (id != -1 && type != -1) {
-    Component *c = nullptr;
-    for (auto *cp : g_comps) {
-      if (cp->id() == id && (int) cp->type() == type) {
-        c = cp;
-        break;
-      }
-    }
-    if (c == nullptr) {
-      mg_rpc_send_errorf(ri, 400, "component not found");
-      return;
-    }
-    st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
-                      &restart_required);
-  } else {
-    // Global config setting.
+  if (id == -1 && type == -1) {
+    // System settings.
     char *name_c = NULL;
-    json_scanf(args.p, args.len, "{config: {name: %Q}}", &name_c);
+    int sys_mode = -1;
+    json_scanf(config_tok.ptr, config_tok.len, "{name: %Q, sys_mode: %d}", &name_c, &sys_mode);
     mgos::ScopedCPtr name_owner(name_c);
+
+    if (sys_mode == 0 || sys_mode == 1) {
+      if (sys_mode != mgos_sys_config_get_shelly_mode()) {
+        mgos_sys_config_set_shelly_mode(sys_mode);
+        restart_required = true;
+      }
+    } else if (sys_mode == -1) {
+      // Nothing.
+    } else {
+      st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
+                        "name (too long, max 64)");
+    }
     if (name_c != nullptr) {
       mgos_expand_mac_address_placeholders(name_c);
       std::string name(name_c);
@@ -157,9 +154,25 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       mgos_dns_sd_set_host_name(name.c_str());
       restart_required = true;
     }
+  } else {
+    // Component settings.
+    Component *c = nullptr;
+    for (auto *cp : g_comps) {
+      if (cp->id() == id && (int) cp->type() == type) {
+        c = cp;
+        break;
+      }
+    }
+    if (c == nullptr) {
+      st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "component not found");
+      return;
+    } else {
+      st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
+                        &restart_required);
+    }
   }
   if (st.ok()) {
-    mgos_sys_config_save(&mgos_sys_config, false /* try once */, NULL);
+    mgos_sys_config_save(&mgos_sys_config, false /* try once */, nullptr);
     if (restart_required) {
       LOG(LL_INFO, ("Configuration change requires server restart"));
       RestartHAPServer();
@@ -199,7 +212,7 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       case Component::Type::kLock: {
         ShellySwitch *sw = static_cast<ShellySwitch *>(c);
         sw->SetState(state, "web");
-        mg_rpc_send_responsef(ri, NULL);
+        mg_rpc_send_responsef(ri, nullptr);
         return;
       }
       default:
@@ -219,14 +232,14 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   s_kvs = kvs;
   s_tcpm = tcpm;
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
-                     GetInfoHandler, NULL);
+                     GetInfoHandler, nullptr);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
-                     "{id: %d, type: %d, config: %T, wc_enable: %B}",
-                     SetConfigHandler, NULL);
+                     "{id: %d, type: %d, config: %T}", SetConfigHandler,
+                     nullptr);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
-                     GetDebugInfoHandler, NULL);
+                     GetDebugInfoHandler, nullptr);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
-                     "{id: %d, state: %B}", SetSwitchHandler, NULL);
+                     "{id: %d, state: %B}", SetSwitchHandler, nullptr);
   return true;
 }
 

@@ -45,9 +45,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  if (mgos_sys_config_get_wc_enable()) {
+  if (mgos_sys_config_get_shelly_mode() == 1) {
     const int id = 1;
-    auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc();
+    auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
     std::unique_ptr<hap::WindowCovering> wc(
         new hap::WindowCovering(id, FindInput(1), FindInput(2), FindOutput(1),
                                 FindOutput(2), FindPM(1), FindPM(2), wc_cfg));
@@ -83,8 +83,8 @@ void CreateComponents(std::vector<Component *> *comps,
         break;
       }
     }
+    return;
   }
-  return;
   // Use legacy layout if upgraded from an older version (pre-2.1).
   // However, presence of detached inputs overrides it.
   bool compat_20 = (mgos_sys_config_get_shelly_legacy_hap_layout() &&

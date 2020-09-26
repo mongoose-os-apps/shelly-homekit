@@ -37,7 +37,7 @@ config_schema:
   - ["ssw.name", "s", "", {"Name of the switch"}]
   - ["ssw.in_mode", "i", 0, {"0 - Momentary; 1 - Toggle, single press event on change; 2 - Toggle, on = single press, off = double press"}]
 
-  - ["wc.enable", "b", false, {"title": "Enable windows covering (roller shutter) mode"}]
+  - ["wc", "o", {"Roller shutter settings"}]
   - ["wc.name", "s", "Shutter 1", {"title": "Accessory name"}]
   - ["wc.in_mode", "i", 0, {"title": "Input mode: 0 - separate open / close, 1 - single input, 2 - detached"}]
   - ["wc.swap_inputs", "b", false, {"title": "Swap inputs (2 - open, 1 - close)"}]
@@ -47,6 +47,7 @@ config_schema:
   - ["wc.move_time_ms", "i", 0, {"title": "Move time, in millseconds"}]
   - ["wc.current_pos", "d", 0.0, {"title": "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
+  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutteri (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
   # Deprecated settings, only kept to enable migration.
@@ -240,6 +241,8 @@ conds:
         - ["sw2.name", "Shelly SW2"]
         - ["ssw2", "ssw", {"title": "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
+        - ["wc1", "wc", {"title": "WC1 settings"}]
+        - ["wc1.name", "Window 1"]
 
   - when: mos.platform != "ubuntu"
     apply:

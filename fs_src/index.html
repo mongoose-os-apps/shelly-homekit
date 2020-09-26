@@ -24,12 +24,30 @@
      <button disabled class="btndis" id="uptime_label">
        Uptime: <span id="uptime"></span>
      </button>
-      <button class="btn" id="wc_btn" style="visibility: hidden">Enable WC</button>
      <br><br>
     </div>
-
+    <div class="container" id="sys_container" style="display: none">
+      <h1 class="">System Settings</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control" id="sys_mode_container">
+            <label>Mode:</label>
+            <select id="sys_mode">
+              <option id="sys_mode_0" value="0">Switch</option>
+              <option id="sys_mode_1" value="1">Roller Shutter</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="sys_save_btn">
+              <span id="sys_save_spinner"></span>
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="components"></div>
-
     <div class="container" id="homekit_container" style="visibility: hidden">
       <h1 class="">HomeKit Settings</h1>
       <div class="form">
@@ -311,6 +329,26 @@ function el(container, id) {
   return container.querySelector("#" + id);
 }
 
+el("sys_save_btn").onclick = function() {
+  var data = {
+    config: {
+      sys_mode: parseInt(el("sys_mode").value),
+    },
+  };
+  console.log("sysSetCfg:", data);
+  el("sys_save_spinner").className = "spin";
+  axios.post(host + "/rpc/Shelly.SetConfig", data).then(function(res) {
+    el("sys_save_spinner").className = "";
+    setTimeout(getInfo, 1100);
+  }).catch(function(err) {
+    el("sys_save_spinner").className = "";
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  });
+};
+
 el("hap_save_btn").onclick = function() {
   var code = hapSetupCode.value;
   if (!code.match(/^\d\d\d-\d\d-\d\d\d$/)) {
@@ -378,18 +416,6 @@ el("wifi_save_btn").onclick = function() {
     alert(err);
   }).then(function() {
     wifiSpinner.className = "";
-  });
-};
-
-el("wc_btn").onclick = function() {
-  var data = {wc_enable: !el("wc_btn").cur};
-  axios.post(host + "/rpc/Shelly.SetConfig", data).then(function(res) {
-    setTimeout(getInfo, 1100);
-  }).catch(function(err) {
-    if (err.response) {
-      err = err.response.data.message;
-    }
-    alert(err);
   });
 };
 
@@ -713,10 +739,9 @@ function getInfo() {
     } else {
       el("hap_conn_stats").innerText = "server not running";
     }
-    if (data.wc_avail) {
-      el("wc_btn").innerText = (!data.wc_enable ? "Enable" : "Disable") + " WC mode";
-      el("wc_btn").style.visibility = "visible";
-      el("wc_btn").cur = data.wc_enable;
+    if (data.rsh_avail) {
+      el("sys_mode_" + data.sys_mode).selected = true;
+      el("sys_container").style.display = "block";
     }
   }).catch(function(err) {
     alert(err);
