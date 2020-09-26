@@ -125,8 +125,7 @@ static int16_t s_identify_count = 0;
 
 static void CheckLED(int pin, bool led_act);
 
-static HAPError AccessoryIdentifyCB(
-    const HAPAccessoryIdentifyRequest *request) {
+HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request) {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
   s_identify_count = 3;
   CheckLED(LED_GPIO, LED_ON);
@@ -248,19 +247,28 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
   }
   if (sw_cfg->in_mode == 3) {
     LOG(LL_INFO, ("Creating a stateless switch for input %d", id));
-    std::unique_ptr<hap::StatelessSwitch> ssw(new hap::StatelessSwitch(
-        id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, 0));
-    if (ssw != nullptr && ssw->Init().ok()) {
-      comps->push_back(ssw.get());
-      std::unique_ptr<hap::Accessory> acc(
-          new hap::Accessory(SHELLY_HAP_AID_BASE_STATELESS_SWITCH + id,
-                             kHAPAccessoryCategory_BridgedAccessory,
-                             ssw_cfg->name, &AccessoryIdentifyCB, svr));
-      acc->AddHAPService(&mgos_hap_accessory_information_service);
-      acc->AddService(std::move(ssw));
-      accs->push_back(std::move(acc));
-    }
+    CreateHAPStatelessSwitch(id, ssw_cfg, comps, accs, svr);
   }
+}
+
+void CreateHAPStatelessSwitch(
+    int id, const struct mgos_config_ssw *ssw_cfg,
+    std::vector<Component *> *comps,
+    std::vector<std::unique_ptr<hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr) {
+  std::unique_ptr<hap::StatelessSwitch> ssw(new hap::StatelessSwitch(
+      id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, 0));
+  if (ssw == nullptr || !ssw->Init().ok()) {
+    return;
+  }
+  comps->push_back(ssw.get());
+  std::unique_ptr<hap::Accessory> acc(
+      new hap::Accessory(SHELLY_HAP_AID_BASE_STATELESS_SWITCH + id,
+                         kHAPAccessoryCategory_BridgedAccessory, ssw_cfg->name,
+                         &AccessoryIdentifyCB, svr));
+  acc->AddHAPService(&mgos_hap_accessory_information_service);
+  acc->AddService(std::move(ssw));
+  accs->push_back(std::move(acc));
 }
 
 static void DisableLegacyHAPLayout() {

@@ -51,23 +51,40 @@ void CreateComponents(std::vector<Component *> *comps,
     std::unique_ptr<hap::WindowCovering> wc(
         new hap::WindowCovering(id, FindInput(1), FindInput(2), FindOutput(1),
                                 FindOutput(2), FindPM(1), FindPM(2), wc_cfg));
-    if (wc != nullptr && wc->Init().ok()) {
-      comps->push_back(wc.get());
-      /*
-            std::unique_ptr<hap::Accessory> acc(new hap::Accessory(
-                SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
-                kHAPAccessoryCategory_BridgedAccessory, wc_cfg->name, nullptr,
-         svr)); acc->AddHAPService(&mgos_hap_accessory_information_service);
-            acc->AddService(std::move(wc));
-            accs->push_back(std::move(acc));
-      */
-      hap::Accessory *pri_acc = (*accs)[0].get();
-      wc->set_primary(true);
-      pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
-      pri_acc->AddService(std::move(wc));
+    if (wc == nullptr || !wc->Init().ok()) {
+      return;
     }
-    return;
+    wc->set_primary(true);
+    comps->push_back(wc.get());
+    auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
+    switch (im) {
+      case hap::WindowCovering::InMode::kSeparate: {
+        // Single accessory with a single primary service.
+        hap::Accessory *pri_acc = (*accs)[0].get();
+        pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
+        pri_acc->AddService(std::move(wc));
+        break;
+      }
+      case hap::WindowCovering::InMode::kSingle:
+      case hap::WindowCovering::InMode::kDetached: {
+        std::unique_ptr<hap::Accessory> acc(
+            new hap::Accessory(SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
+                               kHAPAccessoryCategory_BridgedAccessory,
+                               wc_cfg->name, &AccessoryIdentifyCB, svr));
+        acc->AddHAPService(&mgos_hap_accessory_information_service);
+        acc->AddService(std::move(wc));
+        accs->push_back(std::move(acc));
+        CreateHAPStatelessSwitch(1, mgos_sys_config_get_ssw1(), comps, accs,
+                                 svr);
+        if (im == hap::WindowCovering::InMode::kDetached) {
+          CreateHAPStatelessSwitch(2, mgos_sys_config_get_ssw2(), comps, accs,
+                                   svr);
+        }
+        break;
+      }
+    }
   }
+  return;
   // Use legacy layout if upgraded from an older version (pre-2.1).
   // However, presence of detached inputs overrides it.
   bool compat_20 = (mgos_sys_config_get_shelly_legacy_hap_layout() &&

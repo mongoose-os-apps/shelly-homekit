@@ -37,6 +37,12 @@ namespace hap {
 // Common base for Switch, Outlet and Lock services.
 class WindowCovering : public Component, public Service {
  public:
+  enum class InMode {
+    kSeparate = 0,
+    kSingle = 1,
+    kDetached = 2,
+  };
+
   WindowCovering(int id, Input *in0, Input *in1, Output *out0, Output *out1,
                  PowerMeter *pm0, PowerMeter *pm1, struct mgos_config_wc *cfg);
   virtual ~WindowCovering();
@@ -100,9 +106,8 @@ class WindowCovering : public Component, public Service {
 
   void RunOnce();
 
-  void HandleOpenInputEvent(Input::Event ev, bool state);
-  void HandleCloseInputEvent(Input::Event ev, bool state);
-  void HandleInputEventCommon();
+  void HandleInputEvent0(Direction dir, Input::Event ev, bool state);
+  void HandleInputEvent1(Input::Event ev, bool state);
 
   Input *in_open_, *in_close_;
   Output *out_open_, *out_close_;
@@ -131,7 +136,7 @@ class WindowCovering : public Component, public Service {
   float last_notify_pos_ = 0;
   float move_ms_per_pct_ = 0;
   Direction moving_dir_ = Direction::kNone;
-  Direction ext_move_dir_ = Direction::kNone;
+  Direction last_ext_move_dir_ = Direction::kNone;
 };
 
 }  // namespace hap

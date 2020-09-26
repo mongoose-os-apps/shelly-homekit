@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.2.0-alpha2
+version: 2.2.0-alpha3
 platform: esp8266
 
 libs_version: latest
@@ -39,6 +39,7 @@ config_schema:
 
   - ["wc.enable", "b", false, {"title": "Enable windows covering (roller shutter) mode"}]
   - ["wc.name", "s", "Shutter 1", {"title": "Accessory name"}]
+  - ["wc.in_mode", "i", 0, {"title": "Input mode: 0 - separate open / close, 1 - single input, 2 - detached"}]
   - ["wc.swap_inputs", "b", false, {"title": "Swap inputs (2 - open, 1 - close)"}]
   - ["wc.swap_outputs", "b", false, {"title": "Swap outputs (2 - open, 1 - close)"}]
   - ["wc.calibrated", "b", false, {"title": "Calibration done"}]

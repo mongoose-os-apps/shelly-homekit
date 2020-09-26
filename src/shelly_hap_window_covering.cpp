@@ -128,7 +128,6 @@ Status WindowCovering::Init() {
              bool value) {
         if (value) {
           LOG(LL_INFO, ("WC %d: Hold position", id()));
-          ext_move_dir_ = Direction::kNone;
           SetState(State::kStop);
         }
         return kHAPError_None;
@@ -144,13 +143,19 @@ Status WindowCovering::Init() {
       },
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_ObstructionDetected));
-  if (in_open_ != nullptr) {
-    in_open_handler_ = in_open_->AddHandler(
-        std::bind(&WindowCovering::HandleOpenInputEvent, this, _1, _2));
-  }
-  if (in_close_ != nullptr) {
-    in_close_handler_ = in_close_->AddHandler(
-        std::bind(&WindowCovering::HandleCloseInputEvent, this, _1, _2));
+  switch (static_cast<InMode>(cfg_->in_mode)) {
+    case InMode::kSeparate:
+      in_open_handler_ = in_open_->AddHandler(std::bind(
+          &WindowCovering::HandleInputEvent0, this, Direction::kOpen, _1, _2));
+      in_close_handler_ = in_close_->AddHandler(std::bind(
+          &WindowCovering::HandleInputEvent0, this, Direction::kClose, _1, _2));
+      break;
+    case InMode::kSingle:
+      in_open_handler_ = in_open_->AddHandler(
+          std::bind(&WindowCovering::HandleInputEvent1, this, _1, _2));
+      break;
+    case InMode::kDetached:
+      break;
   }
   if (cfg_->calibrated) {
     LOG(LL_INFO, ("WC %d: mp %.2f, mt_ms %d, cur_pos %.2f", id(),
@@ -166,11 +171,11 @@ StatusOr<std::string> WindowCovering::GetInfo() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, "
       "open_output_id: %d, close_output_id: %d, "
-      "swap_inputs: %B, swap_outputs: %B, "
+      "in_mode: %d, swap_inputs: %B, swap_outputs: %B, "
       "cal_done: %B, move_time_ms: %d, move_power: %d, "
       "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d}",
       id(), type(), cfg_->name, out_open_->id(), out_close_->id(),
-      cfg_->swap_inputs, cfg_->swap_outputs, cfg_->calibrated,
+      cfg_->in_mode, cfg_->swap_inputs, cfg_->swap_outputs, cfg_->calibrated,
       cfg_->move_time_ms, (int) cfg_->move_power, (int) state_,
       StateStr(state_), (int) cur_pos_, (int) tgt_pos_);
 }
@@ -179,17 +184,21 @@ Status WindowCovering::SetConfig(const std::string &config_json,
                                  bool *restart_required) {
   struct mgos_config_wc cfg = *cfg_;
   cfg.name = nullptr;
-  int state = -2, tgt_pos = -1;
+  int state = -2, tgt_pos = -1, in_mode = -1;
   int8_t swap_inputs = -1, swap_outputs = -1;
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, state: %d, tgt_pos: %d, "
-             "swap_inputs: %B, swap_outputs: %B}",
-             &cfg.name, &state, &tgt_pos, &swap_inputs, &swap_outputs);
+             "in_mode: %d, swap_inputs: %B, swap_outputs: %B}",
+             &cfg.name, &state, &tgt_pos, &in_mode, &swap_inputs,
+             &swap_outputs);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
+  }
+  if (in_mode > 2) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
   }
   if (state != -2 && strcmp(StateStr(static_cast<State>(state)), "???") == 0) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "state");
@@ -207,6 +216,10 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   }
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
+    *restart_required = true;
+  }
+  if (in_mode != -1 && in_mode != cfg_->in_mode) {
+    cfg_->in_mode = in_mode;
     *restart_required = true;
   }
   if (swap_inputs != -1 && swap_inputs != cfg_->swap_inputs) {
@@ -316,7 +329,6 @@ void WindowCovering::HAPSetTgtPos(float value) {
 }
 
 WindowCovering::Direction WindowCovering::GetDesiredMoveDirection() {
-  if (ext_move_dir_ != Direction::kNone) return ext_move_dir_;
   if (tgt_pos_ == kNotSet) return Direction::kNone;
   float pos_diff = tgt_pos_ - cur_pos_;
   if (!cfg_->calibrated || std::abs(pos_diff) < 1) {
@@ -349,8 +361,8 @@ void WindowCovering::Move(Direction dir) {
 void WindowCovering::RunOnce() {
   const char *ss = StateStr(state_);
   if (state_ != State::kIdle) {
-    LOG(LL_DEBUG, ("WC %d: %s md %d emd %d pos %.2f -> %.2f", id(), ss,
-                   (int) moving_dir_, (int) ext_move_dir_, cur_pos_, tgt_pos_));
+    LOG(LL_DEBUG, ("WC %d: %s md %d pos %.2f -> %.2f", id(), ss,
+                   (int) moving_dir_, cur_pos_, tgt_pos_));
   }
   switch (state_) {
     case State::kNone:
@@ -385,7 +397,7 @@ void WindowCovering::RunOnce() {
       }
       const float p0 = p0v.ValueOrDie();
       LOG(LL_DEBUG, ("WC %d: P0 = %.3f", id(), p0));
-      if (p0 < 1 && (mgos_uptime_micros() - begin_ > 300000)) {
+      if (p0 < 5 && (mgos_uptime_micros() - begin_ > 300000)) {
         out_open_->SetState(false, ss);
         SetState(State::kPostCal0);
       }
@@ -414,7 +426,7 @@ void WindowCovering::RunOnce() {
       }
       const float p1 = p1v.ValueOrDie();
       LOG(LL_DEBUG, ("WC %d: P1 = %.3f", id(), p1));
-      if (p_num_ > 1 && p1 < 1) {
+      if (p_num_ > 1 && p1 < 5) {
         int64_t end = mgos_uptime_micros();
         out_close_->SetState(false, StateStr(state_));
         int move_time_ms = (end - begin_) / 1000;
@@ -478,46 +490,30 @@ void WindowCovering::RunOnce() {
            (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose)) &&
           !reverse) {
         LOG(LL_DEBUG, ("Moving to %d, p %.2f", (int) tgt_pos_, p));
-        if (p > 1 || (mgos_uptime_micros() - begin_ < 300000)) {
+        if (p > 5 || (mgos_uptime_micros() - begin_ < 300000)) {
           // Still moving or ramping up.
           break;
         } else {
           SetCurPos(moving_dir_ == Direction::kOpen ? kFullyOpen
                                                     : kFullyClosed);
         }
+      } else if (want_move_dir == moving_dir_) {
+        // Still moving.
+        break;
       } else {
-        if (want_move_dir == moving_dir_) {
-          // Still moving. If movement is triggered by external input,
-          // keep updating the target position while the signal persists.
-          switch (ext_move_dir_) {
-            case Direction::kNone:
-              break;
-            case Direction::kOpen:
-            case Direction::kClose:
-              SetTgtPos(cur_pos_ + (ext_move_dir_ == Direction::kOpen ? 1 : -1),
-                        "ext");
-              break;
-          }
-          break;
-        } else if (want_move_dir == Direction::kNone) {
-          // We stoped moving. Reconcile target position with current,
-          // pretend we wanted to be exactly where we ended up.
+        // We stoped moving. Reconcile target position with current,
+        // pretend we wanted to be exactly where we ended up.
+        if (std::abs(tgt_pos_ - cur_pos_) < 1) {
           SetTgtPos(cur_pos_, "fixup");
         }
       }
       Move(Direction::kNone);  // Stop moving immediately to minimize error.
-      LOG(LL_INFO, ("Finished moving"));
       SetState(State::kStop);
       break;
     }
     case State::kStop: {
       Move(Direction::kNone);
       SetState(State::kStopping);
-      if ((ext_move_dir_ == Direction::kClose && cur_pos_ == kFullyClosed) ||
-          (ext_move_dir_ == Direction::kOpen && cur_pos_ == kFullyOpen)) {
-        // We've reached a terminal position, deassert external trigger.
-        ext_move_dir_ = Direction::kNone;
-      }
       break;
     }
     case State::kStopping: {
@@ -526,7 +522,7 @@ void WindowCovering::RunOnce() {
       if (p0v.ok()) p0 = p0v.ValueOrDie();
       auto p1v = pm_close_->GetPowerW();
       if (p1v.ok()) p1 = p1v.ValueOrDie();
-      if (p0 < 1 && p1 < 1) {
+      if (p0 < 5 && p1 < 5) {
         SetState(State::kIdle);
       }
       break;
@@ -538,39 +534,51 @@ void WindowCovering::RunOnce() {
   }
 }
 
-void WindowCovering::HandleOpenInputEvent(Input::Event ev, bool state) {
+void WindowCovering::HandleInputEvent0(Direction dir, Input::Event ev,
+                                       bool state) {
   if (ev != Input::Event::kChange) return;
   if (!cfg_->calibrated) {
-    // Control outputs directly. Never allow both to be active at once.
-    if (!out_close_->GetState()) {
-      out_open_->SetState(state, "btn");
-    }
     return;
   }
-  HandleInputEventCommon();
-}
-
-void WindowCovering::HandleCloseInputEvent(Input::Event ev, bool state) {
-  if (ev != Input::Event::kChange) return;
-  if (!cfg_->calibrated) {
-    // Control outputs directly. Never allow both to be active at once.
-    if (!out_open_->GetState()) {
-      out_close_->SetState(state, "btn");
+  if (!state) return;
+  if (moving_dir_ == Direction::kNone || moving_dir_ != dir) {
+    if (dir == Direction::kOpen) {
+      SetTgtPos(kFullyOpen, "ext");
+    } else {
+      SetTgtPos(kFullyClosed, "ext");
     }
-    return;
-  }
-  HandleInputEventCommon();
-}
-
-void WindowCovering::HandleInputEventCommon() {
-  bool want_open = in_open_->GetState();
-  bool want_close = in_close_->GetState();
-  if (want_open == want_close) {  // None or both = stop
-    SetTgtPos(cur_pos_, "ext");
-    ext_move_dir_ = Direction::kNone;
   } else {
-    // Get things moving or take over if moving already.
-    ext_move_dir_ = (want_open ? Direction::kOpen : Direction::kClose);
+    // Stop.
+    SetTgtPos(cur_pos_, "ext");
+  }
+  // Run the state machine immediately for quicker response.
+  RunOnce();
+}
+
+void WindowCovering::HandleInputEvent1(Input::Event ev, bool state) {
+  if (ev != Input::Event::kChange) return;
+  if (!cfg_->calibrated) {
+    return;
+  }
+  if (!state) return;
+  switch (moving_dir_) {
+    case Direction::kNone: {
+      if (last_ext_move_dir_ == Direction::kClose) {
+        SetTgtPos(kFullyOpen, "ext");
+        last_ext_move_dir_ = Direction::kOpen;
+      } else {
+        SetTgtPos(kFullyClosed, "ext");
+        last_ext_move_dir_ = Direction::kClose;
+      }
+      break;
+    }
+    // Stop.
+    case Direction::kOpen:
+      SetTgtPos(cur_pos_ + 1, "ext");
+      break;
+    case Direction::kClose:
+      SetTgtPos(cur_pos_ - 1, "ext");
+      break;
   }
   // Run the state machine immediately for quicker response.
   RunOnce();

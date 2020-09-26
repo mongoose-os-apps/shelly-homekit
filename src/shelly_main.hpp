@@ -41,12 +41,19 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_ssw *ssw_cfg,
                      std::vector<Component *> *comps,
                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
-                     HAPAccessoryServerRef *server, bool to_pri_acc);
+                     HAPAccessoryServerRef *svr, bool to_pri_acc);
+void CreateHAPStatelessSwitch(
+    int id, const struct mgos_config_ssw *ssw_cfg,
+    std::vector<Component *> *comps,
+    std::vector<std::unique_ptr<hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr);
 
 void HandleInputResetSequence(InputPin *in, int out_gpio, Input::Event ev,
                               bool cur_state);
 
 void RestartHAPServer();
+
+HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request);
 
 // Implemented for each model.
 

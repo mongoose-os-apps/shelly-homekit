@@ -247,6 +247,14 @@
             <span id="cal"></span>
           </div>
           <div class="form-control">
+            <label>Input Mode:</label>
+            <select id="in_mode">
+              <option id="in_mode_0" value="0">Separate</option>
+              <option id="in_mode_1" value="1">Single</option>
+              <option id="in_mode_2" value="2">Detached</option>
+            </select>
+          </div>
+          <div class="form-control">
             <label>Swap Inputs:</label>
               <label class="switch">
                 <input type="checkbox" id="swap_inputs">
@@ -521,6 +529,7 @@ function wcSetConfig(c, cfg, spinner) {
     }
     cfg = {
       name: name,
+      in_mode: el(c, "in_mode").value,
       swap_inputs: el(c, "swap_inputs").checked,
       swap_outputs: el(c, "swap_outputs").checked,
     };
@@ -635,6 +644,7 @@ function updateComponent(cd) {
       el(c, "head").innerText = headText;
       el(c, "name").value = cd.name;
       el(c, "state").innerText = cd.state_str;
+      el(c, "in_mode_" + cd.in_mode).selected = true;
       el(c, "swap_inputs").checked = cd.swap_inputs;
       el(c, "swap_outputs").checked = cd.swap_outputs;
       if (cd.cal_done == 1) {
