@@ -317,13 +317,15 @@ static bool StartHAPServer(bool quiet) {
     LOG(LL_INFO, ("=== Starting HAP %s (CN %d)", "server", cn));
     HAPAccessoryServerStart(&s_server, s_accs.front()->GetHAPAccessory());
   } else {
-    for (auto it = s_accs.begin() + 1; it != s_accs.end(); it++) {
-      s_hap_accs.push_back((*it)->GetHAPAccessory());
+    if (s_hap_accs.empty()) {
+      for (auto it = s_accs.begin() + 1; it != s_accs.end(); it++) {
+        s_hap_accs.push_back((*it)->GetHAPAccessory());
+      }
+      s_hap_accs.push_back(nullptr);
+      s_hap_accs.shrink_to_fit();
     }
     LOG(LL_INFO, ("=== Starting HAP %s (CN %d, %d accessories)", "bridge", cn,
                   (int) s_hap_accs.size()));
-    s_hap_accs.push_back(nullptr);
-    s_hap_accs.shrink_to_fit();
     HAPAccessoryServerStartBridge(&s_server, s_accs.front()->GetHAPAccessory(),
                                   s_hap_accs.data(),
                                   false /* config changed */);
