@@ -72,11 +72,11 @@ Reverting to stock firmware is also supported (see below).
  It is possible to revert back to stock firmware.
 
  Stock firmware for can be downloaded from the official site:
-  * [Shelly 1](http://api.shelly.cloud/firmware/SHSW-1.zip)
-  * [Shelly 1PM](http://api.shelly.cloud/firmware/SHSW-PM.zip)
-  * [Shelly 2](http://api.shelly.cloud/firmware/SHSW-21.zip)
-  * [Shelly 2.5](http://api.shelly.cloud/firmware/SHSW-25.zip)
-  * [Shelly Plug S](http://api.shelly.cloud/firmware/SHPLG-S.zip)
+  * [Shelly 1](https://api.shelly.cloud/firmware/SHSW-1.zip)
+  * [Shelly 1PM](https://api.shelly.cloud/firmware/SHSW-PM.zip)
+  * [Shelly 2](https://api.shelly.cloud/firmware/SHSW-21.zip)
+  * [Shelly 2.5](https://api.shelly.cloud/firmware/SHSW-25.zip)
+  * [Shelly Plug S](https://api.shelly.cloud/firmware/SHPLG-S.zip)
 
  Download it and upload via web interface (this firmware does not support pulling from a remote URL).
 
