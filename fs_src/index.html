@@ -115,6 +115,10 @@
             <label>Build ID:</label>
             <span id="app_build"></span>
           </div>
+		  <div class="form-control" id="fileDown" style="visibility: hidden">
+            <label>Download:</label>
+            <span id="fileForDevice"></span>
+          </div>
           <div class="form-control">
             <label> </label>
             <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data">
@@ -232,6 +236,8 @@
 <script>
 
 var host = "";
+
+var devType = "";
 
 var spinner = el("spinner");
 
@@ -564,6 +570,7 @@ function getInfo() {
     el("fw_container").style.visibility = "visible";
     el("device_id").style.visibility = "visible";
 	document.title = data.id;
+	devType = data.model;
     el("uptime_label").style.visibility = "visible";
     el("hap_conn_stats").innerText =
         data.hap_ip_conns_pending + "/" +
@@ -609,6 +616,11 @@ var online_version;
         return response.json();
       })
     .then(function(data){
+	  for (var i = 0; i <= 5; i++) {
+        if ((data[0].assets[i].name) == "shelly-homekit-" + devType + ".zip") {
+		  var downUrl = (data[0].assets[i].browser_download_url);
+        }
+      }
       online_version = (data[0].tag_name); 
         if (online_version == null) {
            verCheck = "";
@@ -619,9 +631,11 @@ var online_version;
         } else {
           verCheck = "Update " + online_version + " is now available.";
 		  notify = "visible";
-        }
+        }	
       el('app_version_online').innerHTML = verCheck;
-	  el("notifyFW").style.visibility = notify;
+	  el("notifyFW").style.visibility = notify;  
+	  el("fileDown").style.visibility = notify; 
+	  el('fileForDevice').innerHTML = "<a href='" + downUrl + "' download> Download for " + devType + " > </a>";
     })
   })
 }
