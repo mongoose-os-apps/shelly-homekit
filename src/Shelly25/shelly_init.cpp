@@ -48,17 +48,24 @@ void CreateComponents(std::vector<Component *> *comps,
   if (mgos_sys_config_get_shelly_mode() == 1) {
     const int id = 1;
     auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
+    auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
+    Input *in1 =
+        (im != hap::WindowCovering::InMode::kDetached ? FindInput(1) : nullptr);
+    Input *in2 = (im != hap::WindowCovering::InMode::kDetached &&
+                          im != hap::WindowCovering::InMode::kSingle
+                      ? FindInput(2)
+                      : nullptr);
     std::unique_ptr<hap::WindowCovering> wc(
-        new hap::WindowCovering(id, FindInput(1), FindInput(2), FindOutput(1),
-                                FindOutput(2), FindPM(1), FindPM(2), wc_cfg));
+        new hap::WindowCovering(id, in1, in2, FindOutput(1), FindOutput(2),
+                                FindPM(1), FindPM(2), wc_cfg));
     if (wc == nullptr || !wc->Init().ok()) {
       return;
     }
     wc->set_primary(true);
     comps->push_back(wc.get());
-    auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
     switch (im) {
-      case hap::WindowCovering::InMode::kSeparate: {
+      case hap::WindowCovering::InMode::kSeparateMomentary:
+      case hap::WindowCovering::InMode::kSeparateToggle: {
         // Single accessory with a single primary service.
         hap::Accessory *pri_acc = (*accs)[0].get();
         pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);

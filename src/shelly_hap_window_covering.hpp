@@ -38,9 +38,10 @@ namespace hap {
 class WindowCovering : public Component, public Service {
  public:
   enum class InMode {
-    kSeparate = 0,
-    kSingle = 1,
-    kDetached = 2,
+    kSeparateMomentary = 0,
+    kSeparateToggle = 1,
+    kSingle = 2,
+    kDetached = 3,
   };
 
   WindowCovering(int id, Input *in0, Input *in1, Output *out0, Output *out1,
@@ -106,8 +107,9 @@ class WindowCovering : public Component, public Service {
 
   void RunOnce();
 
-  void HandleInputEvent0(Direction dir, Input::Event ev, bool state);
-  void HandleInputEvent1(Input::Event ev, bool state);
+  void HandleInputEvent01(Direction dir, Input::Event ev, bool state);
+  void HandleInputEvent2(Input::Event ev, bool state);
+  void HandleInputEventNotCalibrated();
 
   Input *in_open_, *in_close_;
   Output *out_open_, *out_close_;

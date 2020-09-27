@@ -145,15 +145,17 @@ Status WindowCovering::Init() {
       kHAPCharacteristicDebugDescription_ObstructionDetected);
   AddChar(obst_char_);
   switch (static_cast<InMode>(cfg_->in_mode)) {
-    case InMode::kSeparate:
+    case InMode::kSeparateMomentary:
+    case InMode::kSeparateToggle:
       in_open_handler_ = in_open_->AddHandler(std::bind(
-          &WindowCovering::HandleInputEvent0, this, Direction::kOpen, _1, _2));
-      in_close_handler_ = in_close_->AddHandler(std::bind(
-          &WindowCovering::HandleInputEvent0, this, Direction::kClose, _1, _2));
+          &WindowCovering::HandleInputEvent01, this, Direction::kOpen, _1, _2));
+      in_close_handler_ =
+          in_close_->AddHandler(std::bind(&WindowCovering::HandleInputEvent01,
+                                          this, Direction::kClose, _1, _2));
       break;
     case InMode::kSingle:
       in_open_handler_ = in_open_->AddHandler(
-          std::bind(&WindowCovering::HandleInputEvent1, this, _1, _2));
+          std::bind(&WindowCovering::HandleInputEvent2, this, _1, _2));
       break;
     case InMode::kDetached:
       break;
@@ -198,7 +200,7 @@ Status WindowCovering::SetConfig(const std::string &config_json,
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
   }
-  if (in_mode > 2) {
+  if (in_mode > 3) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
   }
   if (state != -2 && strcmp(StateStr(static_cast<State>(state)), "???") == 0) {
@@ -548,32 +550,40 @@ void WindowCovering::RunOnce() {
   }
 }
 
-void WindowCovering::HandleInputEvent0(Direction dir, Input::Event ev,
-                                       bool state) {
-  if (ev != Input::Event::kChange) return;
+void WindowCovering::HandleInputEvent01(Direction dir, Input::Event ev,
+                                        bool state) {
   if (!cfg_->calibrated) {
+    HandleInputEventNotCalibrated();
     return;
   }
-  if (!state) return;
-  if (moving_dir_ == Direction::kNone || moving_dir_ != dir) {
-    if (dir == Direction::kOpen) {
-      SetTgtPos(kFullyOpen, "ext");
+  if (ev != Input::Event::kChange) return;
+  bool stop = false;
+  bool is_toggle = (cfg_->in_mode == (int) InMode::kSeparateToggle);
+  if (state) {
+    if (moving_dir_ == Direction::kNone || moving_dir_ != dir) {
+      float pos = (dir == Direction::kOpen ? kFullyOpen : kFullyClosed);
+      SetTgtPos(pos, "ext");
     } else {
-      SetTgtPos(kFullyClosed, "ext");
+      stop = true;
     }
-  } else {
-    // Stop.
+  } else if (is_toggle && moving_dir_ == dir) {
+    stop = true;
+  }
+  if (stop) {
+    // Run state machine before to update cur_pos_.
+    RunOnce();
     SetTgtPos(cur_pos_, "ext");
   }
   // Run the state machine immediately for quicker response.
   RunOnce();
 }
 
-void WindowCovering::HandleInputEvent1(Input::Event ev, bool state) {
-  if (ev != Input::Event::kChange) return;
+void WindowCovering::HandleInputEvent2(Input::Event ev, bool state) {
   if (!cfg_->calibrated) {
+    HandleInputEventNotCalibrated();
     return;
   }
+  if (ev != Input::Event::kChange) return;
   if (!state) return;
   switch (moving_dir_) {
     case Direction::kNone: {
@@ -596,6 +606,21 @@ void WindowCovering::HandleInputEvent1(Input::Event ev, bool state) {
   }
   // Run the state machine immediately for quicker response.
   RunOnce();
+}
+
+void WindowCovering::HandleInputEventNotCalibrated() {
+  if (state_ != State::kIdle) return;
+  bool want_open = (in_open_ != nullptr && in_open_->GetState());
+  bool is_open = out_open_->GetState();
+  bool want_close = (in_close_ != nullptr && in_close_->GetState());
+  bool is_close = out_close_->GetState();
+  // Don't allow both at the same time and sudden transitions.
+  if ((want_open && want_close) || (want_open && is_close) ||
+      (want_close && is_open)) {
+    want_open = want_close = false;
+  }
+  out_open_->SetState(want_open, "ext");
+  out_close_->SetState(want_close, "ext");
 }
 
 }  // namespace hap
