@@ -86,6 +86,7 @@ conds:
       cdefs:
         PRODUCT_MODEL: '"Shelly1"'
         PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-1"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
         # This saves quite a bit of space but disables all HAP debug output.
@@ -116,6 +117,7 @@ conds:
       cdefs:
         PRODUCT_MODEL: '"Shelly1PM"'
         PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-PM"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
         # This saves quite a bit of space but disables all HAP debug output.
@@ -147,6 +149,7 @@ conds:
         LED_ON: 0
         PRODUCT_MODEL: '"ShellyPlugS"'
         PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHPLG-S"'
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyplug-s-??????"]
@@ -173,6 +176,7 @@ conds:
       cdefs:
         PRODUCT_MODEL: '"Shelly2"'
         PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-21"'
         MG_ENABLE_SSL: 0
         # HAP_LOG_LEVEL: 0
       config_schema:
@@ -210,6 +214,7 @@ conds:
         BTN_DOWN: 0
         PRODUCT_MODEL: '"Shelly2.5"'
         PRODUCT_HW_REV: '"2.5"'
+        STOCK_FW_MODEL: '"SHSW-25"'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
         # HAP_LOG_LEVEL: 0
@@ -245,6 +250,7 @@ conds:
       cdefs:
         PRODUCT_MODEL: '"ShellyU"'
         PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
       libs:
         - origin: https://github.com/mongoose-os-libs/mbedtls

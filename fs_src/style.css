@@ -17,13 +17,13 @@ html, body { height: 100vh; padding: 0; margin: 5; background-color: #f2f1f6;}
     }
 
     input[type=password] {
-      width: 160px;      
+      width: 160px;
       padding: 0.2em 0.7em; position: relative;
       border: 1px solid #cdcdcd; border-color: rgba(0, 0, 0, .15);
       background-color: #ffffff; font-size: 14px;
     }
     input[type=text] {
-      width: 160px;      
+      width: 160px;
       padding: 0.2em 0.7em; position: relative;
       border: 1px solid #cdcdcd; border-color: rgba(0, 0, 0, .15);
       background-color: #ffffff; font-size: 14px;
@@ -33,7 +33,7 @@ html, body { height: 100vh; padding: 0; margin: 5; background-color: #f2f1f6;}
     .footer { padding: 0 1em; margin: 1em auto; max-width: 640px; background: #f2f1f6; border-radius: 15px; font: 11px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light; color: #aaaaae;}
     .container { padding: 0 1em; margin: 1em auto ; max-width: 640px; background: #fefefe; border-radius: 10px; }
     .form-control { margin: 0.6em 0; }
-    .form-control input, .form-control button { Xmin-width: 10em; }
+    .form-control input, .form-control button { min-width: 10em; }
     .form label { min-width: 9.0em; display: inline-block; }
     .form { padding: 1em 0; }
     .btn { background: #0071e3; }

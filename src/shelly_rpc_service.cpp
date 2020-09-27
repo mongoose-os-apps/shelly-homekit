@@ -47,8 +47,9 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   const char *ssid = mgos_sys_config_get_wifi_sta_ssid();
   const char *pass = mgos_sys_config_get_wifi_sta_pass();
 #endif
-  bool hap_provisioned = !mgos_conf_str_empty(mgos_sys_config_get_hap_salt());
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
+  bool hap_running = (HAPAccessoryServerGetState(s_server) ==
+                      kHAPAccessoryServerState_Running);
   HAPPlatformTCPStreamManagerStats tcpm_stats = {};
   HAPPlatformTCPStreamManagerGetStats(s_tcpm, &tcpm_stats);
   uint16_t hap_cn;
@@ -56,23 +57,23 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     hap_cn = 0;
   }
   std::string res = mgos::JSONPrintStringf(
-      "{id: %Q, app: %Q, model: %Q, host: %Q, "
+      "{id: %Q, app: %Q, model: %Q, stock_model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
 #endif
-      "hap_cn: %d, hap_provisioned: %B, hap_paired: %B, "
+      "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u",
       mgos_sys_config_get_device_id(), MGOS_APP,
-      CS_STRINGIFY_MACRO(PRODUCT_MODEL), mgos_dns_sd_get_host_name(),
-      mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
-      (int) mgos_uptime(),
+      CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
+      mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
+      mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
-      (pass ? pass : ""),
+      (pass ? "***" : ""),
 #endif
-      hap_cn, hap_provisioned, hap_paired,
+      hap_cn, hap_running, hap_paired,
       (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams);
@@ -124,7 +125,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       return;
     }
     st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
-                         &restart_required);
+                      &restart_required);
   } else {
     // Global config setting.
     char *name_c = NULL;

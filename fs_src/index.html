@@ -40,12 +40,8 @@
             <span id="hap_paired"></span>
           </div>
           <div class="form-control">
-            <label>Provisioned:</label>
-            <span id="hap_provisioned"></span>
-          </div>
-          <div class="form-control">
             <label>Connections:</label>
-            <span id="hap_conn_stats"></span> pending/active/max
+            <span id="hap_conn_stats"></span>
           </div>
           <div class="form-control">
             <label>Setup code:</label>
@@ -96,32 +92,32 @@
     </div>
 
     <div class="container" id="fw_container" style="visibility: hidden">
-      <h1 class="">Firmware <div class="badge" id="notifyFW" style="visibility: hidden">1</div></h1>  
+      <h1 class="">Firmware</h1>
       <div class="form">
         <div class="">
-          <div class="form-control">
-            <label>App:</label>
-            <span id="app_name"></span>
-          </div>
           <div class="form-control">
             <label>Version:</label>
             <span id="app_version"></span>
           </div>
-		  <div class="form-control">
+          <div class="form-control">
             <label>Update: </label>
-            <span id="app_version_online"> <a href="javascript:void(0)" onclick="versCheck();" style="color:blue"> Check online > </a> </span>
+            <button class="btn" id="update_btn">
+              <span id="update_btn_spinner"></span>
+              <span id="update_btn_text">Check</span>
+            </button>
+            <span id="update_status"></span>
           </div>
           <div class="form-control">
-            <label>Build ID:</label>
-            <span id="app_build"></span>
-          </div>
-		  <div class="form-control" id="fileDown" style="visibility: hidden">
-            <label>Download:</label>
-            <span id="fileForDevice"></span>
+            <label>Revert to stock:</label>
+            <button class="btn" id="revert_btn">
+              <span id="revert_btn_spinner"></span>
+              Revert
+            </button>
+            <span id="revert_status"></span>
           </div>
           <div class="form-control">
-            <label> </label>
-            <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data">
+            <label>Update from file:</label>
+            <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data" style="display: inline">
               <input type="file" id="fw_select_file" name="file" accept=".zip" />
               <button class="btn" id="fw_upload_btn"><span id="fw_spinner"></span> Upload</button>
             </form>
@@ -129,6 +125,7 @@
         </div>
       </div>
     </div>
+
 
     <div class="container" id="sw_template" style="display: none">
       <h1 id="head">Switch</h1>
@@ -235,9 +232,8 @@
 
 <script>
 
+var lastInfo = null;
 var host = "";
-
-var devType = "";
 
 var spinner = el("spinner");
 
@@ -246,7 +242,6 @@ var wifiSSID = el("wifi_ssid");
 var wifiPass = el("wifi_pass");
 var wifiSpinner = el("wifi_spinner");
 
-var hapProvisioned = el("hap_provisioned");
 var hapSetupCode = el("hap_setup_code");
 var hapSaveSpinner = el("hap_save_spinner");
 var hapResetSpinner = el("hap_reset_spinner");
@@ -541,22 +536,19 @@ function getInfo() {
   spinner.className = "spin";
   axios.get(host + "/rpc/Shelly.GetInfo").then(function(res) {
     var data = res.data;
+    lastInfo = data;
     console.log(data);
     wifiEn.checked = data.wifi_en;
     wifiSSID.value = data.wifi_ssid;
     wifiPass.value = data.wifi_pass;
     el("device_id").innerText = data.id;
     if (data.hap_provisioned) {
-      hapProvisioned.innerText = "yes";
       hapSetupCode.value = "***-**-***";
     } else {
-      hapProvisioned.innerText = "no";
       hapSetupCode.value = "";
     }
     el("hap_paired").innerText = (data.hap_paired ? "yes" : "no");
-    el("app_name").innerText = data.app;
-    el("app_version").innerText = data.version;
-    el("app_build").innerText = data.fw_build;
+    el("app_version").innerText = data.version + ' (build ' + data.fw_build + ')';
     el("uptime").innerText = durationStr(data.uptime);
     if (data.hap_cn != el("components").cn) {
       el("components").innerHTML = "";
@@ -569,13 +561,16 @@ function getInfo() {
     el("wifi_container").style.visibility = "visible";
     el("fw_container").style.visibility = "visible";
     el("device_id").style.visibility = "visible";
-	document.title = data.id;
-	devType = data.model;
+    document.title = data.id;
     el("uptime_label").style.visibility = "visible";
-    el("hap_conn_stats").innerText =
-        data.hap_ip_conns_pending + "/" +
-        data.hap_ip_conns_active + "/" +
-        data.hap_ip_conns_max;
+    if (data.hap_running) {
+      el("hap_conn_stats").innerText =
+          data.hap_ip_conns_pending + " pending, " +
+          data.hap_ip_conns_active + " active (" +
+          data.hap_ip_conns_max + " max)";
+    } else {
+      el("hap_conn_stats").innerText = "server not running";
+    }
   }).catch(function(err) {
     alert(err);
   }).then(function() {
@@ -600,45 +595,132 @@ function durationStr(d) {
          nDigitString(secs, 2);
 }
 
-async function versCheck() {
-
-var apiVerUrl = 'https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases';
-var verCheck = '';
-var notify = "hidden";
-var local_version;
-var online_version;
-
-  axios.get(host + "/rpc/Shelly.GetInfo").then(function(localVers) {
-    var data = localVers.data;
-    local_version = data.version;  
-    fetch(apiVerUrl)
-      .then(function(response){
-        return response.json();
-      })
-    .then(function(data){
-	  for (var i = 0; i <= 5; i++) {
-        if ((data[0].assets[i].name) == "shelly-homekit-" + devType + ".zip") {
-		  var downUrl = (data[0].assets[i].browser_download_url);
-        }
+async function downloadUpdate(fwURL, spinner, status) {
+  spinner.className = "spin";
+  status.innerText = "Downloading...";
+  console.log("Downloading", fwURL);
+  fetch(fwURL, {mode: "cors"})
+    //.then(resp => resp.blob()) {
+    .then((resp) => {
+      console.log(resp);
+      var data = new Uint8Array();
+      function pump(reader) {
+        reader.read().then(({done, value}) => {
+          if (!done) {
+            data = new Uint8Array([...data, ...value]);
+            pump(reader);
+          } else {
+            return uploadFW(data, spinner, status);
+          }
+        });
       }
-      online_version = (data[0].tag_name); 
-        if (online_version == null) {
-           verCheck = "";
-		   notify = "hidden";
-        } else if (local_version == online_version) { 
-          verCheck = "Your software is up to date.";
-          notify = "hidden";
-        } else {
-          verCheck = "Update " + online_version + " is now available.";
-		  notify = "visible";
-        }	
-      el('app_version_online').innerHTML = verCheck;
-	  el("notifyFW").style.visibility = notify;  
-	  el("fileDown").style.visibility = notify; 
-	  el('fileForDevice').innerHTML = "<a href='" + downUrl + "' download> Download for " + devType + " > </a>";
-    })
-  })
+      pump(resp.body.getReader());
+    }).catch((error) => {
+      spinner.className = "";
+      status.innerText = "Error downloading: " + error;
+    });
 }
+
+async function uploadFW(data, spinner, status) {
+  status.innerText = "Uploading " + data.length + " bytes...";
+  var fd  = new FormData();
+  fd.append("file", new Blob([data], {type: "application/zip"}));
+  fetch("/update", {
+    method: "POST",
+    mode: "cors",
+    body: fd,
+  })
+  .then(async (resp) => {
+    var respText = await resp.text();
+    console.log("resp", resp, respText);
+    spinner.className = "";
+    status.innerText = respText;
+  }).catch((error) => {
+    spinner.className = "";
+    status.innerText = "Error uploading: " + error;
+  });
+}
+
+// major.minor.patch-variantN
+function parseVersion(vs) {
+  var pp = vs.split("-");
+  var v = pp[0].split(".");
+  var variant = "", varSeq = 0;
+  if (pp[1]) {
+    var i = 0;
+    for (i in pp[1]) {
+      var c = pp[1][i];
+      if (isNaN(parseInt(c))) {
+        variant += c;
+      } else {
+        break;
+      }
+    }
+    varSeq = parseInt(pp[1].substring(i)) || 0;
+  }
+  return {
+    major: parseInt(v[0]),
+    minor: parseInt(v[1]),
+    patch: parseInt(v[2]),
+    variant: variant,
+    varSeq: varSeq,
+  }
+}
+
+function isNewer(v1, v2) {
+  var vi1 = parseVersion(v1), vi2 = parseVersion(v2);
+  if (vi1.major != vi2.major) return (vi1.major > vi2.major);
+  if (vi1.minor != vi2.minor) return (vi1.minor > vi2.minor);
+  if (vi1.patch != vi2.patch) return (vi1.patch > vi2.patch);
+  if (vi1.variant != vi2.variant) return true;
+  if (vi1.varSeq != vi2.varSeq) return (vi1.varSeq > vi2.varSeq);
+  return false;
+}
+
+async function checkUpdate() {
+  var model = lastInfo.model;
+  var curVersion = lastInfo.version;
+  var e = el("update_status");
+  var errMsg = 'Failed, check <a href="https://github.com/mongoose-os-apps/shelly-homekit/releases">GitHub</a>.';
+  e.innerText = "Checking...";
+  fetch("https://rojer.me/files/shelly/update.json",
+        {headers: {"X-Model": model, "X-Current-Version": curVersion, "X-Current-Build": lastInfo.fw_build}})
+    .then(resp => resp.json())
+    .then((resp) => {
+      console.log(resp);
+      // Try section specific to this version first, use "latest" if there isn't one.
+      var latestVersion, updateURL, relNotesURL;
+      var section = resp[curVersion];
+      if (!section) section = resp["latest"];
+      if (section) {
+        latestVersion = section.version;
+        relNotesURL = section.relNotes;
+        if (section.urls) updateURL = section.urls[model];
+      }
+      if (!latestVersion || !updateURL) {
+        e.innerHTML = errMsg;
+        return;
+      }
+      if (!isNewer(latestVersion, curVersion)) {
+        e.innerText = "Up to date";
+        return;
+      }
+      e.innerHTML = "Version " + latestVersion + " is available. " +
+                    'See <a href="' + relNotesURL + '">release notes</a>.';
+      el("update_btn_text").innerText = "Install";
+      console.log("Version:", latestVersion, "URL:", updateURL);
+      el("update_btn").onclick = function() {
+        return downloadUpdate(updateURL, el("update_btn_spinner"), el("update_status"));
+      };
+    })
+    .catch((error) => { e.innerHTML = errMsg });
+}
+
+el("update_btn").onclick = function() { checkUpdate(); };
+el("revert_btn").onclick = function() {
+  var stockURL = "https://rojer.me/files/shelly/stock/" + lastInfo.stock_model + ".zip";
+  downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
+};
 
 </script>
 
