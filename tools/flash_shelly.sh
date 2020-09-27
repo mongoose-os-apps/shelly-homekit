@@ -76,6 +76,13 @@ function check_brew {
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 }
 
+if [ "$(which git 2>/dev/null)" == "" ]; then
+  check_installer
+  echo -e "${WHITE}Installing git...${NC}"
+  echo -e "${WHITE}You may be asked for your password...${NC}"
+  echo $($installer git)
+fi
+
 if [[ $arch == "Darwin" ]]; then
   if [ "$(which timeout 2>/dev/null)" == "" ]; then
     check_installer
@@ -110,7 +117,7 @@ function write_flash {
   local durl=$3
   local cfw_type=$4
   local mode=$5
-  local host=$(echo $device | sed 's#\.local##g')
+  local host=${device//.local/}
 
   if [ $cfw_type == "homekit" ]; then
     echo "Downloading Firmware..."
@@ -142,7 +149,7 @@ function write_flash {
       n=$(( $n + 1 ))
     else
       if [[ $mode == "homekit" ]]; then
-         onlinecheck=$(echo $onlinecheck | jq -r .version)
+        onlinecheck=$(echo $onlinecheck | jq -r .version)
       else
         onlinecheck=$(echo $onlinecheck | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
       fi
@@ -182,7 +189,12 @@ function probe_info {
   local action=$2
   local dry_run=$3
   local mode=$4
-  local host=$(echo $device | sed 's#\.local##g')
+  local host=${device//.local/}
+
+  # skip 'Type' header from scan
+  if [[ $device == "Type.local" ]]; then
+    return 0
+  fi
 
   info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
   if [[ $info == "error" ]]; then
@@ -352,7 +364,7 @@ function probe_info {
       else
         keyword="Is not supported yet..."
       fi
-      echo "$keyword$"
+      echo "$keyword"
       return 0
     else
       echo "Does not need updating..."
@@ -369,7 +381,7 @@ function probe_info {
 
 function device_scan {
   local device_list=null
-  local device=$1 | sed 's#\,##g'
+  local device=${1//,/}
   local action=$2
   local do_all=$3
   local dry_run=$4
@@ -384,10 +396,10 @@ function device_scan {
   else
     echo -e "${WHITE}Scanning for Shelly devices...${NC}"
     if [[ $arch == "Darwin" ]]; then
-      device_list=$(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}' 2>/dev/null)
+      device_list=$(timeout 2 dns-sd -B _http . | awk '{print $7}' 2>/dev/null)
     else
       device_list=$(avahi-browse -p -d local -t _http._tcp 2>/dev/null)
-      device_list=$(echo $device_list | sed 's#+#\n#g' | awk -F';' '{print $4}' | awk '/shelly/ {print $1}' 2>/dev/null)
+      device_list=$(echo $device_list | sed 's#+#\n#g' | awk -F';' '{print $4}' | awk '{print $1}' 2>/dev/null)
     fi
 
     if [ $exclude == true ]; then
