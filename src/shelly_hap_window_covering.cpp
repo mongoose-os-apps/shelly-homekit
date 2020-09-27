@@ -134,15 +134,16 @@ Status WindowCovering::Init() {
       },
       kHAPCharacteristicDebugDescription_HoldPosition));
   // Obstruction Detected
-  AddChar(new BoolCharacteristic(
+  obst_char_ = new BoolCharacteristic(
       iid++, &kHAPCharacteristicType_ObstructionDetected,
-      [](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
-         bool *value) {
-        *value = false; /* TODO */
+      [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
+             bool *value) {
+        *value = obstruction_detected_;
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr /* write_handler */,
-      kHAPCharacteristicDebugDescription_ObstructionDetected));
+      kHAPCharacteristicDebugDescription_ObstructionDetected);
+  AddChar(obst_char_);
   switch (static_cast<InMode>(cfg_->in_mode)) {
     case InMode::kSeparate:
       in_open_handler_ = in_open_->AddHandler(std::bind(
@@ -454,6 +455,10 @@ void WindowCovering::RunOnce() {
         SetState(State::kStop);
         break;
       }
+      if (obstruction_detected_) {
+        obstruction_detected_ = false;
+        obst_char_->RaiseEvent();
+      }
       move_start_pos_ = cur_pos_;
       Move(dir);
       SetState(State::kMoving);
@@ -473,7 +478,18 @@ void WindowCovering::RunOnce() {
         p = pmv.ValueOrDie();
       } else {
         LOG(LL_ERROR, ("PM error"));
-        SetState(State::kError);
+        tgt_state_ = State::kError;
+        SetState(State::kStop);
+        break;
+      }
+      float too_much_power = cfg_->move_power * 2.5;
+      int too_long_time = cfg_->move_time_ms * 1.5;
+      if (p > 5 && (p > too_much_power || moving_time_ms > too_long_time)) {
+        obstruction_detected_ = true;
+        obst_char_->RaiseEvent();
+        LOG(LL_ERROR, ("Obstruction: p = %.2f t = %d", p, moving_time_ms));
+        tgt_state_ = State::kError;
+        SetState(State::kStop);
         break;
       }
       Direction want_move_dir = GetDesiredMoveDirection();
@@ -525,6 +541,8 @@ void WindowCovering::RunOnce() {
     }
     case State::kError: {
       Move(Direction::kNone);
+      SetTgtPos(cur_pos_, "error");
+      SetState(State::kIdle);
       break;
     }
   }

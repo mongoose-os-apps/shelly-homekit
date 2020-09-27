@@ -122,6 +122,7 @@ class WindowCovering : public Component, public Service {
   Characteristic *cur_pos_char_ = nullptr;
   Characteristic *tgt_pos_char_ = nullptr;
   Characteristic *pos_state_char_ = nullptr;
+  Characteristic *obst_char_ = nullptr;
 
   float cur_pos_ = kNotSet;
   float tgt_pos_ = kNotSet;
@@ -134,6 +135,7 @@ class WindowCovering : public Component, public Service {
   int64_t begin_ = 0;
   float move_start_pos_ = 0;
   float move_ms_per_pct_ = 0;
+  bool obstruction_detected_ = false;
   Direction moving_dir_ = Direction::kNone;
   Direction last_ext_move_dir_ = Direction::kNone;
 };

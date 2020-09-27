@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.2.0-alpha3
+version: 2.2.0-beta1
 platform: esp8266
 
 libs_version: latest
