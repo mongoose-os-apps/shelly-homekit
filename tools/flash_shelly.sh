@@ -117,7 +117,7 @@ function write_flash {
   local durl=$3
   local cfw_type=$4
   local mode=$5
-  local host=$(echo $device | sed 's#\.local##g')
+  local host=${device//.local/}
 
   if [ $cfw_type == "homekit" ]; then
     echo "Downloading Firmware..."
@@ -149,7 +149,7 @@ function write_flash {
       n=$(( $n + 1 ))
     else
       if [[ $mode == "homekit" ]]; then
-         onlinecheck=$(echo $onlinecheck | jq -r .version)
+        onlinecheck=$(echo $onlinecheck | jq -r .version)
       else
         onlinecheck=$(echo $onlinecheck | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
       fi
@@ -189,7 +189,7 @@ function probe_info {
   local action=$2
   local dry_run=$3
   local mode=$4
-  local host=$(echo $device | sed 's#\.local##g')
+  local host=${device//.local/}
 
   info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
   if [[ $info == "error" ]]; then
@@ -359,7 +359,7 @@ function probe_info {
       else
         keyword="Is not supported yet..."
       fi
-      echo "$keyword$"
+      echo "$keyword"
       return 0
     else
       echo "Does not need updating..."
@@ -376,7 +376,7 @@ function probe_info {
 
 function device_scan {
   local device_list=null
-  local device=$1 | sed 's#\,##g'
+  local device=${1//,/}
   local action=$2
   local do_all=$3
   local dry_run=$4
