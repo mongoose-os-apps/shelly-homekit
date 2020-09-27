@@ -76,6 +76,13 @@ function check_brew {
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 }
 
+if [ "$(which git 2>/dev/null)" == "" ]; then
+  check_installer
+  echo -e "${WHITE}Installing git...${NC}"
+  echo -e "${WHITE}You may be asked for your password...${NC}"
+  echo $($installer git)
+fi
+
 if [[ $arch == "Darwin" ]]; then
   if [ "$(which timeout 2>/dev/null)" == "" ]; then
     check_installer
