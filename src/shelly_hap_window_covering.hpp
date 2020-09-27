@@ -133,7 +133,6 @@ class WindowCovering : public Component, public Service {
   float p_sum_ = 0;
   int64_t begin_ = 0;
   float move_start_pos_ = 0;
-  float last_notify_pos_ = 0;
   float move_ms_per_pct_ = 0;
   Direction moving_dir_ = Direction::kNone;
   Direction last_ext_move_dir_ = Direction::kNone;

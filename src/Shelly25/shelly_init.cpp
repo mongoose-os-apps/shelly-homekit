@@ -74,12 +74,12 @@ void CreateComponents(std::vector<Component *> *comps,
         acc->AddHAPService(&mgos_hap_accessory_information_service);
         acc->AddService(std::move(wc));
         accs->push_back(std::move(acc));
-        CreateHAPStatelessSwitch(1, mgos_sys_config_get_ssw1(), comps, accs,
-                                 svr);
         if (im == hap::WindowCovering::InMode::kDetached) {
-          CreateHAPStatelessSwitch(2, mgos_sys_config_get_ssw2(), comps, accs,
+          CreateHAPStatelessSwitch(1, mgos_sys_config_get_ssw1(), comps, accs,
                                    svr);
         }
+        CreateHAPStatelessSwitch(2, mgos_sys_config_get_ssw2(), comps, accs,
+                                 svr);
         break;
       }
     }

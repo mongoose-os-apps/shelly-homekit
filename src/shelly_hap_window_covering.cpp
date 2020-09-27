@@ -296,11 +296,6 @@ void WindowCovering::SetCurPos(float new_cur_pos) {
       ("WC %d: Current pos %.2f -> %.2f", id(), cur_pos_, new_cur_pos));
   cur_pos_ = new_cur_pos;
   cfg_->current_pos = cur_pos_;
-  if (new_cur_pos == kFullyOpen || new_cur_pos == kFullyClosed ||
-      (std::abs(new_cur_pos - last_notify_pos_) > 2.0)) {
-    SaveState();
-    last_notify_pos_ = new_cur_pos;
-  }
   cur_pos_char_->RaiseEvent();
 }
 
@@ -513,6 +508,7 @@ void WindowCovering::RunOnce() {
     }
     case State::kStop: {
       Move(Direction::kNone);
+      SaveState();
       SetState(State::kStopping);
       break;
     }
@@ -563,7 +559,7 @@ void WindowCovering::HandleInputEvent1(Input::Event ev, bool state) {
   if (!state) return;
   switch (moving_dir_) {
     case Direction::kNone: {
-      if (last_ext_move_dir_ == Direction::kClose) {
+      if (last_ext_move_dir_ != Direction::kOpen) {
         SetTgtPos(kFullyOpen, "ext");
         last_ext_move_dir_ = Direction::kOpen;
       } else {
