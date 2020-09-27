@@ -122,7 +122,8 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     // System settings.
     char *name_c = NULL;
     int sys_mode = -1;
-    json_scanf(config_tok.ptr, config_tok.len, "{name: %Q, sys_mode: %d}", &name_c, &sys_mode);
+    json_scanf(config_tok.ptr, config_tok.len, "{name: %Q, sys_mode: %d}",
+               &name_c, &sys_mode);
     mgos::ScopedCPtr name_owner(name_c);
 
     if (sys_mode == 0 || sys_mode == 1) {

@@ -26,11 +26,15 @@
      </button>
      <br><br>
     </div>
-    <div class="container" id="sys_container" style="display: none">
+    <div class="container" id="sys_container">
       <h1 class="">System Settings</h1>
       <div class="form">
         <div class="">
-          <div class="form-control" id="sys_mode_container">
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="sys_name">
+          </div>
+          <div class="form-control" id="sys_mode_container" style="display: none">
             <label>Mode:</label>
             <select id="sys_mode">
               <option id="sys_mode_0" value="0">Switch</option>
@@ -329,9 +333,24 @@ function el(container, id) {
   return container.querySelector("#" + id);
 }
 
+function checkName(name) {
+  var ok = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-";
+  if (name.length == 0 || name.length > 63) return false;
+  for (var i in name) {
+    if (ok.indexOf(name[i]) < 0) return false;
+  }
+  return true;
+}
+
 el("sys_save_btn").onclick = function() {
+  if (!checkName(el("sys_name").value)) {
+    alert("Name must be between 1 and 63 characters "+
+          "and consist of letters, numbers or dashes ('-')");
+    return;
+  }
   var data = {
     config: {
+      name: el("sys_name").value,
       sys_mode: parseInt(el("sys_mode").value),
     },
   };
@@ -741,8 +760,9 @@ function getInfo() {
     }
     if (data.rsh_avail) {
       el("sys_mode_" + data.sys_mode).selected = true;
-      el("sys_container").style.display = "block";
+      el("sys_mode_container").style.display = "block";
     }
+    el("sys_name").value = data.id;
   }).catch(function(err) {
     alert(err);
   }).then(function() {
