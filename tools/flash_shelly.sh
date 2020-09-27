@@ -191,6 +191,11 @@ function probe_info {
   local mode=$4
   local host=${device//.local/}
 
+  # skip 'Type' header from scan
+  if [[ $device == "Type.local" ]]; then
+    return 0
+  fi
+
   info=$(curl -qs -m 5 http://$device/rpc/Shelly.GetInfo)||info="error"
   if [[ $info == "error" ]]; then
     echo "Could not resolve host: $host"
@@ -391,10 +396,10 @@ function device_scan {
   else
     echo -e "${WHITE}Scanning for Shelly devices...${NC}"
     if [[ $arch == "Darwin" ]]; then
-      device_list=$(timeout 2 dns-sd -B _http . | awk '/shelly/ {print $7}' 2>/dev/null)
+      device_list=$(timeout 2 dns-sd -B _http . | awk '{print $7}' 2>/dev/null)
     else
       device_list=$(avahi-browse -p -d local -t _http._tcp 2>/dev/null)
-      device_list=$(echo $device_list | sed 's#+#\n#g' | awk -F';' '{print $4}' | awk '/shelly/ {print $1}' 2>/dev/null)
+      device_list=$(echo $device_list | sed 's#+#\n#g' | awk -F';' '{print $4}' | awk '{print $1}' 2>/dev/null)
     fi
 
     if [ $exclude == true ]; then
