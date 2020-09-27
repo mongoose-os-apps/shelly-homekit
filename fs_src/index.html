@@ -3,15 +3,16 @@
   <head>
   <link rel="stylesheet" type="text/css" href="style.css.gz">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
   <script src="axios.min.js.gz"></script>
   </head>
   <body onLoad="onLoad()">
-    <div class="container">
+    <div class="header">
      <br>
       <div class="logodiv">
         <img class="img" src="logo.png" alt=""></div>
           <div class="apl_thin">
-            shelly-HomeKit
+            shelly-<b>HomeKit</b>
           </div>
     <h1 class="" id="device_id" style="visibility: hidden">shellyswitch25-XXXXXX</h1>
      <br>
@@ -95,7 +96,7 @@
     </div>
 
     <div class="container" id="fw_container" style="visibility: hidden">
-      <h1 class="">Firmware</h1>
+      <h1 class="">Firmware <div class="badge" id="notifyFW" style="visibility: hidden">1</div></h1>  
       <div class="form">
         <div class="">
           <div class="form-control">
@@ -106,12 +107,20 @@
             <label>Version:</label>
             <span id="app_version"></span>
           </div>
+		  <div class="form-control">
+            <label>Update: </label>
+            <span id="app_version_online"> <a href="javascript:void(0)" onclick="versCheck();" style="color:blue"> Check online > </a> </span>
+          </div>
           <div class="form-control">
             <label>Build ID:</label>
             <span id="app_build"></span>
           </div>
+		  <div class="form-control" id="fileDown" style="visibility: hidden">
+            <label>Download:</label>
+            <span id="fileForDevice"></span>
+          </div>
           <div class="form-control">
-            <label>Update (<a href="https://github.com/mongoose-os-apps/shelly-homekit/releases">GitHub</a>):</label>
+            <label> </label>
             <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data">
               <input type="file" id="fw_select_file" name="file" accept=".zip" />
               <button class="btn" id="fw_upload_btn"><span id="fw_spinner"></span> Upload</button>
@@ -227,6 +236,8 @@
 <script>
 
 var host = "";
+
+var devType = "";
 
 var spinner = el("spinner");
 
@@ -558,6 +569,8 @@ function getInfo() {
     el("wifi_container").style.visibility = "visible";
     el("fw_container").style.visibility = "visible";
     el("device_id").style.visibility = "visible";
+	document.title = data.id;
+	devType = data.model;
     el("uptime_label").style.visibility = "visible";
     el("hap_conn_stats").innerText =
         data.hap_ip_conns_pending + "/" +
@@ -585,6 +598,46 @@ function durationStr(d) {
          nDigitString(hours, 2) + ":" +
          nDigitString(mins, 2) + ":" +
          nDigitString(secs, 2);
+}
+
+async function versCheck() {
+
+var apiVerUrl = 'https://api.github.com/repos/mongoose-os-apps/shelly-homekit/releases';
+var verCheck = '';
+var notify = "hidden";
+var local_version;
+var online_version;
+
+  axios.get(host + "/rpc/Shelly.GetInfo").then(function(localVers) {
+    var data = localVers.data;
+    local_version = data.version;  
+    fetch(apiVerUrl)
+      .then(function(response){
+        return response.json();
+      })
+    .then(function(data){
+	  for (var i = 0; i <= 5; i++) {
+        if ((data[0].assets[i].name) == "shelly-homekit-" + devType + ".zip") {
+		  var downUrl = (data[0].assets[i].browser_download_url);
+        }
+      }
+      online_version = (data[0].tag_name); 
+        if (online_version == null) {
+           verCheck = "";
+		   notify = "hidden";
+        } else if (local_version == online_version) { 
+          verCheck = "Your software is up to date.";
+          notify = "hidden";
+        } else {
+          verCheck = "Update " + online_version + " is now available.";
+		  notify = "visible";
+        }	
+      el('app_version_online').innerHTML = verCheck;
+	  el("notifyFW").style.visibility = notify;  
+	  el("fileDown").style.visibility = notify; 
+	  el('fileForDevice').innerHTML = "<a href='" + downUrl + "' download> Download for " + devType + " > </a>";
+    })
+  })
 }
 
 </script>
