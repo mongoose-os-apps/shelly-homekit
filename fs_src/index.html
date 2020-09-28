@@ -794,31 +794,24 @@ async function downloadUpdate(fwURL, spinner, status) {
   status.innerText = "Downloading...";
   console.log("Downloading", fwURL);
   fetch(fwURL, {mode: "cors"})
-    //.then(resp => resp.blob()) {
-    .then((resp) => {
+    .then(async (resp) => {
       console.log(resp);
-      var data = new Uint8Array();
-      function pump(reader) {
-        reader.read().then(({done, value}) => {
-          if (!done) {
-            data = new Uint8Array([...data, ...value]);
-            pump(reader);
-          } else {
-            return uploadFW(data, spinner, status);
-          }
-        });
+      var blob = await resp.blob();
+      if (!resp.ok || blob.type != "application/zip") {
+        status.innerText = "Failed, try manually.";
+        return;
       }
-      pump(resp.body.getReader());
+      return uploadFW(blob, spinner, status);
     }).catch((error) => {
       spinner.className = "";
       status.innerText = "Error downloading: " + error;
     });
 }
 
-async function uploadFW(data, spinner, status) {
-  status.innerText = "Uploading " + data.length + " bytes...";
+async function uploadFW(blob, spinner, status) {
+  status.innerText = "Uploading " + blob.size + " bytes...";
   var fd  = new FormData();
-  fd.append("file", new Blob([data], {type: "application/zip"}));
+  fd.append("file", blob);
   fetch("/update", {
     method: "POST",
     mode: "cors",
@@ -877,21 +870,27 @@ async function checkUpdate() {
   var e = el("update_status");
   var errMsg = 'Failed, check <a href="https://github.com/mongoose-os-apps/shelly-homekit/releases">GitHub</a>.';
   e.innerText = "Checking...";
+  console.log("Model:", model, "Version:", curVersion);
   fetch("https://rojer.me/files/shelly/update.json",
         {headers: {"X-Model": model, "X-Current-Version": curVersion, "X-Current-Build": lastInfo.fw_build}})
     .then(resp => resp.json())
     .then((resp) => {
-      console.log(resp);
-      // Try section specific to this version first, use "latest" if there isn't one.
-      var latestVersion, updateURL, relNotesURL;
-      var section = resp[curVersion];
-      if (!section) section = resp["latest"];
-      if (section) {
-        latestVersion = section.version;
-        relNotesURL = section.relNotes;
-        if (section.urls) updateURL = section.urls[model];
+      var cfg, latestVersion, updateURL, relNotesURL;
+      for (var i in resp) {
+        var re = new RegExp(resp[i][0]);
+        if (curVersion.match(re)) {
+          cfg = resp[i][1];
+          break;
+        }
       }
+      if (cfg) {
+        latestVersion = cfg.version;
+        relNotesURL = cfg.relNotes;
+        if (cfg.urls) updateURL = cfg.urls[model];
+      }
+      console.log("Version:", latestVersion, "URL:", updateURL);
       if (!latestVersion || !updateURL) {
+        console.log(model, section, updateURL);
         e.innerHTML = errMsg;
         return;
       }
@@ -902,12 +901,14 @@ async function checkUpdate() {
       e.innerHTML = "Version " + latestVersion + " is available. " +
                     'See <a href="' + relNotesURL + '">release notes</a>.';
       el("update_btn_text").innerText = "Install";
-      console.log("Version:", latestVersion, "URL:", updateURL);
       el("update_btn").onclick = function() {
         return downloadUpdate(updateURL, el("update_btn_spinner"), el("update_status"));
       };
     })
-    .catch((error) => { e.innerHTML = errMsg });
+    .catch((error) => {
+      console.log("Error", error);
+      e.innerHTML = errMsg;
+    });
 }
 
 el("update_btn").onclick = function() { checkUpdate(); };

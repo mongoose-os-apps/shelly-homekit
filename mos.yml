@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.2.0-beta2
+version: 2.2.0-beta3
 platform: esp8266
 
 libs_version: latest
@@ -20,7 +20,9 @@ config_schema:
   - ["sntp.enable", true]
   - ["debug.event_level", 3]
   - ["file_logger.level", 3]
-  - ["file_logger.enable", false]
+  - ["file_logger.enable", true]
+  - ["file_logger.max_num_files", 1]
+  - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
 
   - ["sw", "o", {"Switch settings"}]
@@ -60,7 +62,7 @@ build_vars:
 
 cdefs:
   PRODUCT_VENDOR: '"Allterco"'
-  SERVICE_NAME: '"Switch"'
+  PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
   BTN_GPIO: -1
 
@@ -68,7 +70,6 @@ libs:
   - origin: https://github.com/mongoose-os-libs/core
   - origin: https://github.com/mongoose-os-libs/file-logger
   - origin: https://github.com/mongoose-os-libs/homekit-adk
-    version: master
   - origin: https://github.com/mongoose-os-libs/mqtt
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
@@ -95,7 +96,6 @@ conds:
         # We don't need the cryptochip support. Saves approx 12K flash.
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        PRODUCT_MODEL: '"Shelly1"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-1"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
@@ -126,7 +126,6 @@ conds:
         # We don't need the cryptochip support. Saves approx 12K flash.
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        PRODUCT_MODEL: '"Shelly1PM"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-PM"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
@@ -158,7 +157,6 @@ conds:
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
-        PRODUCT_MODEL: '"ShellyPlugS"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHPLG-S"'
         MG_ENABLE_SSL: 0
@@ -185,7 +183,6 @@ conds:
         MGOS_ROOT_FS_TYPE: SPIFFS
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        PRODUCT_MODEL: '"Shelly2"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-21"'
         MG_ENABLE_SSL: 0
@@ -223,7 +220,6 @@ conds:
         LED_ON: 0
         BTN_GPIO: 2
         BTN_DOWN: 0
-        PRODUCT_MODEL: '"Shelly2.5"'
         PRODUCT_HW_REV: '"2.5"'
         STOCK_FW_MODEL: '"SHSW-25"'
         MG_ENABLE_SSL: 0
@@ -261,7 +257,6 @@ conds:
   - when: mos.platform == "ubuntu"
     apply:
       cdefs:
-        PRODUCT_MODEL: '"ShellyU"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0

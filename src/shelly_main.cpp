@@ -19,13 +19,17 @@
 
 #include "mgos.hpp"
 #include "mgos_app.h"
+#include "mgos_file_logger.h"
 #include "mgos_hap.h"
+#include "mgos_http_server.h"
 #ifdef MGOS_HAVE_OTA_COMMON
 #include "esp_coredump.h"
 #include "esp_rboot.h"
 #include "mgos_ota.h"
 #endif
 #include "mgos_rpc.h"
+
+#include "mongoose.h"
 
 #include "HAP.h"
 #include "HAPAccessoryServer+Internal.h"
@@ -565,6 +569,20 @@ void RestartHAPServer() {
   }
 }
 
+static void DebugLogHandler(struct mg_connection *nc, int ev, void *ev_data,
+                            void *user_data) {
+  if (ev != MG_EV_HTTP_REQUEST) return;
+  struct http_message *hm = (struct http_message *) ev_data;
+  mgos::ScopedCPtr fn(mgos_file_log_get_cur_file_name());
+  if (fn.get() == nullptr) {
+    mg_http_send_error(nc, 400, "No log file");
+    return;
+  }
+  mg_http_serve_file(nc, hm, (char *) fn.get(), mg_mk_str("text/plain"),
+                     MG_NULL_STR);
+  (void) user_data;
+}
+
 bool InitApp() {
 #ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
@@ -630,6 +648,8 @@ bool InitApp() {
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
+
+  mgos_register_http_endpoint("/debug/log", DebugLogHandler, nullptr);
 
   return true;
 }
