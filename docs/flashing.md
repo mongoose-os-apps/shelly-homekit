@@ -119,7 +119,7 @@ Note that despite what the tool says, firmware has not booted.
 
  * You should see WiFi AP `shelly1-XXX` or `shellyswitch25-XXX`.
 
- * Connect, navigate to [http://192.68.33.1/](http://192.68.33.1/) and proceed with configuration.
+ * Connect, navigate to [http://192.168.33.1/](http://192.168.33.1/) and proceed with configuration.
 
 ## Restoring flash contents from backup
 
