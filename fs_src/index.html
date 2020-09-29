@@ -729,7 +729,7 @@ function getInfo() {
     wifiSSID.value = data.wifi_ssid;
     wifiPass.value = data.wifi_pass;
     el("device_id").innerText = data.id;
-    if (data.hap_provisioned) {
+    if (data.hap_running) {
       hapSetupCode.value = "***-**-***";
     } else {
       hapSetupCode.value = "";
