@@ -257,6 +257,8 @@ const char *WindowCovering::StateStr(State state) {
       return "postcal1";
     case State::kMove:
       return "move";
+    case State::kRampUp:
+      return "rampup";
     case State::kMoving:
       return "moving";
     case State::kStop:
@@ -286,17 +288,17 @@ void WindowCovering::SaveState() {
 void WindowCovering::SetState(State new_state) {
   if (state_ == new_state) return;
   LOG(LL_INFO,
-      ("WC %d: State transition: %s -> %s (%d -> %d)", id(), StateStr(state_),
+      ("WC %d: State: %s -> %s (%d -> %d)", id(), StateStr(state_),
        StateStr(new_state), (int) state_, (int) new_state));
   state_ = new_state;
   begin_ = mgos_uptime_micros();
 }
 
-void WindowCovering::SetCurPos(float new_cur_pos) {
+void WindowCovering::SetCurPos(float new_cur_pos, float p) {
   new_cur_pos = TrimPos(new_cur_pos);
   if (new_cur_pos == cur_pos_) return;
-  LOG(LL_INFO,
-      ("WC %d: Current pos %.2f -> %.2f", id(), cur_pos_, new_cur_pos));
+  LOG(LL_INFO, ("WC %d: Cur pos %.2f -> %.2f, P = %.2f", id(), cur_pos_,
+                new_cur_pos, p));
   cur_pos_ = new_cur_pos;
   cfg_->current_pos = cur_pos_;
   cur_pos_char_->RaiseEvent();
@@ -305,7 +307,7 @@ void WindowCovering::SetCurPos(float new_cur_pos) {
 void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
   new_tgt_pos = TrimPos(new_tgt_pos);
   if (new_tgt_pos == tgt_pos_) return;
-  LOG(LL_INFO, ("WC %d: Target pos %.2f -> %.2f (%s)", id(), tgt_pos_,
+  LOG(LL_INFO, ("WC %d: Tgt pos %.2f -> %.2f (%s)", id(), tgt_pos_,
                 new_tgt_pos, src));
   tgt_pos_ = new_tgt_pos;
   tgt_pos_char_->RaiseEvent();
@@ -329,7 +331,7 @@ void WindowCovering::HAPSetTgtPos(float value) {
 WindowCovering::Direction WindowCovering::GetDesiredMoveDirection() {
   if (tgt_pos_ == kNotSet) return Direction::kNone;
   float pos_diff = tgt_pos_ - cur_pos_;
-  if (!cfg_->calibrated || std::abs(pos_diff) < 1) {
+  if (!cfg_->calibrated || std::abs(pos_diff) < 0.5) {
     return Direction::kNone;
   }
   return (pos_diff > 0 ? Direction::kOpen : Direction::kClose);
@@ -443,7 +445,7 @@ void WindowCovering::RunOnce() {
     }
     case State::kPostCal1: {
       cfg_->calibrated = true;
-      SetCurPos(kFullyClosed);
+      SetCurPos(kFullyClosed, -1);
       SaveState();
       SetTgtPos((kFullyOpen - kFullyClosed) / 2, "postcal1");
       SetState(State::kIdle);
@@ -463,19 +465,13 @@ void WindowCovering::RunOnce() {
       }
       move_start_pos_ = cur_pos_;
       Move(dir);
-      SetState(State::kMoving);
+      SetState(State::kRampUp);
       break;
     }
-    case State::kMoving: {
-      int moving_time_ms = (mgos_uptime_micros() - begin_) / 1000;
-      float pos_diff = moving_time_ms / move_ms_per_pct_;
-      float new_cur_pos =
-          (moving_dir_ == Direction::kOpen ? move_start_pos_ + pos_diff
-                                           : move_start_pos_ - pos_diff);
-      SetCurPos(new_cur_pos);
+    case State::kRampUp: {
       auto *pm = (moving_dir_ == Direction::kOpen ? pm_open_ : pm_close_);
       auto pmv = pm->GetPowerW();
-      float p = 0;
+      float p = -1;
       if (pmv.ok()) {
         p = pmv.ValueOrDie();
       } else {
@@ -484,6 +480,37 @@ void WindowCovering::RunOnce() {
         SetState(State::kStop);
         break;
       }
+      LOG(LL_INFO, ("P = %.2f -> %.2f", p, cfg_->move_power));
+      if (p >= cfg_->move_power * 0.75) {
+        SetState(State::kMoving);
+        break;
+      }
+      int elapsed_us = (mgos_uptime_micros() - begin_);
+      if (elapsed_us > 5000000) {
+        LOG(LL_ERROR, ("Failed to start moving"));
+        tgt_state_ = State::kError;
+        SetState(State::kStop);
+      }
+      break;
+    }
+    case State::kMoving: {
+      int moving_time_ms = (mgos_uptime_micros() - begin_) / 1000;
+      float pos_diff = moving_time_ms / move_ms_per_pct_;
+      float new_cur_pos =
+          (moving_dir_ == Direction::kOpen ? move_start_pos_ + pos_diff
+                                           : move_start_pos_ - pos_diff);
+      auto *pm = (moving_dir_ == Direction::kOpen ? pm_open_ : pm_close_);
+      auto pmv = pm->GetPowerW();
+      float p = -1;
+      if (pmv.ok()) {
+        p = pmv.ValueOrDie();
+      } else {
+        LOG(LL_ERROR, ("PM error"));
+        tgt_state_ = State::kError;
+        SetState(State::kStop);
+        break;
+      }
+      SetCurPos(new_cur_pos, p);
       float too_much_power = cfg_->move_power * 2.5;
       int too_long_time = cfg_->move_time_ms * 1.5;
       if (p > 5 && (p > too_much_power || moving_time_ms > too_long_time)) {
@@ -507,8 +534,9 @@ void WindowCovering::RunOnce() {
           // Still moving or ramping up.
           break;
         } else {
-          SetCurPos(moving_dir_ == Direction::kOpen ? kFullyOpen
-                                                    : kFullyClosed);
+          float pos =
+              (moving_dir_ == Direction::kOpen ? kFullyOpen : kFullyClosed);
+          SetCurPos(pos, p);
         }
       } else if (want_move_dir == moving_dir_) {
         // Still moving.

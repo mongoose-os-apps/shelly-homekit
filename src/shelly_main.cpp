@@ -578,6 +578,7 @@ static void DebugLogHandler(struct mg_connection *nc, int ev, void *ev_data,
     mg_http_send_error(nc, 400, "No log file");
     return;
   }
+  mgos_file_log_flush();
   mg_http_serve_file(nc, hm, (char *) fn.get(), mg_mk_str("text/plain"),
                      MG_NULL_STR);
   (void) user_data;

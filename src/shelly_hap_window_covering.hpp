@@ -71,9 +71,10 @@ class WindowCovering : public Component, public Service {
     kPostCal1 = 15,
     // Movement states
     kMove = 20,
-    kMoving = 21,
-    kStop = 22,
-    kStopping = 23,
+    kRampUp = 22,
+    kMoving = 23,
+    kStop = 24,
+    kStopping = 25,
     // Error states
     kError = 100,
   };
@@ -97,7 +98,7 @@ class WindowCovering : public Component, public Service {
   void SaveState();
 
   void SetState(State new_state);
-  void SetCurPos(float new_cur_pos);
+  void SetCurPos(float new_cur_pos, float p);
   void SetTgtPos(float new_tgt_pos, const char *src);
 
   void HAPSetTgtPos(float value);

@@ -65,6 +65,7 @@ cdefs:
   PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
   BTN_GPIO: -1
+  HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
   - origin: https://github.com/mongoose-os-libs/core
@@ -100,8 +101,6 @@ conds:
         STOCK_FW_MODEL: '"SHSW-1"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
-        # This saves quite a bit of space but disables all HAP debug output.
-        # HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
@@ -130,8 +129,6 @@ conds:
         STOCK_FW_MODEL: '"SHSW-PM"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
-        # This saves quite a bit of space but disables all HAP debug output.
-        # HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shelly1pm-??????"]
         - ["wifi.ap.ssid", "shelly1pm-??????"]
@@ -186,7 +183,6 @@ conds:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-21"'
         MG_ENABLE_SSL: 0
-        # HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shellyswitch21-??????"]
         - ["wifi.ap.ssid", "shellyswitch21-??????"]
@@ -224,7 +220,6 @@ conds:
         STOCK_FW_MODEL: '"SHSW-25"'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
-        HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shellyswitch25-??????"]
         - ["wifi.ap.ssid", "shellyswitch25-??????"]
