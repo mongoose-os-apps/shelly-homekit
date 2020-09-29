@@ -82,7 +82,9 @@ Reverting to stock firmware is also supported (see below).
 
  Script [here](tools/flash_shelly.sh) for an automated way to revert your devices to stock firmware.
    * ./flash_shelly.sh -m revert hostname
-
+ 
+ In case the device becomes non-responsive after reverting OTA, try to [flash to stock firmware with cable](docs/flashing.md).
+ 
 ## Contributions and Development
 
 Code contributions are welcome! See open issues and feel free to pick one up.
