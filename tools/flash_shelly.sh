@@ -110,6 +110,50 @@ function convert_to_integer {
   echo "$@" | awk -F "." '{ printf("%03d%03d%03d", $1,$2,$3); }';
 }
 
+function shelly_model()
+{
+  if [[ $2 != "stock" ]]; then
+    case $1 in
+      SHSW-1 | switch1)
+        echo "Shelly1";;
+      SHSW-PM | switch1pm)
+        echo "Shelly1PM";;
+      SHSW-2 | switch2)
+        echo "Shelly2";;
+      SHSW-25 | switch25)
+        echo "Shelly25";;
+      SHPLG-S | shelly-plug-s)
+        echo "ShellyPlugS";;
+      SHDM-1 | dimmer1)
+        echo "ShellyDimmer";;
+      SHRGBW2 | rgbw2)
+        echo "ShellyRGBW2";;
+      *)
+        echo "$1" ;;
+    esac
+  else
+    case $1 in
+      switch1)
+        echo "SHSW-1";;
+      switch1pm)
+        echo "SHSW-PM";;
+      switch2)
+        echo "SHSW-2";;
+      switch25)
+        echo "SHSW-25";;
+      shelly-plug-s)
+        echo "SHPLG-S";;
+      dimmer1)
+        echo "SHDM-1";;
+      rgbw2)
+        echo "SHRGBW2";;
+      *)
+        echo "$1" ;;
+    esac
+  fi
+}
+
+
 function write_flash {
   local flashed=false
   local device=$1
@@ -223,41 +267,16 @@ function probe_info {
     type=$(echo "$info" | jq -r .app)
     cfw=$(echo "$info" | jq -r .version)
     if [[ $mode == "stock" ]]; then
-      case $type in
-        switch1)
-          model="SHSW-1";;
-        switch1pm)
-          model="SHSW-PM";;
-        switch25)
-          model="SHSW-25";;
-        shelly-plug-s)
-          model="SHPLG-S";;
-        dimmer1)
-          model="SHDM-1";;
-        rgbw2)
-          model="SHRGBW2";;
-        *) ;;
-      esac
+      model=$(echo "$info" | jq -r .stock_model)
+      if [[ $model != *SH* ]]; then
+        model=`shelly_model $type $mode`
+      fi
       lfw=$(echo "$stock_release_info" | jq -r '.data."'$model'".version' | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
       dlurl=$(echo "$stock_release_info" | jq -r '.data."'$model'".url')
     else
       model=$(echo "$info" | jq -r .model | sed 's#\.##g' | sed 's#-##g')
       if [[ $model != *Shelly* ]]; then
-        case $type in
-          switch1)
-            model="Shelly1";;
-          switch1pm)
-            model="Shelly1PM";;
-          switch25)
-            model="Shelly25";;
-          shelly-plug-s)
-            model="ShellyPlugS";;
-          dimmer1)
-            model="ShellyDimmer";;
-          rgbw2)
-            model="ShellyRGBW2";;
-          *) ;;
-        esac
+        model=`shelly_model $type $mode`
       fi
       if [[ $forced_version == false ]]; then
         lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
@@ -271,21 +290,7 @@ function probe_info {
     cfw=$(echo "$info" | jq -r .fw | awk '{split($0,a,"/v"); print a[2]}' | awk '{split($0,a,"@"); print a[1]}')
     type=$(echo "$info" | jq -r .type)
     if [[ $mode == "homekit" ]]; then
-      case $type in
-        SHSW-1)
-          model="Shelly1";;
-        SHSW-PM)
-          model="Shelly1PM";;
-        SHSW-25)
-          model="Shelly25";;
-        SHPLG-S)
-          model="ShellyPlugS";;
-        SHDM-1)
-          model="ShellyDimmer";;
-        SHRGBW2)
-          model="ShellyRGBW2";;
-        *) ;;
-      esac
+      model=`shelly_model $type $mode`
       if [[ $forced_version == false ]]; then
         lfw=$(echo "$homekit_release_info" | jq -r .tag_name)
       else
