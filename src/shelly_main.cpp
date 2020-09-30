@@ -568,6 +568,46 @@ void RestartHAPServer() {
   }
 }
 
+#ifdef MGOS_HAVE_OTA_COMMON
+static void OTABeginCB(int ev, void *ev_data, void *userdata) {
+  struct mgos_ota_begin_arg *arg = (struct mgos_ota_begin_arg *) ev_data;
+  // Some other callback objected.
+  if (arg->result != MGOS_UPD_OK) return;
+  // Check app name.
+  if (mg_vcmp(&arg->mi.name, MGOS_APP) != 0) {
+    LOG(LL_ERROR,
+        ("Wrong app name '%.*s'", (int) arg->mi.name.len, arg->mi.name.p));
+    arg->result = MGOS_UPD_ABORT;
+    return;
+  }
+  // Stop the HAP server.
+  s_hap_enable = false;
+  if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
+    LOG(LL_INFO, ("== Stopping HAP server for firmware update"));
+    HAPAccessoryServerStop(&s_server);
+    arg->result = MGOS_UPD_WAIT;
+    return;
+  }
+  LOG(LL_INFO, ("Starting firmware update"));
+  (void) ev;
+  (void) ev_data;
+  (void) userdata;
+}
+
+static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
+  struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
+  // Restart server in case of error.
+  // In case of success we are going to reboot anyway.
+  if (arg->state == MGOS_OTA_STATE_ERROR && !s_hap_enable) {
+    LOG(LL_INFO, ("Restarting HAP server"));
+    s_hap_enable = true;
+  }
+  (void) ev;
+  (void) ev_data;
+  (void) userdata;
+}
+#endif
+
 bool InitApp() {
 #ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
@@ -633,6 +673,11 @@ bool InitApp() {
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
+
+#ifdef MGOS_HAVE_OTA_COMMON
+  mgos_event_add_handler(MGOS_EVENT_OTA_BEGIN, OTABeginCB, nullptr);
+  mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
+#endif
 
   return true;
 }
