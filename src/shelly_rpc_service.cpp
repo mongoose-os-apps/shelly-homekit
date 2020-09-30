@@ -57,6 +57,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   if (HAPAccessoryServerGetCN(s_kvs, &hap_cn) != kHAPError_None) {
     hap_cn = 0;
   }
+  bool debug_en = mgos_sys_config_get_file_logger_enable();
   std::string res = mgos::JSONPrintStringf(
       "{id: %Q, app: %Q, model: %Q, stock_model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
@@ -65,7 +66,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u, sys_mode: %d, rsh_avail: %B",
+      "hap_ip_conns_max: %u, sys_mode: %d, rsh_avail: %B, "
+      "debug_en: %B",
       mgos_sys_config_get_device_id(), MGOS_APP,
       CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
       mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
@@ -79,11 +81,11 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
 #ifdef MGOS_SYS_CONFIG_HAVE_WC1
-      true
+      true,
 #else
-      false
+      false,
 #endif
-  );
+      debug_en);
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
   for (const auto *c : g_comps) {
@@ -123,8 +125,10 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     // System settings.
     char *name_c = NULL;
     int sys_mode = -1;
-    json_scanf(config_tok.ptr, config_tok.len, "{name: %Q, sys_mode: %d}",
-               &name_c, &sys_mode);
+    int8_t debug_en = -1;
+    json_scanf(config_tok.ptr, config_tok.len,
+               "{name: %Q, sys_mode: %d, debug_en: %B}", &name_c, &sys_mode,
+               &debug_en);
     mgos::ScopedCPtr name_owner(name_c);
 
     if (sys_mode == 0 || sys_mode == 1) {
@@ -158,6 +162,9 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
         mgos_http_server_publish_dns_sd();
         restart_required = true;
       }
+    }
+    if (debug_en != -1) {
+      SetDebugEnable(debug_en);
     }
   } else {
     // Component settings.

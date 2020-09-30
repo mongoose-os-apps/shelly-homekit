@@ -26,7 +26,7 @@
      <br><br>
     </div>
     <div class="container" id="sys_container">
-      <h1 class="">System Settings</h1>
+      <h1 class="">General Settings</h1>
       <div class="form">
         <div class="">
           <div class="form-control">
@@ -82,13 +82,13 @@
       </div>
     </div>
     <div class="container" id="wifi_container" style="visibility: hidden">
-      <h1 class="">WiFi setup</h1>
+      <h1 class="">WiFi Settings</h1>
       <div class="form">
         <div class="">
           <div class="form-control">
             <label>Enable:</label>
-              <label class="switch">
-                <input type="checkbox" id="wifi_en">
+            <label class="switch">
+              <input type="checkbox" id="wifi_en">
               <span class="slider round"></span>
             </label>
           </div>
@@ -112,9 +112,13 @@
     </div>
 
     <div class="container" id="fw_container" style="visibility: hidden">
-      <h1 class="">Firmware</h1>
+      <h1 class="">System Settings</h1>
       <div class="form">
         <div class="">
+          <div class="form-control">
+            <label>Model:</label>
+            <span id="model"></span>
+          </div>
           <div class="form-control">
             <label>Version:</label>
             <span id="app_version"></span>
@@ -142,6 +146,14 @@
               <button class="btn" id="fw_upload_btn"><span id="fw_spinner"></span> Upload</button>
             </form>
           </div>
+          <div class="form-control">
+            <label>Debug Log:</label>
+            <label class="switch">
+              <input type="checkbox" id="debug_en">
+              <span class="slider round"></span>
+            </label>
+            <span id="debug_link"><a href="/debug/log" style="margin-left: 1em">Log</a></span>
+          </div>
         </div>
       </div>
     </div>
@@ -152,8 +164,7 @@
         <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
           <input type="hidden" name="cmd" value="_s-xclick" />
           <input type="hidden" name="hosted_button_id" value="6KPSKWJDHVLB4" />
-<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="Donate via PayPal" alt="Donate via PayPal" />
-          <img alt="" border="0" src="https://www.paypal.com/en_IE/i/scr/pixel.gif" width="1" height="1" />
+          <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="Donate via PayPal" alt="Donate via PayPal" />
         </form>
       </div>
     </div>
@@ -776,12 +787,32 @@ function getInfo() {
       el("sys_mode_container").style.display = "block";
     }
     el("sys_name").value = data.id;
+    if (data.debug_en) {
+      el("debug_en").checked = true;
+      el("debug_link").style.visibility = "visible";
+    } else {
+      el("debug_en").checked = false;
+      el("debug_link").style.visibility = "hidden";
+    }
   }).catch(function(err) {
     alert(err);
   }).then(function() {
     spinner.className = "";
   });
 }
+
+el("debug_en").onclick = function() {
+  var debugEn = el("debug_en").checked;
+  axios.post(host + "/rpc/Shelly.SetConfig", {config:{debug_en: debugEn}})
+  .then(function(res) {
+    getInfo();
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  });
+};
 
 el("refresh_btn").onclick = getInfo;
 

@@ -20,7 +20,6 @@ config_schema:
   - ["sntp.enable", true]
   - ["debug.event_level", 3]
   - ["file_logger.level", 3]
-  - ["file_logger.enable", true]
   - ["file_logger.max_num_files", 1]
   - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]

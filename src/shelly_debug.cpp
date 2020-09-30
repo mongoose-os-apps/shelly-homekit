@@ -92,6 +92,17 @@ void GetDebugInfo(std::string *out) {
   mbuf_free(&nc.send_mbuf);
 }
 
+void SetDebugEnable(bool debug_en) {
+  mgos_sys_config_set_file_logger_enable(debug_en);
+  mgos::ScopedCPtr fn(mgos_file_log_get_cur_file_name());
+  if (!debug_en) {
+    mgos_file_log_flush();
+    if (fn.get() != nullptr) {
+      remove((const char *) fn.get());
+    }
+  }
+}
+
 static void DebugInfoHandler(struct mg_connection *nc, int ev, void *ev_data,
                              void *user_data) {
   if (ev != MG_EV_HTTP_REQUEST) return;

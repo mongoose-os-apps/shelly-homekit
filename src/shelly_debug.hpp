@@ -23,6 +23,8 @@ namespace shelly {
 
 void GetDebugInfo(std::string *out);
 
+void SetDebugEnable(bool debug_en);
+
 bool DebugInit(HAPPlatformKeyValueStoreRef kvs,
                HAPPlatformTCPStreamManagerRef tcpm);
 
