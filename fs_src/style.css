@@ -37,6 +37,7 @@ html, body { height: 100vh; padding: 0; margin: 5; background-color: #f2f1f6;}
     .form label { min-width: 9.0em; display: inline-block; }
     .form { padding: 1em 0; }
     .btn { background: #0071e3; }
+    .btn label { position: relative; }
     .btndis { 
       background: #f2f1f6; 
       color: #25282A;
@@ -83,15 +84,15 @@ html, body { height: 100vh; padding: 0; margin: 5; background-color: #f2f1f6;}
       height: 80px; 
      }
     .spin {
-      display: inline-block; width: 0.9em; height: 0.9em;
+      display: inline-block; width: 1em; height: 1em;
       margin-bottom: -0.2em; 
       border: 0.15em solid rgba(255,255,255,.5);
       border-radius: 50%;
       border-top-color: #fff;
       animation: spin 1s linear infinite;
       -webkit-animation: spin 1s linear infinite;
+      position: absolute; top: 0; left: 0;
     }
-    
     @keyframes spin { to { transform: rotate(360deg); } }
     @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
 

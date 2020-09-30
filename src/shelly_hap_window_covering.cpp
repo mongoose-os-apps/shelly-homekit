@@ -187,7 +187,7 @@ Status WindowCovering::SetConfig(const std::string &config_json,
                                  bool *restart_required) {
   struct mgos_config_wc cfg = *cfg_;
   cfg.name = nullptr;
-  int state = -2, tgt_pos = -1, in_mode = -1;
+  int state = -2, tgt_pos = -2, in_mode = -1;
   int8_t swap_inputs = -1, swap_outputs = -1;
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, state: %d, tgt_pos: %d, "
@@ -216,6 +216,10 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   }
   if (tgt_pos >= 0) {
     SetTgtPos(tgt_pos, "rpc");
+  } else if (tgt_pos == -1) {
+    RunOnce();
+    SetTgtPos(cur_pos_, "rpc");  // Stop
+    RunOnce();
   }
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
