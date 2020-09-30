@@ -19,7 +19,6 @@
 
 #include "mgos.hpp"
 #include "mgos_app.h"
-#include "mgos_file_logger.h"
 #include "mgos_hap.h"
 #include "mgos_http_server.h"
 #ifdef MGOS_HAVE_OTA_COMMON
@@ -569,21 +568,6 @@ void RestartHAPServer() {
   }
 }
 
-static void DebugLogHandler(struct mg_connection *nc, int ev, void *ev_data,
-                            void *user_data) {
-  if (ev != MG_EV_HTTP_REQUEST) return;
-  struct http_message *hm = (struct http_message *) ev_data;
-  mgos::ScopedCPtr fn(mgos_file_log_get_cur_file_name());
-  if (fn.get() == nullptr) {
-    mg_http_send_error(nc, 400, "No log file");
-    return;
-  }
-  mgos_file_log_flush();
-  mg_http_serve_file(nc, hm, (char *) fn.get(), mg_mk_str("text/plain"),
-                     MG_NULL_STR);
-  (void) user_data;
-}
-
 bool InitApp() {
 #ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
@@ -645,12 +629,10 @@ bool InitApp() {
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
-  shelly_debug_init(&s_kvs, &s_tcpm);
+  DebugInit(&s_kvs, &s_tcpm);
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
-
-  mgos_register_http_endpoint("/debug/log", DebugLogHandler, nullptr);
 
   return true;
 }

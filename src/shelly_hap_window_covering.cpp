@@ -287,9 +287,8 @@ void WindowCovering::SaveState() {
 
 void WindowCovering::SetState(State new_state) {
   if (state_ == new_state) return;
-  LOG(LL_INFO,
-      ("WC %d: State: %s -> %s (%d -> %d)", id(), StateStr(state_),
-       StateStr(new_state), (int) state_, (int) new_state));
+  LOG(LL_INFO, ("WC %d: State: %s -> %s (%d -> %d)", id(), StateStr(state_),
+                StateStr(new_state), (int) state_, (int) new_state));
   state_ = new_state;
   begin_ = mgos_uptime_micros();
 }
@@ -307,8 +306,8 @@ void WindowCovering::SetCurPos(float new_cur_pos, float p) {
 void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
   new_tgt_pos = TrimPos(new_tgt_pos);
   if (new_tgt_pos == tgt_pos_) return;
-  LOG(LL_INFO, ("WC %d: Tgt pos %.2f -> %.2f (%s)", id(), tgt_pos_,
-                new_tgt_pos, src));
+  LOG(LL_INFO,
+      ("WC %d: Tgt pos %.2f -> %.2f (%s)", id(), tgt_pos_, new_tgt_pos, src));
   tgt_pos_ = new_tgt_pos;
   tgt_pos_char_->RaiseEvent();
 }

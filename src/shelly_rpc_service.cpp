@@ -191,7 +191,7 @@ static void GetDebugInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                                 struct mg_rpc_frame_info *fi,
                                 struct mg_str args) {
   std::string res;
-  shelly_get_debug_info(&res);
+  GetDebugInfo(&res);
   mg_rpc_send_responsef(ri, "{info: %Q}", res.c_str());
   (void) cb_arg;
   (void) args;
