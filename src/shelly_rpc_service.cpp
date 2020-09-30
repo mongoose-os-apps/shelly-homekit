@@ -151,11 +151,13 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
           return;
         }
       }
-      mgos_sys_config_set_device_id(name.c_str());
-      mgos_sys_config_set_dns_sd_host_name(nullptr);
-      mgos_dns_sd_set_host_name(name.c_str());
-      mgos_http_server_publish_dns_sd();
-      restart_required = true;
+      if (strcmp(mgos_sys_config_get_device_id(), name.c_str()) != 0) {
+        mgos_sys_config_set_device_id(name.c_str());
+        mgos_sys_config_set_dns_sd_host_name(nullptr);
+        mgos_dns_sd_set_host_name(name.c_str());
+        mgos_http_server_publish_dns_sd();
+        restart_required = true;
+      }
     }
   } else {
     // Component settings.
