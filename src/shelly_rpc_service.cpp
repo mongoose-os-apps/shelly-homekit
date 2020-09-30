@@ -19,6 +19,7 @@
 
 #include "mgos.hpp"
 #include "mgos_dns_sd.h"
+#include "mgos_http_server.h"
 #include "mgos_rpc.h"
 
 #include "HAPAccessoryServer+Internal.h"
@@ -153,6 +154,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       mgos_sys_config_set_device_id(name.c_str());
       mgos_sys_config_set_dns_sd_host_name(nullptr);
       mgos_dns_sd_set_host_name(name.c_str());
+      mgos_http_server_publish_dns_sd();
       restart_required = true;
     }
   } else {
