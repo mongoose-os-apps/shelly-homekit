@@ -775,6 +775,7 @@ function getInfo() {
     wifiSSID.value = data.wifi_ssid;
     wifiPass.value = data.wifi_pass;
     el("device_id").innerText = data.id;
+    el("model").innerText = data.model;
     if (data.hap_running) {
       hapSetupCode.value = "***-**-***";
     } else {
