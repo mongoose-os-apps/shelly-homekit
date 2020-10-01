@@ -429,11 +429,10 @@ void WindowCovering::RunOnce() {
         break;
       }
       const float p1 = p1v.ValueOrDie();
+      int move_time_ms = (mgos_uptime_micros() - begin_) / 1000;
       LOG_EVERY_N(LL_INFO, 8, ("WC %d: P1 = %.3f", id(), p1));
-      if (p_num_ > 1 && p1 < cfg_->idle_power_thr) {
-        int64_t end = mgos_uptime_micros();
+      if (p1 < cfg_->idle_power_thr && move_time_ms > 1000) {
         out_close_->SetState(false, StateStr(state_));
-        int move_time_ms = (end - begin_) / 1000;
         float move_power = p_sum_ / p_num_;
         LOG(LL_INFO, ("WC %d: calibration done, move_time %d, move_power %.3f",
                       id(), move_time_ms, move_power));
