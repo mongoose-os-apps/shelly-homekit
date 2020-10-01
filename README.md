@@ -28,7 +28,7 @@ Reverting to stock firmware is also supported (see documentation).
 
   * See [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#updating-from-stock-firmware) for detailed instructions.
 
-  * Script [here](tools/flash_shelly.sh) for an automated way to update your devices.
+  * Script [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#Script) for an automated way to update your devices.
     * ./flash_shelly.sh hostname  (for single device)
     * ./flash_shelly.sh -a  (for all devices on the network)
 
