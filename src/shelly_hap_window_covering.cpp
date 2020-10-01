@@ -300,8 +300,9 @@ void WindowCovering::SetState(State new_state) {
 void WindowCovering::SetCurPos(float new_cur_pos, float p) {
   new_cur_pos = TrimPos(new_cur_pos);
   if (new_cur_pos == cur_pos_) return;
-  LOG(LL_INFO, ("WC %d: Cur pos %.2f -> %.2f, P = %.2f", id(), cur_pos_,
-                new_cur_pos, p));
+  LOG_EVERY_N(LL_INFO, 8,
+              ("WC %d: Cur pos %.2f -> %.2f, P = %.2f", id(), cur_pos_,
+               new_cur_pos, p));
   cur_pos_ = new_cur_pos;
   cfg_->current_pos = cur_pos_;
   cur_pos_char_->RaiseEvent();
@@ -399,7 +400,7 @@ void WindowCovering::RunOnce() {
         break;
       }
       const float p0 = p0v.ValueOrDie();
-      LOG(LL_DEBUG, ("WC %d: P0 = %.3f", id(), p0));
+      LOG_EVERY_N(LL_INFO, 8, ("WC %d: P0 = %.3f", id(), p0));
       if (p0 < 5 && (mgos_uptime_micros() - begin_ > 300000)) {
         out_open_->SetState(false, ss);
         SetState(State::kPostCal0);
@@ -428,7 +429,7 @@ void WindowCovering::RunOnce() {
         break;
       }
       const float p1 = p1v.ValueOrDie();
-      LOG(LL_DEBUG, ("WC %d: P1 = %.3f", id(), p1));
+      LOG_EVERY_N(LL_INFO, 8, ("WC %d: P1 = %.3f", id(), p1));
       if (p_num_ > 1 && p1 < 5) {
         int64_t end = mgos_uptime_micros();
         out_close_->SetState(false, StateStr(state_));
@@ -532,7 +533,7 @@ void WindowCovering::RunOnce() {
       if (((tgt_pos_ == kFullyOpen && moving_dir_ == Direction::kOpen) ||
            (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose)) &&
           !reverse) {
-        LOG(LL_DEBUG, ("Moving to %d, p %.2f", (int) tgt_pos_, p));
+        LOG_EVERY_N(LL_INFO, 8, ("Moving to %d, p %.2f", (int) tgt_pos_, p));
         if (p > 5 || (mgos_uptime_micros() - begin_ < 300000)) {
           // Still moving or ramping up.
           break;
