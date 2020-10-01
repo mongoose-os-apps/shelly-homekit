@@ -118,7 +118,7 @@ function shelly_model()
         echo "Shelly1";;
       SHSW-PM | switch1pm)
         echo "Shelly1PM";;
-      SHSW-2 | switch2)
+      SHSW-21 | switch2)
         echo "Shelly2";;
       SHSW-25 | switch25)
         echo "Shelly25";;
@@ -138,7 +138,7 @@ function shelly_model()
       switch1pm)
         echo "SHSW-PM";;
       switch2)
-        echo "SHSW-2";;
+        echo "SHSW-21";;
       switch25)
         echo "SHSW-25";;
       shelly-plug-s)
