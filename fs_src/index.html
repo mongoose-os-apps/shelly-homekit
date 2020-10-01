@@ -742,10 +742,8 @@ function updateComponent(cd) {
         } else {
           el(c, "pos").innerText = cd.cur_pos;
         }
-        el(c, "cal").innerText = "open: " + cd.open_output_id + ", " +
-                                 "close: " + cd.close_output_id + ", " +
-                                 "movement time: " + cd.move_time_ms / 1000 + " s, "
-                                 "avg power: " + cd.move_power;
+        el(c, "cal").innerText = "movement time: " + cd.move_time_ms / 1000 + " s, " +
+                                 "avg power: " + cd.move_power + "W";
       } else {
         el(c, "pos").innerText = "n/a";
         el(c, "cal").innerText = "not calibrated";

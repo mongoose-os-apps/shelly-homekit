@@ -173,14 +173,13 @@ Status WindowCovering::Init() {
 StatusOr<std::string> WindowCovering::GetInfo() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, "
-      "open_output_id: %d, close_output_id: %d, "
       "in_mode: %d, swap_inputs: %B, swap_outputs: %B, "
       "cal_done: %B, move_time_ms: %d, move_power: %d, "
       "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d}",
-      id(), type(), cfg_->name, out_open_->id(), out_close_->id(),
-      cfg_->in_mode, cfg_->swap_inputs, cfg_->swap_outputs, cfg_->calibrated,
-      cfg_->move_time_ms, (int) cfg_->move_power, (int) state_,
-      StateStr(state_), (int) cur_pos_, (int) tgt_pos_);
+      id(), type(), cfg_->name, cfg_->in_mode, cfg_->swap_inputs,
+      cfg_->swap_outputs, cfg_->calibrated, cfg_->move_time_ms,
+      (int) cfg_->move_power, (int) state_, StateStr(state_), (int) cur_pos_,
+      (int) tgt_pos_);
 }
 
 Status WindowCovering::SetConfig(const std::string &config_json,
@@ -401,7 +400,8 @@ void WindowCovering::RunOnce() {
       }
       const float p0 = p0v.ValueOrDie();
       LOG_EVERY_N(LL_INFO, 8, ("WC %d: P0 = %.3f", id(), p0));
-      if (p0 < 5 && (mgos_uptime_micros() - begin_ > 300000)) {
+      if (p0 < cfg_->idle_power_thr &&
+          (mgos_uptime_micros() - begin_ > 1000000)) {
         out_open_->SetState(false, ss);
         SetState(State::kPostCal0);
       }
@@ -430,7 +430,7 @@ void WindowCovering::RunOnce() {
       }
       const float p1 = p1v.ValueOrDie();
       LOG_EVERY_N(LL_INFO, 8, ("WC %d: P1 = %.3f", id(), p1));
-      if (p_num_ > 1 && p1 < 5) {
+      if (p_num_ > 1 && p1 < cfg_->idle_power_thr) {
         int64_t end = mgos_uptime_micros();
         out_close_->SetState(false, StateStr(state_));
         int move_time_ms = (end - begin_) / 1000;
@@ -490,7 +490,7 @@ void WindowCovering::RunOnce() {
         break;
       }
       int elapsed_us = (mgos_uptime_micros() - begin_);
-      if (elapsed_us > 5000000) {
+      if (elapsed_us > 1000000) {
         LOG(LL_ERROR, ("Failed to start moving"));
         tgt_state_ = State::kError;
         SetState(State::kStop);
@@ -517,7 +517,8 @@ void WindowCovering::RunOnce() {
       SetCurPos(new_cur_pos, p);
       float too_much_power = cfg_->move_power * 2.5;
       int too_long_time = cfg_->move_time_ms * 1.5;
-      if (p > 5 && (p > too_much_power || moving_time_ms > too_long_time)) {
+      if (p > cfg_->idle_power_thr &&
+          (p > too_much_power || moving_time_ms > too_long_time)) {
         obstruction_detected_ = true;
         obst_char_->RaiseEvent();
         LOG(LL_ERROR, ("Obstruction: p = %.2f t = %d", p, moving_time_ms));
@@ -534,7 +535,8 @@ void WindowCovering::RunOnce() {
            (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose)) &&
           !reverse) {
         LOG_EVERY_N(LL_INFO, 8, ("Moving to %d, p %.2f", (int) tgt_pos_, p));
-        if (p > 5 || (mgos_uptime_micros() - begin_ < 300000)) {
+        if (p > cfg_->idle_power_thr ||
+            (mgos_uptime_micros() - begin_ < 1000000)) {
           // Still moving or ramping up.
           break;
         } else {
@@ -568,7 +570,7 @@ void WindowCovering::RunOnce() {
       if (p0v.ok()) p0 = p0v.ValueOrDie();
       auto p1v = pm_close_->GetPowerW();
       if (p1v.ok()) p1 = p1v.ValueOrDie();
-      if (p0 < 5 && p1 < 5) {
+      if (p0 < cfg_->idle_power_thr && p1 < cfg_->idle_power_thr) {
         SetState(State::kIdle);
       }
       break;
