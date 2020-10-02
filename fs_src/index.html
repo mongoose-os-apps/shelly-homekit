@@ -282,7 +282,7 @@
             <span id="state"></span> pos
             <span id="pos"></span>
           </div>
-          <div class="form-control">
+          <div class="form-control" id="pos_ctl">
             <label></label>
             <button class="btn" id="open_btn">
               <label><span id="open_spinner"></span>Open</label>
@@ -728,9 +728,7 @@ function updateComponent(cd) {
       el(c, "last_event").innerText = lastEvText;
       break;
     case 4: // Window Covering
-      var headText = "Window " + cd.id;
-      if (cd.name) headText += " (" + cd.name + ")";
-      el(c, "head").innerText = headText;
+      el(c, "head").innerText = cd.name;;
       el(c, "name").value = cd.name;
       el(c, "state").innerText = cd.state_str;
       el(c, "in_mode_" + cd.in_mode).selected = true;
@@ -744,9 +742,11 @@ function updateComponent(cd) {
         }
         el(c, "cal").innerText = "movement time: " + cd.move_time_ms / 1000 + " s, " +
                                  "avg power: " + cd.move_power + "W";
+        el(c, "pos_ctl").style.display = "block";
       } else {
         el(c, "pos").innerText = "n/a";
         el(c, "cal").innerText = "not calibrated";
+        el(c, "pos_ctl").style.display = "none";
       }
       if (cd.state >= 10 && cd.state < 20) {  // Calibration is ongoing.
         el(c, "cal_spinner").className = "spin";
