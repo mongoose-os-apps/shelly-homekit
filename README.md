@@ -1,14 +1,17 @@
 # Apple HomeKit firmware for Shelly switches
 
-This firmware exposes Shelly1, Shelly1PM, ShellyPlug-S, Shelly2 and Shelly25 as Apple HomeKit accessories.
+This firmware exposes Shelly1, SHelly1PM, ShellyPlug-S, Shelly2 and Shelly2.5 as Apple HomeKit accessories.
 
-Firmware is compatible with stock and can be uploaded via OTA (see below).
+Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw)), for more info take a look at the flashing wiki [here](Flashing#updating-from-stock-firmware).
 
-Reverting to stock firmware is also supported (see documentation).
+At the moment only the following functionality is supported:
+ * Switch functionality - all relevant models, with auto-off and separate input tile as an option.
+ * Power measurement: only Shelly 2.5, not Shelly1PM
+ * Roller-shutter mode (Shelly 2.5 only)
 
-*Note:* At the moment only switch functionality is supported - no scheduling, etc.
+Reverting to stock firmware is also supported [see here](Flashing#reverting-to-stock-firmware).
 
-*Note 2:* Only HomeKit is supported, no Shelly Cloud, MQTT for now.
+*Note:* Only HomeKit is supported, no Shelly Cloud, MQTT or web hooks for now.
 
 ## Quick Start
 
