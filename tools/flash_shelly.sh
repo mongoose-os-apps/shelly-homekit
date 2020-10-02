@@ -338,6 +338,8 @@ function probe_info {
       elif [ $mode == "keep" ]; then
         perform_flash=true
       fi
+    elif [ $(echo "$lfw_V $cfw_V -p" | dc) -eq 0 ] && [[ $cfw == *beta* ]]; then
+      perform_flash=true
     elif [ $forced_version == true ] && [ ! -z $dlurl ]; then
       perform_flash=true
     else
