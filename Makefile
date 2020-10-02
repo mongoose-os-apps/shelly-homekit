@@ -62,10 +62,11 @@ build-%: fs/index.html.gz fs/style.css.gz
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
 	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL)
 ifeq "$(RELEASE)" "1"
-	dir=releases/`jq -r .build_version $(BUILD_DIR)/gen/build_info.json`$(RELEASE_SUFFIX) && \
-	  mkdir -p $$dir && \
-	  cp -v $(BUILD_DIR)/fw.zip $$dir/shelly-homekit-$*.zip && \
-	  cp -v $(BUILD_DIR)/objs/*.elf $$dir/shelly-homekit-$*.elf
+	[ $(PLATFORM) = ubuntu ] || \
+	  (dir=releases/`jq -r .build_version $(BUILD_DIR)/gen/build_info.json`$(RELEASE_SUFFIX) && \
+	    mkdir -p $$dir && \
+	    cp -v $(BUILD_DIR)/fw.zip $$dir/shelly-homekit-$*.zip && \
+	    cp -v $(BUILD_DIR)/objs/*.elf $$dir/shelly-homekit-$*.elf)
 endif
 
 format:

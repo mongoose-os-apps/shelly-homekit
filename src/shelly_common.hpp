@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 
+#include "common/cs_dbg.h"
 #include "common/util/status.h"
 #include "common/util/statusor.h"
 
@@ -34,5 +35,18 @@ using namespace std::placeholders;  // _1, _2, ...
 inline const char *OnOff(bool on) {
   return (on ? "on" : "off");
 }
+
+inline const char *YesNo(bool yes) {
+  return (yes ? "yes" : "no");
+}
+
+// TODO(rojer): Move upstream.
+#define LOG_EVERY_N(l, n, x)                                              \
+  do {                                                                    \
+    static int cnt = 0;                                                   \
+    if (cnt++ % (n) == 0 && cs_log_print_prefix(l, __FILE__, __LINE__)) { \
+      cs_log_printf x;                                                    \
+    }                                                                     \
+  } while (0)
 
 }  // namespace shelly

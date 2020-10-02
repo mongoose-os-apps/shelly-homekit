@@ -7,30 +7,48 @@
   <script src="axios.min.js.gz"></script>
   </head>
   <body onLoad="onLoad()">
-    <div class="header">
-     <br>
-      <div class="logodiv">
-        <img class="img" src="logo.png" alt=""></div>
-          <div class="apl_thin">
-            shelly-<b>HomeKit</b>
-          </div>
-    <h1 class="" id="device_id" style="visibility: hidden">shellyswitch25-XXXXXX</h1>
-     <br>
+    <div class="container">
+        <div class="logodiv"><img class="img" src="logo.png" alt=""></div>
+        <div class="apl_thin">
+          Shelly-<b>HomeKit</b>
+          <a href="https://github.com/mongoose-os-apps/shelly-homekit/wiki" style="float: right; font-size: 18px">Documentation</a>
+        </div>
+      <h1 class="" id="device_id" style="visibility: hidden">shellyswitch25-XXXXXX</h1>
+      <br>
       <button class="btn" id="refresh_btn">
-        <span id="spinner"></span>
-        Refresh
+        <label><span id="spinner"></span>Refresh</label>
       </button>
-            <button class="btn" id="reboot_btn">
-              Reboot
-            </button>
-     <button disabled class="btndis" id="uptime_label">
-       Uptime: <span id="uptime"></span>
-     </button>
+      <button class="btn" id="reboot_btn">Reboot</button>
+      <button disabled class="btndis" id="uptime_label">
+        Uptime: <span id="uptime"></span>
+      </button>
      <br><br>
     </div>
-
+    <div class="container" id="sys_container">
+      <h1 class="">General Settings</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="sys_name">
+          </div>
+          <div class="form-control" id="sys_mode_container" style="display: none">
+            <label>Mode:</label>
+            <select id="sys_mode">
+              <option id="sys_mode_0" value="0">Switch</option>
+              <option id="sys_mode_1" value="1">Roller Shutter</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label></label>
+            <button class="btn" id="sys_save_btn">
+              <label><span id="sys_save_spinner"></span>Save</label>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="components"></div>
-
     <div class="container" id="homekit_container" style="visibility: hidden">
       <h1 class="">HomeKit Settings</h1>
       <div class="form">
@@ -50,25 +68,23 @@
           <div class="form-control">
             <label></label>
             <button class="btn" id="hap_save_btn">
-              <span id="hap_save_spinner"></span>
-              Save
+              <label><span id="hap_save_spinner"></span>Save</label>
             </button>
             <button class="btn" id="hap_reset_btn">
-              <span id="hap_reset_spinner"></span>
-              Reset
+              <label><span id="hap_reset_spinner"></span>Reset</label>
             </button>
           </div>
         </div>
       </div>
     </div>
     <div class="container" id="wifi_container" style="visibility: hidden">
-      <h1 class="">WiFi setup</h1>
+      <h1 class="">WiFi Settings</h1>
       <div class="form">
         <div class="">
           <div class="form-control">
             <label>Enable:</label>
-              <label class="switch">
-                <input type="checkbox" id="wifi_en">
+            <label class="switch">
+              <input type="checkbox" id="wifi_en">
               <span class="slider round"></span>
             </label>
           </div>
@@ -83,8 +99,7 @@
           <div class="form-control">
             <label></label>
             <button class="btn" id="wifi_save_btn">
-              <span id="wifi_spinner"></span>
-              Save
+              <label><span id="wifi_spinner"></span>Save</label>
             </button>
           </div>
         </div>
@@ -92,9 +107,13 @@
     </div>
 
     <div class="container" id="fw_container" style="visibility: hidden">
-      <h1 class="">Firmware</h1>
+      <h1 class="">System Settings</h1>
       <div class="form">
         <div class="">
+          <div class="form-control">
+            <label>Model:</label>
+            <span id="model"></span>
+          </div>
           <div class="form-control">
             <label>Version:</label>
             <span id="app_version"></span>
@@ -102,16 +121,17 @@
           <div class="form-control">
             <label>Update: </label>
             <button class="btn" id="update_btn">
-              <span id="update_btn_spinner"></span>
-              <span id="update_btn_text">Check</span>
+              <label>
+                <span id="update_btn_spinner"></span>
+                <span id="update_btn_text">Check</span>
+              </label>
             </button>
             <span id="update_status"></span>
           </div>
           <div class="form-control">
             <label>Revert to stock:</label>
             <button class="btn" id="revert_btn">
-              <span id="revert_btn_spinner"></span>
-              Revert
+              <label><span id="revert_btn_spinner"></span>Revert</label>
             </button>
             <span id="revert_status"></span>
           </div>
@@ -119,13 +139,35 @@
             <label>Update from file:</label>
             <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data" style="display: inline">
               <input type="file" id="fw_select_file" name="file" accept=".zip" />
-              <button class="btn" id="fw_upload_btn"><span id="fw_spinner"></span> Upload</button>
+              <button class="btn" id="fw_upload_btn">
+                <label><span id="fw_spinner"></span>Upload</label>
+              </button>
             </form>
+          </div>
+          <div class="form-control">
+            <label>Debug Log:</label>
+            <label class="switch">
+              <input type="checkbox" id="debug_en">
+              <span class="slider round"></span>
+            </label>
+            <span id="debug_link"><a href="/debug/log" style="margin-left: 1em">Log</a></span>
           </div>
         </div>
       </div>
     </div>
 
+    <div class="container">
+      <div class="form" style="text-align: center">
+        <p>&copy; Copyright 2020 <a href="https://github.com/mongoose-os-apps/shelly-homekit/blob/master/AUTHORS.md">Shelly-HomeKit contributors</a>.</p>
+        <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+          <input type="hidden" name="cmd" value="_s-xclick" />
+          <input type="hidden" name="hosted_button_id" value="6KPSKWJDHVLB4" />
+          <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="Donate via PayPal" alt="Donate via PayPal" />
+        </form>
+      </div>
+    </div>
+
+    <!-- Component section templates -->
 
     <div class="container" id="sw_template" style="display: none">
       <h1 id="head">Switch</h1>
@@ -139,8 +181,7 @@
           <div class="form-control">
             <label></label>
             <button class="btn" id="toggle_btn">
-              <span id="set_spinner"></span>
-              <label id="btn_label">Turn On</label>
+              <label><span id="set_spinner"></span><span id="btn_label">Turn On</span></label>
             </button>
           </div>
         </div>
@@ -191,8 +232,7 @@
           <div class="form-control">
             <label></label>
             <button class="btn" id="save_btn">
-              <span id="save_spinner"></span>
-              <label>Save</label>
+              <label><span id="save_spinner"></span>Save</label>
             </button>
           </div>
         </div>
@@ -222,8 +262,69 @@
           <div class="form-control">
             <label></label>
             <button class="btn" id="save_btn">
-              <span id="save_spinner"></span>
-              <label>Save</label>
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="wc_template" style="display: none">
+      <h1 id="head">Window</h1>
+      <div class="form">
+        <div class="">
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>Status:</label>
+            <span id="state"></span> pos
+            <span id="pos"></span>
+          </div>
+          <div class="form-control" id="pos_ctl">
+            <label></label>
+            <button class="btn" id="open_btn">
+              <label><span id="open_spinner"></span>Open</label>
+            </button>
+            <button class="btn" id="close_btn">
+              <label><span id="close_spinner"></span>Close</label>
+            </button>
+          </div>
+          <div class="form-control">
+            <label>Calibration:</label>
+            <span id="cal"></span>
+          </div>
+          <div class="form-control">
+            <label>Input Mode:</label>
+            <select id="in_mode">
+              <option id="in_mode_0" value="0">Separate - momentary</option>
+              <option id="in_mode_1" value="1">Separate - toggle</option>
+              <option id="in_mode_2" value="2">Single</option>
+              <option id="in_mode_3" value="3">Detached</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label>Swap Inputs:</label>
+              <label class="switch">
+                <input type="checkbox" id="swap_inputs">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Swap Outputs:</label>
+              <label class="switch">
+                <input type="checkbox" id="swap_outputs">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control" id="btns">
+            <label></label>
+            <button class="btn" id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+            <button class="btn" id="cal_btn">
+              <label><span id="cal_spinner"></span>Calibrate</label>
             </button>
           </div>
         </div>
@@ -235,7 +336,7 @@
 var lastInfo = null;
 var host = "";
 
-var spinner = el("spinner");
+var autoRefresh = false;
 
 var wifiEn = el("wifi_en");
 var wifiSSID = el("wifi_ssid");
@@ -256,6 +357,41 @@ function el(container, id) {
   }
   return container.querySelector("#" + id);
 }
+
+function checkName(name) {
+  var ok = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-";
+  if (name.length == 0 || name.length > 63) return false;
+  for (var i in name) {
+    if (ok.indexOf(name[i]) < 0) return false;
+  }
+  return true;
+}
+
+el("sys_save_btn").onclick = function() {
+  if (!checkName(el("sys_name").value)) {
+    alert("Name must be between 1 and 63 characters "+
+          "and consist of letters, numbers or dashes ('-')");
+    return;
+  }
+  var data = {
+    config: {
+      name: el("sys_name").value,
+      sys_mode: parseInt(el("sys_mode").value),
+    },
+  };
+  console.log("sysSetCfg:", data);
+  el("sys_save_spinner").className = "spin";
+  axios.post(host + "/rpc/Shelly.SetConfig", data).then(function(res) {
+    el("sys_save_spinner").className = "";
+    setTimeout(getInfo, 1100);
+  }).catch(function(err) {
+    el("sys_save_spinner").className = "";
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  });
+};
 
 el("hap_save_btn").onclick = function() {
   var code = hapSetupCode.value;
@@ -294,8 +430,9 @@ el("hap_reset_btn").onclick = function() {
   });
 };
 
-el("fw_upload_form").onsubmit = function() {
+el("fw_upload_btn").onclick = function() {
   el("fw_spinner").className = "spin";
+  el("fw_upload_form").submit();
   return true;
 };
 
@@ -454,6 +591,40 @@ function sswSetConfig(c) {
     });
 }
 
+function wcSetConfig(c, cfg, spinner) {
+  if (!cfg) {
+    var name = el(c, "name").value;
+    if (name == "") {
+      alert("Name must not be empty");
+      return;
+    }
+    cfg = {
+      name: name,
+      in_mode: el(c, "in_mode").value,
+      swap_inputs: el(c, "swap_inputs").checked,
+      swap_outputs: el(c, "swap_outputs").checked,
+    };
+  }
+  if (spinner) spinner.className = "spin";
+  var data = {
+    id: c.data.id,
+    type: c.data.type,
+    config: cfg,
+  };
+  console.log("wcSetConfig:", data);
+  axios.post(host + "/rpc/Shelly.SetConfig", data)
+    .then(function(res) {
+      if (spinner) spinner.className = "";
+      setTimeout(getInfo, 1100);
+    }).catch(function(err) {
+      if (spinner) spinner.className = "";
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+    });
+}
+
 el("reboot_btn").onclick = function() {
   axios.post(host + "/rpc/Sys.Reboot", {delay_ms: 500}).then(function(res) {
     alert("System is rebooting, please refresh the page.");
@@ -479,6 +650,33 @@ function findOrAddContainer(cd) {
       c.id = elId;
       el(c, "save_btn").onclick = function() { sswSetConfig(c); };
       break;
+    case 4: // Window Covering
+      c = el("wc_template").cloneNode(true);
+      c.id = elId;
+      el(c, "open_btn").onclick = function() {
+        if (el(c, "open_spinner").className == "") {
+          wcSetConfig(c, {tgt_pos: 100}, null);
+          el(c, "open_spinner").className = "spin";
+        } else {
+          wcSetConfig(c, {tgt_pos: -1}, null);
+        }
+        el(c, "close_spinner").className = "";
+      };
+      el(c, "close_btn").onclick = function() {
+        if (el(c, "close_spinner").className == "") {
+          wcSetConfig(c, {tgt_pos: 0}, null);
+          el(c, "close_spinner").className = "spin";
+        } else {
+          wcSetConfig(c, {tgt_pos: -1}, null);
+        }
+        el(c, "open_spinner").className = "";
+      };
+      el(c, "save_btn").onclick = function() { wcSetConfig(c, null, el(c, "save_spinner")); };
+      el(c, "cal_btn").onclick = function() {
+        wcSetConfig(c, {state: 10}, null);
+        el(c, "cal_spinner").className = "spin";
+      };
+      break;
   }
   if (c) {
     c.style.display = "block";
@@ -489,6 +687,7 @@ function findOrAddContainer(cd) {
 
 function updateComponent(cd) {
   var c = findOrAddContainer(cd);
+  if (!c) return;
   switch (cd.type) {
     case 0: // Switch
     case 1: // Outlet
@@ -528,12 +727,44 @@ function updateComponent(cd) {
       }
       el(c, "last_event").innerText = lastEvText;
       break;
+    case 4: // Window Covering
+      el(c, "head").innerText = cd.name;;
+      el(c, "name").value = cd.name;
+      el(c, "state").innerText = cd.state_str;
+      el(c, "in_mode_" + cd.in_mode).selected = true;
+      el(c, "swap_inputs").checked = cd.swap_inputs;
+      el(c, "swap_outputs").checked = cd.swap_outputs;
+      if (cd.cal_done == 1) {
+        if (cd.cur_pos != cd.tgt_pos) {
+          el(c, "pos").innerText = cd.cur_pos + " -> " + cd.tgt_pos;
+        } else {
+          el(c, "pos").innerText = cd.cur_pos;
+        }
+        el(c, "cal").innerText = "movement time: " + cd.move_time_ms / 1000 + " s, " +
+                                 "avg power: " + cd.move_power + "W";
+        el(c, "pos_ctl").style.display = "block";
+      } else {
+        el(c, "pos").innerText = "n/a";
+        el(c, "cal").innerText = "not calibrated";
+        el(c, "pos_ctl").style.display = "none";
+      }
+      if (cd.state >= 10 && cd.state < 20) {  // Calibration is ongoing.
+        el(c, "cal_spinner").className = "spin";
+        el(c, "cal").innerText = "in progress";
+        autoRefresh = true;
+      } else if (cd.state >= 20 && cd.state <= 25) {
+        autoRefresh = true;
+      } else {
+        el(c, "cal_spinner").className = "";
+        el(c, "open_spinner").className = "";
+        el(c, "close_spinner").className = "";
+      }
+      break;
   }
   c.data = cd;
 }
 
 function getInfo() {
-  spinner.className = "spin";
   axios.get(host + "/rpc/Shelly.GetInfo").then(function(res) {
     var data = res.data;
     lastInfo = data;
@@ -542,7 +773,8 @@ function getInfo() {
     wifiSSID.value = data.wifi_ssid;
     wifiPass.value = data.wifi_pass;
     el("device_id").innerText = data.id;
-    if (data.hap_provisioned) {
+    el("model").innerText = data.model;
+    if (data.hap_running) {
       hapSetupCode.value = "***-**-***";
     } else {
       hapSetupCode.value = "";
@@ -553,6 +785,7 @@ function getInfo() {
     if (data.hap_cn != el("components").cn) {
       el("components").innerHTML = "";
     }
+    autoRefresh = false;
     for (var i in data.components) {
       updateComponent(data.components[i]);
     }
@@ -571,17 +804,46 @@ function getInfo() {
     } else {
       el("hap_conn_stats").innerText = "server not running";
     }
+    if (data.rsh_avail) {
+      el("sys_mode_" + data.sys_mode).selected = true;
+      el("sys_mode_container").style.display = "block";
+    }
+    el("sys_name").value = data.id;
+    if (data.debug_en) {
+      el("debug_en").checked = true;
+      el("debug_link").style.visibility = "visible";
+    } else {
+      el("debug_en").checked = false;
+      el("debug_link").style.visibility = "hidden";
+    }
   }).catch(function(err) {
     alert(err);
   }).then(function() {
-    spinner.className = "";
+    el("spinner").className = "";
   });
 }
 
-el("refresh_btn").onclick = getInfo;
+el("debug_en").onclick = function() {
+  var debugEn = el("debug_en").checked;
+  axios.post(host + "/rpc/Shelly.SetConfig", {config:{debug_en: debugEn}})
+  .then(function(res) {
+    getInfo();
+  }).catch(function(err) {
+    if (err.response) {
+      err = err.response.data.message;
+    }
+    alert(err);
+  });
+};
+
+el("refresh_btn").onclick = function() {
+  el("spinner").className = "spin";
+  getInfo();
+}
 
 function onLoad() {
   getInfo();
+  setInterval(function() { if (autoRefresh) getInfo(); }, 1000);
 }
 
 function durationStr(d) {
@@ -600,31 +862,25 @@ async function downloadUpdate(fwURL, spinner, status) {
   status.innerText = "Downloading...";
   console.log("Downloading", fwURL);
   fetch(fwURL, {mode: "cors"})
-    //.then(resp => resp.blob()) {
-    .then((resp) => {
+    .then(async (resp) => {
       console.log(resp);
-      var data = new Uint8Array();
-      function pump(reader) {
-        reader.read().then(({done, value}) => {
-          if (!done) {
-            data = new Uint8Array([...data, ...value]);
-            pump(reader);
-          } else {
-            return uploadFW(data, spinner, status);
-          }
-        });
+      var blob = await resp.blob();
+      if (!resp.ok || blob.type != "application/zip") {
+        status.innerText = "Failed, try manually.";
+        return;
       }
-      pump(resp.body.getReader());
+      return uploadFW(blob, spinner, status);
     }).catch((error) => {
       spinner.className = "";
       status.innerText = "Error downloading: " + error;
     });
 }
 
-async function uploadFW(data, spinner, status) {
-  status.innerText = "Uploading " + data.length + " bytes...";
+async function uploadFW(blob, spinner, status) {
+  spinner.className = "spin";
+  status.innerText = "Uploading " + blob.size + " bytes...";
   var fd  = new FormData();
-  fd.append("file", new Blob([data], {type: "application/zip"}));
+  fd.append("file", blob);
   fetch("/update", {
     method: "POST",
     mode: "cors",
@@ -681,39 +937,53 @@ async function checkUpdate() {
   var model = lastInfo.model;
   var curVersion = lastInfo.version;
   var e = el("update_status");
+  var se = el("update_btn_spinner");
   var errMsg = 'Failed, check <a href="https://github.com/mongoose-os-apps/shelly-homekit/releases">GitHub</a>.';
-  e.innerText = "Checking...";
+  e.innerText = "";
+  se.className = "spin";
+  console.log("Model:", model, "Version:", curVersion);
   fetch("https://rojer.me/files/shelly/update.json",
         {headers: {"X-Model": model, "X-Current-Version": curVersion, "X-Current-Build": lastInfo.fw_build}})
     .then(resp => resp.json())
     .then((resp) => {
-      console.log(resp);
-      // Try section specific to this version first, use "latest" if there isn't one.
-      var latestVersion, updateURL, relNotesURL;
-      var section = resp[curVersion];
-      if (!section) section = resp["latest"];
-      if (section) {
-        latestVersion = section.version;
-        relNotesURL = section.relNotes;
-        if (section.urls) updateURL = section.urls[model];
+      var cfg, latestVersion, updateURL, relNotesURL;
+      for (var i in resp) {
+        var re = new RegExp(resp[i][0]);
+        if (curVersion.match(re)) {
+          cfg = resp[i][1];
+          break;
+        }
       }
+      if (cfg) {
+        latestVersion = cfg.version;
+        relNotesURL = cfg.rel_notes;
+        if (cfg.urls) updateURL = cfg.urls[model];
+      }
+      console.log("Version:", latestVersion, "URL:", updateURL);
       if (!latestVersion || !updateURL) {
+        console.log(model, section, updateURL);
         e.innerHTML = errMsg;
+        se.className = "";
         return;
       }
       if (!isNewer(latestVersion, curVersion)) {
         e.innerText = "Up to date";
+        se.className = "";
         return;
       }
+      se.className = "";
       e.innerHTML = "Version " + latestVersion + " is available. " +
-                    'See <a href="' + relNotesURL + '">release notes</a>.';
+                    'See <a href="' + relNotesURL + '" target="_blank">release notes</a>.';
       el("update_btn_text").innerText = "Install";
-      console.log("Version:", latestVersion, "URL:", updateURL);
       el("update_btn").onclick = function() {
         return downloadUpdate(updateURL, el("update_btn_spinner"), el("update_status"));
       };
     })
-    .catch((error) => { e.innerHTML = errMsg });
+    .catch((error) => {
+      console.log("Error", error);
+      e.innerHTML = errMsg;
+      se.className = "";
+    });
 }
 
 el("update_btn").onclick = function() { checkUpdate(); };

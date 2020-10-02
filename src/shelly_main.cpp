@@ -20,12 +20,15 @@
 #include "mgos.hpp"
 #include "mgos_app.h"
 #include "mgos_hap.h"
+#include "mgos_http_server.h"
 #ifdef MGOS_HAVE_OTA_COMMON
 #include "esp_coredump.h"
 #include "esp_rboot.h"
 #include "mgos_ota.h"
 #endif
 #include "mgos_rpc.h"
+
+#include "mongoose.h"
 
 #include "HAP.h"
 #include "HAPAccessoryServer+Internal.h"
@@ -125,8 +128,7 @@ static int16_t s_identify_count = 0;
 
 static void CheckLED(int pin, bool led_act);
 
-static HAPError AccessoryIdentifyCB(
-    const HAPAccessoryIdentifyRequest *request) {
+HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request) {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
   s_identify_count = 3;
   CheckLED(LED_GPIO, LED_ON);
@@ -248,19 +250,28 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
   }
   if (sw_cfg->in_mode == 3) {
     LOG(LL_INFO, ("Creating a stateless switch for input %d", id));
-    std::unique_ptr<hap::StatelessSwitch> ssw(new hap::StatelessSwitch(
-        id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, 0));
-    if (ssw != nullptr && ssw->Init().ok()) {
-      comps->push_back(ssw.get());
-      std::unique_ptr<hap::Accessory> acc(
-          new hap::Accessory(SHELLY_HAP_AID_BASE_STATELESS_SWITCH + id,
-                             kHAPAccessoryCategory_BridgedAccessory,
-                             ssw_cfg->name, &AccessoryIdentifyCB, svr));
-      acc->AddHAPService(&mgos_hap_accessory_information_service);
-      acc->AddService(std::move(ssw));
-      accs->push_back(std::move(acc));
-    }
+    CreateHAPStatelessSwitch(id, ssw_cfg, comps, accs, svr);
   }
+}
+
+void CreateHAPStatelessSwitch(
+    int id, const struct mgos_config_ssw *ssw_cfg,
+    std::vector<Component *> *comps,
+    std::vector<std::unique_ptr<hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr) {
+  std::unique_ptr<hap::StatelessSwitch> ssw(new hap::StatelessSwitch(
+      id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, 0));
+  if (ssw == nullptr || !ssw->Init().ok()) {
+    return;
+  }
+  comps->push_back(ssw.get());
+  std::unique_ptr<hap::Accessory> acc(
+      new hap::Accessory(SHELLY_HAP_AID_BASE_STATELESS_SWITCH + id,
+                         kHAPAccessoryCategory_BridgedAccessory, ssw_cfg->name,
+                         &AccessoryIdentifyCB, svr));
+  acc->AddHAPService(&mgos_hap_accessory_information_service);
+  acc->AddService(std::move(ssw));
+  accs->push_back(std::move(acc));
 }
 
 static void DisableLegacyHAPLayout() {
@@ -444,15 +455,23 @@ out:
   }
 }
 
+void CountHAPSessions(void *ctx, HAPAccessoryServerRef *, HAPSessionRef *,
+                      bool *) {
+  (*((int *) ctx))++;
+}
+
 static void StatusTimerCB(void *arg) {
   static uint8_t s_cnt = 0;
   if (++s_cnt % 8 == 0) {
     HAPPlatformTCPStreamManagerStats tcpm_stats = {};
     HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
-    LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u, RAM: %lu, %lu free",
+    int num_sessions = 0;
+    HAPAccessoryServerEnumerateConnectedSessions(&s_server, CountHAPSessions,
+                                                 &num_sessions);
+    LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u ns %d, RAM: %lu, %lu free",
                   mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
                   (unsigned) tcpm_stats.numActiveTCPStreams,
-                  (unsigned) tcpm_stats.maxNumTCPStreams,
+                  (unsigned) tcpm_stats.maxNumTCPStreams, num_sessions,
                   (unsigned long) mgos_get_heap_size(),
                   (unsigned long) mgos_get_free_heap_size()));
     s_cnt = 0;
@@ -557,6 +576,46 @@ void RestartHAPServer() {
   }
 }
 
+#ifdef MGOS_HAVE_OTA_COMMON
+static void OTABeginCB(int ev, void *ev_data, void *userdata) {
+  struct mgos_ota_begin_arg *arg = (struct mgos_ota_begin_arg *) ev_data;
+  // Some other callback objected.
+  if (arg->result != MGOS_UPD_OK) return;
+  // Check app name.
+  if (mg_vcmp(&arg->mi.name, MGOS_APP) != 0) {
+    LOG(LL_ERROR,
+        ("Wrong app name '%.*s'", (int) arg->mi.name.len, arg->mi.name.p));
+    arg->result = MGOS_UPD_ABORT;
+    return;
+  }
+  // Stop the HAP server.
+  s_hap_enable = false;
+  if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
+    LOG(LL_INFO, ("== Stopping HAP server for firmware update"));
+    HAPAccessoryServerStop(&s_server);
+    arg->result = MGOS_UPD_WAIT;
+    return;
+  }
+  LOG(LL_INFO, ("Starting firmware update"));
+  (void) ev;
+  (void) ev_data;
+  (void) userdata;
+}
+
+static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
+  struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
+  // Restart server in case of error.
+  // In case of success we are going to reboot anyway.
+  if (arg->state == MGOS_OTA_STATE_ERROR && !s_hap_enable) {
+    LOG(LL_INFO, ("Restarting HAP server"));
+    s_hap_enable = true;
+  }
+  (void) ev;
+  (void) ev_data;
+  (void) userdata;
+}
+#endif
+
 bool InitApp() {
 #ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
@@ -618,10 +677,15 @@ bool InitApp() {
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
-  shelly_debug_init(&s_kvs, &s_tcpm);
+  DebugInit(s_server, &s_kvs, &s_tcpm);
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
+
+#ifdef MGOS_HAVE_OTA_COMMON
+  mgos_event_add_handler(MGOS_EVENT_OTA_BEGIN, OTABeginCB, nullptr);
+  mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
+#endif
 
   return true;
 }

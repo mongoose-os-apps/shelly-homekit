@@ -116,15 +116,15 @@ struct ScalarCharacteristic : public Characteristic {
         read_handler_(read_handler),
         write_handler_(write_handler) {
     HAPBaseClass *c = reinterpret_cast<HAPBaseClass *>(&hap_char_.char_);
-    c->properties.readable = true;
-    c->properties.supportsEventNotification = supports_notification;
-    c->callbacks.handleRead = ScalarCharacteristic::HandleReadCB;
-    if (write_handler) {
-      c->properties.writable = true;
-      /* ???
+    if (read_handler) {
+      c->properties.readable = true;
+      c->callbacks.handleRead = ScalarCharacteristic::HandleReadCB;
+      c->properties.supportsEventNotification = supports_notification;
       c->properties.ble.supportsBroadcastNotification = true;
       c->properties.ble.supportsDisconnectedNotification = true;
-      */
+    }
+    if (write_handler) {
+      c->properties.writable = true;
       c->callbacks.handleWrite = ScalarCharacteristic::HandleWriteCB;
     }
   }

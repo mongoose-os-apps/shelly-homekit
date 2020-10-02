@@ -19,6 +19,7 @@
 
 #include "mgos.hpp"
 #include "mgos_dns_sd.h"
+#include "mgos_http_server.h"
 #include "mgos_rpc.h"
 
 #include "HAPAccessoryServer+Internal.h"
@@ -56,6 +57,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   if (HAPAccessoryServerGetCN(s_kvs, &hap_cn) != kHAPError_None) {
     hap_cn = 0;
   }
+  bool debug_en = mgos_sys_config_get_file_logger_enable();
   std::string res = mgos::JSONPrintStringf(
       "{id: %Q, app: %Q, model: %Q, stock_model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
@@ -64,7 +66,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u",
+      "hap_ip_conns_max: %u, sys_mode: %d, rsh_avail: %B, "
+      "debug_en: %B",
       mgos_sys_config_get_device_id(), MGOS_APP,
       CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
       mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
@@ -76,7 +79,13 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       hap_cn, hap_running, hap_paired,
       (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
-      (unsigned) tcpm_stats.maxNumTCPStreams);
+      (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
+#ifdef MGOS_SYS_CONFIG_HAVE_WC1
+      true,
+#else
+      false,
+#endif
+      debug_en);
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
   for (const auto *c : g_comps) {
@@ -112,25 +121,27 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 
   Status st = Status::OK();
   bool restart_required = false;
-  if (id != -1 && type != -1) {
-    Component *c = nullptr;
-    for (auto *cp : g_comps) {
-      if (cp->id() == id && (int) cp->type() == type) {
-        c = cp;
-        break;
-      }
-    }
-    if (c == nullptr) {
-      mg_rpc_send_errorf(ri, 400, "component not found");
-      return;
-    }
-    st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
-                      &restart_required);
-  } else {
-    // Global config setting.
+  if (id == -1 && type == -1) {
+    // System settings.
     char *name_c = NULL;
-    json_scanf(args.p, args.len, "{config: {name: %Q}}", &name_c);
+    int sys_mode = -1;
+    int8_t debug_en = -1;
+    json_scanf(config_tok.ptr, config_tok.len,
+               "{name: %Q, sys_mode: %d, debug_en: %B}", &name_c, &sys_mode,
+               &debug_en);
     mgos::ScopedCPtr name_owner(name_c);
+
+    if (sys_mode == 0 || sys_mode == 1) {
+      if (sys_mode != mgos_sys_config_get_shelly_mode()) {
+        mgos_sys_config_set_shelly_mode(sys_mode);
+        restart_required = true;
+      }
+    } else if (sys_mode == -1) {
+      // Nothing.
+    } else {
+      st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
+                        "name (too long, max 64)");
+    }
     if (name_c != nullptr) {
       mgos_expand_mac_address_placeholders(name_c);
       std::string name(name_c);
@@ -144,14 +155,36 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
           return;
         }
       }
-      mgos_sys_config_set_device_id(name.c_str());
-      mgos_sys_config_set_dns_sd_host_name(nullptr);
-      mgos_dns_sd_set_host_name(name.c_str());
-      restart_required = true;
+      if (strcmp(mgos_sys_config_get_device_id(), name.c_str()) != 0) {
+        mgos_sys_config_set_device_id(name.c_str());
+        mgos_sys_config_set_dns_sd_host_name(nullptr);
+        mgos_dns_sd_set_host_name(name.c_str());
+        mgos_http_server_publish_dns_sd();
+        restart_required = true;
+      }
+    }
+    if (debug_en != -1) {
+      SetDebugEnable(debug_en);
+    }
+  } else {
+    // Component settings.
+    Component *c = nullptr;
+    for (auto *cp : g_comps) {
+      if (cp->id() == id && (int) cp->type() == type) {
+        c = cp;
+        break;
+      }
+    }
+    if (c == nullptr) {
+      st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "component not found");
+      return;
+    } else {
+      st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
+                        &restart_required);
     }
   }
   if (st.ok()) {
-    mgos_sys_config_save(&mgos_sys_config, false /* try once */, NULL);
+    mgos_sys_config_save(&mgos_sys_config, false /* try once */, nullptr);
     if (restart_required) {
       LOG(LL_INFO, ("Configuration change requires server restart"));
       RestartHAPServer();
@@ -169,7 +202,7 @@ static void GetDebugInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                                 struct mg_rpc_frame_info *fi,
                                 struct mg_str args) {
   std::string res;
-  shelly_get_debug_info(&res);
+  GetDebugInfo(&res);
   mg_rpc_send_responsef(ri, "{info: %Q}", res.c_str());
   (void) cb_arg;
   (void) args;
@@ -191,7 +224,7 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       case Component::Type::kLock: {
         ShellySwitch *sw = static_cast<ShellySwitch *>(c);
         sw->SetState(state, "web");
-        mg_rpc_send_responsef(ri, NULL);
+        mg_rpc_send_responsef(ri, nullptr);
         return;
       }
       default:
@@ -211,13 +244,14 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   s_kvs = kvs;
   s_tcpm = tcpm;
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
-                     GetInfoHandler, NULL);
+                     GetInfoHandler, nullptr);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
-                     "{id: %d, type: %d, config: %T}", SetConfigHandler, NULL);
+                     "{id: %d, type: %d, config: %T}", SetConfigHandler,
+                     nullptr);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
-                     GetDebugInfoHandler, NULL);
+                     GetDebugInfoHandler, nullptr);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
-                     "{id: %d, state: %B}", SetSwitchHandler, NULL);
+                     "{id: %d, state: %B}", SetSwitchHandler, nullptr);
   return true;
 }
 

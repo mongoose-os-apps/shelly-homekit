@@ -19,7 +19,13 @@
 
 #include "HAP.h"
 
-void shelly_get_debug_info(std::string *out);
+namespace shelly {
 
-bool shelly_debug_init(HAPPlatformKeyValueStoreRef kvs,
-                       HAPPlatformTCPStreamManagerRef tcpm);
+void GetDebugInfo(std::string *out);
+
+void SetDebugEnable(bool debug_en);
+
+bool DebugInit(HAPAccessoryServerRef svr, HAPPlatformKeyValueStoreRef kvs,
+               HAPPlatformTCPStreamManagerRef tcpm);
+
+}  // namespace shelly

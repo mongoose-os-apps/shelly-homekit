@@ -28,6 +28,7 @@ class Component {
     kOutlet = 1,
     kLock = 2,
     kStatelessSwitch = 3,
+    kWindowCovering = 4,
   };
 
   explicit Component(int id);

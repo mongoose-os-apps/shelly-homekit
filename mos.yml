@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.1.8
+version: 2.2.0-beta8
 platform: esp8266
 
 libs_version: latest
@@ -20,7 +20,8 @@ config_schema:
   - ["sntp.enable", true]
   - ["debug.event_level", 3]
   - ["file_logger.level", 3]
-  - ["file_logger.enable", false]
+  - ["file_logger.max_num_files", 1]
+  - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
 
   - ["sw", "o", {"Switch settings"}]
@@ -37,6 +38,18 @@ config_schema:
   - ["ssw.name", "s", "", {"Name of the switch"}]
   - ["ssw.in_mode", "i", 0, {"0 - Momentary; 1 - Toggle, single press event on change; 2 - Toggle, on = single press, off = double press"}]
 
+  - ["wc", "o", {"Roller shutter settings"}]
+  - ["wc.name", "s", "Shutter 1", {"title": "Accessory name"}]
+  - ["wc.in_mode", "i", 0, {"title": "Input mode: 0 - separate, momentary; 0 - separate, toggle; 2 - single, momentary; 3 - detached"}]
+  - ["wc.swap_inputs", "b", false, {"title": "Swap inputs (2 - open, 1 - close)"}]
+  - ["wc.swap_outputs", "b", false, {"title": "Swap outputs (2 - open, 1 - close)"}]
+  - ["wc.calibrated", "b", false, {"title": "Calibration done"}]
+  - ["wc.idle_power_thr", "d", 10.0, {"title": "Power consumption threshold for motor idle detection"}]
+  - ["wc.move_power", "d", 0.0, {"title": "Power consumption during movement, watts"}]
+  - ["wc.move_time_ms", "i", 0, {"title": "Move time, in millseconds"}]
+  - ["wc.current_pos", "d", 0.0, {"title": "Last position, percent: 0 - fully closed, 100 - fully open."}]
+
+  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutteri (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
   # Deprecated settings, only kept to enable migration.
@@ -49,15 +62,15 @@ build_vars:
 
 cdefs:
   PRODUCT_VENDOR: '"Allterco"'
-  SERVICE_NAME: '"Switch"'
+  PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
   BTN_GPIO: -1
+  HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
   - origin: https://github.com/mongoose-os-libs/core
   - origin: https://github.com/mongoose-os-libs/file-logger
   - origin: https://github.com/mongoose-os-libs/homekit-adk
-    version: master
   - origin: https://github.com/mongoose-os-libs/mqtt
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
@@ -84,13 +97,10 @@ conds:
         # We don't need the cryptochip support. Saves approx 12K flash.
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        PRODUCT_MODEL: '"Shelly1"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-1"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
-        # This saves quite a bit of space but disables all HAP debug output.
-        # HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
@@ -115,13 +125,10 @@ conds:
         # We don't need the cryptochip support. Saves approx 12K flash.
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        PRODUCT_MODEL: '"Shelly1PM"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-PM"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
-        # This saves quite a bit of space but disables all HAP debug output.
-        # HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shelly1pm-??????"]
         - ["wifi.ap.ssid", "shelly1pm-??????"]
@@ -147,7 +154,6 @@ conds:
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
-        PRODUCT_MODEL: '"ShellyPlugS"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHPLG-S"'
         MG_ENABLE_SSL: 0
@@ -174,11 +180,9 @@ conds:
         MGOS_ROOT_FS_TYPE: SPIFFS
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        PRODUCT_MODEL: '"Shelly2"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-21"'
         MG_ENABLE_SSL: 0
-        # HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shellyswitch21-??????"]
         - ["wifi.ap.ssid", "shellyswitch21-??????"]
@@ -212,12 +216,10 @@ conds:
         LED_ON: 0
         BTN_GPIO: 2
         BTN_DOWN: 0
-        PRODUCT_MODEL: '"Shelly2.5"'
         PRODUCT_HW_REV: '"2.5"'
         STOCK_FW_MODEL: '"SHSW-25"'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
-        # HAP_LOG_LEVEL: 0
       config_schema:
         - ["device.id", "shellyswitch25-??????"]
         - ["wifi.ap.ssid", "shellyswitch25-??????"]
@@ -230,6 +232,8 @@ conds:
         - ["sw2.name", "Shelly SW2"]
         - ["ssw2", "ssw", {"title": "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
+        - ["wc1", "wc", {"title": "WC1 settings"}]
+        - ["wc1.name", "Window 1"]
 
   - when: mos.platform != "ubuntu"
     apply:
@@ -248,7 +252,6 @@ conds:
   - when: mos.platform == "ubuntu"
     apply:
       cdefs:
-        PRODUCT_MODEL: '"ShellyU"'
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
