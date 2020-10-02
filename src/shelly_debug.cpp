@@ -32,10 +32,31 @@
 #include "HAPAccessoryServer+Internal.h"
 #include "HAPPlatformTCPStreamManager+Init.h"
 
+#include "shelly_main.hpp"
+
 namespace shelly {
 
+static HAPAccessoryServerRef s_svr;
 static HAPPlatformKeyValueStoreRef s_kvs;
 static HAPPlatformTCPStreamManagerRef s_tcpm;
+
+struct EnumHAPSessionsContext {
+  struct mg_connection *nc;
+  int num_sessions;
+};
+
+static void EnumHAPSessions(void *vctx, HAPAccessoryServerRef *svr_,
+                            HAPSessionRef *s, bool *) {
+  EnumHAPSessionsContext *ctx = (EnumHAPSessionsContext *) vctx;
+  size_t si = HAPAccessoryServerGetIPSessionIndex(svr_, s);
+  const HAPAccessoryServer *svr = (const HAPAccessoryServer *) svr_;
+  const HAPIPSession *is = &svr->ip.storage->sessions[si];
+  const auto *sd = (const HAPIPSessionDescriptor *) &is->descriptor;
+  mg_printf(ctx->nc, "  %d: s %p ts %p o %d st %d ts %lu\r\n", (int) si, s,
+            (void *) sd->tcpStream, sd->tcpStreamIsOpen, sd->state,
+            (unsigned long) sd->stamp);
+  ctx->num_sessions++;
+}
 
 void shelly_debug_write_nc(struct mg_connection *nc) {
   uint16_t cn;
@@ -48,41 +69,51 @@ void shelly_debug_write_nc(struct mg_connection *nc) {
             "App: %s %s %s\r\n"
             "Uptime: %.2lf\r\n"
             "RAM: %lu free, %lu min free\r\n"
+            "HAP server port: %d\r\n"
             "HAP config number: %u\r\n"
             "HAP connection stats: %u/%u/%u\r\n",
             MGOS_APP, mgos_sys_ro_vars_get_fw_version(),
             mgos_sys_ro_vars_get_fw_id(), mgos_uptime(),
             (unsigned long) mgos_get_free_heap_size(),
-            (unsigned long) mgos_get_min_free_heap_size(), cn,
+            (unsigned long) mgos_get_min_free_heap_size(),
+            HAPPlatformTCPStreamManagerGetListenerPort(s_tcpm), cn,
             (unsigned) tcpm_stats.numPendingTCPStreams,
             (unsigned) tcpm_stats.numActiveTCPStreams,
             (unsigned) tcpm_stats.maxNumTCPStreams);
   mg_printf(nc, "HAP connections:\r\n");
   time_t now_wall = mg_time();
   int64_t now_micros = mgos_uptime_micros();
-  int num_hap_connections = 0;
-  struct mg_connection *nc2 = NULL;
-  struct mg_mgr *mgr = mgos_get_mgr();
-  for (nc2 = mg_next(mgr, NULL); nc2 != NULL; nc2 = mg_next(mgr, nc2)) {
-    if (nc2->listener == NULL ||
-        ntohs(nc2->listener->sa.sin.sin_port) != 9000) {
-      continue;
+  {
+    int num_hap_connections = 0;
+    struct mg_connection *nc2 = NULL;
+    struct mg_mgr *mgr = mgos_get_mgr();
+    for (nc2 = mg_next(mgr, NULL); nc2 != NULL; nc2 = mg_next(mgr, nc2)) {
+      if (nc2->listener == NULL ||
+          ntohs(nc2->listener->sa.sin.sin_port) != 9000) {
+        continue;
+      }
+      char addr[32];
+      mg_sock_addr_to_str(&nc2->sa, addr, sizeof(addr),
+                          MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
+      int last_io_age = (int) (now_wall - nc2->last_io_time);
+      int64_t last_read_age = 0;
+      HAPPlatformTCPStream *ts = (HAPPlatformTCPStream *) nc2->user_data;
+      if (ts != nullptr) {
+        last_read_age = now_micros - ts->lastRead;
+      }
+      mg_printf(nc, "  %s nc %pf %#lx io %d ts %p rd %lld\r\n", addr, nc2,
+                (unsigned long) nc2->flags, last_io_age, ts,
+                (long long) (last_read_age / 1000000));
+      num_hap_connections++;
     }
-    char addr[32];
-    mg_sock_addr_to_str(&nc2->sa, addr, sizeof(addr),
-                        MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
-    int last_io_age = (int) (now_wall - nc2->last_io_time);
-    int64_t last_read_age = 0;
-    HAPPlatformTCPStream *ts = (HAPPlatformTCPStream *) nc2->user_data;
-    if (ts != nullptr) {
-      last_read_age = now_micros - ts->lastRead;
-    }
-    mg_printf(nc, "  %s nc %pf %#lx io %d ts %p rd %lld\r\n", addr, nc2,
-              (unsigned long) nc2->flags, last_io_age, ts,
-              (long long) (last_read_age / 1000000));
-    num_hap_connections++;
+    mg_printf(nc, " Total: %d\r\n", num_hap_connections);
   }
-  mg_printf(nc, " Total: %d", num_hap_connections);
+  {
+    mg_printf(nc, "HAP sessions:\r\n");
+    EnumHAPSessionsContext ctx = {.nc = nc, .num_sessions = 0};
+    HAPAccessoryServerEnumerateConnectedSessions(&s_svr, EnumHAPSessions, &ctx);
+    mg_printf(nc, " Total: %d\r\n", ctx.num_sessions);
+  }
 }
 
 void GetDebugInfo(std::string *out) {
@@ -236,8 +267,9 @@ static void DebugCoreHandler(struct mg_connection *nc, int ev, void *ev_data,
 }
 #endif
 
-bool DebugInit(HAPPlatformKeyValueStoreRef kvs,
+bool DebugInit(HAPAccessoryServerRef svr, HAPPlatformKeyValueStoreRef kvs,
                HAPPlatformTCPStreamManagerRef tcpm) {
+  s_svr = svr;
   s_kvs = kvs;
   s_tcpm = tcpm;
   mgos_register_http_endpoint("/debug/info", DebugInfoHandler, NULL);

@@ -455,15 +455,23 @@ out:
   }
 }
 
+void CountHAPSessions(void *ctx, HAPAccessoryServerRef *, HAPSessionRef *,
+                      bool *) {
+  (*((int *) ctx))++;
+}
+
 static void StatusTimerCB(void *arg) {
   static uint8_t s_cnt = 0;
   if (++s_cnt % 8 == 0) {
     HAPPlatformTCPStreamManagerStats tcpm_stats = {};
     HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
-    LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u, RAM: %lu, %lu free",
+    int num_sessions = 0;
+    HAPAccessoryServerEnumerateConnectedSessions(&s_server, CountHAPSessions,
+                                                 &num_sessions);
+    LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u ns %d, RAM: %lu, %lu free",
                   mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
                   (unsigned) tcpm_stats.numActiveTCPStreams,
-                  (unsigned) tcpm_stats.maxNumTCPStreams,
+                  (unsigned) tcpm_stats.maxNumTCPStreams, num_sessions,
                   (unsigned long) mgos_get_heap_size(),
                   (unsigned long) mgos_get_free_heap_size()));
     s_cnt = 0;
@@ -669,7 +677,7 @@ bool InitApp() {
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
-  DebugInit(&s_kvs, &s_tcpm);
+  DebugInit(s_server, &s_kvs, &s_tcpm);
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
