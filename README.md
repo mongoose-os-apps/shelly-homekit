@@ -1,3 +1,6 @@
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Gitter](https://badges.gitter.im/shelly-homekit/community.svg)](https://gitter.im/shelly-homekit/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 # Apple HomeKit firmware for Shelly switches
 
 This firmware exposes Shelly1, SHelly1PM, ShellyPlug-S, Shelly2 and Shelly2.5 as Apple HomeKit accessories.
