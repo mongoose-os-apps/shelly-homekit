@@ -290,17 +290,10 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
     if forced_version == True and dlurl:
       lfw = ffw
       perform_flash = True
-    elif cfw_type == 'stock' and mode == 'homekit' and dlurl:
+    elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'stock' and dlurl):
       perform_flash = True
-    elif cfw_type == 'homekit' and mode == 'stock' and dlurl:
-      perform_flash = True
-    elif version.parse(cfw) < version.parse(lfw):
-      if cfw_type == 'homekit' and mode == 'homekit':
+    elif (version.parse(cfw) < version.parse(lfw)) and ((cfw_type == 'homekit' and mode == 'homekit') or (cfw_type == 'stock' and mode == 'stock') or mode == "keep"):
         perform_flash = True
-      elif cfw_type == 'stock' and mode == 'stock':
-        perform_flash = True
-      elif mode == "keep":
-        perform_flash=True
     elif version.parse(cfw) == version.parse(lfw) and 'beta' in cfw:
       perform_flash = True
     else:
