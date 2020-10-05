@@ -179,7 +179,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     if mode == 'homekit':
       remove('shelly-flash.zip')
     else:
-      if info['stock_model'] == "SHRGBW2":
+      if info['type'] == "SHRGBW2":
         print("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
         print(WHITE + "WARNING!!" + NC + "If you are using this device in conjunction with Homebridge it will")
         print("result in ALL scenes / automations to be removed within HomeKit.")
