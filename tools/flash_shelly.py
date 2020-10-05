@@ -145,9 +145,15 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     logger.info("curl -qsS http://%s/ota?url=%s" % (device, dlurl))
     response = requests.get('http://%s/ota?url=%s' % (device, dlurl))
     logger.info(response.text)
+
+  sleep(2)
   n = 1
   waittextshown = False
+  info = None
   while n < 40:
+    if waittextshown == False:
+      print("waiting for %s to reboot" % host)
+      waittextshown = True
     if mode == 'homekit':
       checkurl = 'http://%s/rpc/Shelly.GetInfo' % device
     else:
@@ -156,18 +162,17 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
       fp = urllib.request.urlopen(checkurl)
       info = json.load(fp)
       fp.close()
-      n = 41
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
-      if waittextshown == False:
-        print("waiting for %s to reboot" % host)
-        waittextshown = True
-      sleep(2)
+      logger.info("Error: %s" % err)
       n += 1
+    if info:
+      n=41
+    sleep(1)
 
-    if mode == 'homekit':
-      onlinecheck = info['version']
-    else:
-      onlinecheck = info['fw'].split('/v')[1].split('@')[0]
+  if mode == 'homekit':
+    onlinecheck = info['version']
+  else:
+    onlinecheck = info['fw'].split('/v')[1].split('@')[0]
 
   if onlinecheck == lfw:
     print(GREEN + "Successfully flashed %s to %s\033[0m" % (host, lfw))
