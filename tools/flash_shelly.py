@@ -307,13 +307,15 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
     elif perform_flash == True and dry_run == False and silent_run == True:
       flash = True
     elif perform_flash == True and dry_run == True:
-      if mode == 'stock' and cfw_type == 'homekit':
-        keyword="converted to Official firmware"
-      elif cfw_type == 'homekit' or mode == 'stock':
-        keyword="upgraded from %s to version %s" % (cfw, lfw)
-      else:
+      if cfw_type == 'homekit' and mode == 'stock':
+        keyword = "converted to Official firmware"
+      elif cfw_type == 'stock' and mode == 'homekit':
         keyword = "converted to HomeKit firmware"
-      print("Would have been $keyword...")
+      elif version.parse(cfw) < version.parse(lfw):
+        keyword = "upgraded from %s to version %s" % (cfw, lfw)
+      elif forced_version:
+        keyword = "reflashed version %s" % ffw
+      print("Would have been %s..." % keyword)
     elif not dlurl:
       if ffw:
         keyword = "Version %s is not available yet..." % ffw
