@@ -56,7 +56,6 @@ PURPLE='\033[1;95m' # Bright Purple
 NC='\033[0m' # Normal Color
 
 arch = platform.system()
-print(PURPLE + "OS: %s\033[0m"% arch)
 
 if not importlib.util.find_spec("zeroconf"):
   print('Installing zeroconf...')
@@ -437,6 +436,7 @@ def app(argv):
       usage()
       exit(0)
 
+  logger.info(PURPLE + "OS: %s\033[0m"% arch)
   logger.info("ARG: %s" % argv)
   logger.info("opts: %s" % opts)
   logger.info("args: %s" % args)
