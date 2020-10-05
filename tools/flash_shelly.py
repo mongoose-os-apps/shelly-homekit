@@ -232,15 +232,11 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
     type = info['app']
     cfw = info['version']
     if mode == 'stock':
-      model = info['stock_model']
-      if 'SH' not in model:
-        model = shelly_model(type, mode)
+      model = info['stock_model'] if 'stock_model' in info else shelly_model(type, mode)
       lfw = stock_release_info['data'][model]['version'].split('/v')[1].split('@')[0]
       dlurl = stock_release_info['data'][model]['url']
     else:
-      model = info['model']
-      if 'Shelly' not in model:
-        model = shelly_model(type, mode)
+      model = info['model'] if 'model' in info else shelly_model(type, mode)
       for var in homekit_release_info:
         if 'beta' in cfw:
           break
