@@ -1,7 +1,7 @@
 import getopt, importlib, platform, urllib.request, json, logging
 from sys import argv, exit
-from os import path, remove, popen
-from subprocess import Popen, PIPE, check_output
+from os import path, remove
+from subprocess import Popen, PIPE
 from time import sleep
 from importlib import util
 
