@@ -246,14 +246,11 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
           break
         else:
           continue
+      lfw = var[1]['version']
       if forced_version == False:
-        lfw = var[1]['version']
-      else:
-        lfw = ffw
-      try:
         dlurl = var[1]['urls'][model]
-      except:
-        dlurl = None
+      else:
+        dlurl="http://rojer.me/files/shelly/%s/shelly-homekit-%s.zip" % (ffw, model)
   else:
     cfw = info['fw'].split('/v')[1].split('@')[0]
     type = info['type']
@@ -264,14 +261,14 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
           break
         else:
           continue
+      lfw = var[1]['version']
       if forced_version == False:
-        lfw = var[1]['version']
+        try:
+          dlurl = var[1]['urls'][model]
+        except:
+          dlurl = None
       else:
-        lfw = ffw
-      try:
-        dlurl = var[1]['urls'][model]
-      except:
-        dlurl = None
+        dlurl="http://rojer.me/files/shelly/%s/shelly-homekit-%s.zip" % (ffw, model)
     else:
       model = type
       lfw = stock_release_info['data'][model]['version'].split('/v')[1].split('@')[0]
@@ -294,7 +291,10 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
 
   if action != 'list':
     # echo "DURL: $dlurl" # only needed when debugging
-    if cfw_type == 'stock' and mode == 'homekit' and dlurl:
+    if forced_version == True and dlurl:
+      lfw = ffw
+      perform_flash = True
+    elif cfw_type == 'stock' and mode == 'homekit' and dlurl:
       perform_flash = True
     elif cfw_type == 'homekit' and mode == 'stock' and dlurl:
       perform_flash = True
@@ -306,8 +306,6 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
       elif mode == "keep":
         perform_flash=True
     elif version.parse(cfw) == version.parse(lfw) and 'beta' in cfw:
-      perform_flash = True
-    elif forced_version == True and dlurl:
       perform_flash = True
     else:
       perform_flash = False
