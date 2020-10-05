@@ -44,9 +44,9 @@ html, body { height: 100vh; padding: 0; margin: 5; background-color: #f2f1f6;}
     }
     .badge {
       background-color: #ff0800;
-      border: 3px solid #ff0800;
+      border: 2px solid #ff0800;
       border-radius: 12px;
-      box-shadow: 1px 1px 1px #000000;
+      box-shadow: 1px 1px 1px #282828;
       color: #ffffff;
       font: bold 12px/9px Helvetica, Verdana, Tahoma;
       height: 12px;
@@ -55,6 +55,20 @@ html, body { height: 100vh; padding: 0; margin: 5; background-color: #f2f1f6;}
       min-width: 8px;
       display: inline;
       position: absolute;
+    }
+    .helpbadge {
+      background-color: #fefefe;
+      border: 1px solid #999999;
+      border-radius: 12px;
+      box-shadow: 1px 1px 0.5px #c1c1c1;
+      color: #0071e3 !important; 
+      font: bold 14px/10px HelveticaNeueLight, Helvetica, Verdana;
+      height: 13px;
+      padding: 6px 6px 1px 6px;
+      text-align: center;
+      min-width: 8px;
+      position: relative; margin-top: 4px; margin-right: -10px;
+      float: right;
     }
     .apl_thin {
       margin-left: 80px; 
