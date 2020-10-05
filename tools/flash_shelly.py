@@ -22,7 +22,7 @@ from importlib import util
 #  limitations under the License.
 #
 #  This script will probe for any shelly device on the network and it will
-#  attemp to update them to the latest firmware version available.
+#  attempt to update them to the latest firmware version available.
 #  This script will not flash any firmware to a device that is not already on a
 #  version of this firmware, if you are looking to flash your device from stock
 #  or any other firmware please follow instructions here:
