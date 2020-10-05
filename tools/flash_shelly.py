@@ -141,10 +141,9 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
       logger.info(response.text)
   else:
     print("Now Flashing...")
-    params = (
-        ('url', dlurl),
-    )
-    response = requests.get('http://%s/ota' % device, params=params)
+    dlurl = dlurl.replace('https', 'http')
+    logger.info("curl -qsS http://%s/ota?url=%s" % (device, dlurl))
+    response = requests.get('http://%s/ota?url=%s' % (device, dlurl))
     logger.info(response.text)
   n = 1
   waittextshown = False
