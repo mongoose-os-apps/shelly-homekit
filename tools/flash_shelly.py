@@ -129,9 +129,9 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
   host = device.replace('.local','')
   if cfw_type == 'homekit':
     print("Downloading Firmware...")
+    logger.info('DURL: %s' % dlurl)
     myfile = requests.get(dlurl)
     open('shelly-flash.zip', 'wb').write(myfile.content)
-    # flashcmd="curl -qsS -F file=@shelly-flash.zip http://$device/update"
     if path.exists('shelly-flash.zip') or cfw_type == 'stock':
       print("Now Flashing...")
       files = {
@@ -356,12 +356,10 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
 
   if do_all == False:
     print(WHITE + "Probing Shelly device for info..." + NC)
-    logger.info("probe_info: 1")
     if  not ".local" in device:
       device = device + ".local"
     probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw)
   else:
-    logger.info("probe_info: 2")
     print(WHITE + "Scanning for Shelly devices..." + NC)
     zeroconf = Zeroconf()
     listener = MyListener()
