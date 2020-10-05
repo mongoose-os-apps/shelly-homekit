@@ -1,4 +1,4 @@
-import getopt, importlib, platform, urllib.request, json, logging
+import getopt, importlib, platform, urllib, json, logging
 from sys import argv, exit
 from os import path, remove
 from subprocess import Popen, PIPE
