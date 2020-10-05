@@ -49,12 +49,7 @@ void CreateComponents(std::vector<Component *> *comps,
     const int id = 1;
     auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
     auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
-    Input *in1 =
-        (im != hap::WindowCovering::InMode::kDetached ? FindInput(1) : nullptr);
-    Input *in2 = (im != hap::WindowCovering::InMode::kDetached &&
-                          im != hap::WindowCovering::InMode::kSingle
-                      ? FindInput(2)
-                      : nullptr);
+    Input *in1 = FindInput(1), *in2 = FindInput(2);
     std::unique_ptr<hap::WindowCovering> wc(
         new hap::WindowCovering(id, in1, in2, FindOutput(1), FindOutput(2),
                                 FindPM(1), FindPM(2), wc_cfg));
@@ -84,9 +79,15 @@ void CreateComponents(std::vector<Component *> *comps,
         if (im == hap::WindowCovering::InMode::kDetached) {
           CreateHAPStatelessSwitch(1, mgos_sys_config_get_ssw1(), comps, accs,
                                    svr);
+          CreateHAPStatelessSwitch(2, mgos_sys_config_get_ssw2(), comps, accs,
+                                   svr);
+        } else if (wc_cfg->swap_inputs) {
+          CreateHAPStatelessSwitch(1, mgos_sys_config_get_ssw1(), comps, accs,
+                                   svr);
+        } else {
+          CreateHAPStatelessSwitch(2, mgos_sys_config_get_ssw2(), comps, accs,
+                                   svr);
         }
-        CreateHAPStatelessSwitch(2, mgos_sys_config_get_ssw2(), comps, accs,
-                                 svr);
         break;
       }
     }
