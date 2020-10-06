@@ -191,7 +191,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     print(RED + "Failed to flash %s to %s\033[0m" % (host, lfw))
     print("Current: %s" % onlinecheck)
 
-def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw):
+def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info):
   flash = False
   info = None           # firmware versions info
   model = None          # device model
@@ -340,7 +340,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
       print("Skipping Flash...")
 
 
-def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw):
+def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info):
   device = args
   exclude_device = None
   logger.info("\n" + WHITE + "device_scan" + NC)
@@ -358,7 +358,7 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
     print(WHITE + "Probing Shelly device for info..." + NC)
     if  not ".local" in device:
       device = device + ".local"
-    probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw)
+    probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info)
   else:
     exclude_device = device
     print(WHITE + "Scanning for Shelly devices..." + NC)
@@ -373,7 +373,7 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
 
     device_list.sort()
     for device in device_list:
-      probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw)
+      probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info)
 
 
 def usage():
@@ -462,7 +462,6 @@ def app(argv):
 
   try:
     fp = urllib.request.urlopen("https://api.shelly.cloud/files/firmware")
-    global stock_release_info
     stock_release_info = json.load(fp)
     fp.close()
   except:
@@ -470,7 +469,6 @@ def app(argv):
     exit(1)
   try:
     fp = urllib.request.urlopen("https://rojer.me/files/shelly/update.json")
-    global homekit_release_info
     homekit_release_info = json.load(fp)
     fp.close()
   except:
@@ -482,13 +480,13 @@ def app(argv):
 
   if args and exclude == False:
     for device in args:
-      device_scan(device, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw)
+      device_scan(device, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info)
 
   if do_all == True and exclude == False:
-    device_scan("", action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw)
+    device_scan("", action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info)
 
   if do_all == True and exclude == True:
-    device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw)
+    device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info)
 
 
 
