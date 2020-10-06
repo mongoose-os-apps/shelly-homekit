@@ -10,7 +10,7 @@ import sys
 import time
 import urllib
 
-from importlib import util
+import importlib.util
 from sys import argv
 
 """
@@ -68,9 +68,9 @@ arch = platform.system()
 if not importlib.util.find_spec("zeroconf"):
   print('Installing zeroconf...')
   pipe = subprocess.check_output(['pip3','install','zeroconf'])
-  from zeroconf import ServiceBrowser, Zeroconf
+  import zeroconf
 else:
-  from zeroconf import ServiceBrowser, Zeroconf
+  import zeroconf
 
 if not importlib.util.find_spec("requests"):
   print('Installing requests...')
@@ -82,9 +82,9 @@ else:
 if not importlib.util.find_spec("packaging"):
   print('Installing packaging...')
   pipe = subprocess.check_output(['pip3','install','packaging'])
-  from packaging import version
+  import packaging.version
 else:
-  from packaging import version
+  import packaging.version
 
 class MyListener:
   global device_list, p_list
@@ -288,7 +288,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     print(WHITE + "Current: " + NC + "HomeKit %s" % cfw)
   else:
     print(WHITE + "Current: " + NC + "Official %s" % cfw)
-  col = YELLOW if version.parse(cfw) < version.parse(lfw) else WHITE
+  col = YELLOW if packaging.version.parse(cfw) < packaging.version.parse(lfw) else WHITE
   if mode == 'homekit':
     print(WHITE + "Latest: " + NC + "HomeKit " + col + "%s\033[0m" % lfw)
   else:
@@ -302,9 +302,9 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
       perform_flash = False
     elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'stock' and dlurl):
       perform_flash = True
-    elif (version.parse(cfw) < version.parse(lfw)) and ((cfw_type == 'homekit' and mode == 'homekit') or (cfw_type == 'stock' and mode == 'stock') or mode == "keep"):
+    elif (packaging.version.parse(cfw) < packaging.version.parse(lfw)) and ((cfw_type == 'homekit' and mode == 'homekit') or (cfw_type == 'stock' and mode == 'stock') or mode == "keep"):
       perform_flash = True
-    elif version.parse(cfw) == version.parse(lfw) and 'beta' in cfw: # this needs checking on next beta cycle
+    elif packaging.version.parse(cfw) == packaging.version.parse(lfw) and 'beta' in cfw: # this needs checking on next beta cycle
       perform_flash = True
     else:
       perform_flash = False
@@ -321,7 +321,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
         keyword = "converted to Official firmware"
       elif cfw_type == 'stock' and mode == 'homekit':
         keyword = "converted to HomeKit firmware"
-      elif version.parse(cfw) < version.parse(lfw):
+      elif packaging.version.parse(cfw) < packaging.version.parse(lfw):
         keyword = "upgraded from %s to version %s" % (cfw, lfw)
       elif forced_version:
         keyword = "reflashed version %s" % ffw
@@ -367,11 +367,11 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
   else:
     exclude_device = device
     print(WHITE + "Scanning for Shelly devices..." + NC)
-    zeroconf = Zeroconf()
+    zc = zeroconf.Zeroconf()
     listener = MyListener()
-    browser = ServiceBrowser(zeroconf, "_http._tcp.local.", listener)
+    browser = zeroconf.ServiceBrowser(zc, "_http._tcp.local.", listener)
     time.sleep(2)
-    zeroconf.close()
+    zc.close()
 
     logger.info('device_test: %s' % device_list)
     # logger.info('\nproperties: %s' % p_list)
