@@ -164,9 +164,8 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     else:
       checkurl = 'http://%s/Shelly.GetInfo' % device
     try:
-      fp = urllib.request.urlopen(checkurl)
-      info = json.load(fp)
-      fp.close()
+      with urllib.request.urlopen(checkurl) as fp:
+        info = json.load(fp)
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
       logger.info("Error: %s" % err)
       n += 1
@@ -222,15 +221,13 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   logger.info("ffw: %s" % ffw)
 
   try:
-    fp = urllib.request.urlopen('http://%s/rpc/Shelly.GetInfo' % device)
-    info = json.load(fp)
-    fp.close()
+    with urllib.request.urlopen('http://%s/rpc/Shelly.GetInfo' % device) as fp:
+      info = json.load(fp)
   except (urllib.error.HTTPError) as err:
     try:
       cfw_type = 'stock'
-      fp = urllib.request.urlopen('http://%s/Shelly.GetInfo' % device)
-      info = json.load(fp)
-      fp.close()
+      with urllib.request.urlopen('http://%s/Shelly.GetInfo' % device) as fp:
+        info = json.load(fp)
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
       return 1
   except (urllib.error.URLError) as err:
@@ -466,16 +463,14 @@ def app(argv):
     sys.exit(1)
 
   try:
-    fp = urllib.request.urlopen("https://api.shelly.cloud/files/firmware")
-    stock_release_info = json.load(fp)
-    fp.close()
+    with urllib.request.urlopen("https://api.shelly.cloud/files/firmware") as fp:
+      stock_release_info = json.load(fp)
   except:
     logger.warning("Failed to lookup version information")
     sys.exit(1)
   try:
-    fp = urllib.request.urlopen("https://rojer.me/files/shelly/update.json")
-    homekit_release_info = json.load(fp)
-    fp.close()
+    with urllib.request.urlopen("https://rojer.me/files/shelly/update.json") as fp:
+      homekit_release_info = json.load(fp)
   except:
     logger.warning("Failed to lookup version information")
     sys.exit(1)
