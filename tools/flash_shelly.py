@@ -80,16 +80,16 @@ else:
   import requests
 
 class MyListener:
-  global device_list, p_list
-  device_list=[]
-  p_list=[]
+  def __init__(self):
+    self.device_list = []
+    self.p_list = []
 
   def add_service(self, zeroconf, type, name):
-      device_list.append(name.replace('._http._tcp.local.', ''))
+      self.device_list.append(name.replace('._http._tcp.local.', ''))
       # info = zeroconf.get_service_info(type, name, 2000)
       # logger.debug('INFO: %s' % info)
       # properties = { y.decode('ascii'): info.properties.get(y).decode('ascii') for y in info.properties.keys() }
-      # p_list.append(properties)
+      # self.p_list.append(properties)
       # logger.debug('properties: %s' % properties)
       # json_object = json.dumps(properties, indent = 2)
 
@@ -408,11 +408,11 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
     time.sleep(2)
     zc.close()
 
-    logger.info('device_test: %s' % device_list)
-    # logger.info('\nproperties: %s' % p_list)
+    logger.info('device_test: %s' % listener.device_list)
+    # logger.info('\nproperties: %s' % listener.p_list)
 
-    device_list.sort()
-    for device in device_list:
+    listener.device_list.sort()
+    for device in listener.device_list:
       probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info)
 
 
