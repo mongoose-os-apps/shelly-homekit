@@ -245,7 +245,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     if mode == 'homekit':
       model = info['model'] if 'model' in info else shelly_model(type, mode)
       for i in homekit_release_info:
-        if re.search(i[0][0], cfw):
+        if re.search(i[0], cfw):
           lfw = i[1]['version']
           if forced_version == False:
             dlurl = i[1]['urls'][model]
@@ -262,7 +262,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     if mode == 'homekit':
       model = shelly_model(type, mode)
       for i in homekit_release_info:
-        if re.search(i[0][0], cfw):
+        if re.search(i[0], cfw):
           lfw = i[1]['version']
           if forced_version == False:
             try:
