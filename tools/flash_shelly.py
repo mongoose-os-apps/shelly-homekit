@@ -278,10 +278,11 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     print(WHITE + "Current: " + NC + "HomeKit %s" % cfw)
   else:
     print(WHITE + "Current: " + NC + "Official %s" % cfw)
+  col = YELLOW if version.parse(cfw) < version.parse(lfw) else WHITE
   if mode == 'homekit':
-    print(WHITE + "Latest: " + NC + "HomeKit " + YELLOW + "%s\033[0m" % lfw)
+    print(WHITE + "Latest: " + NC + "HomeKit " + col + "%s\033[0m" % lfw)
   else:
-    print(WHITE + "Latest: " + NC + "Official " + YELLOW + "%s\033[0m" % lfw)
+    print(WHITE + "Latest: " + NC + "Official " + col + "%s\033[0m" % lfw)
 
   if action != 'list':
     if forced_version == True and dlurl:
