@@ -79,13 +79,6 @@ if not importlib.util.find_spec("requests"):
 else:
   import requests
 
-if not importlib.util.find_spec("packaging"):
-  print('Installing packaging...')
-  pipe = subprocess.check_output(['pip3', 'install', 'packaging'])
-  import packaging.version
-else:
-  import packaging.version
-
 class MyListener:
   global device_list, p_list
   device_list=[]
@@ -127,6 +120,48 @@ def shelly_model(type, mode):
                'rgbw2' : 'SHRGBW2',
     }
   return(options[type])
+
+def versionCompare(v1, v2):
+  # This will split both the versions by '.'
+  arr1 = v1.split(".")
+  if 'beta' in v1:
+    arr1b = arr1[2].split("-beta")
+    arr1[2] = (arr1b[0])
+    arr1.append(arr1b[1])
+  else:
+    arr1.append('0')
+
+  arr2 = v2.split(".")
+  if 'beta' in v2:
+    arr2b = arr2[2].split("-beta")
+    arr2[2] = (arr2b[0])
+    arr2.append(arr2b[1])
+  else:
+    arr2.append('0')
+
+  n = len(arr1)
+  m = len(arr2)
+
+  # converts to integer from string
+  arr1 = [int(i) for i in arr1]
+  arr2 = [int(i) for i in arr2]
+
+  # compares which list is bigger and fills
+  # smaller list with zero (for unequal delimeters)
+  if n>m:
+    for i in range(m, n):
+      arr2.append(0)
+  elif m>n:
+    for i in range(n, m):
+      arr1.append(0)
+
+  # returns 1 if v1 is bigger and -1 if v2 is bigger and 0 if equal
+  for i in range(len(arr1)):
+    if arr1[i]>arr2[i]:
+      return 1
+    elif arr2[i]>arr1[i]:
+      return -1
+  return 0
 
 def write_flash(device, lfw, dlurl, cfw_type, mode):
   logger.info("\n" + WHITE + "write_flash" + NC)
@@ -278,7 +313,10 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
       dlurl = stock_release_info['data'][model]['url']
 
   if not dlurl:
-    lfw = RED + "Not available" + NC
+    lfw_label = RED + "Not available" + NC
+    lfw = "0.0.0"
+  else:
+    lfw_label = lfw
 
   print("\n" + WHITE + "Host: " + NC + "%s" % host)
   print(WHITE + "Model: " + NC + "%s" % model)
@@ -287,11 +325,11 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     print(WHITE + "Current: " + NC + "HomeKit %s" % cfw)
   else:
     print(WHITE + "Current: " + NC + "Official %s" % cfw)
-  col = YELLOW if packaging.version.parse(cfw) < packaging.version.parse(lfw) else WHITE
+  col = YELLOW if versionCompare(lfw, cfw) else WHITE
   if mode == 'homekit':
-    print(WHITE + "Latest: " + NC + "HomeKit " + col + "%s\033[0m" % lfw)
+    print(WHITE + "Latest: " + NC + "HomeKit " + col + "%s\033[0m" % lfw_label)
   else:
-    print(WHITE + "Latest: " + NC + "Official " + col + "%s\033[0m" % lfw)
+    print(WHITE + "Latest: " + NC + "Official " + col + "%s\033[0m" % lfw_label)
 
   if action != 'list':
     if forced_version == True and dlurl:
@@ -299,11 +337,9 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
       perform_flash = True
     elif exclude == True and host in exclude_device:
       perform_flash = False
-    elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'stock' and dlurl):
-      perform_flash = True
-    elif (packaging.version.parse(cfw) < packaging.version.parse(lfw)) and ((cfw_type == 'homekit' and mode == 'homekit') or (cfw_type == 'stock' and mode == 'stock') or mode == "keep"):
-      perform_flash = True
-    elif packaging.version.parse(cfw) == packaging.version.parse(lfw) and 'beta' in cfw: # this needs checking on next beta cycle
+    elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'stock' and dlurl) \
+         or ((versionCompare(lfw, cfw) > 0) and ((cfw_type == 'homekit' and mode == 'homekit') \
+         or (cfw_type == 'stock' and mode == 'stock') or mode == "keep")):
       perform_flash = True
     else:
       perform_flash = False
@@ -320,7 +356,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
         keyword = "converted to Official firmware"
       elif cfw_type == 'stock' and mode == 'homekit':
         keyword = "converted to HomeKit firmware"
-      elif packaging.version.parse(cfw) < packaging.version.parse(lfw):
+      elif versionCompare(lfw, cfw) > 0:
         keyword = "upgraded from %s to version %s" % (cfw, lfw)
       elif forced_version:
         keyword = "reflashed version %s" % ffw
