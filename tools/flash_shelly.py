@@ -67,21 +67,21 @@ arch = platform.system()
 
 if not importlib.util.find_spec("zeroconf"):
   print('Installing zeroconf...')
-  pipe = subprocess.check_output(['pip3','install','zeroconf'])
+  pipe = subprocess.check_output(['pip3', 'install', 'zeroconf'])
   import zeroconf
 else:
   import zeroconf
 
 if not importlib.util.find_spec("requests"):
   print('Installing requests...')
-  pipe = subprocess.check_output(['pip3','install','requests'])
+  pipe = subprocess.check_output(['pip3', 'install', 'requests'])
   import requests
 else:
   import requests
 
 if not importlib.util.find_spec("packaging"):
   print('Installing packaging...')
-  pipe = subprocess.check_output(['pip3','install','packaging'])
+  pipe = subprocess.check_output(['pip3', 'install', 'packaging'])
   import packaging.version
 else:
   import packaging.version
@@ -92,7 +92,7 @@ class MyListener:
   p_list=[]
 
   def add_service(self, zeroconf, type, name):
-      device_list.append(name.replace('._http._tcp.local.',''))
+      device_list.append(name.replace('._http._tcp.local.', ''))
       # info = zeroconf.get_service_info(type, name, 2000)
       # logger.debug('INFO: %s' % info)
       # properties = { y.decode('ascii'): info.properties.get(y).decode('ascii') for y in info.properties.keys() }
@@ -131,7 +131,7 @@ def shelly_model(type, mode):
 def write_flash(device, lfw, dlurl, cfw_type, mode):
   logger.info("\n" + WHITE + "write_flash" + NC)
   flashed = False
-  host = device.replace('.local','')
+  host = device.replace('.local', '')
   if cfw_type == 'homekit':
     print("Downloading Firmware...")
     logger.info('DURL: %s' % dlurl)
@@ -204,10 +204,10 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   cfw = None            # current firmware on device
   cfw_type = 'homekit'  # current firmware type
   host = device
-  host = host.replace('.local','')
+  host = host.replace('.local', '')
 
   for i, item in enumerate(exclude_device):
-    exclude_device[i] = exclude_device[i].replace('.local','')
+    exclude_device[i] = exclude_device[i].replace('.local', '')
 
   logger.info("\n" + WHITE + "probe_info" + NC)
   logger.info("device: %s" % device)
