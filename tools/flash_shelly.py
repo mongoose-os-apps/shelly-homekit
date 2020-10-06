@@ -305,7 +305,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
       perform_flash = False
 
     if perform_flash == True and dry_run == False and silent_run == False:
-      if input("Do you wish to flash %s to firmware version %s (y/n) ?" % (host, lfw)) == "y":
+      if input("Do you wish to flash %s to firmware version %s (y/n) ? " % (host, lfw)) == "y":
         flash = True
       else:
         flash = False
