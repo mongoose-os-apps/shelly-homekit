@@ -336,7 +336,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
 
     if flash == True:
       write_flash(device, lfw, dlurl, cfw_type, mode)
-    elif dry_run == False:
+    elif dry_run == False and exclude == False:
       print("Skipping Flash...")
 
 
