@@ -67,24 +67,21 @@ arch = platform.system()
 
 if not importlib.util.find_spec("zeroconf"):
   print('Installing zeroconf...')
-  pipe = subprocess.Popen('pip3 install zeroconf', shell=True, stdout=subprocess.PIPE).stdout
-  out = (pipe.read())
+  pipe = subprocess.check_output(['pip3','install','zeroconf'])
   from zeroconf import ServiceBrowser, Zeroconf
 else:
   from zeroconf import ServiceBrowser, Zeroconf
 
 if not importlib.util.find_spec("requests"):
   print('Installing requests...')
-  pipe = subprocess.Popen('pip3 install requests', shell=True, stdout=subprocess.PIPE).stdout
-  out = (pipe.read())
+  pipe = subprocess.check_output(['pip3','install','requests'])
   import requests
 else:
   import requests
 
 if not importlib.util.find_spec("packaging"):
   print('Installing packaging...')
-  pipe = subprocess.Popen('pip3 install packaging', shell=True, stdout=subprocess.PIPE).stdout
-  out = (pipe.read())
+  pipe = subprocess.check_output(['pip3','install','packaging'])
   from packaging import version
 else:
   from packaging import version
