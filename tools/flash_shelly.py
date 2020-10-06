@@ -1,9 +1,17 @@
-import getopt, importlib, platform, urllib, json, logging, re
-from sys import argv, exit
-from os import path, remove
-from subprocess import Popen, PIPE
-from time import sleep
+import getopt
+import importlib
+import json
+import logging
+import os
+import platform
+import re
+import subprocess
+import sys
+import time
+import urllib
+
 from importlib import util
+from sys import argv
 
 """
 #  Copyright (c) 2020 Andrew Blackburn & Deomid "rojer" Ryabkov
