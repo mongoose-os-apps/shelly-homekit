@@ -136,7 +136,8 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     print("Downloading Firmware...")
     logger.info('DURL: %s' % dlurl)
     myfile = requests.get(dlurl)
-    open('shelly-flash.zip', 'wb').write(myfile.content)
+    with open('shelly-flash.zip', 'wb') as f:
+      f.write(myfile.content)
     if os.path.exists('shelly-flash.zip') or cfw_type == 'stock':
       print("Now Flashing...")
       files = {
