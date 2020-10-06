@@ -124,6 +124,7 @@ def shelly_model(type, mode):
   return(options[type])
 
 def write_flash(device, lfw, dlurl, cfw_type, mode):
+  logger.info("\n" + WHITE + "write_flash" + NC)
   flashed = False
   host = device.replace('.local','')
   if cfw_type == 'homekit':
@@ -200,9 +201,11 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   host = device
   host = host.replace('.local','')
 
-  logger.info("\n\ndevice: %s" % device)
   for i, item in enumerate(exclude_device):
     exclude_device[i] = exclude_device[i].replace('.local','')
+
+  logger.info("\n" + WHITE + "probe_info" + NC)
+  logger.info("device: %s" % device)
   logger.info("host: %s" % host)
   logger.info("action: %s" % action)
   logger.info("dry_run: %s" % dry_run)
@@ -340,7 +343,8 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
 def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw):
   device = args
   exclude_device = None
-  logger.info("\ndevice: %s" % device)
+  logger.info("\n" + WHITE + "device_scan" + NC)
+  logger.info("device: %s" % device)
   logger.info("action: %s" % action)
   logger.info("do_all: %s" % do_all)
   logger.info("dry_run: %s" % dry_run)
@@ -438,6 +442,7 @@ def app(argv):
       usage()
       exit(0)
 
+  logger.info(WHITE + "app" + NC)
   logger.info(PURPLE + "OS: %s\033[0m"% arch)
   logger.info("ARG: %s" % argv)
   logger.info("opts: %s" % opts)
