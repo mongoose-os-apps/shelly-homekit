@@ -262,6 +262,7 @@ conds:
           variant: ubuntu-nossl
       config_schema:
         - ["device.id", "ShellyU-????"]
+        - ["file_logger.dir", "./"]
         - ["http.document_root", "."]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "SW"]
