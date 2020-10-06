@@ -190,7 +190,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     print(RED + "Failed to flash %s to %s\033[0m" % (host, lfw))
     print("Current: %s" % onlinecheck)
 
-def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
+def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw):
   flash = False
   info = None           # firmware versions info
   model = None          # device model
@@ -201,13 +201,15 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
   host = host.replace('.local','')
 
   logger.info("\n\ndevice: %s" % device)
+  logger.info("host: %s" % host)
   logger.info("action: %s" % action)
   logger.info("dry_run: %s" % dry_run)
   logger.info("silent_run: %s" % silent_run)
   logger.info("mode: %s" % mode)
+  logger.info("exclude: %s" % exclude)
+  logger.info("exclude_device: %s" % exclude_device)
   logger.info("forced_version: %s" % forced_version)
   logger.info("ffw: %s" % ffw)
-  logger.info("host: %s" % host)
 
   try:
     fp = urllib.request.urlopen('http://%s/rpc/Shelly.GetInfo' % device)
@@ -285,6 +287,8 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
     if forced_version == True and dlurl:
       lfw = ffw
       perform_flash = True
+    elif exclude == True and host in exclude_device:
+      perform_flash = False
     elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'stock' and dlurl):
       perform_flash = True
     elif (version.parse(cfw) < version.parse(lfw)) and ((cfw_type == 'homekit' and mode == 'homekit') or (cfw_type == 'stock' and mode == 'stock') or mode == "keep"):
@@ -318,6 +322,8 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
         keyword = "Is not supported yet..."
       print(keyword)
       return 0
+    elif exclude == True and host in exclude_device:
+      print("Skipping as device has been excluded...")
     else:
       print("Does not need updating...")
       return 0
@@ -330,6 +336,7 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
 
 def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw):
   device = args
+  exclude_device = None
   logger.info("\ndevice: %s" % device)
   logger.info("action: %s" % action)
   logger.info("do_all: %s" % do_all)
@@ -344,8 +351,9 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
     print(WHITE + "Probing Shelly device for info..." + NC)
     if  not ".local" in device:
       device = device + ".local"
-    probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw)
+    probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw)
   else:
+    exclude_device = device
     print(WHITE + "Scanning for Shelly devices..." + NC)
     zeroconf = Zeroconf()
     listener = MyListener()
@@ -354,16 +362,11 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
     zeroconf.close()
 
     logger.info('device_test: %s' % device_list)
-    logger.info('\nproperties: %s' % p_list)
-
-    if exclude == True:
-      dl = device
-      for d in dl:
-        device_list.remove(d)
+    # logger.info('\nproperties: %s' % p_list)
 
     device_list.sort()
     for device in device_list:
-      probe_info(device + '.local', action, dry_run, silent_run, mode, forced_version, ffw)
+      probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw)
 
 
 def usage():
