@@ -67,7 +67,7 @@ arch = platform.system()
 
 if not importlib.util.find_spec("zeroconf"):
   print('Installing zeroconf...')
-  pipe = Popen('pip3 install zeroconf', shell=True, stdout=PIPE).stdout
+  pipe = subprocess.Popen('pip3 install zeroconf', shell=True, stdout=subprocess.PIPE).stdout
   out = (pipe.read())
   from zeroconf import ServiceBrowser, Zeroconf
 else:
@@ -75,7 +75,7 @@ else:
 
 if not importlib.util.find_spec("requests"):
   print('Installing requests...')
-  pipe = Popen('pip3 install requests', shell=True, stdout=PIPE).stdout
+  pipe = subprocess.Popen('pip3 install requests', shell=True, stdout=subprocess.PIPE).stdout
   out = (pipe.read())
   import requests
 else:
@@ -83,7 +83,7 @@ else:
 
 if not importlib.util.find_spec("packaging"):
   print('Installing packaging...')
-  pipe = Popen('pip3 install packaging', shell=True, stdout=PIPE).stdout
+  pipe = subprocess.Popen('pip3 install packaging', shell=True, stdout=subprocess.PIPE).stdout
   out = (pipe.read())
   from packaging import version
 else:
@@ -140,7 +140,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     logger.info('DURL: %s' % dlurl)
     myfile = requests.get(dlurl)
     open('shelly-flash.zip', 'wb').write(myfile.content)
-    if path.exists('shelly-flash.zip') or cfw_type == 'stock':
+    if os.path.exists('shelly-flash.zip') or cfw_type == 'stock':
       print("Now Flashing...")
       files = {
           'file': ('shelly-flash.zip', open('shelly-flash.zip', 'rb')),
@@ -154,7 +154,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     response = requests.get('http://%s/ota?url=%s' % (device, dlurl))
     logger.info(response.text)
 
-  sleep(2)
+  time.sleep(2)
   n = 1
   waittextshown = False
   info = None
@@ -175,7 +175,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
       n += 1
     if info:
       n=41
-    sleep(1)
+    time.sleep(1)
 
   if mode == 'homekit':
     onlinecheck = info['version']
@@ -185,12 +185,12 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
   if onlinecheck == lfw:
     print(GREEN + "Successfully flashed %s to %s\033[0m" % (host, lfw))
     if mode == 'homekit':
-      remove('shelly-flash.zip')
+      os.remove('shelly-flash.zip')
     else:
       if info['type'] == "SHRGBW2":
         print("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
         print(WHITE + "WARNING!!" + NC + "If you are using this device in conjunction with Homebridge it will")
-        print("result in ALL scenes / automations to be removed within HomeKit.")
+        print("result in ALL scenes / automations to be os.removed within HomeKit.")
         print("Goto http://$device in your web browser")
         print("Goto settings section")
         print("Goto 'Device Type' and switch modes")
@@ -373,7 +373,7 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
     zeroconf = Zeroconf()
     listener = MyListener()
     browser = ServiceBrowser(zeroconf, "_http._tcp.local.", listener)
-    sleep(2)
+    time.sleep(2)
     zeroconf.close()
 
     logger.info('device_test: %s' % device_list)
@@ -405,7 +405,7 @@ def app(argv):
   except getopt.GetoptError as err:
     logger.error(err)
     usage()
-    exit(2)
+    sys.exit(2)
 
   action = "flash"
   do_all = False
@@ -427,7 +427,7 @@ def app(argv):
       else:
         print("Invalid option")
         usage()
-        exit(2)
+        sys.exit(2)
     elif opt == "-a":
       do_all = True
     elif opt == "-e":
@@ -448,7 +448,7 @@ def app(argv):
         logger.setLevel(logging.DEBUG)
     elif opt == '-h':
       usage()
-      exit(0)
+      sys.exit(0)
 
   logger.info(WHITE + "app" + NC)
   logger.info(PURPLE + "OS: %s\033[0m"% arch)
@@ -466,7 +466,7 @@ def app(argv):
   if ((not opts and not args) and do_all == False) or (not args and do_all == False) or \
      (args and do_all == True and exclude == False) or (not args and do_all == True and exclude == True):
     usage()
-    exit(1)
+    sys.exit(1)
 
   try:
     fp = urllib.request.urlopen("https://api.shelly.cloud/files/firmware")
@@ -474,14 +474,14 @@ def app(argv):
     fp.close()
   except:
     logger.warning("Failed to lookup version information")
-    exit(1)
+    sys.exit(1)
   try:
     fp = urllib.request.urlopen("https://rojer.me/files/shelly/update.json")
     homekit_release_info = json.load(fp)
     fp.close()
   except:
     logger.warning("Failed to lookup version information")
-    exit(1)
+    sys.exit(1)
 
   logger.debug("\n" + WHITE + "stock_release_info:" + NC + " %s" % stock_release_info)
   logger.debug("\n" + WHITE + "homekit_release_info:" + NC + " %s" % homekit_release_info)
