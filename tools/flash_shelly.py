@@ -201,6 +201,8 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   host = host.replace('.local','')
 
   logger.info("\n\ndevice: %s" % device)
+  for i, item in enumerate(exclude_device):
+    exclude_device[i] = exclude_device[i].replace('.local','')
   logger.info("host: %s" % host)
   logger.info("action: %s" % action)
   logger.info("dry_run: %s" % dry_run)
