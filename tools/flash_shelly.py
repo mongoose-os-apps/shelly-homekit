@@ -227,14 +227,11 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
 
   if mode == 'keep':
     mode = cfw_type
+
   if cfw_type == 'homekit':
     type = info['app']
     cfw = info['version']
-    if mode == 'stock':
-      model = info['stock_model'] if 'stock_model' in info else shelly_model(type, mode)
-      lfw = stock_release_info['data'][model]['version'].split('/v')[1].split('@')[0]
-      dlurl = stock_release_info['data'][model]['url']
-    else:
+    if mode == 'homekit':
       model = info['model'] if 'model' in info else shelly_model(type, mode)
       for i in homekit_release_info:
         if re.search(i[0][0], cfw):
@@ -244,7 +241,11 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
           else:
             dlurl="http://rojer.me/files/shelly/%s/shelly-homekit-%s.zip" % (ffw, model)
           break
-  else:
+    else: # stock
+      model = info['stock_model'] if 'stock_model' in info else shelly_model(type, mode)
+      lfw = stock_release_info['data'][model]['version'].split('/v')[1].split('@')[0]
+      dlurl = stock_release_info['data'][model]['url']
+  else: # cfw stock
     cfw = info['fw'].split('/v')[1].split('@')[0]
     type = info['type']
     if mode == 'homekit':
@@ -260,7 +261,7 @@ def probe_info(device, action, dry_run, silent_run, mode, forced_version, ffw):
           else:
             dlurl="http://rojer.me/files/shelly/%s/shelly-homekit-%s.zip" % (ffw, model)
           break
-    else:
+    else: # stock
       model = type
       lfw = stock_release_info['data'][model]['version'].split('/v')[1].split('@')[0]
       dlurl = stock_release_info['data'][model]['url']
