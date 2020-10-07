@@ -140,7 +140,7 @@ def parseVersion(vs):
         break
       i += 1
     varSeq = int(pp[1][i]) or 0
-  major, minor, patch = [int for e in v]
+  major, minor, patch = [int(e) for e in v]
   return (major, minor, patch, variant, varSeq)
 
 def isNewer(v1, v2):
