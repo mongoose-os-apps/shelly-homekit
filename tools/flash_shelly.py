@@ -397,17 +397,17 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
 
 
 def usage():
-  print ("Shelly HomeKit flashing script utility")
-  print ("Usage: -{m|l|a|e|n|y|V|h} {hostname(s) optional}")
-  print (" -m {homekit|revert|keep}   Script mode.")
-  print (" -l            List info of shelly device.")
-  print (" -a            Run against all the devices on the network.")
-  print (" -e            Exclude hosts from found devices.")
-  print (" -n            Do a dummy run through.")
-  print (" -y            Do not ask any confirmation to perform the flash.")
-  print (" -V            Force a particular version.")
-  print (" -D            Enable Debug Logging, you can increase logging with (-DD).")
-  print (" -h            This help text.")
+  print("Shelly HomeKit flashing script utility")
+  print("Usage: -{m|l|a|e|n|y|V|h} {hostname(s) optional}")
+  print(" -m {homekit|revert|keep}   Script mode.")
+  print(" -l            List info of shelly device.")
+  print(" -a            Run against all the devices on the network.")
+  print(" -e            Exclude hosts from found devices.")
+  print(" -n            Do a dummy run through.")
+  print(" -y            Do not ask any confirmation to perform the flash.")
+  print(" -V            Force a particular version.")
+  print(" -D            Enable Debug Logging, you can increase logging with (-DD).")
+  print(" -h            This help text.")
 
 def app(argv):
   # Parse and interpret options.
