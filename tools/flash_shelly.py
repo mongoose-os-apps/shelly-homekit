@@ -66,6 +66,14 @@ if not arch.startswith('Win'):
   BLUE = '\033[1;94m'
   PURPLE = '\033[1;95m'
   NC = '\033[0m'
+else:
+  WHITE = ''
+  RED = ''
+  GREEN = ''
+  YELLOW = ''
+  BLUE = ''
+  PURPLE = ''
+  NC = ''
 
 if not importlib.util.find_spec("zeroconf"):
   logger.info('Installing zeroconf...')
