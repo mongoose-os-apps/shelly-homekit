@@ -60,15 +60,16 @@ logging.basicConfig(format='%(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-WHITE='\033[1m' # Bright White
-RED='\033[1;91m' # Bright Purple
-GREEN='\033[1;92m' # Bright Green
-YELLOW='\033[1;93m' # Bright Yellow
-BLUE='\033[1;94m' # Bright Blue
-PURPLE='\033[1;95m' # Bright Purple
-NC='\033[0m' # Normal Color
-
 arch = platform.system()
+
+# Windows does not support acsii colours
+WHITE = '\033[1m' if not arch.lower().startswith('win') else ""
+RED = '\033[1;91m' if not arch.lower().startswith('win') else ""
+GREEN = '\033[1;92m' if not arch.lower().startswith('win') else ""
+YELLOW = '\033[1;93m' if not arch.lower().startswith('win') else ""
+BLUE = '\033[1;94m' if not arch.lower().startswith('win') else ""
+PURPLE = '\033[1;95m' if not arch.lower().startswith('win') else ""
+NC = '\033[0m' if not arch.lower().startswith('win') else ""
 
 if not importlib.util.find_spec("zeroconf"):
   logger.info('Installing zeroconf...')
