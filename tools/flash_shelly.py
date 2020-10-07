@@ -311,7 +311,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     logger.info(WHITE + "Current: " + NC + "HomeKit %s" % cfw)
   else:
     logger.info(WHITE + "Current: " + NC + "Official %s" % cfw)
-  col = YELLOW if versionCompare(lfw, cfw) else WHITE
+  col = YELLOW if isNewer(lfw, cfw) else WHITE
   if mode == 'homekit':
     logger.info(WHITE + "Latest: " + NC + "HomeKit " + col + "%s\033[0m" % lfw_label)
   else:
@@ -323,12 +323,11 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     elif exclude == True and host in exclude_device:
       perform_flash = False
     elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'stock' and dlurl) \
-         or ((versionCompare(lfw, cfw) > 0) and ((cfw_type == 'homekit' and mode == 'homekit') \
+         or ((isNewer(lfw, cfw)) and ((cfw_type == 'homekit' and mode == 'homekit') \
          or (cfw_type == 'stock' and mode == 'stock') or mode == "keep")):
       perform_flash = True
     else:
       perform_flash = False
-    print('isNewer(latest, current):',isNewer(lfw, cfw))
     if perform_flash == True and dry_run == False and silent_run == False:
       if input("Do you wish to flash %s to firmware version %s (y/n) ? " % (host, lfw)) == "y":
         flash = True
@@ -341,7 +340,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
         keyword = "converted to Official firmware"
       elif cfw_type == 'stock' and mode == 'homekit':
         keyword = "converted to HomeKit firmware"
-      elif versionCompare(lfw, cfw) > 0:
+      elif isNewer(lfw, cfw):
         keyword = "upgraded from %s to version %s" % (cfw, lfw)
       elif forced_version:
         keyword = "reflashed version %s" % ffw
