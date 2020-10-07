@@ -534,9 +534,5 @@ def app(argv):
     device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info)
 
 
-
-
 if __name__ == '__main__':
   app(argv)
-
-__all__ = ['app']
