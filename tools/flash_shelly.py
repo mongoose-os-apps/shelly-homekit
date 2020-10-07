@@ -39,9 +39,9 @@ import functools
 import getopt
 import importlib
 import importlib.util
+import io
 import json
 import logging
-import os
 import platform
 import re
 import subprocess
@@ -168,12 +168,12 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     logger.debug('DURL: %s' % dlurl)
     myfile = requests.get(dlurl)
     with open('shelly-flash.zip', 'wb') as f:
-      f.write(myfile.content)
-    if os.path.exists('shelly-flash.zip') or cfw_type == 'stock':
-      logger.info("Now Flashing...")
-      files = {'file': ('shelly-flash.zip', open('shelly-flash.zip', 'rb'))}
-      response = requests.post('http://%s/update' % device , files=files)
-      logger.debug(response.text)
+      in_memory = io.BytesIO(myfile.content)
+    logger.info("Now Flashing...")
+    files = {'file': ('shelly-flash.zip', in_memory)}
+    response = requests.post('http://%s/update' % device , files=files)
+    logger.debug(response.text)
+
   else:
     logger.info("Now Flashing...")
     dlurl = dlurl.replace('https', 'http')
@@ -207,17 +207,14 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     onlinecheck = info['fw'].split('/v')[1].split('@')[0]
   if onlinecheck == lfw:
     logger.info(GREEN + "Successfully flashed %s to %s\033[0m" % (host, lfw))
-    if mode == 'homekit':
-      os.remove('shelly-flash.zip')
-    else:
-      if info['type'] == "SHRGBW2":
-        logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
-        logger.info(WHITE + "WARNING!!" + NC + "If you are using this device in conjunction with Homebridge it will")
-        logger.info("result in ALL scenes / automations to be os.removed within HomeKit.")
-        logger.info("Goto http://$device in your web browser")
-        logger.info("Goto settings section")
-        logger.info("Goto 'Device Type' and switch modes")
-        logger.info("Once mode has been changed, you can switch it back to your preferred mode.")
+    if mode == 'homekit' and info['type'] == "SHRGBW2":
+      logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
+      logger.info(WHITE + "WARNING!!" + NC + "If you are using this device in conjunction with Homebridge it will")
+      logger.info("result in ALL scenes / automations to be removed within HomeKit.")
+      logger.info("Goto http://$device in your web browser")
+      logger.info("Goto settings section")
+      logger.info("Goto 'Device Type' and switch modes")
+      logger.info("Once mode has been changed, you can switch it back to your preferred mode.")
   else:
     logger.info(RED + "Failed to flash %s to %s\033[0m" % (host, lfw))
     logger.info("Current: %s" % onlinecheck)
