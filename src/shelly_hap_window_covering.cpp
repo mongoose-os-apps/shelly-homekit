@@ -107,13 +107,16 @@ Status WindowCovering::Init() {
       iid++, &kHAPCharacteristicType_PositionState, 0, 2, 1,
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
-        if (moving_dir_ != Direction::kNone && tgt_pos_ == kFullyClosed) {
-          *value = kHAPCharacteristicValue_PositionState_GoingToMinimum;
-        } else if (moving_dir_ != Direction::kNone && tgt_pos_ == kFullyOpen) {
-          *value = kHAPCharacteristicValue_PositionState_GoingToMaximum;
-        } else {
-          // TODO: Figure out what to do when moving to an intermediate position
-          *value = kHAPCharacteristicValue_PositionState_Stopped;
+        switch (moving_dir_) {
+          case Direction::kNone:
+            *value = kHAPCharacteristicValue_PositionState_Stopped;
+            break;
+          case Direction::kClose:
+            *value = kHAPCharacteristicValue_PositionState_GoingToMinimum;
+            break;
+          case Direction::kOpen:
+            *value = kHAPCharacteristicValue_PositionState_GoingToMaximum;
+            break;
         }
         return kHAPError_None;
       },
