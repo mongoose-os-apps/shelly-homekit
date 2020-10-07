@@ -50,7 +50,12 @@ config_schema:
   - ["wc.move_time_ms", "i", 0, {"title": "Move time, in millseconds"}]
   - ["wc.current_pos", "d", 0.0, {"title": "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
-  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutteri (if supported)"}]
+  - ["gdo", "o", {"Garage door settings"}]
+  - ["gdo.name", "s", "Garage Door", {"title": "Accessory name"}]
+  - ["gdo.in_mode", "i", 0, {"title": "Input mode: 0 - close sensor, open sensor"}]
+  - ["gdo.move_time_ms", "i", 30000, {"title": "Movement time, in millseconds"}]
+
+  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
   # Deprecated settings, only kept to enable migration.
@@ -109,6 +114,8 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input"]
+        - ["gdo1", "gdo", {"title": "SW1 settings"}]
+        - ["gdo1.name", "Garage Door"]
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:

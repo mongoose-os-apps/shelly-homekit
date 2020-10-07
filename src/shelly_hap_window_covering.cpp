@@ -173,6 +173,10 @@ Status WindowCovering::Init() {
   return Status::OK();
 }
 
+Component::Type WindowCovering::type() const {
+  return Type::kWindowCovering;
+}
+
 StatusOr<std::string> WindowCovering::GetInfo() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, "

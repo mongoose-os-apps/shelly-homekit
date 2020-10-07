@@ -29,6 +29,7 @@ class Component {
     kLock = 2,
     kStatelessSwitch = 3,
     kWindowCovering = 4,
+    kGarageDoorOpener = 5,
   };
 
   explicit Component(int id);

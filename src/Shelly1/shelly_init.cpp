@@ -17,6 +17,8 @@
 
 #include "shelly_main.hpp"
 
+#include "shelly_hap_garage_door_opener.hpp"
+
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
