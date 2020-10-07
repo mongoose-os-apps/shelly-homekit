@@ -320,15 +320,20 @@ void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
 }
 
 void WindowCovering::HAPSetTgtPos(float value) {
-  // If already moving and the command has come to do a 180,
-  // this represents a tap on the tile by the user.
-  // In this case we just stop the movement.
-  if (moving_dir_ == Direction::kOpen && value == kFullyClosed) {
-    SetTgtPos(cur_pos_ + 1, "HAP");
-  } else if (moving_dir_ == Direction::kClose && value == kFullyOpen) {
-    SetTgtPos(cur_pos_ - 1, "HAP");
-  } else {
+  // If position is intermedfiate, just do what we are told.
+  if ((value != kFullyClosed && value != kFullyOpen) ||
+      last_ext_move_dir_ == Direction::kNone) {
     SetTgtPos(value, "HAP");
+    if (value == kFullyClosed) {
+      last_ext_move_dir_ = Direction::kClose;
+    } else if (value == kFullyClosed) {
+      last_ext_move_dir_ = Direction::kOpen;
+    } else {
+      last_ext_move_dir_ = Direction::kNone;
+    }
+  } else {
+    // This is most likely a tap on the tile.
+    HandleInputSingle("HAPalt");
   }
   // Run state machine immediately to improve reaction time,
   RunOnce();
@@ -621,25 +626,7 @@ void WindowCovering::HandleInputEvent2(Input::Event ev, bool state) {
   }
   if (ev != Input::Event::kChange) return;
   if (!state) return;
-  switch (moving_dir_) {
-    case Direction::kNone: {
-      if (last_ext_move_dir_ != Direction::kOpen) {
-        SetTgtPos(kFullyOpen, "ext");
-        last_ext_move_dir_ = Direction::kOpen;
-      } else {
-        SetTgtPos(kFullyClosed, "ext");
-        last_ext_move_dir_ = Direction::kClose;
-      }
-      break;
-    }
-    // Stop.
-    case Direction::kOpen:
-      SetTgtPos(cur_pos_ + 1, "ext");
-      break;
-    case Direction::kClose:
-      SetTgtPos(cur_pos_ - 1, "ext");
-      break;
-  }
+  HandleInputSingle("ext");
   // Run the state machine immediately for quicker response.
   RunOnce();
 }
@@ -657,6 +644,28 @@ void WindowCovering::HandleInputEventNotCalibrated() {
   }
   out_open_->SetState(want_open, "ext");
   out_close_->SetState(want_close, "ext");
+}
+
+void WindowCovering::HandleInputSingle(const char *src) {
+  switch (moving_dir_) {
+    case Direction::kNone: {
+      if (cur_pos_ == kFullyClosed || last_ext_move_dir_ != Direction::kOpen) {
+        SetTgtPos(kFullyOpen, src);
+        last_ext_move_dir_ = Direction::kOpen;
+      } else {
+        SetTgtPos(kFullyClosed, src);
+        last_ext_move_dir_ = Direction::kClose;
+      }
+      break;
+    }
+    // Stop.
+    case Direction::kOpen:
+      SetTgtPos(cur_pos_ + 1, src);
+      break;
+    case Direction::kClose:
+      SetTgtPos(cur_pos_ - 1, src);
+      break;
+  }
 }
 
 }  // namespace hap

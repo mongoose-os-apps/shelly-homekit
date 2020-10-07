@@ -111,6 +111,7 @@ class WindowCovering : public Component, public Service {
   void HandleInputEvent01(Direction dir, Input::Event ev, bool state);
   void HandleInputEvent2(Input::Event ev, bool state);
   void HandleInputEventNotCalibrated();
+  void HandleInputSingle(const char *src);
 
   Input *in_open_, *in_close_;
   Output *out_open_, *out_close_;
