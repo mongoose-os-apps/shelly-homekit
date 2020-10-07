@@ -37,8 +37,6 @@
 
 import functools
 import getopt
-import importlib
-import importlib.util
 import json
 import logging
 import platform
@@ -75,18 +73,18 @@ else:
   PURPLE = ''
   NC = ''
 
-if not importlib.util.find_spec("zeroconf"):
+try:
+  import zeroconf
+except ImportError:
   logger.info('Installing zeroconf...')
   pipe = subprocess.check_output(['pip3', 'install', 'zeroconf'])
   import zeroconf
-else:
-  import zeroconf
 
-if not importlib.util.find_spec("requests"):
+try:
+  import requests
+except ImportError:
   logger.info('Installing requests...')
   pipe = subprocess.check_output(['pip3', 'install', 'requests'])
-  import requests
-else:
   import requests
 
 class MyListener:
