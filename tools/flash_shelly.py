@@ -59,13 +59,14 @@ logger.setLevel(logging.INFO)
 
 arch = platform.system()
 # Windows does not support acsii colours
-WHITE = '\033[1m' if not arch.lower().startswith('win') else ""
-RED = '\033[1;91m' if not arch.lower().startswith('win') else ""
-GREEN = '\033[1;92m' if not arch.lower().startswith('win') else ""
-YELLOW = '\033[1;93m' if not arch.lower().startswith('win') else ""
-BLUE = '\033[1;94m' if not arch.lower().startswith('win') else ""
-PURPLE = '\033[1;95m' if not arch.lower().startswith('win') else ""
-NC = '\033[0m' if not arch.lower().startswith('win') else ""
+if not arch.startswith('Win'):
+  WHITE = '\033[1m'
+  RED = '\033[1;91m'
+  GREEN = '\033[1;92m'
+  YELLOW = '\033[1;93m'
+  BLUE = '\033[1;94m'
+  PURPLE = '\033[1;95m'
+  NC = '\033[0m'
 
 if not importlib.util.find_spec("zeroconf"):
   logger.info('Installing zeroconf...')
