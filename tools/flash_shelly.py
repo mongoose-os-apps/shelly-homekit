@@ -1,20 +1,3 @@
-import functools
-import getopt
-import importlib
-import json
-import logging
-import os
-import platform
-import re
-import subprocess
-import sys
-import time
-import urllib
-
-import importlib.util
-from sys import argv
-
-"""
 #  Copyright (c) 2020 Andrew Blackburn & Deomid "rojer" Ryabkov
 #  All rights reserved
 #
@@ -50,7 +33,22 @@ from sys import argv
 #
 #  usage: python3 flash_shelly.py -la
 #  usage: python3 flash_shelly.py shelly1-034FFF
-"""
+
+import functools
+import getopt
+import importlib
+import json
+import logging
+import os
+import platform
+import re
+import subprocess
+import sys
+import time
+import urllib
+
+import importlib.util
+from sys import argv
 
 logging.TRACE = 5
 logging.addLevelName(logging.TRACE, 'TRACE')
