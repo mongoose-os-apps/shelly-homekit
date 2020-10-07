@@ -1,3 +1,4 @@
+import functools
 import getopt
 import importlib
 import json
@@ -51,9 +52,13 @@ from sys import argv
 #  usage: python3 flash_shelly.py shelly1-034FFF
 """
 
+logging.TRACE = 5
+logging.addLevelName(logging.TRACE, 'TRACE')
+logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE)
+logging.trace = functools.partial(logging.log, logging.TRACE)
 logging.basicConfig(format='%(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 WHITE='\033[1m' # Bright White
 RED='\033[1;91m' # Bright Purple
@@ -66,14 +71,14 @@ NC='\033[0m' # Normal Color
 arch = platform.system()
 
 if not importlib.util.find_spec("zeroconf"):
-  print('Installing zeroconf...')
+  logger.info('Installing zeroconf...')
   pipe = subprocess.check_output(['pip3', 'install', 'zeroconf'])
   import zeroconf
 else:
   import zeroconf
 
 if not importlib.util.find_spec("requests"):
-  print('Installing requests...')
+  logger.info('Installing requests...')
   pipe = subprocess.check_output(['pip3', 'install', 'requests'])
   import requests
 else:
@@ -87,10 +92,10 @@ class MyListener:
   def add_service(self, zeroconf, type, name):
       self.device_list.append(name.replace('._http._tcp.local.', ''))
       # info = zeroconf.get_service_info(type, name, 2000)
-      # logger.debug('INFO: %s' % info)
+      # logger.trace('INFO: %s' % info)
       # properties = { y.decode('ascii'): info.properties.get(y).decode('ascii') for y in info.properties.keys() }
       # self.p_list.append(properties)
-      # logger.debug('properties: %s' % properties)
+      # logger.trace('properties: %s' % properties)
       # json_object = json.dumps(properties, indent = 2)
 
 def shelly_model(type, mode):
@@ -164,28 +169,28 @@ def versionCompare(v1, v2):
   return 0
 
 def write_flash(device, lfw, dlurl, cfw_type, mode):
-  logger.info("\n" + WHITE + "write_flash" + NC)
+  logger.debug("\n" + WHITE + "write_flash" + NC)
   flashed = False
   host = device.replace('.local', '')
   if cfw_type == 'homekit':
-    print("Downloading Firmware...")
-    logger.info('DURL: %s' % dlurl)
+    logger.info("Downloading Firmware...")
+    logger.debug('DURL: %s' % dlurl)
     myfile = requests.get(dlurl)
     with open('shelly-flash.zip', 'wb') as f:
       f.write(myfile.content)
     if os.path.exists('shelly-flash.zip') or cfw_type == 'stock':
-      print("Now Flashing...")
+      logger.info("Now Flashing...")
       files = {
           'file': ('shelly-flash.zip', open('shelly-flash.zip', 'rb')),
       }
       response = requests.post('http://%s/update' % device , files=files)
-      logger.info(response.text)
+      logger.debug(response.text)
   else:
-    print("Now Flashing...")
+    logger.info("Now Flashing...")
     dlurl = dlurl.replace('https', 'http')
-    logger.info("curl -qsS http://%s/ota?url=%s" % (device, dlurl))
+    logger.debug("curl -qsS http://%s/ota?url=%s" % (device, dlurl))
     response = requests.get('http://%s/ota?url=%s' % (device, dlurl))
-    logger.info(response.text)
+    logger.debug(response.text)
 
   time.sleep(2)
   n = 1
@@ -193,7 +198,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
   info = None
   while n < 40:
     if waittextshown == False:
-      print("waiting for %s to reboot" % host)
+      logger.info("waiting for %s to reboot" % host)
       waittextshown = True
     if mode == 'homekit':
       checkurl = 'http://%s/rpc/Shelly.GetInfo' % device
@@ -203,7 +208,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
       with urllib.request.urlopen(checkurl) as fp:
         info = json.load(fp)
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
-      logger.info("Error: %s" % err)
+      logger.debug("Error: %s" % err)
       n += 1
     if info:
       n=41
@@ -215,21 +220,21 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     onlinecheck = info['fw'].split('/v')[1].split('@')[0]
 
   if onlinecheck == lfw:
-    print(GREEN + "Successfully flashed %s to %s\033[0m" % (host, lfw))
+    logger.info(GREEN + "Successfully flashed %s to %s\033[0m" % (host, lfw))
     if mode == 'homekit':
       os.remove('shelly-flash.zip')
     else:
       if info['type'] == "SHRGBW2":
-        print("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
-        print(WHITE + "WARNING!!" + NC + "If you are using this device in conjunction with Homebridge it will")
-        print("result in ALL scenes / automations to be os.removed within HomeKit.")
-        print("Goto http://$device in your web browser")
-        print("Goto settings section")
-        print("Goto 'Device Type' and switch modes")
-        print("Once mode has been changed, you can switch it back to your preferred mode.")
+        logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
+        logger.info(WHITE + "WARNING!!" + NC + "If you are using this device in conjunction with Homebridge it will")
+        logger.info("result in ALL scenes / automations to be os.removed within HomeKit.")
+        logger.info("Goto http://$device in your web browser")
+        logger.info("Goto settings section")
+        logger.info("Goto 'Device Type' and switch modes")
+        logger.info("Once mode has been changed, you can switch it back to your preferred mode.")
   else:
-    print(RED + "Failed to flash %s to %s\033[0m" % (host, lfw))
-    print("Current: %s" % onlinecheck)
+    logger.info(RED + "Failed to flash %s to %s\033[0m" % (host, lfw))
+    logger.info("Current: %s" % onlinecheck)
 
 def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info):
   flash = False
@@ -245,17 +250,17 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     for i, item in enumerate(exclude_device):
       exclude_device[i] = exclude_device[i].replace('.local', '')
 
-  logger.info("\n" + WHITE + "probe_info" + NC)
-  logger.info("device: %s" % device)
-  logger.info("host: %s" % host)
-  logger.info("action: %s" % action)
-  logger.info("dry_run: %s" % dry_run)
-  logger.info("silent_run: %s" % silent_run)
-  logger.info("mode: %s" % mode)
-  logger.info("exclude: %s" % exclude)
-  logger.info("exclude_device: %s" % exclude_device)
-  logger.info("forced_version: %s" % forced_version)
-  logger.info("ffw: %s" % ffw)
+  logger.debug("\n" + WHITE + "probe_info" + NC)
+  logger.debug("device: %s" % device)
+  logger.debug("host: %s" % host)
+  logger.debug("action: %s" % action)
+  logger.debug("dry_run: %s" % dry_run)
+  logger.debug("silent_run: %s" % silent_run)
+  logger.debug("mode: %s" % mode)
+  logger.debug("exclude: %s" % exclude)
+  logger.debug("exclude_device: %s" % exclude_device)
+  logger.debug("forced_version: %s" % forced_version)
+  logger.debug("ffw: %s" % ffw)
 
   try:
     with urllib.request.urlopen('http://%s/rpc/Shelly.GetInfo' % device) as fp:
@@ -318,18 +323,18 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   else:
     lfw_label = lfw
 
-  print("\n" + WHITE + "Host: " + NC + "%s" % host)
-  print(WHITE + "Model: " + NC + "%s" % model)
+  logger.info(WHITE + "Host: " + NC + "%s" % host)
+  logger.info(WHITE + "Model: " + NC + "%s" % model)
 
   if cfw_type == 'homekit':
-    print(WHITE + "Current: " + NC + "HomeKit %s" % cfw)
+    logger.info(WHITE + "Current: " + NC + "HomeKit %s" % cfw)
   else:
-    print(WHITE + "Current: " + NC + "Official %s" % cfw)
+    logger.info(WHITE + "Current: " + NC + "Official %s" % cfw)
   col = YELLOW if versionCompare(lfw, cfw) else WHITE
   if mode == 'homekit':
-    print(WHITE + "Latest: " + NC + "HomeKit " + col + "%s\033[0m" % lfw_label)
+    logger.info(WHITE + "Latest: " + NC + "HomeKit " + col + "%s\033[0m" % lfw_label)
   else:
-    print(WHITE + "Latest: " + NC + "Official " + col + "%s\033[0m" % lfw_label)
+    logger.info(WHITE + "Latest: " + NC + "Official " + col + "%s\033[0m" % lfw_label)
 
   if action != 'list':
     if forced_version == True and dlurl:
@@ -360,56 +365,57 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
         keyword = "upgraded from %s to version %s" % (cfw, lfw)
       elif forced_version:
         keyword = "reflashed version %s" % ffw
-      print("Would have been %s..." % keyword)
+      logger.info("Would have been %s..." % keyword)
     elif not dlurl:
       if ffw:
         keyword = "Version %s is not available yet..." % ffw
       else:
         keyword = "Is not supported yet..."
-      print(keyword)
+      logger.info(keyword + "\n")
       return 0
     elif exclude == True and host in exclude_device:
-      print("Skipping as device has been excluded...")
+      logger.info("Skipping as device has been excluded...")
     else:
-      print("Does not need updating...")
+      logger.info("Does not need updating...\n")
       return 0
 
     if flash == True:
       write_flash(device, lfw, dlurl, cfw_type, mode)
     elif dry_run == False and exclude == False:
-      print("Skipping Flash...")
+      logger.info("Skipping Flash...")
+  logger.info(" ")
 
 
 def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info):
   device = args
   exclude_device = None
-  logger.info("\n" + WHITE + "device_scan" + NC)
-  logger.info("device: %s" % device)
-  logger.info("action: %s" % action)
-  logger.info("do_all: %s" % do_all)
-  logger.info("dry_run: %s" % dry_run)
-  logger.info("silent_run: %s" % silent_run)
-  logger.info("mode: %s" % mode)
-  logger.info("exclude: %s" % exclude)
-  logger.info("forced_version: %s" % forced_version)
-  logger.info("ffw: %s" % ffw)
+  logger.debug("\n" + WHITE + "device_scan" + NC)
+  logger.debug("device: %s" % device)
+  logger.debug("action: %s" % action)
+  logger.debug("do_all: %s" % do_all)
+  logger.debug("dry_run: %s" % dry_run)
+  logger.debug("silent_run: %s" % silent_run)
+  logger.debug("mode: %s" % mode)
+  logger.debug("exclude: %s" % exclude)
+  logger.debug("forced_version: %s" % forced_version)
+  logger.debug("ffw: %s" % ffw)
 
   if do_all == False:
-    print(WHITE + "Probing Shelly device for info..." + NC)
+    logger.info(WHITE + "Probing Shelly device for info...\n" + NC)
     if  not ".local" in device:
       device = device + ".local"
     probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info)
   else:
     exclude_device = device
-    print(WHITE + "Scanning for Shelly devices..." + NC)
+    logger.info(WHITE + "Scanning for Shelly devices...\n" + NC)
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, "_http._tcp.local.", listener)
     time.sleep(2)
     zc.close()
 
-    logger.info('device_test: %s' % listener.device_list)
-    # logger.info('\nproperties: %s' % listener.p_list)
+    logger.debug('device_test: %s' % listener.device_list)
+    # logger.debug('\nproperties: %s' % listener.p_list)
 
     listener.device_list.sort()
     for device in listener.device_list:
@@ -457,7 +463,7 @@ def app(argv):
       elif value == "keep":
         mode="keep"
       else:
-        print("Invalid option")
+        logger.info("Invalid option")
         usage()
         sys.exit(2)
     elif opt == "-a":
@@ -474,26 +480,26 @@ def app(argv):
       forced_version = True
       ffw = value
     elif opt == '-D':
-      if logger.getEffectiveLevel() >= 30:
-        logger.setLevel(logging.INFO)
-      else:
+      if logger.getEffectiveLevel() >= 20:
         logger.setLevel(logging.DEBUG)
+      else:
+        logger.setLevel(logging.TRACE)
     elif opt == '-h':
       usage()
       sys.exit(0)
 
-  logger.info(WHITE + "app" + NC)
-  logger.info(PURPLE + "OS: %s\033[0m"% arch)
-  logger.info("ARG: %s" % argv)
-  logger.info("opts: %s" % opts)
-  logger.info("args: %s" % args)
-  logger.info("action: %s" % action)
-  logger.info("do_all: %s" % do_all)
-  logger.info("dry_run: %s" % dry_run)
-  logger.info("silent_run: %s" % silent_run)
-  logger.info("forced_version: %s" % forced_version)
-  logger.info("exclude: %s" % exclude)
-  logger.info("mode: %s" % mode)
+  logger.debug(WHITE + "app" + NC)
+  logger.debug(PURPLE + "OS: %s\033[0m"% arch)
+  logger.debug("ARG: %s" % argv)
+  logger.debug("opts: %s" % opts)
+  logger.debug("args: %s" % args)
+  logger.debug("action: %s" % action)
+  logger.debug("do_all: %s" % do_all)
+  logger.debug("dry_run: %s" % dry_run)
+  logger.debug("silent_run: %s" % silent_run)
+  logger.debug("forced_version: %s" % forced_version)
+  logger.debug("exclude: %s" % exclude)
+  logger.debug("mode: %s" % mode)
 
   if ((not opts and not args) and do_all == False) or (not args and do_all == False) or \
      (args and do_all == True and exclude == False) or (not args and do_all == True and exclude == True):
@@ -513,8 +519,8 @@ def app(argv):
     logger.warning("Failed to lookup version information")
     sys.exit(1)
 
-  logger.debug("\n" + WHITE + "stock_release_info:" + NC + " %s" % stock_release_info)
-  logger.debug("\n" + WHITE + "homekit_release_info:" + NC + " %s" % homekit_release_info)
+  logger.trace("\n" + WHITE + "stock_release_info:" + NC + " %s" % stock_release_info)
+  logger.trace("\n" + WHITE + "homekit_release_info:" + NC + " %s" % homekit_release_info)
 
   if args and exclude == False:
     for device in args:
