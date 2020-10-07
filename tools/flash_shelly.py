@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #  Copyright (c) 2020 Andrew Blackburn & Deomid "rojer" Ryabkov
 #  All rights reserved
 #
