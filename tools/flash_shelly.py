@@ -167,10 +167,8 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     logger.info("Downloading Firmware...")
     logger.debug(f"DURL: {dlurl}")
     myfile = requests.get(dlurl)
-    with open('shelly-flash.zip', 'wb') as f:
-      in_memory = io.BytesIO(myfile.content)
     logger.info("Now Flashing...")
-    files = {'file': ('shelly-flash.zip', in_memory)}
+    files = {'file': ('shelly-flash.zip', myfile.content)}
     response = requests.post(f'http://{device}/update' , files=files)
     logger.debug(response.text)
 
