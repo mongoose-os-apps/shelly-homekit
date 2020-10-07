@@ -126,47 +126,43 @@ def shelly_model(type, mode):
     }
   return(options[type])
 
-def versionCompare(v1, v2):
-  # This will split both the versions by '.'
-  arr1 = v1.split(".")
-  if 'beta' in v1:
-    arr1b = arr1[2].split("-beta")
-    arr1[2] = (arr1b[0])
-    arr1.append(arr1b[1])
+
+def parseVersion(vs):
+  pp = vs.split("-");
+  v = pp[0].split(".");
+  variant = ""
+  varSeq = 0
+  if len(pp) > 1:
+    i = 0
+    for x in pp[1]:
+      c = pp[1][i]
+      if not c.isnumeric():
+        variant += c
+      else:
+        break
+      i += 1
+    varSeq = int(pp[1][i]) or 0
+  major = int(v[0])
+  minor = int(v[1])
+  patch = int(v[2])
+  return (major, minor, patch, variant, varSeq)
+
+def isNewer(v1, v2):
+  vi1 = parseVersion(v1)
+  vi2 = parseVersion(v2)
+  if (vi1[0] != vi2[0]):
+    return (vi1[0] > vi2[0])
+  elif (vi1[1] != vi2[1]):
+    return (vi1[1] > vi2[1])
+  elif (vi1[2] != vi2[2]):
+    return (vi1[2] > vi2[2])
+  elif (vi1[3] != vi2[3]):
+    return True
+  elif (vi1[4] != vi2[4]):
+    return (vi1[4] > vi2[4])
   else:
-    arr1.append('0')
+    return False
 
-  arr2 = v2.split(".")
-  if 'beta' in v2:
-    arr2b = arr2[2].split("-beta")
-    arr2[2] = (arr2b[0])
-    arr2.append(arr2b[1])
-  else:
-    arr2.append('0')
-
-  n = len(arr1)
-  m = len(arr2)
-
-  # converts to integer from string
-  arr1 = [int(i) for i in arr1]
-  arr2 = [int(i) for i in arr2]
-
-  # compares which list is bigger and fills
-  # smaller list with zero (for unequal delimeters)
-  if n>m:
-    for i in range(m, n):
-      arr2.append(0)
-  elif m>n:
-    for i in range(n, m):
-      arr1.append(0)
-
-  # returns 1 if v1 is bigger and -1 if v2 is bigger and 0 if equal
-  for i in range(len(arr1)):
-    if arr1[i]>arr2[i]:
-      return 1
-    elif arr2[i]>arr1[i]:
-      return -1
-  return 0
 
 def write_flash(device, lfw, dlurl, cfw_type, mode):
   logger.debug("\n" + WHITE + "write_flash" + NC)
@@ -349,6 +345,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     else:
       perform_flash = False
 
+    print('isNewer(latest, current):',isNewer(lfw, cfw))
     if perform_flash == True and dry_run == False and silent_run == False:
       if input("Do you wish to flash %s to firmware version %s (y/n) ? " % (host, lfw)) == "y":
         flash = True
