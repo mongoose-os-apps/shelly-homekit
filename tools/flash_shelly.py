@@ -38,6 +38,7 @@
 import functools
 import getopt
 import importlib
+import importlib.util
 import json
 import logging
 import os
@@ -47,8 +48,6 @@ import subprocess
 import sys
 import time
 import urllib
-import importlib.util
-from sys import argv
 
 logging.TRACE = 5
 logging.addLevelName(logging.TRACE, 'TRACE')
@@ -413,7 +412,7 @@ def usage():
 def app(argv):
   # Parse and interpret options.
   try:
-    (opts, args) = getopt.getopt(argv[1:], ":aelnyhDm:V:")
+    (opts, args) = getopt.getopt(argv, ":aelnyhDm:V:")
   except getopt.GetoptError as err:
     logger.error(err)
     usage()
@@ -499,4 +498,4 @@ def app(argv):
 
 
 if __name__ == '__main__':
-  app(argv)
+  app(sys.argv[1:])
