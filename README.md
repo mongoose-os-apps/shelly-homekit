@@ -3,7 +3,7 @@
 
 # Apple HomeKit firmware for Shelly switches
 
-This firmware exposes Shelly1, SHelly1PM, ShellyPlug-S, Shelly2 and Shelly2.5 as Apple HomeKit accessories.
+This firmware exposes Shelly1, Shelly1PM, ShellyPlug-S, Shelly2 and Shelly2.5 as Apple HomeKit accessories.
 
 Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw)), for more info take a look at the flashing wiki [here](Flashing#updating-from-stock-firmware).
 
@@ -19,6 +19,8 @@ Reverting to stock firmware is also supported [see here](Flashing#reverting-to-s
 ## Quick Start
 
 ### Updating from stock firmware
+
+  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit.
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
