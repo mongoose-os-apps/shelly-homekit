@@ -386,7 +386,7 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, "_http._tcp.local.", listener)
-    time.sleep(2)
+    time.sleep(5)
     zc.close()
     logger.debug(f'device_test: {listener.device_list}')
     # logger.debug(f'\nproperties: {listener.p_list}')
