@@ -17,6 +17,7 @@ filesystem:
 config_schema:
   # Try .gz-compressed html.
   - ["http.index_files", "index.html,index.html.gz"]
+  - ["http.extra_headers", "Pragma: no-cache"]
   - ["sntp.enable", true]
   - ["debug.event_level", 3]
   - ["file_logger.level", 3]
