@@ -30,6 +30,8 @@ GarageDoorOpener::GarageDoorOpener(int id, Input *in, Output *out,
                (SHELLY_HAP_IID_STEP_GARAGE_DOOR_OPENER * (id - 1))),
               &kHAPServiceType_GarageDoorOpener,
               kHAPServiceDebugDescription_GarageDoorOpener),
+      in_close_(in),
+      out_(out),
       cfg_(cfg),
       state_timer_(std::bind(&GarageDoorOpener::RunOnce, this)) {
 }
@@ -90,30 +92,34 @@ Component::Type GarageDoorOpener::type() const {
 StatusOr<std::string> GarageDoorOpener::GetInfo() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, "
-      "cur_state: %d, move_time_ms: %d",
-      id(), type(), cfg_->name, (int) cur_state_, cfg_->move_time_ms);
+      "cur_state: %d, cur_state_str: %Q, "
+      "move_time: %d, close_sensor_mode: %d}",
+      id(), type(), cfg_->name, (int) cur_state_, StateStr(cur_state_),
+      cfg_->move_time_ms / 1000, cfg_->close_sensor_mode);
 }
 
 Status GarageDoorOpener::SetConfig(const std::string &config_json,
                                    bool *restart_required) {
   struct mgos_config_gdo cfg = *cfg_;
   cfg.name = nullptr;
-  int tgt_state = -1, move_time = -1;
+  int move_time = -1, close_sensor_mode = -1;
+  int8_t toggle = -1;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, tgt_state: %d, move_time: %d", &cfg.name, &tgt_state,
-             &move_time);
+             "{name: %Q, toggle: %B, move_time: %d, close_sensor_mode: %d}",
+             &cfg.name, &toggle, &move_time, &close_sensor_mode);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
   }
-  if (tgt_state > 1) {
-    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "tgt_state");
+  if (close_sensor_mode > 1) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
+                        "close_sensor_mode");
   }
   // Apply.
-  if (tgt_state >= 0) {
-    SetTgtState(static_cast<State>(tgt_state), "rpc");
+  if (toggle != -1 && toggle) {
+    // SetTgtState(static_cast<State>(tgt_state), "rpc");
   }
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
@@ -121,6 +127,9 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   }
   if (move_time > 0) {
     cfg_->move_time_ms = move_time * 1000;
+  }
+  if (close_sensor_mode >= 0) {
+    cfg_->close_sensor_mode = close_sensor_mode;
   }
   return Status::OK();
 }

@@ -52,7 +52,7 @@ config_schema:
 
   - ["gdo", "o", {"Garage door settings"}]
   - ["gdo.name", "s", "Garage Door", {"title": "Accessory name"}]
-  - ["gdo.in_mode", "i", 0, {"title": "Input mode: 0 - close sensor, open sensor"}]
+  - ["gdo.close_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally open, 1 - normally closed"}]
   - ["gdo.move_time_ms", "i", 30000, {"title": "Movement time, in millseconds"}]
 
   - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]

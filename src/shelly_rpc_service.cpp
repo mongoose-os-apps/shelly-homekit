@@ -73,7 +73,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u, sys_mode: %d, rsh_avail: %B, "
+      "hap_ip_conns_max: %u, sys_mode: %d, "
+      "rsh_avail: %B, gdo_avail: %B, "
       "debug_en: %B",
       mgos_sys_config_get_device_id(), MGOS_APP,
       CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
@@ -87,7 +88,12 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
-#ifdef MGOS_SYS_CONFIG_HAVE_WC1
+#ifdef MGOS_SYS_CONFIG_HAVE_WC1  // rsh_avail
+      true,
+#else
+      false,
+#endif
+#ifdef MGOS_SYS_CONFIG_HAVE_GDO1  // gdo_avail
       true,
 #else
       false,
@@ -138,7 +144,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                &debug_en);
     mgos::ScopedCPtr name_owner(name_c);
 
-    if (sys_mode == 0 || sys_mode == 1) {
+    if (sys_mode == 0 || sys_mode == 1 || sys_mode == 2) {
       if (sys_mode != mgos_sys_config_get_shelly_mode()) {
         mgos_sys_config_set_shelly_mode(sys_mode);
         restart_required = true;
@@ -146,8 +152,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     } else if (sys_mode == -1) {
       // Nothing.
     } else {
-      st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
-                        "name (too long, max 64)");
+      st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "sys_mode");
     }
     if (name_c != nullptr) {
       mgos_expand_mac_address_placeholders(name_c);

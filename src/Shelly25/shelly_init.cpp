@@ -46,6 +46,7 @@ void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   if (mgos_sys_config_get_shelly_mode() == 1) {
+    // Roller-shutter mode.
     const int id = 1;
     auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
     auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);

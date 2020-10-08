@@ -34,6 +34,21 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  if (mgos_sys_config_get_shelly_mode() == 2) {
+    // Garage door opener mode.
+    auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
+    std::unique_ptr<hap::GarageDoorOpener> gdo(
+        new hap::GarageDoorOpener(1, FindInput(1), FindOutput(1), gdo_cfg));
+    if (gdo == nullptr || !gdo->Init().ok()) {
+      return;
+    }
+    gdo->set_primary(true);
+    comps->push_back(gdo.get());
+    hap::Accessory *pri_acc = (*accs)[0].get();
+    pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
+    pri_acc->AddService(std::move(gdo));
+    return;
+  }
   // Single switch with non-detached input = only one accessory.
   bool to_pri_acc = (mgos_sys_config_get_sw1_in_mode() != 3);
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
