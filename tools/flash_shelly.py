@@ -304,7 +304,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   else:
     lfw_label = lfw
   logger.info(f"{WHITE}Host: {NC}{host}")
-  logger.info(f"{WHITE}Model: {NC}{host}")
+  logger.info(f"{WHITE}Model: {NC}{model}")
   if cfw_type == 'homekit':
     logger.info(f"{WHITE}Current: {NC}HomeKit {cfw}")
   else:
