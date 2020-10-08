@@ -44,10 +44,6 @@ static void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st) {
 
 static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                            struct mg_rpc_frame_info *fi, struct mg_str args) {
-#ifdef MGOS_HAVE_WIFI
-  const char *ssid = mgos_sys_config_get_wifi_sta_ssid();
-  const char *pass = mgos_sys_config_get_wifi_sta_pass();
-#endif
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
   bool hap_running = (HAPAccessoryServerGetState(s_server) ==
                       kHAPAccessoryServerState_Running);
@@ -58,11 +54,22 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     hap_cn = 0;
   }
   bool debug_en = mgos_sys_config_get_file_logger_enable();
+#ifdef MGOS_HAVE_WIFI
+  const char *wifi_ssid = mgos_sys_config_get_wifi_sta_ssid();
+  int wifi_rssi = mgos_wifi_sta_get_rssi();
+  char wifi_ip[16] = {};
+  struct mgos_net_ip_info ip_info = {};
+  if (mgos_net_get_ip_info(MGOS_NET_IF_TYPE_WIFI, MGOS_NET_IF_WIFI_STA,
+                           &ip_info)) {
+    mgos_net_ip_to_str(&ip_info.ip, wifi_ip);
+  }
+#endif
   std::string res = mgos::JSONPrintStringf(
       "{id: %Q, app: %Q, model: %Q, stock_model: %Q, host: %Q, "
       "version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
+      "wifi_rssi: %d, wifi_ip: %Q,"
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
@@ -73,8 +80,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
       mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
 #ifdef MGOS_HAVE_WIFI
-      mgos_sys_config_get_wifi_sta_enable(), (ssid ? ssid : ""),
-      (pass ? "***" : ""),
+      mgos_sys_config_get_wifi_sta_enable(), (wifi_ssid ? wifi_ssid : ""),
+      (mgos_sys_config_get_wifi_sta_pass() ? "***" : ""), wifi_rssi, wifi_ip,
 #endif
       hap_cn, hap_running, hap_paired,
       (unsigned) tcpm_stats.numPendingTCPStreams,
