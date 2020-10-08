@@ -37,9 +37,6 @@ GarageDoorOpener::GarageDoorOpener(int id, Input *in, Output *out,
 }
 
 GarageDoorOpener::~GarageDoorOpener() {
-  if (in_close_handler_ != Input::kInvalidHandlerID) {
-    in_close_->RemoveHandler(in_close_handler_);
-  }
   out_->SetState(false, "dtor");
 }
 
@@ -72,12 +69,24 @@ Status GarageDoorOpener::Init() {
         // We need to decouple from the current invocation
         // because we may want to raise a notification on the target position
         // and we can't do that within the write callback.
-        mgos::InvokeCB(
-            [this, value] { SetTgtState(static_cast<State>(value), "HAP"); });
+        mgos::InvokeCB([this, value] {
+          UserSetTgtState(static_cast<State>(value), "HAP");
+        });
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_CurrentPosition);
   AddChar(tgt_state_char_);
+  // Obstruction Detected
+  obst_char_ = new BoolCharacteristic(
+      iid++, &kHAPCharacteristicType_ObstructionDetected,
+      [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
+             bool *value) {
+        *value = (cur_state_ == State::kStopped);
+        return kHAPError_None;
+      },
+      true /* supports_notification */, nullptr /* write_handler */,
+      kHAPCharacteristicDebugDescription_ObstructionDetected);
+  AddChar(obst_char_);
   cur_state_ = (in_close_->GetState() ? State::kClosed : State::kOpen);
   tgt_state_ = cur_state_;
   LOG(LL_INFO, ("GDO %d: cur_state %d", id(), (int) cur_state_));
@@ -93,20 +102,22 @@ StatusOr<std::string> GarageDoorOpener::GetInfo() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, "
       "cur_state: %d, cur_state_str: %Q, "
-      "move_time: %d, close_sensor_mode: %d}",
+      "move_time: %d, pulse_time_ms: %d, close_sensor_mode: %d}",
       id(), type(), cfg_->name, (int) cur_state_, StateStr(cur_state_),
-      cfg_->move_time_ms / 1000, cfg_->close_sensor_mode);
+      cfg_->move_time_ms / 1000, cfg_->pulse_time_ms, cfg_->close_sensor_mode);
 }
 
 Status GarageDoorOpener::SetConfig(const std::string &config_json,
                                    bool *restart_required) {
   struct mgos_config_gdo cfg = *cfg_;
   cfg.name = nullptr;
-  int move_time = -1, close_sensor_mode = -1;
+  int move_time = -1, pulse_time_ms = -1, close_sensor_mode = -1;
   int8_t toggle = -1;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, toggle: %B, move_time: %d, close_sensor_mode: %d}",
-             &cfg.name, &toggle, &move_time, &close_sensor_mode);
+             "{name: %Q, toggle: %B, move_time: %d, pulse_time_ms: %d, "
+             "close_sensor_mode: %d}",
+             &cfg.name, &toggle, &move_time, &pulse_time_ms,
+             &close_sensor_mode);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -117,9 +128,12 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "close_sensor_mode");
   }
+  // We don't impose a limit on pulse time.
   // Apply.
   if (toggle != -1 && toggle) {
-    // SetTgtState(static_cast<State>(tgt_state), "rpc");
+    State new_state =
+        (tgt_state_ == State::kOpen ? State::kClosed : State::kOpen);
+    UserSetTgtState(new_state, "RPC");
   }
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
@@ -127,6 +141,9 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   }
   if (move_time > 0) {
     cfg_->move_time_ms = move_time * 1000;
+  }
+  if (pulse_time_ms > 0) {
+    cfg_->pulse_time_ms = pulse_time_ms;
   }
   if (close_sensor_mode >= 0) {
     cfg_->close_sensor_mode = close_sensor_mode;
@@ -145,6 +162,8 @@ const char *GarageDoorOpener::StateStr(State state) {
       return "opening";
     case State::kClosing:
       return "closing";
+    case State::kStopped:
+      return "stopped";
   }
   return "???";
 }
@@ -159,6 +178,21 @@ void GarageDoorOpener::SetCurState(State new_state) {
   cur_state_char_->RaiseEvent();
 }
 
+void GarageDoorOpener::UserSetTgtState(State new_state, const char *source) {
+  // Every target state change generates a pulse.
+  if (new_state != tgt_state_) {
+    out_->Pulse(true, cfg_->pulse_time_ms,
+                (new_state == State::kOpen ? "GDO:open" : "GDO:close"));
+  }
+  SetTgtState(new_state, source);
+  if (cur_state_ == State::kClosed) {
+    SetCurState(State::kOpening);
+  } else {
+    // This really depends on the controller behavior, we just guess...
+    SetCurState(State::kClosing);
+  }
+}
+
 void GarageDoorOpener::SetTgtState(State new_state, const char *src) {
   if (tgt_state_ == new_state) return;
   LOG(LL_INFO, ("GDO %d: Tgt State: %s -> %s (%d -> %d) (%s)", id(),
@@ -169,19 +203,56 @@ void GarageDoorOpener::SetTgtState(State new_state, const char *src) {
 }
 
 void GarageDoorOpener::RunOnce() {
-  LOG(LL_DEBUG, ("GDO %d: cur %s tgt %s", id(), StateStr(cur_state_),
-                 StateStr(tgt_state_)));
+  bool in_close_act_state = (cfg_->close_sensor_mode == 0);
+  bool closed = (in_close_->GetState() == in_close_act_state);
+  LOG(LL_DEBUG, ("GDO %d: cur %s tgt %s closed %d", id(), StateStr(cur_state_),
+                 StateStr(tgt_state_), closed));
   switch (cur_state_) {
     case State::kOpen: {
+      if (closed) {  // Closed externally.
+        SetTgtState(State::kClosed, "ext");
+        SetCurState(State::kClosed);
+        break;
+      }
       break;
     }
     case State::kClosed: {
+      if (!closed) {
+        SetTgtState(State::kOpen, "ext");
+        SetCurState(State::kOpening);
+      }
       break;
     }
     case State::kOpening: {
+      int64_t elapsed_ms = (mgos_uptime_micros() - begin_) / 1000;
+      if (elapsed_ms > cfg_->move_time_ms) {
+        SetCurState(State::kOpen);
+      } else if (elapsed_ms > 5000 && closed) {
+        SetTgtState(State::kClosed, "ext");
+        SetCurState(State::kClosed);
+      }
       break;
     }
     case State::kClosing: {
+      if (closed) {
+        SetCurState(State::kClosed);
+        break;
+      }
+      int64_t elapsed_ms = (mgos_uptime_micros() - begin_) / 1000;
+      if (elapsed_ms > cfg_->move_time_ms) {
+        SetCurState(State::kStopped);
+        obst_char_->RaiseEvent();
+        break;
+      }
+      break;
+    }
+    case State::kStopped: {
+      if (closed) {
+        SetTgtState(State::kClosed, "ext");
+        SetCurState(State::kClosed);
+        obst_char_->RaiseEvent();
+        break;
+      }
       break;
     }
   }

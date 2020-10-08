@@ -542,6 +542,10 @@ input:checked + .slider:before {
         <label>Movement Time:</label>
         <input type="text" id="move_time" style="width: 2em; min-width: 2em;"> seconds
       </div>
+      <div class="form-control">
+        <label>Pulse Time:</label>
+        <input type="text" id="pulse_time_ms" style="width: 2em; min-width: 2em;"> ms
+      </div>
       <div class="form-control" id="btns">
         <label></label>
         <button class="btn" id="save_btn">
@@ -833,9 +837,15 @@ function gdoSetConfig(c, cfg, spinner) {
       alert("Invalid movement time " + moveTime);
       return;
     }
+    var pulseTimeMs = parseInt(el(c, "pulse_time_ms").value);
+    if (isNaN(pulseTimeMs) || pulseTimeMs < 20) {
+      alert("Invalid pulse time " + pulseTimeMs);
+      return;
+    }
     cfg = {
       name: name,
       move_time: moveTime,
+      pulse_time_ms: pulseTimeMs,
       close_sensor_mode: parseInt(el(c, "close_sensor_mode").value),
     };
   }
@@ -995,6 +1005,7 @@ function updateComponent(cd) {
       el(c, "state").innerText = cd.cur_state_str;
       el(c, "close_sensor_mode_" + cd.close_sensor_mode).selected = true;
       el(c, "move_time").value = cd.move_time;
+      el(c, "pulse_time_ms").value = cd.pulse_time_ms;
       break;
   }
   c.data = cd;

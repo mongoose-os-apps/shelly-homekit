@@ -54,12 +54,14 @@ class GarageDoorOpener : public Component, public Service {
     kClosed = 1,
     kOpening = 2,
     kClosing = 3,
+    kStopped = 4,
   };
 
   static const char *StateStr(State state);
 
   void SetCurState(State new_state);
   void SetTgtState(State new_state, const char *source);
+  void UserSetTgtState(State new_state, const char *source);
 
   void RunOnce();
 
@@ -72,6 +74,7 @@ class GarageDoorOpener : public Component, public Service {
 
   Characteristic *cur_state_char_ = nullptr;
   Characteristic *tgt_state_char_ = nullptr;
+  Characteristic *obst_char_ = nullptr;
 
   State cur_state_;
   State tgt_state_;

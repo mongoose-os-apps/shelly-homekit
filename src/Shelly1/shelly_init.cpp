@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-#include "shelly_main.hpp"
-
 #include "shelly_hap_garage_door_opener.hpp"
+#include "shelly_main.hpp"
 
 namespace shelly {
 
