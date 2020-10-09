@@ -538,6 +538,14 @@ input:checked + .slider:before {
           <option id="close_sensor_mode_1" value="1">Normally Open</option>
         </select>
       </div>
+      <div class="form-control" id="open_sensor_mode_container">
+        <label>Open Sensor:</label>
+        <select id="open_sensor_mode">
+          <option id="open_sensor_mode_0" value="0">Normally Closed</option>
+          <option id="open_sensor_mode_1" value="1">Normally Open</option>
+          <option id="open_sensor_mode_2" value="2">Disabled</option>
+        </select>
+      </div>
       <div class="form-control">
         <label>Movement Time:</label>
         <input type="text" id="move_time" style="width: 2em; min-width: 2em;"> seconds
@@ -848,6 +856,9 @@ function gdoSetConfig(c, cfg, spinner) {
       pulse_time_ms: pulseTimeMs,
       close_sensor_mode: parseInt(el(c, "close_sensor_mode").value),
     };
+    if (c.data.open_sensor_mode >= 0) {
+      cfg.open_sensor_mode = parseInt(el(c, "open_sensor_mode").value);
+    }
   }
   setComponentConfig(c, cfg, spinner);
 }
@@ -1006,6 +1017,11 @@ function updateComponent(cd) {
       el(c, "close_sensor_mode_" + cd.close_sensor_mode).selected = true;
       el(c, "move_time").value = cd.move_time;
       el(c, "pulse_time_ms").value = cd.pulse_time_ms;
+      if (cd.open_sensor_mode >= 0) {
+        el(c, "open_sensor_mode_" + cd.open_sensor_mode).selected = true;
+      } else {
+        el(c, "open_sensor_mode_container").style.display = "none";
+      }
       break;
   }
   c.data = cd;

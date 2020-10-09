@@ -53,6 +53,7 @@ config_schema:
   - ["gdo", "o", {"Garage door settings"}]
   - ["gdo.name", "s", "Garage Door", {"title": "Accessory name"}]
   - ["gdo.close_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally closed, 1 - normally open"}]
+  - ["gdo.open_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
   - ["gdo.move_time_ms", "i", 30000, {"title": "Movement time, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {"title": "Output active time, ms"}]
 
@@ -115,8 +116,9 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input"]
-        - ["gdo1", "gdo", {"title": "SW1 settings"}]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
@@ -145,8 +147,9 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input"]
-        - ["gdo1", "gdo", {"title": "SW1 settings"}]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
 
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
@@ -205,6 +208,8 @@ conds:
         - ["sw2.name", "Shelly SW2"]
         - ["ssw2", "ssw", {"title": "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
 
   - when: build_vars.MODEL == "Shelly25"
     apply:
@@ -245,6 +250,8 @@ conds:
         - ["ssw2.name", "Input 2"]
         - ["wc1", "wc", {"title": "WC1 settings"}]
         - ["wc1.name", "Window 1"]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
 
   - when: mos.platform != "ubuntu"
     apply:

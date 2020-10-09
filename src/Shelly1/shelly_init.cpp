@@ -33,11 +33,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  // Garage door opener mode.
   if (mgos_sys_config_get_shelly_mode() == 2) {
-    // Garage door opener mode.
     auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
-    std::unique_ptr<hap::GarageDoorOpener> gdo(
-        new hap::GarageDoorOpener(1, FindInput(1), FindOutput(1), gdo_cfg));
+    std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
+        1, FindInput(1), nullptr /* in_open */, FindOutput(1), gdo_cfg));
     if (gdo == nullptr || !gdo->Init().ok()) {
       return;
     }
