@@ -71,7 +71,6 @@ class GarageDoorOpener : public Component, public Service {
   Output *out_;
   struct mgos_config_gdo *cfg_;
 
-  Input::HandlerID in_close_handler_ = Input::kInvalidHandlerID;
   mgos::ScopedTimer state_timer_;
 
   Characteristic *cur_state_char_ = nullptr;
