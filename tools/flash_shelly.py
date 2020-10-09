@@ -442,7 +442,7 @@ def app(argv):
   variant = None
   variant_check = False
   for (opt, value) in opts:
-    if opt in ('-m', 'mode'):
+    if opt in ('-m', '--mode'):
       if value == 'homekit':
         mode = 'homekit'
       elif value == 'revert':
