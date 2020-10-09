@@ -212,8 +212,8 @@ input:checked + .slider:before {
         <label>Mode:</label>
         <select id="sys_mode">
           <option id="sys_mode_0" value="0">Switch</option>
-          <option id="sys_mode_1" value="1" style="display:none">Roller Shutter</option>
-          <option id="sys_mode_2" value="2" style="display:none">Garage Door Opener</option>
+          <option id="sys_mode_1" value="1">Roller Shutter</option>
+          <option id="sys_mode_2" value="2">Garage Door Opener</option>
         </select>
       </div>
       <div class="form-control">
@@ -1057,9 +1057,9 @@ function getInfo() {
       el("hap_conn_stats").innerText = "server not running";
     }
     if (data.rsh_avail || data.gdo_avail) {
-      el("sys_mode_" + data.sys_mode).selected = true;
-      el("sys_mode_1").style.display = (data.rsh_avail ? "block" : "none");
-      el("sys_mode_2").style.display = (data.gdo_avail ? "block" : "none");
+      if (!data.rsh_avail && el("sys_mode_1")) el("sys_mode_1").remove();
+      if (!data.gdo_avail && el("sys_mode_2")) el("sys_mode_2").remove();
+      (el("sys_mode_" + data.sys_mode) || {}).selected = true;
       el("sys_mode_container").style.display = "block";
     }
     el("sys_name").value = data.id;
