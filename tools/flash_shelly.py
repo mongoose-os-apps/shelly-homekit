@@ -78,14 +78,14 @@ else:
 try:
   import zeroconf
 except ImportError:
-  logger.info('Installing zeroconf...')
+  logger.info("Installing zeroconf...")
   pipe = subprocess.check_output(['pip3', 'install', 'zeroconf'])
   import zeroconf
 
 try:
   import requests
 except ImportError:
-  logger.info('Installing requests...')
+  logger.info("Installing requests...")
   pipe = subprocess.check_output(['pip3', 'install', 'requests'])
   import requests
 
@@ -97,10 +97,10 @@ class MyListener:
   def add_service(self, zeroconf, type, name):
       self.device_list.append(name.replace('._http._tcp.local.', ''))
       # info = zeroconf.get_service_info(type, name, 2000)
-      # logger.trace('INFO: %s' % info)
+      # logger.trace(f"INFO: {info}")
       # properties = { y.decode('ascii'): info.properties.get(y).decode('ascii') for y in info.properties.keys() }
       # self.p_list.append(properties)
-      # logger.trace('properties: %s' % properties)
+      # logger.trace("properties: {properties}")
       # json_object = json.dumps(properties, indent = 2)
 
 def shelly_model(type, mode):
@@ -133,8 +133,8 @@ def shelly_model(type, mode):
 
 
 def parseVersion(vs):
-  pp = vs.split("-");
-  v = pp[0].split(".");
+  pp = vs.split('-');
+  v = pp[0].split('.');
   variant = ""
   varSeq = 0
   if len(pp) > 1:
@@ -179,7 +179,6 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     files = {'file': ('shelly-flash.zip', myfile.content)}
     response = requests.post(f'http://{device}/update' , files=files)
     logger.debug(response.text)
-
   else:
     logger.info("Now Flashing...")
     dlurl = dlurl.replace('https', 'http')
@@ -213,7 +212,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     onlinecheck = info['fw'].split('/v')[1].split('@')[0]
   if onlinecheck == lfw:
     logger.info(f"{GREEN}Successfully flashed {host} to {lfw}{NC}")
-    if mode == 'stock' and info['type'] == "SHRGBW2":
+    if mode == 'stock' and info['type'] == 'SHRGBW2':
       logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
       logger.info(f"{WHITE}WARNING!!{NC} If you are using this device in conjunction with Homebridge it will")
       logger.info("result in ALL scenes / automations to be removed within HomeKit.")
@@ -304,7 +303,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
             except:
               dlurl = None
           else:
-            dlurl=f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
+            dlurl = f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
           break
     else: # stock
       model = type
@@ -312,7 +311,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
       dlurl = stock_release_info['data'][model]['url']
   if not dlurl:
     lfw_label = f"{RED}Not available{NC}"
-    lfw = "0.0.0"
+    lfw = '0.0.0'
   else:
     lfw_label = lfw
   logger.info(f"{WHITE}Host: {NC}{host}")
@@ -334,12 +333,12 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
       perform_flash = False
     elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'stock' and dlurl) \
          or ((isNewer(lfw, cfw)) and ((cfw_type == 'homekit' and mode == 'homekit') \
-         or (cfw_type == 'stock' and mode == 'stock') or mode == "keep")):
+         or (cfw_type == 'stock' and mode == 'stock') or mode == 'keep')):
       perform_flash = True
     else:
       perform_flash = False
     if perform_flash == True and dry_run == False and silent_run == False:
-      if input(f"Do you wish to flash {host} to firmware version {lfw} (y/n) ? ") == "y":
+      if input(f"Do you wish to flash {host} to firmware version {lfw} (y/n) ? ") == 'y':
         flash = True
       else:
         flash = False
@@ -351,7 +350,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
       elif cfw_type == 'stock' and mode == 'homekit':
         keyword = "converted to HomeKit firmware"
       elif isNewer(lfw, cfw):
-        keyword = "upgraded from %s to version %s" % (cfw, lfw)
+        keyword = f"upgraded from {cfw} to version {lfw}"
       elif forced_version:
         keyword = f"reflashed version {ffw}"
       logger.info(f"Would have been {keyword}...")
@@ -391,37 +390,37 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
   logger.debug(f"ffw: {ffw}")
   if do_all == False:
     logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
-    if  not ".local" in device:
-      device = device + ".local"
+    if  not '.local' in device:
+      device = device + '.local'
     probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
   else:
     exclude_device = device
     logger.info(f"{WHITE}Scanning for Shelly devices...\n{NC}")
     zc = zeroconf.Zeroconf()
     listener = MyListener()
-    browser = zeroconf.ServiceBrowser(zc, "_http._tcp.local.", listener)
+    browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
     time.sleep(5)
     zc.close()
-    logger.debug(f'device_test: {listener.device_list}')
-    # logger.debug(f'\nproperties: {listener.p_list}')
+    logger.debug(f"device_test: {listener.device_list}")
+    # logger.debug(f"\nproperties: {listener.p_list}")
     listener.device_list.sort()
     for device in listener.device_list:
       probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
 
 
 def usage():
-  print("Shelly HomeKit flashing script utility")
-  print("Usage: ./flash_script.py -{m|l|a|e|n|y|V|h} {hostname(s) optional}")
-  print(" [-m | --mode] {homekit|revert|keep}  Script mode.")
-  print(" [-l | --list]                        List info of shelly device.")
-  print(" [-a | --all]                         Run against all the devices on the network.")
-  print(" [-e | --exclude] {hostname}          Exclude hosts from found devices.")
-  print(" [-n | --assume-no]                   Do a dummy run through.")
-  print(" [-y | --assume-yes]                  Do not ask any confirmation to perform the flash.")
-  print(" [-V | --version] {version}           Force a particular version.")
-  print(" [-v | --verbose] {0|1}               Enable verbose logging level.")
-  print(" [--variant] {alpha|beta}             Prelease variant name.")
-  print(" [-h | --help]                        This help text.")
+  logger.info("Shelly HomeKit flashing script utility")
+  logger.info("Usage: ./flash_script.py -{m|l|a|e|n|y|V|h} {hostname(s) optional}")
+  logger.info(" [-m | --mode] {homekit|revert|keep}  Script mode.")
+  logger.info(" [-l | --list]                        List info of shelly device.")
+  logger.info(" [-a | --all]                         Run against all the devices on the network.")
+  logger.info(" [-e | --exclude] {hostname}          Exclude hosts from found devices.")
+  logger.info(" [-n | --assume-no]                   Do a dummy run through.")
+  logger.info(" [-y | --assume-yes]                  Do not ask any confirmation to perform the flash.")
+  logger.info(" [-V | --version] {version}           Force a particular version.")
+  logger.info(" [-v | --verbose] {0|1}               Enable verbose logging level.")
+  logger.info(" [--variant] {alpha|beta}             Prelease variant name.")
+  logger.info(" [-h | --help]                        This help text.")
 
 def app(argv):
   # Parse and interpret options.
@@ -431,7 +430,7 @@ def app(argv):
     logger.error(err)
     usage()
     sys.exit(2)
-  action = "flash"
+  action = 'flash'
   do_all = False
   dry_run = False
   silent_run = False
@@ -507,6 +506,10 @@ def app(argv):
   logger.debug(f"exclude: {exclude}")
   logger.debug(f"mode: {mode}")
   logger.debug(f"variant: {variant}")
+  if action == 'list' and (not args and do_all == False):
+    logger.info("List option requires a hostname or {-a|--all}")
+    usage()
+    sys.exit(2)
   if ((not opts and not args) and do_all == False) or (not args and do_all == False) or \
      (args and do_all == True and exclude == False) or (not args and do_all == True and exclude == True):
     usage()
@@ -541,7 +544,7 @@ def app(argv):
     for device in args:
       device_scan(device, action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
   if do_all == True and exclude == False:
-    device_scan("", action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
+    device_scan('', action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
   if do_all == True and exclude == True:
     device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
 
