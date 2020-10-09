@@ -31,7 +31,7 @@
 #   [-y | --assume-yes]                  Do not ask any confirmation to perform the flash.
 #   [-V | --version] {version}           Force a particular version.
 #   [-v | --verbose] {0|1}               Enable verbose logging level.
-#   [--variant] {alpha|beta}             Prelease variant name.
+#   [--variant] {alpha|beta}             Prerelease variant name.
 #   [-h | --help]                        This help text.
 #
 #  usage: python3 flash_shelly.py -la
@@ -419,7 +419,7 @@ def usage():
   logger.info(" [-y | --assume-yes]                  Do not ask any confirmation to perform the flash.")
   logger.info(" [-V | --version] {version}           Force a particular version.")
   logger.info(" [-v | --verbose] {0|1}               Enable verbose logging level.")
-  logger.info(" [--variant] {alpha|beta}             Prelease variant name.")
+  logger.info(" [--variant] {alpha|beta}             Prerelease variant name.")
   logger.info(" [-h | --help]                        This help text.")
 
 def app(argv):
