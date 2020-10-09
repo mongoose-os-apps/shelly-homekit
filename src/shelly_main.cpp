@@ -596,6 +596,9 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
     arg->result = MGOS_UPD_WAIT;
     return;
   }
+  s_accs.clear();
+  s_hap_accs.clear();
+  g_comps.clear();
   LOG(LL_INFO, ("Starting firmware update"));
   (void) ev;
   (void) ev_data;
