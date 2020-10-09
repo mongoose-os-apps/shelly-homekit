@@ -22,15 +22,17 @@
 #  https://github.com/mongoose-os-apps/shelly-homekit/wiki
 #
 #  Shelly HomeKit flashing script utility
-#  Usage: -{m|l|a|n|y|h} {hostname(s) optional}
-#   -m {homekit|revert|keep}   Script mode.
-#   -l                         List info of shelly device.
-#   -a                         Run against all the devices on the network.
-#   -n                         Do a dummy run through.
-#   -y                         Do not ask any confirmation to perform the flash.
-#   -V                         Force a particular version.
-#   -D                         Enable Debug Logging, you can increase logging with (-DD).")
-#   -h                         This help text.
+#  Usage: ./flash_script.py -{m|l|a|e|n|y|V|h} {hostname(s) optional}
+#   [-m | --mode] {homekit|revert|keep}  Script mode.
+#   [-l | --list]                        List info of shelly device.
+#   [-a | --all]                         Run against all the devices on the network.
+#   [-e | --exclude] {hostname}          Exclude hosts from found devices.
+#   [-n | --assume-no]                   Do a dummy run through.
+#   [-y | --assume-yes]                  Do not ask any confirmation to perform the flash.
+#   [-V | --version] {version}           Force a particular version.
+#   [-v | --verbose] {0|1}               Enable verbose logging level.
+#   [--variant] {alpha|beta}             Prelease variant name.
+#   [-h | --help]                        This help text.
 #
 #  usage: python3 flash_shelly.py -la
 #  usage: python3 flash_shelly.py shelly1-034FFF
@@ -409,21 +411,22 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
 
 def usage():
   print("Shelly HomeKit flashing script utility")
-  print("Usage: -{m|l|a|e|n|y|V|h} {hostname(s) optional}")
-  print(" -m {homekit|revert|keep}   Script mode.")
-  print(" -l            List info of shelly device.")
-  print(" -a            Run against all the devices on the network.")
-  print(" -e            Exclude hosts from found devices.")
-  print(" -n            Do a dummy run through.")
-  print(" -y            Do not ask any confirmation to perform the flash.")
-  print(" -V            Force a particular version.")
-  print(" -D            Enable Debug Logging, you can increase logging with (-DD).")
-  print(" -h            This help text.")
+  print("Usage: ./flash_script.py -{m|l|a|e|n|y|V|h} {hostname(s) optional}")
+  print(" [-m | --mode] {homekit|revert|keep}  Script mode.")
+  print(" [-l | --list]                        List info of shelly device.")
+  print(" [-a | --all]                         Run against all the devices on the network.")
+  print(" [-e | --exclude] {hostname}          Exclude hosts from found devices.")
+  print(" [-n | --assume-no]                   Do a dummy run through.")
+  print(" [-y | --assume-yes]                  Do not ask any confirmation to perform the flash.")
+  print(" [-V | --version] {version}           Force a particular version.")
+  print(" [-v | --verbose] {0|1}               Enable verbose logging level.")
+  print(" [--variant] {alpha|beta}             Prelease variant name.")
+  print(" [-h | --help]                        This help text.")
 
 def app(argv):
   # Parse and interpret options.
   try:
-    (opts, args) = getopt.getopt(argv, ':aelnyhm:V:v:', ['variant='])
+    (opts, args) = getopt.getopt(argv, ':aelnyhm:V:v:', ['all', 'exclude=', 'list', 'assume-no', 'assume-yes', 'help', 'debug', 'mode', 'variant=', 'version=', 'verbose='])
   except getopt.GetoptError as err:
     logger.error(err)
     usage()
@@ -440,38 +443,47 @@ def app(argv):
   variant = None
   variant_check = False
   for (opt, value) in opts:
-    if opt == "-m":
+    if opt in ('-m', 'mode'):
       if value == 'homekit':
         mode = 'homekit'
-      elif value == "revert":
+      elif value == 'revert':
         mode='stock'
-      elif value == "keep":
-        mode="keep"
+      elif value == 'keep':
+        mode='keep'
       else:
-        logger.info("Invalid option")
+        logger.info(f"Invalid option {value}")
         usage()
         sys.exit(2)
-    elif opt == "-a":
+    elif opt in ('-a', '--all'):
       do_all = True
-    elif opt == "-e":
+    elif opt in ('-e', '--exclude'):
+      if not value:
+        logger.info(f"No hostname supplied.")
+        usage()
+        sys.exit(2)
       exclude = True
-    elif opt == "-l":
-      action = "list"
-    elif opt == "-n":
+    elif opt in ('-l', '--list'):
+      action = 'list'
+    elif opt in ('-n', '--assume-no'):
       dry_run = True
-    elif opt == "-y":
+    elif opt in ('-y', '--assume-yes'):
       silent_run = True
-    elif opt == "-V":
+    elif opt in ('-V', '--version'):
+      if not value:
+        logger.info(f"No version supplied.")
+        usage()
+        sys.exit(2)
       forced_version = True
       ffw = value
-    elif opt == '-D':
-      if logger.getEffectiveLevel() >= 20:
+    elif opt in ('-v', '--verbose'):
+      if not value or (value and value == '0'):
         logger.setLevel(logging.DEBUG)
-      else:
+      elif value and value == '1':
         logger.setLevel(logging.TRACE)
-    elif opt == '-h':
-      usage()
-      sys.exit(0)
+      else:
+        logger.info(f"Invalid level {value}")
+        usage()
+        sys.exit(2)
     elif opt == '--variant':
       if not value:
         logger.info(f"No variant supplied.")
@@ -479,6 +491,9 @@ def app(argv):
         sys.exit(2)
       prerelease = True
       variant = value
+    elif opt in ('-h', '--help'):
+      usage()
+      sys.exit(0)
   logger.debug(f"{WHITE}app{NC}")
   logger.debug(f"{PURPLE}OS: {arch}{NC}")
   logger.debug(f"ARG: {argv}")
@@ -491,6 +506,7 @@ def app(argv):
   logger.debug(f"forced_version: {forced_version}")
   logger.debug(f"exclude: {exclude}")
   logger.debug(f"mode: {mode}")
+  logger.debug(f"variant: {variant}")
   if ((not opts and not args) and do_all == False) or (not args and do_all == False) or \
      (args and do_all == True and exclude == False) or (not args and do_all == True and exclude == True):
     usage()
