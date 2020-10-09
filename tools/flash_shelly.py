@@ -223,7 +223,7 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     logger.info(f"{RED}Failed to flash {host} to {lfw}{NC}")
     logger.info("Current: %s" % onlinecheck)
 
-def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info):
+def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info):
   flash = False
   info = None           # firmware versions info
   model = None          # device model
@@ -246,6 +246,8 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   logger.debug(f"exclude_device: {exclude_device}")
   logger.debug(f"forced_version: {forced_version}")
   logger.debug(f"ffw: {ffw}")
+  logger.debug(f"prerelease: {prerelease}")
+  logger.debug(f"variant: {variant}")
   try:
     with urllib.request.urlopen(f'http://{device}/rpc/Shelly.GetInfo') as fp:
       info = json.load(fp)
@@ -267,7 +269,11 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     if mode == 'homekit':
       model = info['model'] if 'model' in info else shelly_model(type, mode)
       for i in homekit_release_info:
-        if re.search(i[0], cfw):
+        if prerelease:
+          re_search = '-*'
+        else:
+          re_search = i[0]
+        if re.search(re_search, cfw):
           lfw = i[1]['version']
           if forced_version == False:
             dlurl = i[1]['urls'][model]
@@ -284,7 +290,11 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     if mode == 'homekit':
       model = shelly_model(type, mode)
       for i in homekit_release_info:
-        if re.search(i[0], cfw):
+        if prerelease:
+          re_search = '-*'
+        else:
+          re_search = i[0]
+        if re.search(re_search, cfw):
           lfw = i[1]['version']
           if forced_version == False:
             try:
@@ -362,7 +372,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   logger.info(" ")
 
 
-def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info):
+def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info):
   device = args
   exclude_device = None
   logger.debug(f"\n{WHITE}device_scan{NC}")
@@ -374,12 +384,14 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
   logger.debug(f"mode: {mode}")
   logger.debug(f"exclude: {exclude}")
   logger.debug(f"forced_version: {forced_version}")
+  logger.debug(f"prerelease: {prerelease}")
+  logger.debug(f"variant: {variant}")
   logger.debug(f"ffw: {ffw}")
   if do_all == False:
     logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
     if  not ".local" in device:
       device = device + ".local"
-    probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info)
+    probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
   else:
     exclude_device = device
     logger.info(f"{WHITE}Scanning for Shelly devices...\n{NC}")
@@ -392,7 +404,7 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
     # logger.debug(f'\nproperties: {listener.p_list}')
     listener.device_list.sort()
     for device in listener.device_list:
-      probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, ffw, stock_release_info, homekit_release_info)
+      probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
 
 
 def usage():
@@ -411,7 +423,7 @@ def usage():
 def app(argv):
   # Parse and interpret options.
   try:
-    (opts, args) = getopt.getopt(argv, ":aelnyhDm:V:")
+    (opts, args) = getopt.getopt(argv, ':aelnyhm:V:v:', ['variant='])
   except getopt.GetoptError as err:
     logger.error(err)
     usage()
@@ -424,6 +436,9 @@ def app(argv):
   exclude = False
   mode = 'homekit'
   ffw = None
+  prerelease = False
+  variant = None
+  variant_check = False
   for (opt, value) in opts:
     if opt == "-m":
       if value == 'homekit':
@@ -457,6 +472,13 @@ def app(argv):
     elif opt == '-h':
       usage()
       sys.exit(0)
+    elif opt == '--variant':
+      if not value:
+        logger.info(f"No variant supplied.")
+        usage()
+        sys.exit(2)
+      prerelease = True
+      variant = value
   logger.debug(f"{WHITE}app{NC}")
   logger.debug(f"{PURPLE}OS: {arch}{NC}")
   logger.debug(f"ARG: {argv}")
@@ -487,13 +509,25 @@ def app(argv):
     sys.exit(1)
   logger.trace(f"\n{WHITE}stock_release_info:{NC}{stock_release_info}")
   logger.trace(f"\n{WHITE}homekit_release_info:{NC}{homekit_release_info}")
+  if prerelease:
+    for i in homekit_release_info:
+      logger.trace(f"i: {i[1]}")
+      logger.trace(f"version: {i[1]['version']}")
+      if variant in i[1]['version']:
+        variant_check = True
+        break
+      else:
+        variant_check = False
+    if not variant_check:
+      logger.info(f"{RED}Firmware variant {variant} not found.{NC}")
+      sys.exit(3)
   if args and exclude == False:
     for device in args:
-      device_scan(device, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info)
+      device_scan(device, action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
   if do_all == True and exclude == False:
-    device_scan("", action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info)
+    device_scan("", action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
   if do_all == True and exclude == True:
-    device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, ffw, stock_release_info, homekit_release_info)
+    device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
 
 
 if __name__ == '__main__':
