@@ -425,7 +425,7 @@ def usage():
 def app(argv):
   # Parse and interpret options.
   try:
-    (opts, args) = getopt.getopt(argv, ':aelnyhm:V:v:', ['all', 'exclude=', 'list', 'assume-no', 'assume-yes', 'help', 'debug', 'mode', 'variant=', 'version=', 'verbose='])
+    (opts, args) = getopt.getopt(argv, ':aelnyhm:V:v:', ['all', 'list', 'assume-no', 'assume-yes', 'help'. 'exclude=', 'mode=', 'variant=', 'verbose=', 'version='])
   except getopt.GetoptError as err:
     logger.error(err)
     usage()
