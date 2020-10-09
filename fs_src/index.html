@@ -187,7 +187,10 @@ input:checked + .slider:before {
 <div class="container">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/" target="_blank">?</a>
   <div class="logodiv"><img class="img" src="logo.png" alt=""></div>
-  <div class="apl_thin">Shelly-<b>HomeKit</b></div>
+  <div class="apl_thin">
+    Shelly-<b>HomeKit</b>
+    <div class="badge" id="notifyFW" style="display: none">Update available</div>
+  </div>
   <h1 class="" id="device_id" style="visibility: hidden"></h1>
   <br>
   <button class="btn" id="refresh_btn">
@@ -1086,11 +1089,33 @@ function getInfo() {
       el("debug_en").checked = false;
       el("debug_link").style.visibility = "hidden";
     }
+    if (data.wifi_rssi != 0) {
+      var last_update_check = parseInt(getCookie("last_update_check"));
+      var now = new Date();
+      console.log("Last update check:", last_update_check, new Date(last_update_check));
+      if (isNaN(last_update_check) || now.getTime() - last_update_check > 7 * 24 * 60 * 60 * 1000) {
+        checkUpdate();
+      }
+      el("notifyFW").style.display = (getCookie("update_available") ? "block" : "none");
+    }
   }).catch(function(err) {
     alert(err);
   }).then(function() {
     el("spinner").className = "";
   });
+}
+
+function getCookie(key) {
+  var parts1 = document.cookie.split(";");
+  for (var i in parts1) {
+    var parts2 = parts1[i].split("=");
+    if (parts2[0].trim() == key) return JSON.parse(parts2[1].trim());
+  }
+  return null;
+}
+
+function setCookie(key, value) {
+  document.cookie = (key + "=" + JSON.stringify(value));
 }
 
 el("debug_en").onclick = function() {
@@ -1236,7 +1261,11 @@ async function checkUpdate() {
         se.className = "";
         return;
       }
-      if (!isNewer(latestVersion, curVersion)) {
+      var updateAvailable = isNewer(latestVersion, curVersion);
+      el("notifyFW").style.display = (updateAvailable ? "block" : "none");
+      setCookie("last_update_check", (new Date()).getTime());
+      setCookie("update_available", updateAvailable);
+      if (!updateAvailable) {
         e.innerText = "Up to date";
         se.className = "";
         return;
