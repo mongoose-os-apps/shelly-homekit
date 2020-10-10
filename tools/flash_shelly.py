@@ -47,7 +47,6 @@
 
 import argparse
 import functools
-import getopt
 import json
 import logging
 import platform
