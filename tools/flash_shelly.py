@@ -22,21 +22,30 @@
 #  https://github.com/mongoose-os-apps/shelly-homekit/wiki
 #
 #  Shelly HomeKit flashing script utility
-#  Usage: ./flash_script.py -{m|l|a|e|n|y|V|h} {hostname(s) optional}
-#   [-m | --mode] {homekit|revert|keep}  Script mode.
-#   [-l | --list]                        List info of shelly device.
-#   [-a | --all]                         Run against all the devices on the network.
-#   [-e | --exclude] {hostname}          Exclude hosts from found devices.
-#   [-n | --assume-no]                   Do a dummy run through.
-#   [-y | --assume-yes]                  Do not ask any confirmation to perform the flash.
-#   [-V | --version] {version}           Force a particular version.
-#   [-v | --verbose] {0|1}               Enable verbose logging level.
-#   [--variant] {alpha|beta}             Prerelease variant name.
-#   [-h | --help]                        This help text.
+#  usage: flash_shelly.py [-h] [-m {homekit,keep,revert}] [-a] [-l] [-e [EXCLUDE [EXCLUDE ...]]] [-n] [-y] [-V VERSION]
+#                         [--variant VARIANT] [-v {0,1}]
+#                         [hosts [hosts ...]]
+#  positional arguments:
+#    hosts
 #
-#  usage: python3 flash_shelly.py -la
-#  usage: python3 flash_shelly.py shelly1-034FFF
+#  optional arguments:
+#    -h, --help            show this help message and exit
+#    -m {homekit,keep,revert}, --mode {homekit,keep,revert}
+#                          Script mode.
+#    -a, --all             Run against all the devices on the network.
+#    -l, --list            List info of shelly device.
+#    -e [EXCLUDE [EXCLUDE ...]], --exclude [EXCLUDE [EXCLUDE ...]]
+#                          Exclude hosts from found devices.
+#    -n, --assume-no       Do a dummy run through.
+#    -y, --assume-yes      Do not ask any confirmation to perform the flash.
+#    -V VERSION, --version VERSION
+#                          Force a particular version.
+#    --variant VARIANT     Prerelease variant name.
+#    -v {0,1}, --verbose {0,1}
+#                          Enable verbose logging level.
 
+
+import argparse
 import functools
 import getopt
 import json
@@ -81,7 +90,6 @@ except ImportError:
   logger.info("Installing zeroconf...")
   pipe = subprocess.check_output(['pip3', 'install', 'zeroconf'])
   import zeroconf
-
 try:
   import requests
 except ImportError:
@@ -224,18 +232,17 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
     logger.info(f"{RED}Failed to flash {host} to {lfw}{NC}")
     logger.info("Current: %s" % onlinecheck)
 
-def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info):
+def probe_info(device, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
   flash = False
+  dlurl = None
   info = None           # firmware versions info
   model = None          # device model
   lfw = None            # latest firmware available
   cfw = None            # current firmware on device
   cfw_type = 'homekit'  # current firmware type
+  ffw = version
   host = device
   host = host.replace('.local', '')
-  if exclude_device:
-    for i, item in enumerate(exclude_device):
-      exclude_device[i] = exclude_device[i].replace('.local', '')
   logger.debug(f"\n{WHITE}probe_info{NC}")
   logger.debug(f"device: {device}")
   logger.debug(f"host: {host}")
@@ -244,11 +251,10 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   logger.debug(f"silent_run: {silent_run}")
   logger.debug(f"mode: {mode}")
   logger.debug(f"exclude: {exclude}")
-  logger.debug(f"exclude_device: {exclude_device}")
-  logger.debug(f"forced_version: {forced_version}")
+  logger.debug(f"version: {version}")
   logger.debug(f"ffw: {ffw}")
-  logger.debug(f"prerelease: {prerelease}")
   logger.debug(f"variant: {variant}")
+
   try:
     with urllib.request.urlopen(f'http://{device}/rpc/Shelly.GetInfo') as fp:
       info = json.load(fp)
@@ -264,20 +270,21 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     return 1
   if mode == 'keep':
     mode = cfw_type
+  logger.debug(f'flash_mode: {mode}\n')
   if cfw_type == 'homekit':
     type = info['app']
     cfw = info['version']
     if mode == 'homekit':
       model = info['model'] if 'model' in info else shelly_model(type, mode)
       for i in homekit_release_info:
-        if prerelease:
+        if variant:
           re_search = '-*'
         else:
           re_search = i[0]
         if re.search(re_search, cfw):
           lfw = i[1]['version']
-          if forced_version == False:
-            dlurl = i[1]['urls'][model]
+          if not version:
+            dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
           else:
             dlurl=f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
           break
@@ -291,27 +298,27 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     if mode == 'homekit':
       model = shelly_model(type, mode)
       for i in homekit_release_info:
-        if prerelease:
+        if variant:
           re_search = '-*'
         else:
           re_search = i[0]
         if re.search(re_search, cfw):
           lfw = i[1]['version']
-          if forced_version == False:
-            try:
-              dlurl = i[1]['urls'][model]
-            except:
-              dlurl = None
-          else:
+          if not version:
+            dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
+          elif lfw:
             dlurl = f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
           break
     else: # stock
       model = type
       lfw = stock_release_info['data'][model]['version'].split('/v')[1].split('@')[0]
       dlurl = stock_release_info['data'][model]['url']
-  if not dlurl:
+  if dlurl:
+    durl_request = requests.get(dlurl)
+  if not dlurl or durl_request.status_code != 200:
     lfw_label = f"{RED}Not available{NC}"
     lfw = '0.0.0'
+    dlurl = None
   else:
     lfw_label = lfw
   logger.info(f"{WHITE}Host: {NC}{host}")
@@ -325,18 +332,20 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     logger.info(f"{WHITE}Latest: {NC}HomeKit {col}{lfw_label}{NC}")
   else:
     logger.info(f"{WHITE}Latest: {NC}Official {col}{lfw_label}{NC}")
+  logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
   if action != 'list':
-    if forced_version == True and dlurl:
+    if version and dlurl:
       lfw = ffw
       perform_flash = True
-    elif exclude == True and host in exclude_device:
+    elif exclude and host in exclude:
       perform_flash = False
-    elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'stock' and dlurl) \
+    elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'revert' and dlurl) \
          or ((isNewer(lfw, cfw)) and ((cfw_type == 'homekit' and mode == 'homekit') \
          or (cfw_type == 'stock' and mode == 'stock') or mode == 'keep')):
       perform_flash = True
     else:
       perform_flash = False
+    logger.debug(f"perform_flash: {perform_flash}")
     if perform_flash == True and dry_run == False and silent_run == False:
       if input(f"Do you wish to flash {host} to firmware version {lfw} (y/n) ? ") == 'y':
         flash = True
@@ -345,13 +354,13 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
     elif perform_flash == True and dry_run == False and silent_run == True:
       flash = True
     elif perform_flash == True and dry_run == True:
-      if cfw_type == 'homekit' and mode == 'stock':
+      if cfw_type == 'homekit' and mode != 'homekit':
         keyword = "converted to Official firmware"
       elif cfw_type == 'stock' and mode == 'homekit':
         keyword = "converted to HomeKit firmware"
       elif isNewer(lfw, cfw):
         keyword = f"upgraded from {cfw} to version {lfw}"
-      elif forced_version:
+      elif version:
         keyword = f"reflashed version {ffw}"
       logger.info(f"Would have been {keyword}...")
     elif not dlurl:
@@ -361,7 +370,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
         keyword = "Is not supported yet..."
       logger.info(f"{keyword}\n")
       return 0
-    elif exclude == True and host in exclude_device:
+    elif exclude and host in exclude:
       logger.info("Skipping as device has been excluded...")
     else:
       logger.info("Does not need updating...\n")
@@ -373,28 +382,26 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_devic
   logger.info(" ")
 
 
-def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info):
-  device = args
-  exclude_device = None
+def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
+  ffw = version
   logger.debug(f"\n{WHITE}device_scan{NC}")
-  logger.debug(f"device: {device}")
+  logger.debug(f"hosts: {hosts}")
   logger.debug(f"action: {action}")
   logger.debug(f"do_all: {do_all}")
   logger.debug(f"dry_run: {dry_run}")
   logger.debug(f"silent_run: {silent_run}")
   logger.debug(f"mode: {mode}")
   logger.debug(f"exclude: {exclude}")
-  logger.debug(f"forced_version: {forced_version}")
-  logger.debug(f"prerelease: {prerelease}")
+  logger.debug(f"version: {version}")
   logger.debug(f"variant: {variant}")
   logger.debug(f"ffw: {ffw}")
-  if do_all == False:
-    logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
-    if  not '.local' in device:
-      device = device + '.local'
-    probe_info(device, action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
+  if not do_all:
+    for device in hosts:
+      logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
+      if not '.local' in device:
+        device = device + '.local'
+      probe_info(device, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
   else:
-    exclude_device = device
     logger.info(f"{WHITE}Scanning for Shelly devices...\n{NC}")
     zc = zeroconf.Zeroconf()
     listener = MyListener()
@@ -405,114 +412,50 @@ def device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced
     # logger.debug(f"\nproperties: {listener.p_list}")
     listener.device_list.sort()
     for device in listener.device_list:
-      probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, exclude_device, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
+      probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
 
 
-def usage():
-  logger.info("Shelly HomeKit flashing script utility")
-  logger.info("Usage: ./flash_script.py -{m|l|a|e|n|y|V|h} {hostname(s) optional}")
-  logger.info(" [-m | --mode] {homekit|revert|keep}  Script mode.")
-  logger.info(" [-l | --list]                        List info of shelly device.")
-  logger.info(" [-a | --all]                         Run against all the devices on the network.")
-  logger.info(" [-e | --exclude] {hostname}          Exclude hosts from found devices.")
-  logger.info(" [-n | --assume-no]                   Do a dummy run through.")
-  logger.info(" [-y | --assume-yes]                  Do not ask any confirmation to perform the flash.")
-  logger.info(" [-V | --version] {version}           Force a particular version.")
-  logger.info(" [-v | --verbose] {0|1}               Enable verbose logging level.")
-  logger.info(" [--variant] {alpha|beta}             Prerelease variant name.")
-  logger.info(" [-h | --help]                        This help text.")
-
-def app(argv):
-  # Parse and interpret options.
-  try:
-    (opts, args) = getopt.getopt(argv, ':aelnyhm:V:v:', ['all', 'list', 'assume-no', 'assume-yes', 'help', 'exclude=', 'mode=', 'variant=', 'verbose=', 'version='])
-  except getopt.GetoptError as err:
-    logger.error(err)
-    usage()
-    sys.exit(2)
-  action = 'flash'
-  do_all = False
-  dry_run = False
-  silent_run = False
-  forced_version = False
-  exclude = False
-  mode = 'homekit'
-  ffw = None
-  prerelease = False
-  variant = None
-  variant_check = False
-  for (opt, value) in opts:
-    if opt in ('-m', '--mode'):
-      if value == 'homekit':
-        mode = 'homekit'
-      elif value == 'revert':
-        mode='stock'
-      elif value == 'keep':
-        mode='keep'
-      else:
-        logger.info(f"Invalid option {value}")
-        usage()
-        sys.exit(2)
-    elif opt in ('-a', '--all'):
-      do_all = True
-    elif opt in ('-e', '--exclude'):
-      if not value:
-        logger.info(f"No hostname supplied.")
-        usage()
-        sys.exit(2)
-      exclude = True
-    elif opt in ('-l', '--list'):
-      action = 'list'
-    elif opt in ('-n', '--assume-no'):
-      dry_run = True
-    elif opt in ('-y', '--assume-yes'):
-      silent_run = True
-    elif opt in ('-V', '--version'):
-      if not value:
-        logger.info(f"No version supplied.")
-        usage()
-        sys.exit(2)
-      forced_version = True
-      ffw = value
-    elif opt in ('-v', '--verbose'):
-      if not value or (value and value == '0'):
-        logger.setLevel(logging.DEBUG)
-      elif value and value == '1':
-        logger.setLevel(logging.TRACE)
-      else:
-        logger.info(f"Invalid level {value}")
-        usage()
-        sys.exit(2)
-    elif opt == '--variant':
-      if not value:
-        logger.info(f"No variant supplied.")
-        usage()
-        sys.exit(2)
-      prerelease = True
-      variant = value
-    elif opt in ('-h', '--help'):
-      usage()
-      sys.exit(0)
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
+  parser.add_argument('-m', '--mode', action="store", choices=['homekit', 'keep', 'revert'], default="homekit", help="Script mode.")
+  parser.add_argument('-a', '--all', action="store_true", dest='do_all', default=False, help="Run against all the devices on the network.")
+  parser.add_argument('-l', '--list', action="store_true", default=False, help="List info of shelly device.")
+  parser.add_argument('-e', '--exclude', action="store", dest="exclude", nargs='*', help="Exclude hosts from found devices.")
+  parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', default=False, help="Do a dummy run through.")
+  parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=False, help="Do not ask any confirmation to perform the flash.")
+  parser.add_argument('-V', '--version',type=str, action="store", dest="version", default=False, help="Force a particular version.")
+  parser.add_argument('--variant', action="store", dest="variant", default=False, help="Prerelease variant name.")
+  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1'], help="Enable verbose logging level.")
+  parser.add_argument('hosts', type=str, nargs='*')
+  args = parser.parse_args()
+  if args.list:
+    action = 'list'
+  else:
+    action = 'flash'
+  if args.verbose and '0' in args.verbose:
+    logger.setLevel(logging.DEBUG)
+  elif args.verbose and '1' in args.verbose:
+    logger.setLevel(logging.TRACE)
   logger.debug(f"{WHITE}app{NC}")
   logger.debug(f"{PURPLE}OS: {arch}{NC}")
-  logger.debug(f"ARG: {argv}")
-  logger.debug(f"opts: {opts}")
-  logger.debug(f"args: {args}")
   logger.debug(f"action: {action}")
-  logger.debug(f"do_all: {do_all}")
-  logger.debug(f"dry_run: {dry_run}")
-  logger.debug(f"silent_run: {silent_run}")
-  logger.debug(f"forced_version: {forced_version}")
-  logger.debug(f"exclude: {exclude}")
-  logger.debug(f"mode: {mode}")
-  logger.debug(f"variant: {variant}")
-  if action == 'list' and (not args and do_all == False):
-    logger.info("List option requires a hostname or {-a|--all}")
-    usage()
-    sys.exit(2)
-  if ((not opts and not args) and do_all == False) or (not args and do_all == False) or \
-     (args and do_all == True and exclude == False) or (not args and do_all == True and exclude == True):
-    usage()
+  logger.debug(f"mode: {args.mode}")
+  logger.debug(f"do_all: {args.do_all}")
+  logger.debug(f"dry_run: {args.dry_run}")
+  logger.debug(f"silent_run: {args.silent_run}")
+  logger.debug(f"mode: {args.mode}")
+  logger.debug(f"version: {args.version}")
+  logger.debug(f"exclude: {args.exclude}")
+  logger.debug(f"variant: {args.variant}")
+  logger.debug(f"verbose: {args.verbose}")
+  logger.debug(f"hosts: {args.hosts}")
+  if not args.hosts and not args.do_all:
+    logger.info("Requires a hostname or {-a|--all}.")
+    parser.print_help()
+    sys.exit(1)
+  elif args.hosts and args.do_all:
+    logger.info("Invalid option hostname or {-a|--all} not both.")
+    parser.print_help()
     sys.exit(1)
   try:
     with urllib.request.urlopen("https://api.shelly.cloud/files/firmware") as fp:
@@ -528,26 +471,16 @@ def app(argv):
     sys.exit(1)
   logger.trace(f"\n{WHITE}stock_release_info:{NC}{stock_release_info}")
   logger.trace(f"\n{WHITE}homekit_release_info:{NC}{homekit_release_info}")
-  if prerelease:
+  if args.variant:
     for i in homekit_release_info:
       logger.trace(f"i: {i[1]}")
       logger.trace(f"version: {i[1]['version']}")
-      if variant in i[1]['version']:
+      if args.variant in i[1]['version']:
         variant_check = True
         break
       else:
         variant_check = False
     if not variant_check:
-      logger.info(f"{RED}Firmware variant {variant} not found.{NC}")
+      logger.info(f"{WHITE}Firmware variant {args.variant} not found.{NC}")
       sys.exit(3)
-  if args and exclude == False:
-    for device in args:
-      device_scan(device, action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
-  if do_all == True and exclude == False:
-    device_scan('', action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
-  if do_all == True and exclude == True:
-    device_scan(args, action, do_all, dry_run, silent_run, mode, exclude, forced_version, prerelease, variant, ffw, stock_release_info, homekit_release_info)
-
-
-if __name__ == '__main__':
-  app(sys.argv[1:])
+  device_scan(args.hosts, action, args.do_all, args.dry_run, args.silent_run, args.mode, args.exclude, args.version, args.variant, stock_release_info, homekit_release_info)
