@@ -191,7 +191,7 @@ input:checked + .slider:before {
     Shelly-<b>HomeKit</b>
     <div class="badge" id="notifyFW" style="display: none">Update available</div>
   </div>
-  <h1 class="" id="device_id" style="visibility: hidden"></h1>
+  <h1 class="" id="device_name" style="visibility: hidden"></h1>
   <br>
   <button class="btn" id="refresh_btn">
     <label><span id="spinner"></span>Refresh</label>
@@ -298,8 +298,9 @@ input:checked + .slider:before {
   <div class="form">
     <div class="">
       <div class="form-control">
-        <label>Model:</label>
-        <span id="model"></span>
+        <label>Device:</label>
+        Model: <span id="model"></span>,
+        ID: <span id="device_id"></span>
       </div>
       <div class="form-control">
         <label>Version:</label>
@@ -1043,7 +1044,8 @@ function getInfo() {
     if (data.wifi_ip != "") wifiStatus += ", IP: " + data.wifi_ip;
     if (!wifiStatus) wifiStatus = "not connected";
     el("wifi_status").innerText = (wifiStatus ? wifiStatus : "not connected");
-    el("device_id").innerText = data.id;
+    el("device_id").innerText = data.device_id;
+    el("device_name").innerText = el("sys_name").value = document.title = data.name;
     el("model").innerText = data.model;
     if (data.hap_running) {
       hapSetupCode.value = "***-**-***";
@@ -1064,8 +1066,7 @@ function getInfo() {
     el("homekit_container").style.visibility = "visible";
     el("wifi_container").style.visibility = "visible";
     el("fw_container").style.visibility = "visible";
-    el("device_id").style.visibility = "visible";
-    document.title = data.id;
+    el("device_name").style.visibility = "visible";
     el("uptime_label").style.visibility = "visible";
     if (data.hap_running) {
       el("hap_conn_stats").innerText =
@@ -1081,7 +1082,6 @@ function getInfo() {
       (el("sys_mode_" + data.sys_mode) || {}).selected = true;
       el("sys_mode_container").style.display = "block";
     }
-    el("sys_name").value = data.id;
     if (data.debug_en) {
       el("debug_en").checked = true;
       el("debug_link").style.visibility = "visible";
@@ -1243,7 +1243,7 @@ async function checkUpdate() {
           "X-Model": model,
           "X-Current-Version": curVersion,
           "X-Current-Build": lastInfo.fw_build,
-          "X-Device-ID": lastInfo.id,
+          "X-Device-ID": lastInfo.device_id,
         }})
     .then(resp => resp.json())
     .then((resp) => {

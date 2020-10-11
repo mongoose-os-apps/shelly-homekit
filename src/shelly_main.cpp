@@ -304,7 +304,7 @@ static bool StartHAPServer(bool quiet) {
     LOG(LL_INFO, ("=== Creating accessories"));
     std::unique_ptr<hap::Accessory> pri_acc(new hap::Accessory(
         SHELLY_HAP_AID_PRIMARY, kHAPAccessoryCategory_Bridges,
-        mgos_sys_config_get_device_id(), &AccessoryIdentifyCB, &s_server));
+        mgos_sys_config_get_shelly_name(), &AccessoryIdentifyCB, &s_server));
     pri_acc->AddHAPService(&mgos_hap_accessory_information_service);
     pri_acc->AddHAPService(&mgos_hap_protocol_information_service);
     pri_acc->AddHAPService(&mgos_hap_pairing_service);
@@ -544,6 +544,18 @@ static bool shelly_cfg_migrate(void) {
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(2);
+    changed = true;
+  }
+  if (mgos_sys_config_get_shelly_cfg_version() == 2) {
+    // Reset device ID to default, to keep it unique.
+    // User-specified name will be stored in shelly.name.
+    // dns_sd.host_name is kept in sync.
+    mgos_sys_config_set_shelly_name(mgos_sys_config_get_device_id());
+    mgos_sys_config_set_dns_sd_host_name(mgos_sys_config_get_device_id());
+    std::string s(mgos_config_defaults.device.id);
+    mgos_expand_mac_address_placeholders(const_cast<char *>(s.c_str()));
+    mgos_sys_config_set_device_id(s.c_str());
+    mgos_sys_config_set_shelly_cfg_version(3);
     changed = true;
   }
   return changed;

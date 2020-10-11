@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.3.0-alpha3
+version: 2.3.0-alpha4
 platform: esp8266
 
 libs_version: latest
@@ -57,6 +57,7 @@ config_schema:
   - ["gdo.move_time_ms", "i", 30000, {"title": "Movement time, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {"title": "Output active time, ms"}]
 
+  - ["shelly.name", "s", "", {"title": "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
   - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
@@ -111,6 +112,7 @@ conds:
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shelly1-??????"]
+        - ["shelly.name", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
         - ["sw1", "sw", {"title": "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
@@ -142,6 +144,7 @@ conds:
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shelly1pm-??????"]
+        - ["shelly.name", "shelly1pm-??????"]
         - ["wifi.ap.ssid", "shelly1pm-??????"]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "Shelly SW"]
@@ -173,6 +176,7 @@ conds:
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyplug-s-??????"]
+        - ["shelly.name", "shellyplug-s-??????"]
         - ["wifi.ap.ssid", "shellyplug-s-??????"]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "Shelly SW"]
@@ -199,6 +203,7 @@ conds:
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyswitch21-??????"]
+        - ["shelly.name", "shellyswitch21-??????"]
         - ["wifi.ap.ssid", "shellyswitch21-??????"]
         - ["sw1", "sw", {"title": "SW1 settings"}]
         - ["sw1.name", "Shelly SW1"]
@@ -238,6 +243,7 @@ conds:
         SHELLY_HAVE_PM: 1
       config_schema:
         - ["device.id", "shellyswitch25-??????"]
+        - ["shelly.name", "shellyswitch25-??????"]
         - ["wifi.ap.ssid", "shellyswitch25-??????"]
         - ["i2c.enable", true]
         - ["sw1", "sw", {"title": "SW1 settings"}]
@@ -280,6 +286,7 @@ conds:
           variant: ubuntu-nossl
       config_schema:
         - ["device.id", "ShellyU-????"]
+        - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
         - ["http.document_root", "."]
         - ["sw1", "sw", {"title": "SW settings"}]

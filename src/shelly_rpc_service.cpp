@@ -65,8 +65,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   }
 #endif
   std::string res = mgos::JSONPrintStringf(
-      "{id: %Q, app: %Q, model: %Q, stock_model: %Q, host: %Q, "
-      "version: %Q, fw_build: %Q, uptime: %d, "
+      "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_model: %Q, "
+      "host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
       "wifi_rssi: %d, wifi_ip: %Q,"
@@ -76,10 +76,11 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       "hap_ip_conns_max: %u, sys_mode: %d, "
       "rsh_avail: %B, gdo_avail: %B, "
       "debug_en: %B",
-      mgos_sys_config_get_device_id(), MGOS_APP,
-      CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
-      mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
-      mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
+      mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
+      MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
+      CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
+      mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
+      (int) mgos_uptime(),
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (wifi_ssid ? wifi_ssid : ""),
       (mgos_sys_config_get_wifi_sta_pass() ? "***" : ""), wifi_rssi, wifi_ip,
@@ -167,9 +168,11 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
           return;
         }
       }
-      if (strcmp(mgos_sys_config_get_device_id(), name.c_str()) != 0) {
-        mgos_sys_config_set_device_id(name.c_str());
-        mgos_sys_config_set_dns_sd_host_name(nullptr);
+      if (strcmp(mgos_sys_config_get_shelly_name(), name.c_str()) != 0) {
+        LOG(LL_INFO, ("Name change: %s -> %s",
+                      mgos_sys_config_get_shelly_name(), name.c_str()));
+        mgos_sys_config_set_shelly_name(name.c_str());
+        mgos_sys_config_set_dns_sd_host_name(name.c_str());
         mgos_dns_sd_set_host_name(name.c_str());
         mgos_http_server_publish_dns_sd();
         restart_required = true;
