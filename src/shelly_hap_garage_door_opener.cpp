@@ -51,6 +51,7 @@ Status GarageDoorOpener::Init() {
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
         *value = static_cast<uint8_t>(cur_state_);
+        LOG(LL_DEBUG, ("GDO %d: Read cur: %d", id(), *value));
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr, /* write_handler */
@@ -62,6 +63,7 @@ Status GarageDoorOpener::Init() {
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
         *value = static_cast<uint8_t>(tgt_state_);
+        LOG(LL_DEBUG, ("GDO %d: Read tgt: %d", id(), *value));
         return kHAPError_None;
       },
       true /* supports_notification */,
@@ -71,7 +73,10 @@ Status GarageDoorOpener::Init() {
         // because we may want to raise a notification on the target position
         // and we can't do that within the write callback.
         mgos::InvokeCB([this, value] {
-          UserSetTgtState(static_cast<State>(value), "HAP");
+          // We want every tap to cause an action, so we basically ignore the
+          // actual value.
+          ToggleState((value ? "HAPclose" : "HAPopen"));
+          RunOnce();
         });
         return kHAPError_None;
       },
@@ -82,7 +87,8 @@ Status GarageDoorOpener::Init() {
       iid++, &kHAPCharacteristicType_ObstructionDetected,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
              bool *value) {
-        *value = (cur_state_ == State::kStopped);
+        *value = obstruction_detected_;
+        LOG(LL_DEBUG, ("GDO %d: Read obst: %d", id(), *value));
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr /* write_handler */,
@@ -139,9 +145,8 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   // We don't impose a limit on pulse time.
   // Apply.
   if (toggle != -1 && toggle) {
-    State new_state =
-        (tgt_state_ == State::kOpen ? State::kClosed : State::kOpen);
-    UserSetTgtState(new_state, "RPC");
+    ToggleState("RPC");
+    RunOnce();
   }
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
@@ -184,36 +189,66 @@ void GarageDoorOpener::SetCurState(State new_state) {
   LOG(LL_INFO,
       ("GDO %d: Cur State: %s -> %s (%d -> %d)", id(), StateStr(cur_state_),
        StateStr(new_state), (int) cur_state_, (int) new_state));
-  bool obst = (cur_state_ == State::kStopped || new_state == State::kStopped);
+  bool obst_notify;
+  if (cur_state_ == State::kStopped) {
+    // Leaving Stopepd state - reset the "obstruction detected" flag.
+    obstruction_detected_ = false;
+    obst_notify = true;
+  }
+  if (new_state == State::kStopped) {
+    // Entering Stopped state - remember what was the previous state.
+    pre_stopped_state_ = cur_state_;
+    obst_notify = true;
+  }
   cur_state_ = new_state;
   begin_ = mgos_uptime_micros();
   cur_state_char_->RaiseEvent();
-  if (obst) {
+  if (obst_notify) {
     obst_char_->RaiseEvent();
   }
 }
 
-void GarageDoorOpener::UserSetTgtState(State new_state, const char *source) {
+void GarageDoorOpener::ToggleState(const char *source) {
   // Every target state change generates a pulse.
-  if (new_state != tgt_state_) {
-    out_->Pulse(true, cfg_->pulse_time_ms,
-                (new_state == State::kOpen ? "GDO:open" : "GDO:close"));
-  }
-  SetTgtState(new_state, source);
-  if (cur_state_ == State::kClosed) {
-    SetCurState(State::kOpening);
-  } else {
-    // This really depends on the controller behavior, we just guess...
-    SetCurState(State::kClosing);
+  State new_state =
+      (tgt_state_ == State::kOpen ? State::kClosed : State::kOpen);
+  out_->Pulse(true, cfg_->pulse_time_ms,
+              (new_state == State::kOpen ? "GDO:open" : "GDO:close"));
+  switch (cur_state_) {
+    case State::kOpen:
+      SetTgtState(new_state, source);
+      SetCurState(State::kClosing);
+      break;
+    case State::kClosed:
+      SetTgtState(new_state, source);
+      SetCurState(State::kOpening);
+      break;
+    case State::kOpening:
+    case State::kClosing:
+      SetTgtState(new_state, source);
+      SetCurState(State::kStopped);
+      break;
+    case State::kStopped:
+      if (pre_stopped_state_ == State::kOpening) {
+        SetTgtState(State::kClosed, "fixup");
+        SetCurState(State::kClosing);
+      } else {
+        SetTgtState(State::kOpen, "fixup");
+        SetCurState(State::kOpening);
+      }
+      break;
   }
 }
 
 void GarageDoorOpener::SetTgtState(State new_state, const char *src) {
-  if (tgt_state_ == new_state) return;
-  LOG(LL_INFO, ("GDO %d: Tgt State: %s -> %s (%d -> %d) (%s)", id(),
-                StateStr(tgt_state_), StateStr(new_state), (int) tgt_state_,
-                (int) new_state, src));
+  if (tgt_state_ != new_state) {
+    LOG(LL_INFO, ("GDO %d: Tgt State: %s -> %s (%d -> %d) (%s)", id(),
+                  StateStr(tgt_state_), StateStr(new_state), (int) tgt_state_,
+                  (int) new_state, src));
+  }
   tgt_state_ = new_state;
+  // Always notify, even if not changed, to make sure HAP is in sync with
+  // reality that may be different from what it thinks it is.
   tgt_state_char_->RaiseEvent();
 }
 
@@ -261,6 +296,7 @@ void GarageDoorOpener::RunOnce() {
           break;
         }
         if (elapsed_ms > cfg_->move_time_ms) {
+          obstruction_detected_ = true;
           SetCurState(State::kStopped);
           break;
         }
@@ -283,6 +319,7 @@ void GarageDoorOpener::RunOnce() {
       }
       int64_t elapsed_ms = (mgos_uptime_micros() - begin_) / 1000;
       if (elapsed_ms > cfg_->move_time_ms) {
+        obstruction_detected_ = true;
         SetCurState(State::kStopped);
         break;
       }

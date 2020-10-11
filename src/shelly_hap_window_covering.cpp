@@ -324,7 +324,7 @@ void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
 }
 
 void WindowCovering::HAPSetTgtPos(float value) {
-  // If position is intermedfiate, just do what we are told.
+  // If the specified position is intermediate, just do what we are told.
   if ((value != kFullyClosed && value != kFullyOpen) ||
       last_ext_move_dir_ == Direction::kNone) {
     SetTgtPos(value, "HAP");

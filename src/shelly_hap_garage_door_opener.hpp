@@ -62,7 +62,7 @@ class GarageDoorOpener : public Component, public Service {
 
   void SetCurState(State new_state);
   void SetTgtState(State new_state, const char *source);
-  void UserSetTgtState(State new_state, const char *source);
+  void ToggleState(const char *source);
 
   void RunOnce();
 
@@ -79,7 +79,9 @@ class GarageDoorOpener : public Component, public Service {
 
   State cur_state_;
   State tgt_state_;
+  State pre_stopped_state_;
   int64_t begin_ = 0;
+  bool obstruction_detected_ = false;
 };
 
 }  // namespace hap
