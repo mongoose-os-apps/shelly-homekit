@@ -1093,7 +1093,7 @@ function getInfo() {
       var last_update_check = parseInt(getCookie("last_update_check"));
       var now = new Date();
       console.log("Last update check:", last_update_check, new Date(last_update_check));
-      if (isNaN(last_update_check) || now.getTime() - last_update_check > 7 * 24 * 60 * 60 * 1000) {
+      if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
         checkUpdate();
       }
       el("notifyFW").style.display = (getCookie("update_available") ? "block" : "none");
@@ -1186,6 +1186,7 @@ async function uploadFW(blob, spinner, status) {
     console.log("resp", resp, respText);
     spinner.className = "";
     status.innerText = respText;
+    setCookie("update_available", false);
   }).catch((error) => {
     spinner.className = "";
     status.innerText = "Error uploading: " + error;
@@ -1238,7 +1239,12 @@ async function checkUpdate() {
   se.className = "spin";
   console.log("Model:", model, "Version:", curVersion);
   fetch("https://rojer.me/files/shelly/update.json",
-        {headers: {"X-Model": model, "X-Current-Version": curVersion, "X-Current-Build": lastInfo.fw_build}})
+        {headers: {
+          "X-Model": model,
+          "X-Current-Version": curVersion,
+          "X-Current-Build": lastInfo.fw_build,
+          "X-Device-ID": lastInfo.id,
+        }})
     .then(resp => resp.json())
     .then((resp) => {
       var cfg, latestVersion, updateURL, relNotesURL;
