@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.2.1
+version: 2.3.0-alpha4
 platform: esp8266
 
 libs_version: latest
@@ -50,7 +50,15 @@ config_schema:
   - ["wc.move_time_ms", "i", 0, {"title": "Move time, in millseconds"}]
   - ["wc.current_pos", "d", 0.0, {"title": "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
-  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutteri (if supported)"}]
+  - ["gdo", "o", {"Garage door settings"}]
+  - ["gdo.name", "s", "Garage Door", {"title": "Accessory name"}]
+  - ["gdo.close_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally closed, 1 - normally open"}]
+  - ["gdo.open_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
+  - ["gdo.move_time_ms", "i", 30000, {"title": "Movement time, ms"}]
+  - ["gdo.pulse_time_ms", "i", 300, {"title": "Output active time, ms"}]
+
+  - ["shelly.name", "s", "", {"title": "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
+  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
   # Deprecated settings, only kept to enable migration.
@@ -104,11 +112,15 @@ conds:
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shelly1-??????"]
+        - ["shelly.name", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
         - ["sw1", "sw", {"title": "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input"]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
@@ -132,11 +144,15 @@ conds:
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shelly1pm-??????"]
+        - ["shelly.name", "shelly1pm-??????"]
         - ["wifi.ap.ssid", "shelly1pm-??????"]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input"]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
 
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
@@ -160,6 +176,7 @@ conds:
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyplug-s-??????"]
+        - ["shelly.name", "shellyplug-s-??????"]
         - ["wifi.ap.ssid", "shellyplug-s-??????"]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "Shelly SW"]
@@ -186,6 +203,7 @@ conds:
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyswitch21-??????"]
+        - ["shelly.name", "shellyswitch21-??????"]
         - ["wifi.ap.ssid", "shellyswitch21-??????"]
         - ["sw1", "sw", {"title": "SW1 settings"}]
         - ["sw1.name", "Shelly SW1"]
@@ -195,6 +213,8 @@ conds:
         - ["sw2.name", "Shelly SW2"]
         - ["ssw2", "ssw", {"title": "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
 
   - when: build_vars.MODEL == "Shelly25"
     apply:
@@ -223,6 +243,7 @@ conds:
         SHELLY_HAVE_PM: 1
       config_schema:
         - ["device.id", "shellyswitch25-??????"]
+        - ["shelly.name", "shellyswitch25-??????"]
         - ["wifi.ap.ssid", "shellyswitch25-??????"]
         - ["i2c.enable", true]
         - ["sw1", "sw", {"title": "SW1 settings"}]
@@ -235,6 +256,8 @@ conds:
         - ["ssw2.name", "Input 2"]
         - ["wc1", "wc", {"title": "WC1 settings"}]
         - ["wc1.name", "Window 1"]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
 
   - when: mos.platform != "ubuntu"
     apply:
@@ -263,6 +286,7 @@ conds:
           variant: ubuntu-nossl
       config_schema:
         - ["device.id", "ShellyU-????"]
+        - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
         - ["http.document_root", "."]
         - ["sw1", "sw", {"title": "SW settings"}]

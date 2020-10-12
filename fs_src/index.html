@@ -187,8 +187,11 @@ input:checked + .slider:before {
 <div class="container">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/" target="_blank">?</a>
   <div class="logodiv"><img class="img" src="logo.png" alt=""></div>
-  <div class="apl_thin">Shelly-<b>HomeKit</b></div>
-  <h1 class="" id="device_id" style="visibility: hidden"></h1>
+  <div class="apl_thin">
+    Shelly-<b>HomeKit</b>
+    <div class="badge" id="notifyFW" style="display: none">Update available</div>
+  </div>
+  <h1 class="" id="device_name" style="visibility: hidden"></h1>
   <br>
   <button class="btn" id="refresh_btn">
     <label><span id="spinner"></span>Refresh</label>
@@ -213,6 +216,7 @@ input:checked + .slider:before {
         <select id="sys_mode">
           <option id="sys_mode_0" value="0">Switch</option>
           <option id="sys_mode_1" value="1">Roller Shutter</option>
+          <option id="sys_mode_2" value="2">Garage Door Opener</option>
         </select>
       </div>
       <div class="form-control">
@@ -294,8 +298,9 @@ input:checked + .slider:before {
   <div class="form">
     <div class="">
       <div class="form-control">
-        <label>Model:</label>
-        <span id="model"></span>
+        <label>Device:</label>
+        Model: <span id="model"></span>,
+        ID: <span id="device_id"></span>
       </div>
       <div class="form-control">
         <label>Version:</label>
@@ -517,6 +522,55 @@ input:checked + .slider:before {
   </div>
 </div>
 
+<div class="container" id="gdo_template" style="display: none">
+  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Garage-Door-Opener-Settings" target="_blank">?</a>
+  <h1 id="head">Garage Door</h1>
+  <div class="form">
+    <div class="">
+      <div class="form-control">
+        <label>Name:</label>
+        <input type="text" id="name">
+      </div>
+      <div class="form-control">
+        <label>Status:</label>
+        <span id="state"></span>
+      </div>
+      <div class="form-control">
+        <label>Close Sensor:</label>
+        <select id="close_sensor_mode">
+          <option id="close_sensor_mode_0" value="0">Normally Closed</option>
+          <option id="close_sensor_mode_1" value="1">Normally Open</option>
+        </select>
+      </div>
+      <div class="form-control" id="open_sensor_mode_container">
+        <label>Open Sensor:</label>
+        <select id="open_sensor_mode">
+          <option id="open_sensor_mode_0" value="0">Normally Closed</option>
+          <option id="open_sensor_mode_1" value="1">Normally Open</option>
+          <option id="open_sensor_mode_2" value="2">Disabled</option>
+        </select>
+      </div>
+      <div class="form-control">
+        <label>Movement Time:</label>
+        <input type="text" id="move_time" style="width: 2em; min-width: 2em;"> seconds
+      </div>
+      <div class="form-control">
+        <label>Pulse Time:</label>
+        <input type="text" id="pulse_time_ms" style="width: 2em; min-width: 2em;"> ms
+      </div>
+      <div class="form-control" id="btns">
+        <label></label>
+        <button class="btn" id="save_btn">
+          <label><span id="save_spinner"></span>Save</label>
+        </button>
+        <button class="btn" id="toggle_btn">
+          <label><span id="toggle_spinner"></span>Toggle</label>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 
 var lastInfo = null;
@@ -651,6 +705,27 @@ el("wifi_save_btn").onclick = function() {
   });
 };
 
+function setComponentConfig(c, cfg, spinner) {
+  if (spinner) spinner.className = "spin";
+  var data = {
+    id: c.data.id,
+    type: c.data.type,
+    config: cfg,
+  };
+  console.log("SetConfig:", data);
+  axios.post(host + "/rpc/Shelly.SetConfig", data)
+    .then(function(res) {
+      if (spinner) spinner.className = "";
+      setTimeout(getInfo, 1100);
+    }).catch(function(err) {
+      if (spinner) spinner.className = "";
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+    });
+}
+
 function swSetState(c, newState) {
   var spinner = el(c, "set_spinner");
   spinner.className = "spin";
@@ -719,31 +794,15 @@ function swSetConfig(c) {
     return;
   }
 
-  spinner.className = "spin";
-  var data = {
-    id: c.data.id,
-    type: c.data.type,
-    config: {
-      name: name,
-      svc_type: parseInt(svcType),
-      in_mode: parseInt(inMode),
-      initial_state: parseInt(initialState),
-      auto_off: autoOff,
-      auto_off_delay: dateStringToSeconds(autoOffDelay)
-    },
+  var cfg = {
+    name: name,
+    svc_type: parseInt(svcType),
+    in_mode: parseInt(inMode),
+    initial_state: parseInt(initialState),
+    auto_off: autoOff,
+    auto_off_delay: dateStringToSeconds(autoOffDelay)
   };
-  console.log("swSetConfig:", data);
-  axios.post(host + "/rpc/Shelly.SetConfig", data)
-    .then(function(res) {
-      spinner.className = "";
-      setTimeout(getInfo, 1100);
-    }).catch(function(err) {
-      spinner.className = "";
-      if (err.response) {
-        err = err.response.data.message;
-      }
-      alert(err);
-    });
+  setComponentConfig(c, cfg, spinner);
 }
 
 function sswSetConfig(c) {
@@ -754,28 +813,11 @@ function sswSetConfig(c) {
     alert("Name must not be empty");
     return;
   }
-
-  spinner.className = "spin";
-  var data = {
-    id: c.data.id,
-    type: c.data.type,
-    config: {
-      name: name,
-      in_mode: parseInt(el(c, "in_mode").value),
-    },
+  var cfg = {
+    name: name,
+    in_mode: parseInt(el(c, "in_mode").value),
   };
-  console.log("sswSetConfig:", data);
-  axios.post(host + "/rpc/Shelly.SetConfig", data)
-    .then(function(res) {
-      spinner.className = "";
-      setTimeout(getInfo, 1100);
-    }).catch(function(err) {
-      spinner.className = "";
-      if (err.response) {
-        err = err.response.data.message;
-      }
-      alert(err);
-    });
+  setComponentConfig(c, cfg, spinner);
 }
 
 function wcSetConfig(c, cfg, spinner) {
@@ -787,29 +829,42 @@ function wcSetConfig(c, cfg, spinner) {
     }
     cfg = {
       name: name,
-      in_mode: el(c, "in_mode").value,
+      in_mode: parseInt(el(c, "in_mode").value),
       swap_inputs: el(c, "swap_inputs").checked,
       swap_outputs: el(c, "swap_outputs").checked,
     };
   }
-  if (spinner) spinner.className = "spin";
-  var data = {
-    id: c.data.id,
-    type: c.data.type,
-    config: cfg,
-  };
-  console.log("wcSetConfig:", data);
-  axios.post(host + "/rpc/Shelly.SetConfig", data)
-    .then(function(res) {
-      if (spinner) spinner.className = "";
-      setTimeout(getInfo, 1100);
-    }).catch(function(err) {
-      if (spinner) spinner.className = "";
-      if (err.response) {
-        err = err.response.data.message;
-      }
-      alert(err);
-    });
+  setComponentConfig(c, cfg, spinner);
+}
+
+function gdoSetConfig(c, cfg, spinner) {
+  if (!cfg) {
+    var name = el(c, "name").value;
+    if (name == "") {
+      alert("Name must not be empty");
+      return;
+    }
+    var moveTime = parseInt(el(c, "move_time").value);
+    if (isNaN(moveTime) || moveTime < 10) {
+      alert("Invalid movement time " + moveTime);
+      return;
+    }
+    var pulseTimeMs = parseInt(el(c, "pulse_time_ms").value);
+    if (isNaN(pulseTimeMs) || pulseTimeMs < 20) {
+      alert("Invalid pulse time " + pulseTimeMs);
+      return;
+    }
+    cfg = {
+      name: name,
+      move_time: moveTime,
+      pulse_time_ms: pulseTimeMs,
+      close_sensor_mode: parseInt(el(c, "close_sensor_mode").value),
+    };
+    if (c.data.open_sensor_mode >= 0) {
+      cfg.open_sensor_mode = parseInt(el(c, "open_sensor_mode").value);
+    }
+  }
+  setComponentConfig(c, cfg, spinner);
 }
 
 el("reboot_btn").onclick = function() {
@@ -858,10 +913,22 @@ function findOrAddContainer(cd) {
         }
         el(c, "open_spinner").className = "";
       };
-      el(c, "save_btn").onclick = function() { wcSetConfig(c, null, el(c, "save_spinner")); };
+      el(c, "save_btn").onclick = function() {
+        wcSetConfig(c, null, el(c, "save_spinner"));
+      };
       el(c, "cal_btn").onclick = function() {
         wcSetConfig(c, {state: 10}, null);
         el(c, "cal_spinner").className = "spin";
+      };
+      break;
+    case 5: // Garage Doot Opener
+      c = el("gdo_template").cloneNode(true);
+      c.id = elId;
+      el(c, "save_btn").onclick = function() {
+        gdoSetConfig(c, null, el(c, "save_spinner"));
+      };
+      el(c, "toggle_btn").onclick = function() {
+        gdoSetConfig(c, {toggle: true}, el(c, "toggle_spinner"));
       };
       break;
   }
@@ -915,7 +982,7 @@ function updateComponent(cd) {
       el(c, "last_event").innerText = lastEvText;
       break;
     case 4: // Window Covering
-      el(c, "head").innerText = cd.name;;
+      el(c, "head").innerText = cd.name;
       el(c, "name").value = cd.name;
       el(c, "state").innerText = cd.state_str;
       el(c, "in_mode_" + cd.in_mode).selected = true;
@@ -947,6 +1014,19 @@ function updateComponent(cd) {
         el(c, "close_spinner").className = "";
       }
       break;
+    case 5: // Garage Doot Opener
+      el(c, "head").innerText = cd.name;
+      el(c, "name").value = cd.name;
+      el(c, "state").innerText = cd.cur_state_str;
+      el(c, "close_sensor_mode_" + cd.close_sensor_mode).selected = true;
+      el(c, "move_time").value = cd.move_time;
+      el(c, "pulse_time_ms").value = cd.pulse_time_ms;
+      if (cd.open_sensor_mode >= 0) {
+        el(c, "open_sensor_mode_" + cd.open_sensor_mode).selected = true;
+      } else {
+        el(c, "open_sensor_mode_container").style.display = "none";
+      }
+      break;
   }
   c.data = cd;
 }
@@ -964,7 +1044,8 @@ function getInfo() {
     if (data.wifi_ip != "") wifiStatus += ", IP: " + data.wifi_ip;
     if (!wifiStatus) wifiStatus = "not connected";
     el("wifi_status").innerText = (wifiStatus ? wifiStatus : "not connected");
-    el("device_id").innerText = data.id;
+    el("device_id").innerText = data.device_id;
+    el("device_name").innerText = el("sys_name").value = document.title = data.name;
     el("model").innerText = data.model;
     if (data.hap_running) {
       hapSetupCode.value = "***-**-***";
@@ -985,8 +1066,7 @@ function getInfo() {
     el("homekit_container").style.visibility = "visible";
     el("wifi_container").style.visibility = "visible";
     el("fw_container").style.visibility = "visible";
-    el("device_id").style.visibility = "visible";
-    document.title = data.id;
+    el("device_name").style.visibility = "visible";
     el("uptime_label").style.visibility = "visible";
     if (data.hap_running) {
       el("hap_conn_stats").innerText =
@@ -996,11 +1076,12 @@ function getInfo() {
     } else {
       el("hap_conn_stats").innerText = "server not running";
     }
-    if (data.rsh_avail) {
-      el("sys_mode_" + data.sys_mode).selected = true;
+    if (data.rsh_avail || data.gdo_avail) {
+      if (!data.rsh_avail && el("sys_mode_1")) el("sys_mode_1").remove();
+      if (!data.gdo_avail && el("sys_mode_2")) el("sys_mode_2").remove();
+      (el("sys_mode_" + data.sys_mode) || {}).selected = true;
       el("sys_mode_container").style.display = "block";
     }
-    el("sys_name").value = data.id;
     if (data.debug_en) {
       el("debug_en").checked = true;
       el("debug_link").style.visibility = "visible";
@@ -1008,11 +1089,33 @@ function getInfo() {
       el("debug_en").checked = false;
       el("debug_link").style.visibility = "hidden";
     }
+    if (data.wifi_rssi != 0) {
+      var last_update_check = parseInt(getCookie("last_update_check"));
+      var now = new Date();
+      console.log("Last update check:", last_update_check, new Date(last_update_check));
+      if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
+        checkUpdate();
+      }
+      el("notifyFW").style.display = (getCookie("update_available") ? "block" : "none");
+    }
   }).catch(function(err) {
     alert(err);
   }).then(function() {
     el("spinner").className = "";
   });
+}
+
+function getCookie(key) {
+  var parts1 = document.cookie.split(";");
+  for (var i in parts1) {
+    var parts2 = parts1[i].split("=");
+    if (parts2[0].trim() == key) return JSON.parse(parts2[1].trim());
+  }
+  return null;
+}
+
+function setCookie(key, value) {
+  document.cookie = (key + "=" + JSON.stringify(value));
 }
 
 el("debug_en").onclick = function() {
@@ -1083,6 +1186,7 @@ async function uploadFW(blob, spinner, status) {
     console.log("resp", resp, respText);
     spinner.className = "";
     status.innerText = respText;
+    setCookie("update_available", false);
   }).catch((error) => {
     spinner.className = "";
     status.innerText = "Error uploading: " + error;
@@ -1135,7 +1239,12 @@ async function checkUpdate() {
   se.className = "spin";
   console.log("Model:", model, "Version:", curVersion);
   fetch("https://rojer.me/files/shelly/update.json",
-        {headers: {"X-Model": model, "X-Current-Version": curVersion, "X-Current-Build": lastInfo.fw_build}})
+        {headers: {
+          "X-Model": model,
+          "X-Current-Version": curVersion,
+          "X-Current-Build": lastInfo.fw_build,
+          "X-Device-ID": lastInfo.device_id,
+        }})
     .then(resp => resp.json())
     .then((resp) => {
       var cfg, latestVersion, updateURL, relNotesURL;
@@ -1158,7 +1267,11 @@ async function checkUpdate() {
         se.className = "";
         return;
       }
-      if (!isNewer(latestVersion, curVersion)) {
+      var updateAvailable = isNewer(latestVersion, curVersion);
+      el("notifyFW").style.display = (updateAvailable ? "block" : "none");
+      setCookie("last_update_check", (new Date()).getTime());
+      setCookie("update_available", updateAvailable);
+      if (!updateAvailable) {
         e.innerText = "Up to date";
         se.className = "";
         return;

@@ -139,6 +139,7 @@ static void DebugInfoHandler(struct mg_connection *nc, int ev, void *ev_data,
   if (ev != MG_EV_HTTP_REQUEST) return;
   mg_send_response_line(nc, 200,
                         "Content-Type: text/html\r\n"
+                        "Pragma: no-store\r\n"
                         "Connection: close\r\n");
   mg_printf(nc, "<pre>\r\n");
   shelly_debug_write_nc(nc);
@@ -158,7 +159,7 @@ static void DebugLogHandler(struct mg_connection *nc, int ev, void *ev_data,
   }
   mgos_file_log_flush();
   mg_http_serve_file(nc, hm, (char *) fn.get(), mg_mk_str("text/plain"),
-                     MG_NULL_STR);
+                     mg_mk_str("Pragma: no-store"));
   (void) user_data;
 }
 

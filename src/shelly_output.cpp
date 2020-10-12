@@ -33,7 +33,10 @@ int Output::id() const {
 }
 
 OutputPin::OutputPin(int id, int pin, int on_value)
-    : Output(id), pin_(pin), on_value_(on_value) {
+    : Output(id),
+      pin_(pin),
+      on_value_(on_value),
+      pulse_timer_(std::bind(&OutputPin::PulseTimerCB, this)) {
   mgos_gpio_set_mode(pin_, MGOS_GPIO_MODE_OUTPUT);
 }
 
@@ -47,11 +50,25 @@ bool OutputPin::GetState() {
 Status OutputPin::SetState(bool on, const char *source) {
   bool cur_state = GetState();
   mgos_gpio_write(pin_, (on ? on_value_ : !on_value_));
+  pulse_active_ = false;
   if (on == cur_state) return Status::OK();
   if (source == nullptr) source = "";
   LOG(LL_INFO,
       ("Output %d: %s -> %s (%s)", id(), OnOff(cur_state), OnOff(on), source));
   return Status::OK();
+}
+
+Status OutputPin::Pulse(bool on, int duration_ms, const char *source) {
+  Status st = SetState(on, source);
+  if (!st.ok()) return st;
+  pulse_timer_.Reset(duration_ms, 0);
+  pulse_active_ = true;
+  return Status::OK();
+}
+
+void OutputPin::PulseTimerCB() {
+  if (!pulse_active_) return;
+  SetState(!GetState(), "pulse_off");
 }
 
 }  // namespace shelly

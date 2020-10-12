@@ -64,9 +64,9 @@ build-%: fs/index.html.gz fs/style.css.gz
 ifeq "$(RELEASE)" "1"
 	[ $(PLATFORM) = ubuntu ] || \
 	  (dir=releases/`jq -r .build_version $(BUILD_DIR)/gen/build_info.json`$(RELEASE_SUFFIX) && \
-	    mkdir -p $$dir && \
+	    mkdir -p $$dir/elf && \
 	    cp -v $(BUILD_DIR)/fw.zip $$dir/shelly-homekit-$*.zip && \
-	    cp -v $(BUILD_DIR)/objs/*.elf $$dir/shelly-homekit-$*.elf)
+	    cp -v $(BUILD_DIR)/objs/*.elf $$dir/elf/shelly-homekit-$*.elf)
 endif
 
 format:

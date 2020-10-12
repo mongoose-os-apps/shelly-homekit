@@ -17,6 +17,7 @@
 
 #include <algorithm>
 
+#include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_main.hpp"
 
 namespace shelly {
@@ -38,6 +39,21 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  // Garage door opener mode.
+  if (mgos_sys_config_get_shelly_mode() == 2) {
+    auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
+    std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
+        1, FindInput(1), FindInput(2), FindOutput(1), gdo_cfg));
+    if (gdo == nullptr || !gdo->Init().ok()) {
+      return;
+    }
+    gdo->set_primary(true);
+    comps->push_back(gdo.get());
+    hap::Accessory *pri_acc = (*accs)[0].get();
+    pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
+    pri_acc->AddService(std::move(gdo));
+    return;
+  }
   // Use legacy layout if upgraded from an older version (pre-2.1).
   // However, presence of detached inputs overrides it.
   bool compat_20 = (mgos_sys_config_get_shelly_legacy_hap_layout() &&

@@ -51,9 +51,7 @@ class WindowCovering : public Component, public Service {
   Status Init() override;
 
   // Component interface impl.
-  Type type() const override {
-    return Type::kWindowCovering;
-  }
+  Type type() const override;
   StatusOr<std::string> GetInfo() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
@@ -118,7 +116,6 @@ class WindowCovering : public Component, public Service {
   PowerMeter *pm_open_, *pm_close_;
   struct mgos_config_wc *cfg_;
 
-  std::vector<Input::HandlerID> input_handlers_;
   Input::HandlerID in_open_handler_ = Input::kInvalidHandlerID;
   Input::HandlerID in_close_handler_ = Input::kInvalidHandlerID;
   mgos::ScopedTimer state_timer_;
