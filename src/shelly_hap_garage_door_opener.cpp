@@ -67,19 +67,7 @@ Status GarageDoorOpener::Init() {
         return kHAPError_None;
       },
       true /* supports_notification */,
-      [this](HAPAccessoryServerRef *,
-             const HAPUInt8CharacteristicWriteRequest *, uint8_t value) {
-        // We need to decouple from the current invocation
-        // because we may want to raise a notification on the target position
-        // and we can't do that within the write callback.
-        mgos::InvokeCB([this, value] {
-          // We want every tap to cause an action, so we basically ignore the
-          // actual value.
-          ToggleState((value ? "HAPclose" : "HAPopen"));
-          RunOnce();
-        });
-        return kHAPError_None;
-      },
+      std::bind(&GarageDoorOpener::HAPTgtStateWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_CurrentPosition);
   AddChar(tgt_state_char_);
   // Obstruction Detected
@@ -241,6 +229,28 @@ void GarageDoorOpener::ToggleState(const char *source) {
       }
       break;
   }
+}
+
+HAPError GarageDoorOpener::HAPTgtStateWrite(
+    HAPAccessoryServerRef *, const HAPUInt8CharacteristicWriteRequest *,
+    uint8_t value) {
+  if ((value == kHAPCharacteristicValue_TargetDoorState_Open &&
+       (cur_state_ == State::kOpen || cur_state_ == State::kOpening)) ||
+      (value == kHAPCharacteristicValue_TargetDoorState_Closed &&
+       (cur_state_ == State::kClosed || cur_state_ == State::kClosing))) {
+    // Nothing to do.
+    return kHAPError_None;
+  }
+  // We need to decouple from the current invocation
+  // because we may want to raise a notification on the target
+  // position and we can't do that within the write callback.
+  mgos::InvokeCB([this, value] {
+    // We want every tap to cause an action, so we basically ignore
+    // the actual value.
+    ToggleState((value ? "HAPclose" : "HAPopen"));
+    RunOnce();
+  });
+  return kHAPError_None;
 }
 
 void GarageDoorOpener::SetTgtState(State new_state, const char *src) {

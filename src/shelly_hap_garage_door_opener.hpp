@@ -63,6 +63,9 @@ class GarageDoorOpener : public Component, public Service {
   void SetCurState(State new_state);
   void SetTgtState(State new_state, const char *source);
   void ToggleState(const char *source);
+  HAPError HAPTgtStateWrite(HAPAccessoryServerRef *svr,
+                            const HAPUInt8CharacteristicWriteRequest *req,
+                            uint8_t value);
 
   void RunOnce();
 
