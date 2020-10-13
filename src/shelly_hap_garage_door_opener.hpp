@@ -36,8 +36,8 @@ namespace hap {
 // Common base for Switch, Outlet and Lock services.
 class GarageDoorOpener : public Component, public Service {
  public:
-  GarageDoorOpener(int id, Input *in_close, Input *in_open, Output *out,
-                   struct mgos_config_gdo *cfg);
+  GarageDoorOpener(int id, Input *in_close, Input *in_open, Output *out_open,
+                   Output *out_close, struct mgos_config_gdo *cfg);
   virtual ~GarageDoorOpener();
 
   Status Init() override;
@@ -69,9 +69,8 @@ class GarageDoorOpener : public Component, public Service {
 
   void RunOnce();
 
-  Input *in_close_;
-  Input *in_open_;
-  Output *out_;
+  Input *in_close_, *in_open_;
+  Output *out_close_, *out_open_;
   struct mgos_config_gdo *cfg_;
 
   mgos::ScopedTimer state_timer_;

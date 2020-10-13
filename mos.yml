@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.3.1-beta1
+version: 2.3.1-beta2
 platform: esp8266
 
 libs_version: latest
@@ -54,6 +54,7 @@ config_schema:
   - ["gdo.name", "s", "Garage Door", {"title": "Accessory name"}]
   - ["gdo.close_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally closed, 1 - normally open"}]
   - ["gdo.open_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
+  - ["gdo.out_mode", "i", 0, {"title": "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close)"}]
   - ["gdo.move_time_ms", "i", 30000, {"title": "Movement time, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {"title": "Output active time, ms"}]
 

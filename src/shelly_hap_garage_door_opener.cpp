@@ -24,7 +24,8 @@ namespace shelly {
 namespace hap {
 
 GarageDoorOpener::GarageDoorOpener(int id, Input *in_close, Input *in_open,
-                                   Output *out, struct mgos_config_gdo *cfg)
+                                   Output *out_close, Output *out_open,
+                                   struct mgos_config_gdo *cfg)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_GARAGE_DOOR_OPENER +
                (SHELLY_HAP_IID_STEP_GARAGE_DOOR_OPENER * (id - 1))),
@@ -32,13 +33,17 @@ GarageDoorOpener::GarageDoorOpener(int id, Input *in_close, Input *in_open,
               kHAPServiceDebugDescription_GarageDoorOpener),
       in_close_(in_close),
       in_open_(in_open),
-      out_(out),
+      out_close_(out_close),
+      out_open_(out_open),
       cfg_(cfg),
       state_timer_(std::bind(&GarageDoorOpener::RunOnce, this)) {
+  out_close_->SetState(false, "ctor");
+  out_open_->SetState(false, "ctor");
 }
 
 GarageDoorOpener::~GarageDoorOpener() {
-  out_->SetState(false, "dtor");
+  out_close_->SetState(false, "dtor");
+  out_open_->SetState(false, "dtor");
 }
 
 Status GarageDoorOpener::Init() {
@@ -98,24 +103,25 @@ StatusOr<std::string> GarageDoorOpener::GetInfo() const {
       "{id: %d, type: %d, name: %Q, "
       "cur_state: %d, cur_state_str: %Q, "
       "move_time: %d, pulse_time_ms: %d, "
-      "close_sensor_mode: %d, open_sensor_mode: %d}",
+      "close_sensor_mode: %d, open_sensor_mode: %d, "
+      "out_mode: %d}",
       id(), type(), cfg_->name, (int) cur_state_, StateStr(cur_state_),
       cfg_->move_time_ms / 1000, cfg_->pulse_time_ms, cfg_->close_sensor_mode,
-      cfg_->open_sensor_mode);
+      cfg_->open_sensor_mode, (out_open_ != out_close_ ? cfg_->out_mode : -1));
 }
 
 Status GarageDoorOpener::SetConfig(const std::string &config_json,
                                    bool *restart_required) {
   struct mgos_config_gdo cfg = *cfg_;
   cfg.name = nullptr;
-  int move_time = -1, pulse_time_ms = -1;
+  int move_time = -1, pulse_time_ms = -1, out_mode = -1;
   int close_sensor_mode = -1, open_sensor_mode = -1;
   int8_t toggle = -1;
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, toggle: %B, move_time: %d, pulse_time_ms: %d, "
-             "close_sensor_mode: %d, open_sensor_mode: %d}",
+             "close_sensor_mode: %d, open_sensor_mode: %d, out_mode: %d}",
              &cfg.name, &toggle, &move_time, &pulse_time_ms, &close_sensor_mode,
-             &open_sensor_mode);
+             &open_sensor_mode, &out_mode);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -129,6 +135,9 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   if (open_sensor_mode > 2) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "open_sensor_mode");
+  }
+  if (out_mode > 1) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "out_mode");
   }
   // We don't impose a limit on pulse time.
   // Apply.
@@ -151,6 +160,10 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   }
   if (open_sensor_mode >= 0) {
     cfg_->open_sensor_mode = open_sensor_mode;
+  }
+  if (out_mode >= 0) {
+    cfg_->out_mode = out_mode;
+    *restart_required = true;
   }
   return Status::OK();
 }
@@ -199,9 +212,13 @@ void GarageDoorOpener::SetCurState(State new_state) {
 void GarageDoorOpener::ToggleState(const char *source) {
   // Every target state change generates a pulse.
   State new_state =
-      (tgt_state_ == State::kOpen ? State::kClosed : State::kOpen);
-  out_->Pulse(true, cfg_->pulse_time_ms,
-              (new_state == State::kOpen ? "GDO:open" : "GDO:close"));
+      (tgt_state_ == State::kClosed ? State::kOpen : State::kClosed);
+  const char *out_src = (new_state == State::kOpen ? "GDO:open" : "GDO:close");
+  if (cfg_->out_mode == 0 || new_state == State::kClosed) {
+    out_close_->Pulse(true, cfg_->pulse_time_ms, out_src);
+  } else {
+    out_open_->Pulse(true, cfg_->pulse_time_ms, out_src);
+  }
   switch (cur_state_) {
     case State::kOpen:
       SetTgtState(new_state, source);

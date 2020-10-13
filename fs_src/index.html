@@ -550,6 +550,13 @@ input:checked + .slider:before {
           <option id="open_sensor_mode_2" value="2">Disabled</option>
         </select>
       </div>
+      <div class="form-control" id="out_mode_container">
+        <label>Output Mode:</label>
+        <select id="out_mode">
+          <option id="out_mode_0" value="0">Single</option>
+          <option id="out_mode_1" value="1">Dual</option>
+        </select>
+      </div>
       <div class="form-control">
         <label>Movement Time:</label>
         <input type="text" id="move_time" style="width: 2em; min-width: 2em;"> seconds
@@ -863,6 +870,9 @@ function gdoSetConfig(c, cfg, spinner) {
     if (c.data.open_sensor_mode >= 0) {
       cfg.open_sensor_mode = parseInt(el(c, "open_sensor_mode").value);
     }
+    if (c.data.out_mode >= 0) {
+      cfg.out_mode = parseInt(el(c, "out_mode").value);
+    }
   }
   setComponentConfig(c, cfg, spinner);
 }
@@ -1025,6 +1035,11 @@ function updateComponent(cd) {
         el(c, "open_sensor_mode_" + cd.open_sensor_mode).selected = true;
       } else {
         el(c, "open_sensor_mode_container").style.display = "none";
+      }
+      if (cd.out_mode >= 0) {
+        el(c, "out_mode_" + cd.out_mode).selected = true;
+      } else {
+        el(c, "out_mode_container").style.display = "none";
       }
       break;
   }
