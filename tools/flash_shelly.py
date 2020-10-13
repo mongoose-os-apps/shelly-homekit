@@ -102,13 +102,16 @@ class MyListener:
     self.p_list = []
 
   def add_service(self, zeroconf, type, name):
-      self.device_list.append(name.replace('._http._tcp.local.', ''))
-      # info = zeroconf.get_service_info(type, name, 2000)
-      # logger.trace(f"INFO: {info}")
-      # properties = { y.decode('ascii'): info.properties.get(y).decode('ascii') for y in info.properties.keys() }
-      # self.p_list.append(properties)
-      # logger.trace("properties: {properties}")
-      # json_object = json.dumps(properties, indent = 2)
+    name = name.replace('._http._tcp.local.', '')
+    logger.debug(f"HOST: {name} {is_valid_hostname(name)}")
+    if is_valid_hostname(name):
+      self.device_list.append(name)
+    # info = zeroconf.get_service_info(type, name, 2000)
+    # logger.trace(f"INFO: {info}")
+    # properties = { y.decode('ascii'): info.properties.get(y).decode('ascii') for y in info.properties.keys() }
+    # self.p_list.append(properties)
+    # logger.trace("properties: {properties}")
+    # json_object = json.dumps(properties, indent = 2)
 
 def shelly_model(type, mode):
   if mode != 'stock':
@@ -172,6 +175,13 @@ def isNewer(v1, v2):
     return (vi1[4] > vi2[4])
   else:
     return False
+
+
+def is_valid_hostname(hostname):
+  if len(hostname) > 255:
+      return False
+  allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+  return all(allowed.match(x) for x in hostname.split("."))
 
 
 def write_flash(device, lfw, dlurl, cfw_type, mode):
