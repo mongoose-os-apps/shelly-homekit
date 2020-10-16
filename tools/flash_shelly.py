@@ -106,7 +106,10 @@ def get_info(host):
     if not 'device_id' in info:
       info['device_id'] = info['id']
     return((info['host'], info))
-  except (urllib.error.HTTPError) as err:
+  except (urllib.error.URLError) as err:
+    if 'Errno 8' in str(err.reason):
+      logger.warning(f"{RED}Could not resolve host: {host}\n{NC}")
+      return(('None', 'None'))
     try:
       with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
         info = json.load(fp)
@@ -118,7 +121,8 @@ def get_info(host):
       info['fw_type'] = 'stock'
       return((info['host'], info))
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
-      return 1
+      logger.trace(f"Error: {err}")
+      return(('None', 'None'))
 
 
 class MyListener:
@@ -412,8 +416,8 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
   logger.debug(f"ffw: {ffw}")
   if not do_all:
     device_list = []
+    logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
     for host in hosts:
-      logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
       device_list.append(get_info(host))
   else:
     logger.info(f"{WHITE}Scanning for Shelly devices...\n{NC}")
@@ -427,7 +431,8 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
   logger.trace(f"device_test: {device_list}")
   # logger.debug(f"\nproperties: {listener.p_list}")
   for device in device_list:
-    parse_info(device[1], action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
+    if device[0] != 'None':
+      parse_info(device[1], action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
 
 
 if __name__ == '__main__':
