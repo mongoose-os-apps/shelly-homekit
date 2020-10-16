@@ -109,7 +109,7 @@ def get_info(host):
   except (urllib.error.URLError) as err:
     if 'Errno 8' in str(err.reason):
       logger.warning(f"{RED}Could not resolve host: {host}\n{NC}")
-      return(('None', 'None'))
+      return(None)
     try:
       with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
         info = json.load(fp)
@@ -122,7 +122,7 @@ def get_info(host):
       return((info['host'], info))
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
       logger.trace(f"Error: {err}")
-      return(('None', 'None'))
+      return(None)
 
 
 class MyListener:
@@ -427,12 +427,14 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     time.sleep(5)
     zc.close()
     device_list = listener.device_list
+  for x in device_list:
+    if x == None:
+      device_list.remove(None)
   device_list.sort()
   logger.trace(f"device_test: {device_list}")
   # logger.debug(f"\nproperties: {listener.p_list}")
   for device in device_list:
-    if device[0] != 'None':
-      parse_info(device[1], action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
+    parse_info(device[1], action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
 
 
 if __name__ == '__main__':
