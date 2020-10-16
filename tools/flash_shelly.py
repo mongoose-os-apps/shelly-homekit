@@ -113,8 +113,8 @@ def get_info(host):
     try:
       with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
         info = json.load(fp)
-      info['host'] = f'{host}.local'
-      info['device_id'] = host
+      info['host'] = host
+      info['device_id'] = host.replace('.local','')
       info['app'] = shelly_model(info['type'], 'homekit')
       info['stock_model'] = info['type']
       info['version'] = info['fw'].split('/v')[1].split('@')[0]
