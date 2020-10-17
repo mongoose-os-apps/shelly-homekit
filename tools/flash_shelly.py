@@ -105,24 +105,25 @@ def get_info(host):
     info['fw_type'] = 'homekit'
     if not 'device_id' in info:
       info['device_id'] = info['id']
-    return((info['host'], info))
+    return(info)
+  except (urllib.error.HTTPError) as err:
+    pass
   except (urllib.error.URLError) as err:
-    if 'Errno 8' in str(err.reason):
-      logger.warning(f"{RED}Could not resolve host: {host}\n{NC}")
-      return(None)
-    try:
-      with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
-        info = json.load(fp)
-      info['host'] = host
-      info['device_id'] = host.replace('.local','')
-      info['app'] = shelly_model(info['type'], 'homekit')
-      info['stock_model'] = info['type']
-      info['version'] = info['fw'].split('/v')[1].split('@')[0]
-      info['fw_type'] = 'stock'
-      return((info['host'], info))
-    except (urllib.error.HTTPError, urllib.error.URLError) as err:
-      logger.trace(f"Error: {err}")
-      return(None)
+    logger.warning(f"{RED}Could not resolve host: {host}\n{NC}")
+    return None
+  try:
+    with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
+      info = json.load(fp)
+    info['host'] = host
+    info['device_id'] = host.replace('.local','')
+    info['app'] = shelly_model(info['type'], 'homekit')
+    info['stock_model'] = info['type']
+    info['version'] = info['fw'].split('/v')[1].split('@')[0]
+    info['fw_type'] = 'stock'
+    return(info)
+  except (urllib.error.HTTPError, urllib.error.URLError) as err:
+    logger.trace(f"Error: {err}")
+    return None
 
 
 class MyListener:
@@ -134,7 +135,9 @@ class MyListener:
     device = device.replace('._http._tcp.local.', '')
     logger.debug(f"Valid Hostname: {device} {is_valid_hostname(device)}")
     if is_valid_hostname(device):
-      self.device_list.append(get_info(device))
+      info = get_info(device)
+      if info is not None:
+        self.device_list.append(info)
     # info = zeroconf.get_service_info(type, name, 2000)
     # logger.trace(f"INFO: {info}")
     # properties = { y.decode('ascii'): info.properties.get(y).decode('ascii') for y in info.properties.keys() }
@@ -418,7 +421,9 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     device_list = []
     logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
     for host in hosts:
-      device_list.append(get_info(host))
+      info = get_info(host)
+      if info is not None:
+        device_list.append(info)
   else:
     logger.info(f"{WHITE}Scanning for Shelly devices...\n{NC}")
     zc = zeroconf.Zeroconf()
@@ -427,14 +432,11 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     time.sleep(5)
     zc.close()
     device_list = listener.device_list
-  for x in device_list:
-    if x == None:
-      device_list.remove(None)
-  device_list.sort()
+  sorted_device_list = sorted(device_list, key=lambda k: k['host'])
   logger.trace(f"device_test: {device_list}")
   # logger.debug(f"\nproperties: {listener.p_list}")
-  for device in device_list:
-    parse_info(device[1], action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
+  for device in sorted_device_list:
+    parse_info(device, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
 
 
 if __name__ == '__main__':
