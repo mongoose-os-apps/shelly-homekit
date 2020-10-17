@@ -96,16 +96,48 @@ except ImportError:
   pipe = subprocess.check_output(['pip3', 'install', 'requests'])
   import requests
 
+def get_info(host):
+  if not '.local' in host:
+    host = host + '.local'
+  try:
+    with urllib.request.urlopen(f'http://{host}/rpc/Shelly.GetInfo') as fp:
+      info = json.load(fp)
+    info['fw_type'] = 'homekit'
+    if not 'device_id' in info:
+      info['device_id'] = info['id']
+    return(info)
+  except (urllib.error.HTTPError) as err:
+    pass
+  except (urllib.error.URLError) as err:
+    logger.warning(f"{RED}Could not resolve host: {host}\n{NC}")
+    return None
+  try:
+    with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
+      info = json.load(fp)
+    info['host'] = host
+    info['device_id'] = host.replace('.local','')
+    info['app'] = shelly_model(info['type'], 'homekit')
+    info['stock_model'] = info['type']
+    info['version'] = info['fw'].split('/v')[1].split('@')[0]
+    info['fw_type'] = 'stock'
+    return(info)
+  except (urllib.error.HTTPError, urllib.error.URLError) as err:
+    logger.trace(f"Error: {err}")
+    return None
+
+
 class MyListener:
   def __init__(self):
     self.device_list = []
     self.p_list = []
 
-  def add_service(self, zeroconf, type, name):
-    name = name.replace('._http._tcp.local.', '')
-    logger.debug(f"HOST: {name} {is_valid_hostname(name)}")
-    if is_valid_hostname(name):
-      self.device_list.append(name)
+  def add_service(self, zeroconf, type, device):
+    device = device.replace('._http._tcp.local.', '')
+    logger.debug(f"Valid Hostname: {device} {is_valid_hostname(device)}")
+    if is_valid_hostname(device):
+      info = get_info(device)
+      if info is not None:
+        self.device_list.append(info)
     # info = zeroconf.get_service_info(type, name, 2000)
     # logger.trace(f"INFO: {info}")
     # properties = { y.decode('ascii'): info.properties.get(y).decode('ascii') for y in info.properties.keys() }
@@ -125,8 +157,8 @@ def shelly_model(type, mode):
                'switch25' : 'Shelly25',
                'SHPLG-S' : 'ShellyPlugS',
                'shelly-plug-s' : 'ShellyPlugS',
-               'SHDM-1' : 'ShellyDimmer',
-               'dimmer1' : 'ShellyDimmer',
+               'SHDM-1' : 'ShellyDimmer1',
+               'dimmer1' : 'ShellyDimmer1',
                'SHRGBW2' : 'ShellyRGBW2',
                'rgbw2' : 'ShellyRGBW2',
     }
@@ -184,23 +216,23 @@ def is_valid_hostname(hostname):
   return all(allowed.match(x) for x in hostname.split("."))
 
 
-def write_flash(device, lfw, dlurl, cfw_type, mode):
+def write_flash(host, lfw, dlurl, cfw_type, mode):
   logger.debug(f"\n{WHITE}write_flash{NC}")
   flashed = False
-  host = device.replace('.local', '')
+  friendly_host = host.replace('.local', '')
   if cfw_type == 'homekit':
     logger.info("Downloading Firmware...")
     logger.debug(f"DURL: {dlurl}")
     myfile = requests.get(dlurl)
     logger.info("Now Flashing...")
     files = {'file': ('shelly-flash.zip', myfile.content)}
-    response = requests.post(f'http://{device}/update' , files=files)
+    response = requests.post(f'http://{host}/update' , files=files)
     logger.debug(response.text)
   else:
     logger.info("Now Flashing...")
     dlurl = dlurl.replace('https', 'http')
-    logger.debug(f"curl -qsS http://{device}/ota?url={dlurl}")
-    response = requests.get(f'http://{device}/ota?url={dlurl}')
+    logger.debug(f"curl -qsS http://{host}/ota?url={dlurl}")
+    response = requests.get(f'http://{host}/ota?url={dlurl}')
     logger.debug(response.text)
   time.sleep(2)
   n = 1
@@ -208,12 +240,12 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
   info = None
   while n < 40:
     if waittextshown == False:
-      logger.info("waiting for %s to reboot" % host)
+      logger.info(f"waiting for {friendly_host} to reboot")
       waittextshown = True
     if mode == 'homekit':
-      checkurl = f'http://{device}/rpc/Shelly.GetInfo'
+      checkurl = f'http://{host}/rpc/Shelly.GetInfo'
     else:
-      checkurl = f'http://{device}/Shelly.GetInfo'
+      checkurl = f'http://{host}/Shelly.GetInfo'
     try:
       with urllib.request.urlopen(checkurl) as fp:
         info = json.load(fp)
@@ -228,63 +260,49 @@ def write_flash(device, lfw, dlurl, cfw_type, mode):
   else:
     onlinecheck = info['fw'].split('/v')[1].split('@')[0]
   if onlinecheck == lfw:
-    logger.info(f"{GREEN}Successfully flashed {host} to {lfw}{NC}")
+    logger.info(f"{GREEN}Successfully flashed {friendly_host} to {lfw}{NC}")
     if mode == 'stock' and info['type'] == 'SHRGBW2':
       logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
       logger.info(f"{WHITE}WARNING!!{NC} If you are using this device in conjunction with Homebridge it will")
       logger.info("result in ALL scenes / automations to be removed within HomeKit.")
-      logger.info("Goto http://$device in your web browser")
+      logger.info(f"Goto http://{host} in your web browser")
       logger.info("Goto settings section")
       logger.info("Goto 'Device Type' and switch modes")
       logger.info("Once mode has been changed, you can switch it back to your preferred mode.")
   else:
-    logger.info(f"{RED}Failed to flash {host} to {lfw}{NC}")
+    logger.info(f"{RED}Failed to flash {friendly_host} to {lfw}{NC}")
     logger.info("Current: %s" % onlinecheck)
 
-def probe_info(device, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
+def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, variant, stock_release_info, homekit_release_info):
+  logger.debug(f"\n{WHITE}parse_info{NC}")
+  logger.trace(f"device_info: {device_info}")
   flash = False
   dlurl = None
-  info = None           # firmware versions info
-  model = None          # device model
-  lfw = None            # latest firmware available
-  cfw = None            # current firmware on device
-  cfw_type = 'homekit'  # current firmware type
-  ffw = version
-  host = device
-  host = host.replace('.local', '')
-  logger.debug(f"\n{WHITE}probe_info{NC}")
-  logger.debug(f"device: {device}")
+  lfw = None                         # latest firmware available
+  cfw = device_info['version']       # current firmware version
+  cfw_type = device_info['fw_type']  # current firmware type
+  friendly_host = device_info['host'].replace('.local', '')
+  host = device_info['host']
+  device = device_info['device_id']
+  model = device_info['model'] if 'model' in device_info else device_info['stock_model']
   logger.debug(f"host: {host}")
+  logger.debug(f"device: {device}")
+  logger.debug(f"model: {model}")
+  logger.debug(f"stock_model: {device_info['stock_model']}")
   logger.debug(f"action: {action}")
   logger.debug(f"dry_run: {dry_run}")
   logger.debug(f"silent_run: {silent_run}")
   logger.debug(f"mode: {mode}")
   logger.debug(f"exclude: {exclude}")
-  logger.debug(f"version: {version}")
+  logger.debug(f"version: {ffw}")
   logger.debug(f"ffw: {ffw}")
   logger.debug(f"variant: {variant}")
 
-  try:
-    with urllib.request.urlopen(f'http://{device}/rpc/Shelly.GetInfo') as fp:
-      info = json.load(fp)
-  except (urllib.error.HTTPError) as err:
-    try:
-      cfw_type = 'stock'
-      with urllib.request.urlopen(f'http://{device}/Shelly.GetInfo') as fp:
-        info = json.load(fp)
-    except (urllib.error.HTTPError, urllib.error.URLError) as err:
-      return 1
-  except (urllib.error.URLError) as err:
-    logger.warning(f"Could not resolve host: {host}")
-    return 1
   if mode == 'keep':
     mode = cfw_type
   logger.debug(f'flash_mode: {mode}\n')
   if cfw_type == 'homekit':
-    type = info['app']
-    cfw = info['version']
     if mode == 'homekit':
-      model = info['model'] if 'model' in info else shelly_model(type, mode)
       for i in homekit_release_info:
         if variant:
           re_search = '-*'
@@ -292,20 +310,16 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, version, vari
           re_search = i[0]
         if re.search(re_search, cfw):
           lfw = i[1]['version']
-          if not version:
+          if not ffw:
             dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
           else:
             dlurl=f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
           break
     else: # stock
-      model = info['stock_model'] if 'stock_model' in info else shelly_model(type, mode)
-      lfw = stock_release_info['data'][model]['version'].split('/v')[1].split('@')[0]
-      dlurl = stock_release_info['data'][model]['url']
+      lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
+      dlurl = stock_release_info['data'][device_info['stock_model']]['url']
   else: # cfw stock
-    cfw = info['fw'].split('/v')[1].split('@')[0]
-    type = info['type']
     if mode == 'homekit':
-      model = shelly_model(type, mode)
       for i in homekit_release_info:
         if variant:
           re_search = '-*'
@@ -313,15 +327,14 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, version, vari
           re_search = i[0]
         if re.search(re_search, cfw):
           lfw = i[1]['version']
-          if not version:
+          if not ffw:
             dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
           elif lfw:
             dlurl = f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
           break
     else: # stock
-      model = type
-      lfw = stock_release_info['data'][model]['version'].split('/v')[1].split('@')[0]
-      dlurl = stock_release_info['data'][model]['url']
+      lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
+      dlurl = stock_release_info['data'][device_info['stock_model']]['url']
   if dlurl:
     durl_request = requests.get(dlurl)
   if not dlurl or durl_request.status_code != 200:
@@ -343,10 +356,10 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, version, vari
     logger.info(f"{WHITE}Latest: {NC}Official {col}{lfw_label}{NC}")
   logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
   if action != 'list':
-    if version and dlurl:
+    if ffw and dlurl:
       lfw = ffw
       perform_flash = True
-    elif exclude and host in exclude:
+    elif exclude and device in exclude:
       perform_flash = False
     elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'revert' and dlurl) \
          or ((isNewer(lfw, cfw)) and ((cfw_type == 'homekit' and mode == 'homekit') \
@@ -356,7 +369,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, version, vari
       perform_flash = False
     logger.debug(f"perform_flash: {perform_flash}")
     if perform_flash == True and dry_run == False and silent_run == False:
-      if input(f"Do you wish to flash {host} to firmware version {lfw} (y/n) ? ") == 'y':
+      if input(f"Do you wish to flash {friendly_host} to firmware version {lfw} (y/n) ? ") == 'y':
         flash = True
       else:
         flash = False
@@ -369,7 +382,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, version, vari
         keyword = "converted to HomeKit firmware"
       elif isNewer(lfw, cfw):
         keyword = f"upgraded from {cfw} to version {lfw}"
-      elif version:
+      elif ffw:
         keyword = f"reflashed version {ffw}"
       logger.info(f"Would have been {keyword}...")
     elif not dlurl:
@@ -379,13 +392,13 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, version, vari
         keyword = "Is not supported yet..."
       logger.info(f"{keyword}\n")
       return 0
-    elif exclude and host in exclude:
+    elif exclude and device in exclude:
       logger.info("Skipping as device has been excluded...")
     else:
       logger.info("Does not need updating...\n")
       return 0
     if flash == True:
-      write_flash(device, lfw, dlurl, cfw_type, mode)
+      write_flash(host, lfw, dlurl, cfw_type, mode)
     elif dry_run == False and exclude == False:
       logger.info("Skipping Flash...")
   logger.info(" ")
@@ -394,7 +407,7 @@ def probe_info(device, action, dry_run, silent_run, mode, exclude, version, vari
 def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
   ffw = version
   logger.debug(f"\n{WHITE}device_scan{NC}")
-  logger.debug(f"hosts: {hosts}")
+  logger.debug(f"devices: {hosts}")
   logger.debug(f"action: {action}")
   logger.debug(f"do_all: {do_all}")
   logger.debug(f"dry_run: {dry_run}")
@@ -405,11 +418,12 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
   logger.debug(f"variant: {variant}")
   logger.debug(f"ffw: {ffw}")
   if not do_all:
-    for device in hosts:
-      logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
-      if not '.local' in device:
-        device = device + '.local'
-      probe_info(device, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
+    device_list = []
+    logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
+    for host in hosts:
+      info = get_info(host)
+      if info is not None:
+        device_list.append(info)
   else:
     logger.info(f"{WHITE}Scanning for Shelly devices...\n{NC}")
     zc = zeroconf.Zeroconf()
@@ -417,11 +431,12 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
     time.sleep(5)
     zc.close()
-    logger.debug(f"device_test: {listener.device_list}")
-    # logger.debug(f"\nproperties: {listener.p_list}")
-    listener.device_list.sort()
-    for device in listener.device_list:
-      probe_info(device + '.local', action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
+    device_list = listener.device_list
+  sorted_device_list = sorted(device_list, key=lambda k: k['host'])
+  logger.trace(f"device_test: {device_list}")
+  # logger.debug(f"\nproperties: {listener.p_list}")
+  for device in sorted_device_list:
+    parse_info(device, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
 
 
 if __name__ == '__main__':
