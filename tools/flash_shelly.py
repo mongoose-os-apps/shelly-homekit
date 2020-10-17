@@ -301,40 +301,22 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, var
   if mode == 'keep':
     mode = cfw_type
   logger.debug(f'flash_mode: {mode}\n')
-  if cfw_type == 'homekit':
-    if mode == 'homekit':
-      for i in homekit_release_info:
-        if variant:
-          re_search = '-*'
+  if mode == 'homekit':
+    for i in homekit_release_info:
+      if variant:
+        re_search = '-*'
+      else:
+        re_search = i[0]
+      if re.search(re_search, cfw):
+        lfw = i[1]['version']
+        if not ffw:
+          dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
         else:
-          re_search = i[0]
-        if re.search(re_search, cfw):
-          lfw = i[1]['version']
-          if not ffw:
-            dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
-          else:
-            dlurl=f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
-          break
-    else: # stock
-      lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
-      dlurl = stock_release_info['data'][device_info['stock_model']]['url']
-  else: # cfw stock
-    if mode == 'homekit':
-      for i in homekit_release_info:
-        if variant:
-          re_search = '-*'
-        else:
-          re_search = i[0]
-        if re.search(re_search, cfw):
-          lfw = i[1]['version']
-          if not ffw:
-            dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
-          elif lfw:
-            dlurl = f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
-          break
-    else: # stock
-      lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
-      dlurl = stock_release_info['data'][device_info['stock_model']]['url']
+          dlurl=f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
+        break
+  else: # stock
+    lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
+    dlurl = stock_release_info['data'][device_info['stock_model']]['url']
   if dlurl:
     durl_request = requests.get(dlurl)
   if not dlurl or durl_request.status_code != 200:
