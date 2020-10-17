@@ -34,14 +34,10 @@ ShellySwitch::ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
       out_(out),
       out_pm_(out_pm),
       cfg_(cfg),
-      auto_off_timer_id_(MGOS_INVALID_TIMER_ID) {
+      auto_off_timer_(std::bind(&ShellySwitch::AutoOffTimerCB, this)) {
 }
 
 ShellySwitch::~ShellySwitch() {
-  if (auto_off_timer_id_ != MGOS_INVALID_TIMER_ID) {
-    mgos_clear_timer(auto_off_timer_id_);
-    auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
-  }
   if (in_ != nullptr) {
     in_->RemoveHandler(handler_id_);
   }
@@ -155,11 +151,6 @@ Status ShellySwitch::Init() {
 }
 
 void ShellySwitch::SetState(bool new_state, const char *source) {
-  SetStateInternal(new_state, source, false /* is_auto_off */);
-}
-
-void ShellySwitch::SetStateInternal(bool new_state, const char *source,
-                                    bool is_auto_off) {
   bool cur_state = out_->GetState();
   out_->SetState(new_state, source);
   if (cfg_->state != new_state) {
@@ -167,33 +158,24 @@ void ShellySwitch::SetStateInternal(bool new_state, const char *source,
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          NULL /* msg */);
   }
+
+  if (new_state && cfg_->auto_off) {
+    auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
+  } else {
+    auto_off_timer_.Clear();
+  }
+
   if (new_state == cur_state) return;
+
   for (auto *c : state_notify_chars_) {
     c->RaiseEvent();
   }
-
-  if (auto_off_timer_id_ != MGOS_INVALID_TIMER_ID) {
-    // Cancel timer if state changes so that only the last timer is triggered if
-    // state changes multiple times
-    mgos_clear_timer(auto_off_timer_id_);
-    auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
-  }
-
-  if (cfg_->auto_off && !is_auto_off) {
-    auto_off_timer_id_ =
-        mgos_set_timer(cfg_->auto_off_delay * 1000, 0, AutoOffTimerCB, this);
-    LOG(LL_INFO,
-        ("%d: Set auto-off timer for %.3f", id(), cfg_->auto_off_delay));
-  }
 }
 
-// static
-void ShellySwitch::AutoOffTimerCB(void *ctx) {
-  ShellySwitch *sw = static_cast<ShellySwitch *>(ctx);
-  sw->auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
-  if (sw->cfg_->auto_off) {
+void ShellySwitch::AutoOffTimerCB() {
+  if (cfg_->auto_off) {
     // Don't set state if auto off has been disabled during timer run
-    sw->SetStateInternal(false, "auto_off", true /* is_auto_off */);
+    SetState(false, "auto_off");
   }
 }
 

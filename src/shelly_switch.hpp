@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "mgos_sys_config.h"
-#include "mgos_timers.h"
+#include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
@@ -67,9 +67,7 @@ class ShellySwitch : public Component, public hap::Service {
  protected:
   void InputEventHandler(Input::Event ev, bool state);
 
-  void SetStateInternal(bool new_state, const char *source, bool is_auto_off);
-
-  static void AutoOffTimerCB(void *ctx);
+  void AutoOffTimerCB();
 
   void SaveState();
 
@@ -81,7 +79,7 @@ class ShellySwitch : public Component, public hap::Service {
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
   std::vector<hap::Characteristic *> state_notify_chars_;
 
-  mgos_timer_id auto_off_timer_id_ = MGOS_INVALID_TIMER_ID;
+  mgos::ScopedTimer auto_off_timer_;
 
   ShellySwitch(const ShellySwitch &other) = delete;
 };
