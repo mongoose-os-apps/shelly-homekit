@@ -335,6 +335,9 @@ void WindowCovering::HAPSetTgtPos(float value) {
     } else {
       last_ext_move_dir_ = Direction::kNone;
     }
+  } else if ((value == kFullyClosed && cur_pos_ == kFullyClosed) ||
+             (value == kFullyOpen && cur_pos_ == kFullyOpen)) {
+    // Nothing to do.
   } else {
     // This is most likely a tap on the tile.
     HandleInputSingle("HAPalt");
