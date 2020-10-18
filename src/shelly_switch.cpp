@@ -48,6 +48,13 @@ Component::Type ShellySwitch::type() const {
 }
 
 StatusOr<std::string> ShellySwitch::GetInfo() const {
+  int in_st = -1;
+  if (in_ != nullptr) in_st = in_->GetState();
+  return mgos::SPrintf("st:%d in_st:%d inm:%d", out_->GetState(), in_st,
+                       cfg_->in_mode);
+}
+
+StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, svc_type: %d, in_mode: %d, initial: %d, "
       "state: %B, auto_off: %B, auto_off_delay: %.3f",

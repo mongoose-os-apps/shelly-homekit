@@ -178,6 +178,11 @@ Component::Type WindowCovering::type() const {
 }
 
 StatusOr<std::string> WindowCovering::GetInfo() const {
+  return mgos::SPrintf("c:%d mp:%.2f mt_ms:%d cp:%.2f", cfg_->calibrated,
+                       cfg_->move_power, cfg_->move_time_ms, cur_pos_);
+}
+
+StatusOr<std::string> WindowCovering::GetInfoJSON() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, "
       "in_mode: %d, swap_inputs: %B, swap_outputs: %B, "

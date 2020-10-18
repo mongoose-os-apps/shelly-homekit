@@ -38,8 +38,14 @@ class Component {
   int id() const;
 
   virtual Type type() const = 0;
+
+  // Complex initialization after construction.
   virtual Status Init() = 0;
+  // Short status snippet string.
   virtual StatusOr<std::string> GetInfo() const = 0;
+  // Full JSON status for UI.
+  virtual StatusOr<std::string> GetInfoJSON() const = 0;
+  // Set configuration from UI.
   virtual Status SetConfig(const std::string &config_json,
                            bool *restart_required) = 0;
 

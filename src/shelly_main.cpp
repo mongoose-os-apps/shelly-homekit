@@ -468,12 +468,23 @@ static void StatusTimerCB(void *arg) {
     int num_sessions = 0;
     HAPAccessoryServerEnumerateConnectedSessions(&s_server, CountHAPSessions,
                                                  &num_sessions);
-    LOG(LL_INFO, ("Uptime: %.2lf, conns %u/%u/%u ns %d, RAM: %lu, %lu free",
+    std::string status;
+    for (const Component *c : g_comps) {
+      if (!status.empty()) status.append("; ");
+      status.append(mgos::SPrintf("%d.%d: ", (int) c->type(), c->id()));
+      auto sts = c->GetInfo();
+      if (sts.ok()) {
+        status.append(sts.ValueOrDie());
+      } else {
+        status.append(sts.status().error_message());
+      }
+    }
+    LOG(LL_INFO, ("Up %.2lf, HAP %u/%u/%u ns %d, RAM: %lu/%lu; %s",
                   mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
                   (unsigned) tcpm_stats.numActiveTCPStreams,
                   (unsigned) tcpm_stats.maxNumTCPStreams, num_sessions,
-                  (unsigned long) mgos_get_heap_size(),
-                  (unsigned long) mgos_get_free_heap_size()));
+                  (unsigned long) mgos_get_free_heap_size(),
+                  (unsigned long) mgos_get_heap_size(), status.c_str()));
     s_cnt = 0;
   }
   if (mgos_sys_config_get_shelly_legacy_hap_layout() &&

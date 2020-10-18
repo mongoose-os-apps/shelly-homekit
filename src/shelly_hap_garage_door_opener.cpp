@@ -46,6 +46,10 @@ GarageDoorOpener::~GarageDoorOpener() {
   out_open_->SetState(false, "dtor");
 }
 
+Component::Type GarageDoorOpener::type() const {
+  return Type::kGarageDoorOpener;
+}
+
 Status GarageDoorOpener::Init() {
   uint16_t iid = svc_.iid + 1;
   // Name
@@ -94,11 +98,14 @@ Status GarageDoorOpener::Init() {
   return Status::OK();
 }
 
-Component::Type GarageDoorOpener::type() const {
-  return Type::kGarageDoorOpener;
+StatusOr<std::string> GarageDoorOpener::GetInfo() const {
+  int is_closed, is_open;
+  GetInputsState(&is_closed, &is_open);
+  return mgos::SPrintf("cur:%s tgt:%s cl:%d op:%d", StateStr(cur_state_),
+                       StateStr(tgt_state_), is_closed, is_open);
 }
 
-StatusOr<std::string> GarageDoorOpener::GetInfo() const {
+StatusOr<std::string> GarageDoorOpener::GetInfoJSON() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, "
       "cur_state: %d, cur_state_str: %Q, "
@@ -183,6 +190,18 @@ const char *GarageDoorOpener::StateStr(State state) {
       return "stopped";
   }
   return "???";
+}
+
+void GarageDoorOpener::GetInputsState(int *is_closed, int *is_open) const {
+  bool in_close_act_state = (cfg_->close_sensor_mode == 0);
+  *is_closed = (in_close_->GetState() == in_close_act_state);
+  if (in_open_ != nullptr &&
+      (cfg_->open_sensor_mode == 0 || cfg_->open_sensor_mode == 1)) {
+    bool in_open_act_state = (cfg_->open_sensor_mode == 0);
+    *is_open = (in_open_->GetState() == in_open_act_state);
+  } else {
+    *is_open = -1;
+  }
 }
 
 void GarageDoorOpener::SetCurState(State new_state) {
@@ -283,14 +302,8 @@ void GarageDoorOpener::SetTgtState(State new_state, const char *src) {
 }
 
 void GarageDoorOpener::RunOnce() {
-  bool in_close_act_state = (cfg_->close_sensor_mode == 0);
-  int is_closed = (in_close_->GetState() == in_close_act_state);
-  int is_open = -1;
-  if (in_open_ != nullptr &&
-      (cfg_->open_sensor_mode == 0 || cfg_->open_sensor_mode == 1)) {
-    bool in_open_act_state = (cfg_->open_sensor_mode == 0);
-    is_open = (in_open_->GetState() == in_open_act_state);
-  };
+  int is_closed, is_open;
+  GetInputsState(&is_closed, &is_open);
   LOG(LL_DEBUG,
       ("GDO %d: cur %s tgt %s is_closed %d is_open %d", id(),
        StateStr(cur_state_), StateStr(tgt_state_), is_closed, is_open));

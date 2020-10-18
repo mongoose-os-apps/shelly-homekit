@@ -103,7 +103,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
   for (const auto *c : g_comps) {
-    const auto &is = c->GetInfo();
+    const auto &is = c->GetInfoJSON();
     if (is.ok()) {
       if (!first) res.append(", ");
       res.append(is.ValueOrDie());

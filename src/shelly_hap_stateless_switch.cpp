@@ -43,6 +43,10 @@ StatelessSwitch::~StatelessSwitch() {
   in_->RemoveHandler(handler_id_);
 }
 
+Component::Type StatelessSwitch::type() const {
+  return Type::kStatelessSwitch;
+}
+
 Status StatelessSwitch::Init() {
   if (in_ == nullptr) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "input is required");
@@ -81,6 +85,15 @@ Status StatelessSwitch::Init() {
 }
 
 StatusOr<std::string> StatelessSwitch::GetInfo() const {
+  double last_ev_age = -1;
+  if (last_ev_ts_ > 0) {
+    last_ev_age = mgos_uptime() - last_ev_ts_;
+  }
+  return mgos::SPrintf("st:%d m:%d lea: %.3f", in_->GetState(), cfg_->in_mode,
+                       last_ev_age);
+}
+
+StatusOr<std::string> StatelessSwitch::GetInfoJSON() const {
   double last_ev_age = -1;
   if (last_ev_ts_ > 0) {
     last_ev_age = mgos_uptime() - last_ev_ts_;

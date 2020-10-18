@@ -47,13 +47,11 @@ class StatelessSwitch : public Component, public Service {
                   const uint16_t label_service_iid = 0);
   virtual ~StatelessSwitch();
 
-  Status Init() override;
-
   // Component interface impl.
-  Type type() const override {
-    return Type::kStatelessSwitch;
-  }
+  Type type() const override;
+  Status Init() override;
   StatusOr<std::string> GetInfo() const override;
+  StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
 

@@ -40,11 +40,11 @@ class GarageDoorOpener : public Component, public Service {
                    Output *out_close, struct mgos_config_gdo *cfg);
   virtual ~GarageDoorOpener();
 
-  Status Init() override;
-
   // Component interface impl.
   Type type() const override;
+  Status Init() override;
   StatusOr<std::string> GetInfo() const override;
+  StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
 
@@ -60,6 +60,7 @@ class GarageDoorOpener : public Component, public Service {
 
   static const char *StateStr(State state);
 
+  void GetInputsState(int *is_closed, int *is_open) const;
   void SetCurState(State new_state);
   void SetTgtState(State new_state, const char *source);
   void ToggleState(const char *source);
