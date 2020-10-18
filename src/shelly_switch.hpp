@@ -80,6 +80,7 @@ class ShellySwitch : public Component, public hap::Service {
   std::vector<hap::Characteristic *> state_notify_chars_;
 
   mgos::ScopedTimer auto_off_timer_;
+  bool dirty_ = false;
 
   ShellySwitch(const ShellySwitch &other) = delete;
 };

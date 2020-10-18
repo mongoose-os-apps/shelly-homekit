@@ -41,6 +41,7 @@ ShellySwitch::~ShellySwitch() {
   if (in_ != nullptr) {
     in_->RemoveHandler(handler_id_);
   }
+  SaveState();
 }
 
 Component::Type ShellySwitch::type() const {
@@ -50,6 +51,7 @@ Component::Type ShellySwitch::type() const {
 StatusOr<std::string> ShellySwitch::GetInfo() const {
   int in_st = -1;
   if (in_ != nullptr) in_st = in_->GetState();
+  const_cast<ShellySwitch *>(this)->SaveState();
   return mgos::SPrintf("st:%d in_st:%d inm:%d", out_->GetState(), in_st,
                        cfg_->in_mode);
 }
@@ -162,8 +164,7 @@ void ShellySwitch::SetState(bool new_state, const char *source) {
   out_->SetState(new_state, source);
   if (cfg_->state != new_state) {
     cfg_->state = new_state;
-    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
-                         NULL /* msg */);
+    dirty_ = true;
   }
 
   if (new_state && cfg_->auto_off) {
@@ -184,6 +185,12 @@ void ShellySwitch::AutoOffTimerCB() {
     // Don't set state if auto off has been disabled during timer run
     SetState(false, "auto_off");
   }
+}
+
+void ShellySwitch::SaveState() {
+  if (!dirty_) return;
+  mgos_sys_config_save(&mgos_sys_config, false /* try_once */, NULL /* msg */);
+  dirty_ = false;
 }
 
 void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
