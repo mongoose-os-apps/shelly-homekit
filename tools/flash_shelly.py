@@ -138,6 +138,7 @@ class MyListener:
     logger.debug(f"Valid Hostname: {device} {is_valid_hostname(device)}")
     if is_valid_hostname(device):
       info = get_info(device)
+      logger.trace(f"Info: {info}")
       if info is not None:
         self.device_list.append(info)
     # info = zeroconf.get_service_info(type, name, 2000)
@@ -400,7 +401,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     zc.close()
     device_list = listener.device_list
   sorted_device_list = sorted(device_list, key=lambda k: k['host'])
-  logger.trace(f"device_test: {device_list}")
+  logger.trace(f"device_test: {sorted_device_list}")
   # logger.debug(f"\nproperties: {listener.p_list}")
   for device in sorted_device_list:
     parse_info(device, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info)
