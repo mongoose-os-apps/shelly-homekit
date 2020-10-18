@@ -103,6 +103,7 @@ def get_info(host):
     with urllib.request.urlopen(f'http://{host}/rpc/Shelly.GetInfo') as fp:
       info = json.load(fp)
     info['fw_type'] = 'homekit'
+    info['fw_type_str'] = 'HomeKit'
     if not 'device_id' in info:
       info['device_id'] = info['id']
     return(info)
@@ -116,10 +117,11 @@ def get_info(host):
       info = json.load(fp)
     info['host'] = host
     info['device_id'] = host.replace('.local','')
-    info['app'] = shelly_model(info['type'], 'homekit')
+    info['app'] = shelly_model(info['type'])
     info['stock_model'] = info['type']
     info['version'] = info['fw'].split('/v')[1].split('@')[0]
     info['fw_type'] = 'stock'
+    info['fw_type_str'] = 'Official'
     return(info)
   except (urllib.error.HTTPError, urllib.error.URLError) as err:
     logger.trace(f"Error: {err}")
@@ -145,32 +147,23 @@ class MyListener:
     # logger.trace("properties: {properties}")
     # json_object = json.dumps(properties, indent = 2)
 
-def shelly_model(type, mode):
-  if mode != 'stock':
-    options = {'SHSW-1' : 'Shelly1',
-               'switch1' : 'Shelly1',
-               'SHSW-PM' : 'Shelly1PM',
-               'switch1pm' : 'Shelly1PM',
-               'SHSW-21' : 'Shelly2',
-               'switch2' : 'Shelly2',
-               'SHSW-25' : 'Shelly25',
-               'switch25' : 'Shelly25',
-               'SHPLG-S' : 'ShellyPlugS',
-               'shelly-plug-s' : 'ShellyPlugS',
-               'SHDM-1' : 'ShellyDimmer1',
-               'dimmer1' : 'ShellyDimmer1',
-               'SHRGBW2' : 'ShellyRGBW2',
-               'rgbw2' : 'ShellyRGBW2',
-    }
-  else:
-    options = {'switch1' : 'SHSW-1',
-               'switch1pm' : 'SHSW-PM',
-               'switch2' : 'SHSW-21',
-               'switch25' : 'SHSW-25',
-               'shelly-plug-s' : 'SHPLG-S',
-               'dimmer1' : 'SHDM-1',
-               'rgbw2' : 'SHRGBW2',
-    }
+def shelly_model(type):
+  options = {'SHSW-1' : 'Shelly1',
+             'switch1' : 'Shelly1',
+             'SHSW-PM' : 'Shelly1PM',
+             'switch1pm' : 'Shelly1PM',
+             'SHSW-21' : 'Shelly2',
+             'switch2' : 'Shelly2',
+             'SHSW-25' : 'Shelly25',
+             'switch25' : 'Shelly25',
+             'SHPLG-S' : 'ShellyPlugS',
+             'shelly-plug-s' : 'ShellyPlugS',
+             'SHDM-1' : 'ShellyDimmer1',
+             'dimmer1' : 'ShellyDimmer1',
+             'dimmer2' : 'ShellyDimmer2',
+             'SHRGBW2' : 'ShellyRGBW2',
+             'rgbw2' : 'ShellyRGBW2',
+  }
   return(options[type])
 
 
@@ -273,7 +266,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
     logger.info(f"{RED}Failed to flash {friendly_host} to {lfw}{NC}")
     logger.info("Current: %s" % onlinecheck)
 
-def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, variant, stock_release_info, homekit_release_info):
+def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
   logger.debug(f"\n{WHITE}parse_info{NC}")
   logger.trace(f"device_info: {device_info}")
   flash = False
@@ -281,6 +274,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, var
   lfw = None                         # latest firmware available
   cfw = device_info['version']       # current firmware version
   cfw_type = device_info['fw_type']  # current firmware type
+  cfw_type_str = device_info['fw_type_str']
   friendly_host = device_info['host'].replace('.local', '')
   host = device_info['host']
   device = device_info['device_id']
@@ -294,8 +288,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, var
   logger.debug(f"silent_run: {silent_run}")
   logger.debug(f"mode: {mode}")
   logger.debug(f"exclude: {exclude}")
-  logger.debug(f"version: {ffw}")
-  logger.debug(f"ffw: {ffw}")
+  logger.debug(f"version: {version}")
   logger.debug(f"variant: {variant}")
 
   if mode == 'keep':
@@ -309,10 +302,10 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, var
         re_search = i[0]
       if re.search(re_search, cfw):
         lfw = i[1]['version']
-        if not ffw:
+        if not version:
           dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
         else:
-          dlurl=f'http://rojer.me/files/shelly/{ffw}/shelly-homekit-{model}.zip'
+          dlurl=f'http://rojer.me/files/shelly/{version}/shelly-homekit-{model}.zip'
         break
   else: # stock
     lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
@@ -327,25 +320,18 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, var
     lfw_label = lfw
   logger.info(f"{WHITE}Host: {NC}{host}")
   logger.info(f"{WHITE}Model: {NC}{model}")
-  if cfw_type == 'homekit':
-    logger.info(f"{WHITE}Current: {NC}HomeKit {cfw}")
-  else:
-    logger.info(f"{WHITE}Current: {NC}Official {cfw}")
+  logger.info(f"{WHITE}Current: {NC}{cfw_type_str} {cfw}")
   col = YELLOW if isNewer(lfw, cfw) else WHITE
-  if mode == 'homekit':
-    logger.info(f"{WHITE}Latest: {NC}HomeKit {col}{lfw_label}{NC}")
-  else:
-    logger.info(f"{WHITE}Latest: {NC}Official {col}{lfw_label}{NC}")
+  logger.info(f"{WHITE}Latest: {NC}{cfw_type_str} {col}{lfw_label}{NC}")
   logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
   if action != 'list':
-    if ffw and dlurl:
-      lfw = ffw
-      perform_flash = True
-    elif exclude and device in exclude:
+    if exclude and friendly_host in exclude:
       perform_flash = False
-    elif (cfw_type == 'stock' and mode == 'homekit' and dlurl) or (cfw_type == 'homekit' and mode == 'revert' and dlurl) \
-         or ((isNewer(lfw, cfw)) and ((cfw_type == 'homekit' and mode == 'homekit') \
-         or (cfw_type == 'stock' and mode == 'stock') or mode == 'keep')):
+    elif version and dlurl:
+      lfw = version
+      perform_flash = True
+    elif (((cfw_type == 'stock' and mode == 'homekit') or (cfw_type == 'homekit' and mode == 'revert')) and dlurl) or \
+         (((cfw_type == mode) or mode == 'keep') and isNewer(lfw, cfw)):
       perform_flash = True
     else:
       perform_flash = False
@@ -364,12 +350,12 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, var
         keyword = "converted to HomeKit firmware"
       elif isNewer(lfw, cfw):
         keyword = f"upgraded from {cfw} to version {lfw}"
-      elif ffw:
-        keyword = f"reflashed version {ffw}"
+      elif version:
+        keyword = f"reflashed version {version}"
       logger.info(f"Would have been {keyword}...")
     elif not dlurl:
-      if ffw:
-        keyword = f"Version {ffw} is not available yet..."
+      if version:
+        keyword = f"Version {version} is not available yet..."
       else:
         keyword = "Is not supported yet..."
       logger.info(f"{keyword}\n")
@@ -387,7 +373,6 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, ffw, var
 
 
 def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
-  ffw = version
   logger.debug(f"\n{WHITE}device_scan{NC}")
   logger.debug(f"devices: {hosts}")
   logger.debug(f"action: {action}")
@@ -398,7 +383,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
   logger.debug(f"exclude: {exclude}")
   logger.debug(f"version: {version}")
   logger.debug(f"variant: {variant}")
-  logger.debug(f"ffw: {ffw}")
+
   if not do_all:
     device_list = []
     logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
@@ -434,10 +419,8 @@ if __name__ == '__main__':
   parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1'], help="Enable verbose logging level.")
   parser.add_argument('hosts', type=str, nargs='*')
   args = parser.parse_args()
-  if args.list:
-    action = 'list'
-  else:
-    action = 'flash'
+  action = 'list' if args.list else 'flash'
+
   if args.verbose and '0' in args.verbose:
     logger.setLevel(logging.DEBUG)
   elif args.verbose and '1' in args.verbose:
