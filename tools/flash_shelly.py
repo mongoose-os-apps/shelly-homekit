@@ -326,7 +326,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   logger.info(f"{WHITE}Latest: {NC}{cfw_type_str} {col}{lfw_label}{NC}")
   logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
   if action != 'list':
-    if exclude and host.replace('.local','') in exclude:
+    if exclude and friendly_host in exclude:
       perform_flash = False
     elif version and dlurl:
       lfw = version
