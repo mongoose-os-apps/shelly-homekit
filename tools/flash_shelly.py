@@ -311,11 +311,14 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
         if not version:
           dlurl = i[1]['urls'][model] if model in i[1]['urls'] else None
         else:
-          dlurl=f'http://rojer.me/files/shelly/{version}/shelly-homekit-{model}.zip'
+          dlurl = f'http://rojer.me/files/shelly/{version}/shelly-homekit-{model}.zip'
         break
   else: # stock
     lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
-    dlurl = stock_release_info['data'][device_info['stock_model']]['url']
+    if not version:
+      dlurl = stock_release_info['data'][device_info['stock_model']]['url']
+    else:
+      dlurl = f'http://archive.shelly-faq.de/version/v{version}/{model}.zip'
   if dlurl:
     durl_request = requests.get(dlurl)
   if not dlurl or durl_request.status_code != 200:
