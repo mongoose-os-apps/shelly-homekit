@@ -274,6 +274,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
 def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
   logger.debug(f"\n{WHITE}parse_info{NC}")
   logger.trace(f"device_info: {device_info}")
+  perform_flash = False
   flash = False
   dlurl = None
   lfw = None                         # latest firmware available
@@ -331,33 +332,21 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
   if action != 'list':
     if exclude and friendly_host in exclude:
-      perform_flash = False
+      logger.info("Skipping as device has been excluded...\n")
+      return 0
     elif version and dlurl:
+      perform_flash = True
       lfw = version
+      keyword = f"reflashed version {version}"
+    elif cfw_type != mode and dlurl:
       perform_flash = True
-    elif (((cfw_type == 'stock' and mode == 'homekit') or (cfw_type == 'homekit' and mode == 'revert')) and dlurl) or \
-         (((cfw_type == mode) or mode == 'keep') and isNewer(lfw, cfw)):
-      perform_flash = True
-    else:
-      perform_flash = False
-    logger.debug(f"perform_flash: {perform_flash}")
-    if perform_flash == True and dry_run == False and silent_run == False:
-      if input(f"Do you wish to flash {friendly_host} to firmware version {lfw} (y/n) ? ") == 'y':
-        flash = True
-      else:
-        flash = False
-    elif perform_flash == True and dry_run == False and silent_run == True:
-      flash = True
-    elif perform_flash == True and dry_run == True:
-      if cfw_type == 'homekit' and mode != 'homekit':
+      if mode == 'stock':
         keyword = "converted to Official firmware"
-      elif cfw_type == 'stock' and mode == 'homekit':
+      elif mode == 'homekit':
         keyword = "converted to HomeKit firmware"
-      elif isNewer(lfw, cfw):
-        keyword = f"upgraded from {cfw} to version {lfw}"
-      elif version:
-        keyword = f"reflashed version {version}"
-      logger.info(f"Would have been {keyword}...")
+    elif ((cfw_type == mode or mode == 'keep') and isNewer(lfw, cfw)):
+      perform_flash = True
+      keyword = f"upgraded from {cfw} to version {lfw}"
     elif not dlurl:
       if version:
         keyword = f"Version {version} is not available yet..."
@@ -365,15 +354,23 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
         keyword = "Is not supported yet..."
       logger.info(f"{keyword}\n")
       return 0
-    elif exclude and device in exclude:
-      logger.info("Skipping as device has been excluded...")
     else:
-      logger.info("Does not need updating...\n")
+      logger.info("Does not need flashing...\n")
       return 0
+
+    logger.debug(f"perform_flash: {perform_flash}")
+    if perform_flash == True and dry_run == False and silent_run == False:
+      if input(f"Do you wish to flash {friendly_host} to firmware version {lfw} (y/n) ? ") == 'y':
+        flash = True
+      else:
+        flash = False
+        logger.info("Skipping Flash...")
+    elif perform_flash == True and dry_run == False and silent_run == True:
+      flash = True
+    elif perform_flash == True and dry_run == True:
+      logger.info(f"Would have been {keyword}...")
     if flash == True:
       write_flash(host, lfw, dlurl, cfw_type, mode)
-    elif dry_run == False and exclude == False:
-      logger.info("Skipping Flash...")
   logger.info(" ")
 
 
@@ -425,6 +422,7 @@ if __name__ == '__main__':
   parser.add_argument('hosts', type=str, nargs='*')
   args = parser.parse_args()
   action = 'list' if args.list else 'flash'
+  args.mode = 'stock' if args.mode == 'revert' else args.mode
 
   if args.verbose and '0' in args.verbose:
     logger.setLevel(logging.DEBUG)
