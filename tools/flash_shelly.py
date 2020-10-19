@@ -97,15 +97,17 @@ except ImportError:
   import requests
 
 def get_info(host):
-  if not '.local' in host:
+  if '.local' not in host:
     host = host + '.local'
   try:
     with urllib.request.urlopen(f'http://{host}/rpc/Shelly.GetInfo') as fp:
       info = json.load(fp)
+    if 'device_id' not in info:
+      info['device_id'] = info['id']
+    if 'model' not in info:
+      info['model'] = shelly_model(info['app'])
     info['fw_type'] = 'homekit'
     info['fw_type_str'] = 'HomeKit'
-    if not 'device_id' in info:
-      info['device_id'] = info['id']
     return(info)
   except (urllib.error.HTTPError) as err:
     pass
@@ -121,7 +123,7 @@ def get_info(host):
       info = json.load(fp)
     info['host'] = host
     info['device_id'] = host.replace('.local','')
-    info['app'] = shelly_model(info['type'])
+    info['model'] = shelly_model(info['type'])
     info['stock_model'] = info['type']
     info['version'] = info['fw'].split('/v')[1].split('@')[0]
     info['fw_type'] = 'stock'
@@ -154,19 +156,20 @@ class MyListener:
 
 def shelly_model(type):
   options = {'SHSW-1' : 'Shelly1',
-             'switch1' : 'Shelly1',
              'SHSW-PM' : 'Shelly1PM',
-             'switch1pm' : 'Shelly1PM',
              'SHSW-21' : 'Shelly2',
-             'switch2' : 'Shelly2',
              'SHSW-25' : 'Shelly25',
-             'switch25' : 'Shelly25',
              'SHPLG-S' : 'ShellyPlugS',
-             'shelly-plug-s' : 'ShellyPlugS',
              'SHDM-1' : 'ShellyDimmer1',
+             'SHDM-2' : 'ShellyDimmer2',
+             'SHRGBW2' : 'ShellyRGBW2',
+             'switch1' : 'Shelly1',
+             'switch1pm' : 'Shelly1PM',
+             'switch2' : 'Shelly2',
+             'switch25' : 'Shelly25',
+             'shelly-plug-s' : 'ShellyPlugS',
              'dimmer1' : 'ShellyDimmer1',
              'dimmer2' : 'ShellyDimmer2',
-             'SHRGBW2' : 'ShellyRGBW2',
              'rgbw2' : 'ShellyRGBW2',
   }
   return(options[type])
