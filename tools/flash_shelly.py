@@ -112,6 +112,10 @@ def get_info(host):
   except (urllib.error.URLError) as err:
     logger.warning(f"{RED}Could not resolve host: {host}\n{NC}")
     return None
+  except (json.decoder.JSONDecodeError) as err:
+    logger.trace(f"{RED}{err}\n{NC}")
+    logger.trace(f"data: {fp}")
+    return None
   try:
     with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
       info = json.load(fp)
