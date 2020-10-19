@@ -398,7 +398,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
-    time.sleep(5)
+    time.sleep(10)
     zc.close()
     device_list = listener.device_list
   sorted_device_list = sorted(device_list, key=lambda k: k['host'])
