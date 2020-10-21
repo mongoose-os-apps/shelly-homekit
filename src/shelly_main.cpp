@@ -703,7 +703,7 @@ bool InitApp() {
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
-  DebugInit(s_server, &s_kvs, &s_tcpm);
+  DebugInit(&s_server, &s_kvs, &s_tcpm);
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);

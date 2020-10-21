@@ -25,7 +25,7 @@ void GetDebugInfo(std::string *out);
 
 void SetDebugEnable(bool debug_en);
 
-bool DebugInit(HAPAccessoryServerRef svr, HAPPlatformKeyValueStoreRef kvs,
+bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
                HAPPlatformTCPStreamManagerRef tcpm);
 
 }  // namespace shelly

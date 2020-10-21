@@ -36,7 +36,7 @@
 
 namespace shelly {
 
-static HAPAccessoryServerRef s_svr;
+static HAPAccessoryServerRef *s_svr;
 static HAPPlatformKeyValueStoreRef s_kvs;
 static HAPPlatformTCPStreamManagerRef s_tcpm;
 
@@ -111,7 +111,7 @@ void shelly_debug_write_nc(struct mg_connection *nc) {
   {
     mg_printf(nc, "HAP sessions:\r\n");
     EnumHAPSessionsContext ctx = {.nc = nc, .num_sessions = 0};
-    HAPAccessoryServerEnumerateConnectedSessions(&s_svr, EnumHAPSessions, &ctx);
+    HAPAccessoryServerEnumerateConnectedSessions(s_svr, EnumHAPSessions, &ctx);
     mg_printf(nc, " Total: %d\r\n", ctx.num_sessions);
   }
 }
@@ -268,11 +268,12 @@ static void DebugCoreHandler(struct mg_connection *nc, int ev, void *ev_data,
 }
 #endif
 
-bool DebugInit(HAPAccessoryServerRef svr, HAPPlatformKeyValueStoreRef kvs,
+bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
                HAPPlatformTCPStreamManagerRef tcpm) {
   s_svr = svr;
   s_kvs = kvs;
   s_tcpm = tcpm;
+  LOG(LL_INFO, ("%d %d", (int) sizeof(kvs), (int) sizeof(tcpm)));
   mgos_register_http_endpoint("/debug/info", DebugInfoHandler, NULL);
   mgos_register_http_endpoint("/debug/log", DebugLogHandler, nullptr);
 #ifdef MGOS_HAVE_OTA_COMMON
