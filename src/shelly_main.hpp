@@ -28,6 +28,7 @@
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_pm.hpp"
+#include "shelly_temperature_sensor.hpp"
 
 namespace shelly {
 
@@ -59,7 +60,8 @@ HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request);
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
-                       std::vector<std::unique_ptr<PowerMeter>> *pms);
+                       std::vector<std::unique_ptr<PowerMeter>> *pms,
+                       std::unique_ptr<TemperatureSensor> *sys_temp);
 
 void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,

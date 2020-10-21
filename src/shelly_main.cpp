@@ -46,6 +46,7 @@
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_rpc_service.hpp"
+#include "shelly_temperature_sensor.hpp"
 
 #define KVS_FILE_NAME "kvs.json"
 #define NUM_SESSIONS 9
@@ -142,6 +143,7 @@ static std::vector<std::unique_ptr<Output>> s_outputs;
 static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 static std::vector<std::unique_ptr<hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
+static std::unique_ptr<TemperatureSensor> s_sys_temp;
 
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
@@ -462,7 +464,7 @@ void CountHAPSessions(void *ctx, HAPAccessoryServerRef *, HAPSessionRef *,
 
 static void StatusTimerCB(void *arg) {
   static uint8_t s_cnt = 0;
-  if (++s_cnt % 8 == 0) {
+  if (1 || ++s_cnt % 8 == 0) {
     HAPPlatformTCPStreamManagerStats tcpm_stats = {};
     HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
     int num_sessions = 0;
@@ -479,12 +481,18 @@ static void StatusTimerCB(void *arg) {
         status.append(sts.status().error_message());
       }
     }
-    LOG(LL_INFO, ("Up %.2lf, HAP %u/%u/%u ns %d, RAM: %lu/%lu; %s",
-                  mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
-                  (unsigned) tcpm_stats.numActiveTCPStreams,
-                  (unsigned) tcpm_stats.maxNumTCPStreams, num_sessions,
-                  (unsigned long) mgos_get_free_heap_size(),
-                  (unsigned long) mgos_get_heap_size(), status.c_str()));
+    float sys_temp = 0;
+    if (s_sys_temp != nullptr) {
+      auto st = s_sys_temp->GetTemperature();
+      if (st.ok()) sys_temp = st.ValueOrDie();
+    }
+    LOG(LL_INFO,
+        ("Up %.2lf, HAP %u/%u/%u ns %d, RAM: %lu/%lu; st %.2f; %s",
+         mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
+         (unsigned) tcpm_stats.numActiveTCPStreams,
+         (unsigned) tcpm_stats.maxNumTCPStreams, num_sessions,
+         (unsigned long) mgos_get_free_heap_size(),
+         (unsigned long) mgos_get_heap_size(), sys_temp, status.c_str()));
     s_cnt = 0;
   }
   if (mgos_sys_config_get_shelly_legacy_hap_layout() &&
@@ -688,7 +696,7 @@ bool InitApp() {
                          nullptr /* msg */);
   }
 
-  CreatePeripherals(&s_inputs, &s_outputs, &s_pms);
+  CreatePeripherals(&s_inputs, &s_outputs, &s_pms, &s_sys_temp);
 
   StartHAPServer(false /* quiet */);
 

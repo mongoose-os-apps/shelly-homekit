@@ -22,6 +22,7 @@
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_window_covering.hpp"
 #include "shelly_main.hpp"
+#include "shelly_temperature_ntc.hpp"
 
 namespace shelly {
 
@@ -29,7 +30,8 @@ extern void PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms);
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
-                       std::vector<std::unique_ptr<PowerMeter>> *pms) {
+                       std::vector<std::unique_ptr<PowerMeter>> *pms,
+                       std::unique_ptr<TemperatureSensor> *sys_temp) {
   // Note: SW2 output (GPIO15) must be initialized before
   // SW1 input (GPIO13), doing it in reverse turns on SW2.
   outputs->emplace_back(new OutputPin(1, 4, 1));
@@ -41,6 +43,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in2->AddHandler(std::bind(&HandleInputResetSequence, in2, 15, _1, _2));
   inputs->emplace_back(in2);
   PowerMeterInit(pms);
+  sys_temp->reset(new TemperatureSensorSDNT1608X103F3450(0, 3.3f, 33000.0f));
 }
 
 void CreateComponents(std::vector<Component *> *comps,

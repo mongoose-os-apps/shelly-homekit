@@ -271,6 +271,7 @@ conds:
         - ["wifi.ap.dhcp_start", "192.168.33.2"]
         - ["wifi.ap.dhcp_end", "192.168.33.100"]
       libs:
+        - origin: https://github.com/mongoose-os-libs/adc
         - origin: https://github.com/mongoose-os-libs/ota-http-server
         - origin: https://github.com/mongoose-os-libs/rpc-service-ota
         - origin: https://github.com/mongoose-os-libs/wifi
