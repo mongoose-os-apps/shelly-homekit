@@ -15,11 +15,28 @@
  * limitations under the License.
  */
 
+#include <cmath>
+
+#include "mgos_rpc.h"
 #include "mgos_sys_config.h"
 
 #include "shelly_main.hpp"
+#include "shelly_mock_temp_sensor.hpp"
 
 namespace shelly {
+
+static MockTempSensor *s_mock_sys_temp_sensor = nullptr;
+
+static void SetSysTempHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                              struct mg_rpc_frame_info *fi,
+                              struct mg_str args) {
+  float temp = SNANF;
+  json_scanf(args.p, args.len, ri->args_fmt, &temp);
+  s_mock_sys_temp_sensor->SetValue(temp);
+  mg_rpc_send_responsef(ri, nullptr);
+  (void) fi;
+  (void) cb_arg;
+}
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
@@ -29,8 +46,13 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   auto *in = new InputPin(1, 456, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, -1, _1, _2));
   inputs->emplace_back(in);
+  s_mock_sys_temp_sensor = new MockTempSensor(33);
+  sys_temp->reset(s_mock_sys_temp_sensor);
+
+  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.TestSetSysTemp",
+                     "{temp: %f}", SetSysTempHandler, nullptr);
+
   (void) pms;
-  (void) sys_temp;
 }
 
 void CreateComponents(std::vector<Component *> *comps,
