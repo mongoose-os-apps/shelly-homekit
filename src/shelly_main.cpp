@@ -48,7 +48,7 @@
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_rpc_service.hpp"
-#include "shelly_temperature_sensor.hpp"
+#include "shelly_temp_sensor.hpp"
 
 #define KVS_FILE_NAME "kvs.json"
 #define NUM_SESSIONS 9
@@ -144,7 +144,7 @@ static std::vector<std::unique_ptr<Output>> s_outputs;
 static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 static std::vector<std::unique_ptr<hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
-static std::unique_ptr<TemperatureSensor> s_sys_temp_sensor;
+static std::unique_ptr<TempSensor> s_sys_temp_sensor;
 
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {

@@ -17,14 +17,14 @@
 
 #pragma once
 
-#include "shelly_temperature_sensor.hpp"
+#include "shelly_temp_sensor.hpp"
 
 namespace shelly {
 
-class NTCTemperatureSensor : public TemperatureSensor {
+class NTCTempSensor : public TempSensor {
  public:
-  NTCTemperatureSensor(int adc_channel, float vin, float rd);
-  virtual ~NTCTemperatureSensor();
+  NTCTempSensor(int adc_channel, float vin, float rd);
+  virtual ~NTCTempSensor();
 
   StatusOr<float> GetTemperature() override;
 
@@ -43,10 +43,10 @@ class NTCTemperatureSensor : public TemperatureSensor {
   const float vin_, rd_;
 };
 
-class TemperatureSensorSDNT1608X103F3450 : public NTCTemperatureSensor {
+class TempSensorSDNT1608X103F3450 : public NTCTempSensor {
  public:
-  TemperatureSensorSDNT1608X103F3450(int adc_channel, float vin, float rd);
-  virtual ~TemperatureSensorSDNT1608X103F3450();
+  TempSensorSDNT1608X103F3450(int adc_channel, float vin, float rd);
+  virtual ~TempSensorSDNT1608X103F3450();
 
  protected:
   virtual const CurveDataPoint *GetCurve() override;

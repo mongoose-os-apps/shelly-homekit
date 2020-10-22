@@ -21,13 +21,11 @@
 
 namespace shelly {
 
-class TemperatureSensor {
+class TempSensor {
  public:
-  TemperatureSensor() {
-  }
-  virtual ~TemperatureSensor() {
-  }
-  TemperatureSensor(const TemperatureSensor &other) = delete;
+  TempSensor();
+  virtual ~TempSensor();
+  TempSensor(const TempSensor &other) = delete;
 
   virtual StatusOr<float> GetTemperature() = 0;
 };

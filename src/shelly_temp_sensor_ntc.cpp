@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_temperature_ntc.hpp"
+#include "shelly_temp_sensor_ntc.hpp"
 
 #ifdef MGOS_HAVE_ADC
 
@@ -27,15 +27,15 @@
 
 namespace shelly {
 
-NTCTemperatureSensor::NTCTemperatureSensor(int adc_channel, float vin, float rd)
+NTCTempSensor::NTCTempSensor(int adc_channel, float vin, float rd)
     : adc_channel_(adc_channel), vin_(vin), rd_(rd) {
   mgos_adc_enable(adc_channel);
 }
 
-NTCTemperatureSensor::~NTCTemperatureSensor() {
+NTCTempSensor::~NTCTempSensor() {
 }
 
-StatusOr<float> NTCTemperatureSensor::GetTemperature() {
+StatusOr<float> NTCTempSensor::GetTemperature() {
   int raw = mgos_adc_read(adc_channel_);
   float v_out = raw / ADC_RESOLUTION;
   float rt = (v_out * rd_) / (vin_ - v_out);
@@ -43,7 +43,7 @@ StatusOr<float> NTCTemperatureSensor::GetTemperature() {
   return Interpolate(rt);
 }
 
-float NTCTemperatureSensor::Interpolate(float rt) {
+float NTCTempSensor::Interpolate(float rt) {
   float t;
   const CurveDataPoint *e1 = GetCurve(), *e2 = e1;
   do {
@@ -64,16 +64,15 @@ float NTCTemperatureSensor::Interpolate(float rt) {
   return t;
 }
 
-TemperatureSensorSDNT1608X103F3450::TemperatureSensorSDNT1608X103F3450(
-    int adc_channel, float vin, float rd)
-    : NTCTemperatureSensor(adc_channel, vin, rd) {
+TempSensorSDNT1608X103F3450::TempSensorSDNT1608X103F3450(int adc_channel,
+                                                         float vin, float rd)
+    : NTCTempSensor(adc_channel, vin, rd) {
 }
 
-TemperatureSensorSDNT1608X103F3450 ::~TemperatureSensorSDNT1608X103F3450() {
+TempSensorSDNT1608X103F3450 ::~TempSensorSDNT1608X103F3450() {
 }
 
-const NTCTemperatureSensor::CurveDataPoint *
-TemperatureSensorSDNT1608X103F3450::GetCurve() {
+const NTCTempSensor::CurveDataPoint *TempSensorSDNT1608X103F3450::GetCurve() {
   // clang-format off
   static const CurveDataPoint s_SDNT1608X103F3450_curve[] = {
       {200000, -39},

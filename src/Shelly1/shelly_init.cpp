@@ -17,14 +17,14 @@
 
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_main.hpp"
-#include "shelly_temperature_ntc.hpp"
+#include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
-                       std::unique_ptr<TemperatureSensor> *sys_temp) {
+                       std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 4, 1));
   auto *in = new InputPin(1, 5, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 4, _1, _2));
