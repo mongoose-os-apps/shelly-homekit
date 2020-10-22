@@ -523,7 +523,7 @@ static void StatusTimerCB(void *arg) {
     s_cd_area_set = true;
   }
 #endif
-  if (1 || ++s_cnt % 8 == 0) {
+  if (++s_cnt % 8 == 0) {
     HAPPlatformTCPStreamManagerStats tcpm_stats = {};
     HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
     int num_sessions = 0;

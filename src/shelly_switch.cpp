@@ -194,21 +194,39 @@ void ShellySwitch::SaveState() {
 }
 
 void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
-  if (ev != Input::Event::kChange) return;
-  switch (static_cast<InMode>(cfg_->in_mode)) {
-    case InMode::kMomentary:
-      if (state) {  // Only on 0 -> 1 transitions.
-        SetState(!out_->GetState(), "button");
+  InMode in_mode = static_cast<InMode>(cfg_->in_mode);
+  if (in_mode == InMode::kDetached) {
+    // Nothing to do
+    return;
+  }
+  switch (ev) {
+    case Input::Event::kChange: {
+      switch (static_cast<InMode>(cfg_->in_mode)) {
+        case InMode::kMomentary:
+          if (state) {  // Only on 0 -> 1 transitions.
+            SetState(!out_->GetState(), "button");
+          }
+          break;
+        case InMode::kToggle:
+          SetState(state, "switch");
+          break;
+        case InMode::kEdge:
+          SetState(!out_->GetState(), "button");
+          break;
+        case InMode::kDetached:
+          break;
       }
       break;
-    case InMode::kToggle:
-      SetState(state, "switch");
+    }
+    case Input::Event::kLong:
+      // Disable auto-off if it was active.
+      if (in_mode == InMode::kMomentary) {
+        auto_off_timer_.Clear();
+      }
       break;
-    case InMode::kEdge:
-      SetState(!out_->GetState(), "button");
-      break;
-    case InMode::kDetached:
-      // Nothing to do
+    case Input::Event::kSingle:
+    case Input::Event::kDouble:
+    case Input::Event::kReset:
       break;
   }
 }
