@@ -190,6 +190,7 @@ input:checked + .slider:before {
   <div class="apl_thin">
     Shelly-<b>HomeKit</b>
     <div class="badge" id="notifyFW" style="display: none">Update available</div>
+    <div class="badge" id="notifyOverheat" style="display: none">Overheating</div>
   </div>
   <h1 class="" id="device_name" style="visibility: hidden"></h1>
   <br>
@@ -294,13 +295,17 @@ input:checked + .slider:before {
 
 <div class="container" id="fw_container" style="visibility: hidden">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Firmware" target="_blank">?</a>
-  <h1 class="">System Settings</h1>
+  <h1 class="">System</h1>
   <div class="form">
     <div class="">
       <div class="form-control">
         <label>Device:</label>
         Model: <span id="model"></span>,
         ID: <span id="device_id"></span>
+      </div>
+      <div class="form-control" id="sys_temp_container" style="display: none">
+        <label>Temperature:</label>
+        <span id="sys_temp"></span>&deg;C
       </div>
       <div class="form-control">
         <label>Version:</label>
@@ -1114,6 +1119,13 @@ function getInfo() {
         checkUpdate();
       }
       el("notifyFW").style.display = (getCookie("update_available") ? "block" : "none");
+    }
+    if (data.sys_temp !== undefined) {
+      el("sys_temp").innerText = data.sys_temp;
+      el("notifyOverheat").style.display = (data.overheat_on ? "block" : "none");
+      el("sys_temp_container").style.display = "block";
+    } else {
+      el("sys_temp_container").style.display = "none";
     }
   }).catch(function(err) {
     alert(err);

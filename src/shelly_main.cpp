@@ -17,6 +17,8 @@
 
 #include "shelly_main.hpp"
 
+#include <math.h>
+
 #include "mgos.hpp"
 #include "mgos_app.h"
 #include "mgos_hap.h"
@@ -122,8 +124,7 @@ static HAPPlatform s_platform = {
         },
 };
 
-static bool s_hap_enable = true;
-static bool s_recreate_accs = false;
+static uint8_t s_service_flags = 0;
 static int16_t s_btn_pressed_count = 0;
 static int16_t s_identify_count = 0;
 
@@ -143,7 +144,7 @@ static std::vector<std::unique_ptr<Output>> s_outputs;
 static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 static std::vector<std::unique_ptr<hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
-static std::unique_ptr<TemperatureSensor> s_sys_temp;
+static std::unique_ptr<TemperatureSensor> s_sys_temp_sensor;
 
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
@@ -283,24 +284,12 @@ static void DisableLegacyHAPLayout() {
   mgos_sys_config_save(&mgos_sys_config, false /* try_once */, nullptr);
 }
 
-static bool StartHAPServer(bool quiet) {
-  if (!s_hap_enable) {
+static bool StartService(bool quiet) {
+  if (s_service_flags != 0) {
     return false;
   }
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
     return true;
-  }
-  if (!s_accs.empty() && s_recreate_accs) {
-    LOG(LL_INFO, ("=== Reconfiguring accessories"));
-    s_accs.clear();
-    s_hap_accs.clear();
-    g_comps.clear();
-    s_recreate_accs = false;
-    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
-      LOG(LL_ERROR, ("Failed to increment configuration number"));
-    }
-    // Structural change, disable legacy mode if enabled.
-    DisableLegacyHAPLayout();
   }
   if (s_accs.empty()) {
     LOG(LL_INFO, ("=== Creating accessories"));
@@ -346,15 +335,28 @@ static bool StartHAPServer(bool quiet) {
   return true;
 }
 
+void StopService() {
+  if (HAPAccessoryServerGetState(&s_server) == kHAPAccessoryServerState_Idle) {
+    return;
+  }
+  LOG(LL_INFO, ("== Stopping HAP service"));
+  HAPAccessoryServerStop(&s_server);
+}
+
 static void StartHAPServerCB(HAPAccessoryServerRef *server) {
-  StartHAPServer(false /* quiet */);
+  StartService(false /* quiet */);
   (void) server;
 }
 
-static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server,
-                                   void *context) {
-  LOG(LL_INFO, ("HAP server state: %d", HAPAccessoryServerGetState(server)));
-  (void) context;
+static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
+  HAPAccessoryServerState st = HAPAccessoryServerGetState(server);
+  LOG(LL_INFO, ("HAP server state: %d", st));
+  if (st == kHAPAccessoryServerState_Idle) {
+    // Safe to destroy components now.
+    s_accs.clear();
+    s_hap_accs.clear();
+    g_comps.clear();
+  }
 }
 
 static void CheckButton(int pin, bool btn_down) {
@@ -457,13 +459,70 @@ out:
   }
 }
 
+static void CheckOverheat(int sys_temp) {
+  if (!(s_service_flags & SHELLY_SERVICE_FLAG_OVERHEAT)) {
+    if (sys_temp >= mgos_sys_config_get_shelly_overheat_on()) {
+      LOG(LL_ERROR, ("== System temperature too high, stopping service"));
+      s_service_flags |= SHELLY_SERVICE_FLAG_OVERHEAT;
+      StopService();
+      for (auto &o : s_outputs) {
+        o->SetState(false, "OVH");
+      }
+    }
+  } else {
+    if (sys_temp <= mgos_sys_config_get_shelly_overheat_off()) {
+      LOG(LL_INFO, ("== System temperature normal, resuming service"));
+      s_service_flags &= ~SHELLY_SERVICE_FLAG_OVERHEAT;
+    }
+  }
+}
+
 void CountHAPSessions(void *ctx, HAPAccessoryServerRef *, HAPSessionRef *,
                       bool *) {
   (*((int *) ctx))++;
 }
 
+StatusOr<int> GetSystemTemperature() {
+  if (s_sys_temp_sensor == nullptr) return mgos::Status(STATUS_NOT_FOUND, "");
+  auto st = s_sys_temp_sensor->GetTemperature();
+  if (!st.ok()) return st;
+  return static_cast<int>(st.ValueOrDie());
+}
+
+uint8_t GetServiceFlags() {
+  return s_service_flags;
+}
+
 static void StatusTimerCB(void *arg) {
   static uint8_t s_cnt = 0;
+  auto sys_temp = GetSystemTemperature();
+  if (mgos_sys_config_get_shelly_legacy_hap_layout() &&
+      !HAPAccessoryServerIsPaired(&s_server)) {
+    DisableLegacyHAPLayout();
+    RestartService();
+    return;
+  }
+  /* If provisioning information has been provided, start the server. */
+  StartService(true /* quiet */);
+  CheckButton(BTN_GPIO, BTN_DOWN);
+  CheckLED(LED_GPIO, LED_ON);
+  if (sys_temp.ok()) {
+    CheckOverheat(sys_temp.ValueOrDie());
+  }
+#ifdef MGOS_HAVE_OTA_COMMON
+  // If committed, set up inactive app slot as location for core dumps.
+  static bool s_cd_area_set = false;
+  struct mgos_ota_status ota_status;
+  if (!s_cd_area_set && mgos_ota_is_committed() &&
+      mgos_ota_get_status(&ota_status)) {
+    rboot_config bcfg = rboot_get_config();
+    int cd_slot = (ota_status.partition == 0 ? 1 : 0);
+    uint32_t cd_addr = bcfg.roms[cd_slot];
+    uint32_t cd_size = bcfg.roms_sizes[cd_slot];
+    esp_core_dump_set_flash_area(cd_addr, cd_size);
+    s_cd_area_set = true;
+  }
+#endif
   if (1 || ++s_cnt % 8 == 0) {
     HAPPlatformTCPStreamManagerStats tcpm_stats = {};
     HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
@@ -481,44 +540,15 @@ static void StatusTimerCB(void *arg) {
         status.append(sts.status().error_message());
       }
     }
-    float sys_temp = 0;
-    if (s_sys_temp != nullptr) {
-      auto st = s_sys_temp->GetTemperature();
-      if (st.ok()) sys_temp = st.ValueOrDie();
-    }
-    LOG(LL_INFO,
-        ("Up %.2lf, HAP %u/%u/%u ns %d, RAM: %lu/%lu; st %.2f; %s",
-         mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
-         (unsigned) tcpm_stats.numActiveTCPStreams,
-         (unsigned) tcpm_stats.maxNumTCPStreams, num_sessions,
-         (unsigned long) mgos_get_free_heap_size(),
-         (unsigned long) mgos_get_heap_size(), sys_temp, status.c_str()));
+    LOG(LL_INFO, ("Up %.2lf, HAP %u/%u/%u ns %d, RAM: %lu/%lu; st %d; %s",
+                  mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
+                  (unsigned) tcpm_stats.numActiveTCPStreams,
+                  (unsigned) tcpm_stats.maxNumTCPStreams, num_sessions,
+                  (unsigned long) mgos_get_free_heap_size(),
+                  (unsigned long) mgos_get_heap_size(),
+                  (sys_temp.ok() ? sys_temp.ValueOrDie() : 0), status.c_str()));
     s_cnt = 0;
   }
-  if (mgos_sys_config_get_shelly_legacy_hap_layout() &&
-      !HAPAccessoryServerIsPaired(&s_server)) {
-    DisableLegacyHAPLayout();
-    RestartHAPServer();
-    return;
-  }
-  /* If provisioning information has been provided, start the server. */
-  StartHAPServer(true /* quiet */);
-  CheckButton(BTN_GPIO, BTN_DOWN);
-  CheckLED(LED_GPIO, LED_ON);
-#ifdef MGOS_HAVE_OTA_COMMON
-  // If committed, set up inactive app slot as location for core dumps.
-  static bool s_cd_area_set = false;
-  struct mgos_ota_status ota_status;
-  if (!s_cd_area_set && mgos_ota_is_committed() &&
-      mgos_ota_get_status(&ota_status)) {
-    rboot_config bcfg = rboot_get_config();
-    int cd_slot = (ota_status.partition == 0 ? 1 : 0);
-    uint32_t cd_addr = bcfg.roms[cd_slot];
-    uint32_t cd_size = bcfg.roms_sizes[cd_slot];
-    esp_core_dump_set_flash_area(cd_addr, cd_size);
-    s_cd_area_set = true;
-  }
-#endif
   (void) arg;
 }
 
@@ -581,7 +611,7 @@ static bool shelly_cfg_migrate(void) {
 }
 
 static void RebootCB(int ev, void *ev_data, void *userdata) {
-  s_hap_enable = false;
+  s_service_flags |= SHELLY_SERVICE_FLAG_REBOOT;
   if (HAPAccessoryServerGetState(&s_server) ==
       kHAPAccessoryServerState_Running) {
     HAPAccessoryServerStop(&s_server);
@@ -599,12 +629,14 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
-void RestartHAPServer() {
-  s_recreate_accs = true;
-  if (HAPAccessoryServerGetState(&s_server) ==
-      kHAPAccessoryServerState_Running) {
-    HAPAccessoryServerStop(&s_server);
+void RestartService() {
+  StopService();
+  if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+    LOG(LL_ERROR, ("Failed to increment configuration number"));
   }
+  // Structural change, disable legacy mode if enabled.
+  DisableLegacyHAPLayout();
+  // Server will be restarted by status timer (unless inhibited).
 }
 
 #ifdef MGOS_HAVE_OTA_COMMON
@@ -620,16 +652,12 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
     return;
   }
   // Stop the HAP server.
-  s_hap_enable = false;
+  s_service_flags |= SHELLY_SERVICE_FLAG_UPDATE;
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
-    LOG(LL_INFO, ("== Stopping HAP server for firmware update"));
-    HAPAccessoryServerStop(&s_server);
     arg->result = MGOS_UPD_WAIT;
+    StopService();
     return;
   }
-  s_accs.clear();
-  s_hap_accs.clear();
-  g_comps.clear();
   LOG(LL_INFO, ("Starting firmware update"));
   (void) ev;
   (void) ev_data;
@@ -640,9 +668,8 @@ static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
   // Restart server in case of error.
   // In case of success we are going to reboot anyway.
-  if (arg->state == MGOS_OTA_STATE_ERROR && !s_hap_enable) {
-    LOG(LL_INFO, ("Restarting HAP server"));
-    s_hap_enable = true;
+  if (arg->state == MGOS_OTA_STATE_ERROR) {
+    s_service_flags &= ~SHELLY_SERVICE_FLAG_UPDATE;
   }
   (void) ev;
   (void) ev_data;
@@ -696,9 +723,9 @@ bool InitApp() {
                          nullptr /* msg */);
   }
 
-  CreatePeripherals(&s_inputs, &s_outputs, &s_pms, &s_sys_temp);
+  CreatePeripherals(&s_inputs, &s_outputs, &s_pms, &s_sys_temp_sensor);
 
-  StartHAPServer(false /* quiet */);
+  StartService(false /* quiet */);
 
   // House-keeping timer.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, StatusTimerCB, nullptr);

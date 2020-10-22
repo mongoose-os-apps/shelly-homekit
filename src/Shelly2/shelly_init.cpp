@@ -24,7 +24,8 @@ namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
-                       std::vector<std::unique_ptr<PowerMeter>> *pms) {
+                       std::vector<std::unique_ptr<PowerMeter>> *pms,
+                       std::unique_ptr<TemperatureSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 4, 1));
   outputs->emplace_back(new OutputPin(2, 5, 1));
   auto *in1 = new InputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true);
@@ -33,6 +34,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   auto *in2 = new InputPin(2, 14, 1, MGOS_GPIO_PULL_NONE, true);
   in2->AddHandler(std::bind(&HandleInputResetSequence, in2, 5, _1, _2));
   inputs->emplace_back(in2);
+  (void) sys_temp;
   (void) pms;
 }
 

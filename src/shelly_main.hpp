@@ -52,7 +52,14 @@ void CreateHAPStatelessSwitch(
 void HandleInputResetSequence(InputPin *in, int out_gpio, Input::Event ev,
                               bool cur_state);
 
-void RestartHAPServer();
+void RestartService();
+
+StatusOr<int> GetSystemTemperature();
+
+#define SHELLY_SERVICE_FLAG_UPDATE (1 << 0)
+#define SHELLY_SERVICE_FLAG_REBOOT (1 << 1)
+#define SHELLY_SERVICE_FLAG_OVERHEAT (1 << 2)
+uint8_t GetServiceFlags();
 
 HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request);
 

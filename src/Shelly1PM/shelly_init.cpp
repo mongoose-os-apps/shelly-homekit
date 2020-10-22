@@ -17,6 +17,7 @@
 
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_main.hpp"
+#include "shelly_temperature_ntc.hpp"
 
 namespace shelly {
 

@@ -54,6 +54,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     hap_cn = 0;
   }
   bool debug_en = mgos_sys_config_get_file_logger_enable();
+  int flags = GetServiceFlags();
 #ifdef MGOS_HAVE_WIFI
   const char *wifi_ssid = mgos_sys_config_get_wifi_sta_ssid();
   int wifi_rssi = mgos_wifi_sta_get_rssi();
@@ -73,8 +74,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u, sys_mode: %d, "
-      "rsh_avail: %B, gdo_avail: %B, "
+      "hap_ip_conns_max: %u, sys_mode: %d, rsh_avail: %B, gdo_avail: %B, "
       "debug_en: %B",
       mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
       MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
@@ -100,6 +100,12 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       false,
 #endif
       debug_en);
+  auto sys_temp = GetSystemTemperature();
+  if (sys_temp.ok()) {
+    mgos::JSONAppendStringf(&res, ", sys_temp: %d, overheat_on: %B",
+                            sys_temp.ValueOrDie(),
+                            (flags & SHELLY_SERVICE_FLAG_OVERHEAT));
+  }
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
   for (const auto *c : g_comps) {
@@ -202,7 +208,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     mgos_sys_config_save(&mgos_sys_config, false /* try once */, nullptr);
     if (restart_required) {
       LOG(LL_INFO, ("Configuration change requires server restart"));
-      RestartHAPServer();
+      RestartService();
     }
     mg_rpc_send_responsef(ri, nullptr);
   } else {

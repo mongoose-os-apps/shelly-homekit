@@ -273,7 +273,6 @@ bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
   s_svr = svr;
   s_kvs = kvs;
   s_tcpm = tcpm;
-  LOG(LL_INFO, ("%d %d", (int) sizeof(kvs), (int) sizeof(tcpm)));
   mgos_register_http_endpoint("/debug/info", DebugInfoHandler, NULL);
   mgos_register_http_endpoint("/debug/log", DebugLogHandler, nullptr);
 #ifdef MGOS_HAVE_OTA_COMMON

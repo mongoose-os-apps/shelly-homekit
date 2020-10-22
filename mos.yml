@@ -62,6 +62,8 @@ config_schema:
   - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
+  - ["shelly.overheat_on", "i", 100, {"Overheat protection mode kicks in at or above this temperature"}]
+  - ["shelly.overheat_off", "i", 90, {"Overheat protection mode turns off when the temperature is back below this threshold"}]
 
   # Deprecated settings, only kept to enable migration.
   - ["sw.persist_state", "b", false, {"Deprecated"}]  # Since cfg v1

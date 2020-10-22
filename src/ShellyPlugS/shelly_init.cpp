@@ -16,16 +16,19 @@
  */
 
 #include "shelly_main.hpp"
+#include "shelly_temperature_ntc.hpp"
 
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
-                       std::vector<std::unique_ptr<PowerMeter>> *pms) {
+                       std::vector<std::unique_ptr<PowerMeter>> *pms,
+                       std::unique_ptr<TemperatureSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 15, 1));
   auto *in = new InputPin(1, 13, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 15, _1, _2));
   inputs->emplace_back(in);
+  sys_temp->reset(new TemperatureSensorSDNT1608X103F3450(0, 3.3f, 33000.0f));
   (void) pms;
 }
 
