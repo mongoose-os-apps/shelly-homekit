@@ -233,9 +233,14 @@ static void GetDebugInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                              struct mg_rpc_frame_info *fi, struct mg_str args) {
   int id = -1;
-  bool state = false;
+  int8_t state = -1;
 
   json_scanf(args.p, args.len, ri->args_fmt, &id, &state);
+
+  if (id < 0 || state < 0) {
+    mg_rpc_send_errorf(ri, 400, "%s are required", "id and state");
+    return;
+  }
 
   for (auto *c : g_comps) {
     if (c->id() != id) continue;
@@ -244,7 +249,7 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       case Component::Type::kOutlet:
       case Component::Type::kLock: {
         ShellySwitch *sw = static_cast<ShellySwitch *>(c);
-        sw->SetState(state, "web");
+        sw->SetState(bool(state), "web");
         mg_rpc_send_responsef(ri, nullptr);
         return;
       }
