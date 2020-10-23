@@ -303,10 +303,6 @@ input:checked + .slider:before {
         Model: <span id="model"></span>,
         ID: <span id="device_id"></span>
       </div>
-      <div class="form-control" id="sys_temp_container" style="display: none">
-        <label>Temperature:</label>
-        <span id="sys_temp"></span>&deg;C
-      </div>
       <div class="form-control">
         <label>Version:</label>
         <span id="app_version"></span>
@@ -344,6 +340,10 @@ input:checked + .slider:before {
           <span class="slider round"></span>
         </label>
         <span id="debug_link"><a href="/debug/log" style="margin-left: 1em">Log</a></span>
+      </div>
+      <div class="form-control" id="sys_temp_container" style="display: none">
+        <label>Temperature:</label>
+        <span id="sys_temp"></span>&deg;C
       </div>
     </div>
   </div>
