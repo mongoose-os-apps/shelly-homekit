@@ -178,8 +178,9 @@ Component::Type WindowCovering::type() const {
 }
 
 StatusOr<std::string> WindowCovering::GetInfo() const {
-  return mgos::SPrintf("c:%d mp:%.2f mt_ms:%d cp:%.2f", cfg_->calibrated,
-                       cfg_->move_power, cfg_->move_time_ms, cur_pos_);
+  return mgos::SPrintf("c:%d mp:%.2f mt_ms:%d cp:%.2f tp:%.2f lemd:%d",
+                       cfg_->calibrated, cfg_->move_power, cfg_->move_time_ms,
+                       cur_pos_, tgt_pos_, (int) last_ext_move_dir_);
 }
 
 StatusOr<std::string> WindowCovering::GetInfoJSON() const {
@@ -329,19 +330,23 @@ void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
 }
 
 void WindowCovering::HAPSetTgtPos(float value) {
+  LOG(LL_INFO, ("WC %d: HAPSetTgtPos %.2f cur %.2f tgt %.2f lemd %d", id(),
+                value, cur_pos_, tgt_pos_, (int) last_ext_move_dir_));
   // If the specified position is intermediate, just do what we are told.
   if ((value != kFullyClosed && value != kFullyOpen) ||
       last_ext_move_dir_ == Direction::kNone) {
     SetTgtPos(value, "HAP");
     if (value == kFullyClosed) {
       last_ext_move_dir_ = Direction::kClose;
-    } else if (value == kFullyClosed) {
+    } else if (value == kFullyOpen) {
       last_ext_move_dir_ = Direction::kOpen;
     } else {
       last_ext_move_dir_ = Direction::kNone;
     }
-  } else if ((value == kFullyClosed && cur_pos_ == kFullyClosed) ||
-             (value == kFullyOpen && cur_pos_ == kFullyOpen)) {
+  } else if ((value == kFullyClosed &&
+              (cur_pos_ == kFullyClosed || tgt_pos_ == kFullyClosed)) ||
+             (value == kFullyOpen &&
+              (cur_pos_ == kFullyOpen || tgt_pos_ == kFullyOpen))) {
     // Nothing to do.
   } else {
     // This is most likely a tap on the tile.
