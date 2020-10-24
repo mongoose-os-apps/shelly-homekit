@@ -337,7 +337,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   if mode == 'homekit':
     cfw_type_str = "HomeKit"
   else:
-    cfw_type_str = "Official"    
+    cfw_type_str = "Official"
   logger.info(f"{WHITE}Latest: {NC}{cfw_type_str} {col}{lfw_label}{NC}")
   logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
   if action != 'list':
