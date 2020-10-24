@@ -323,6 +323,8 @@ input:checked + .slider:before {
           <label><span id="revert_btn_spinner"></span>Revert</label>
         </button>
         <span id="revert_status"></span>
+        <div id="revert_msg" style="margin-left: 9em; display: none">Please consider reporting missing features
+          <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">on GitHub</a>.</div>
       </div>
       <div class="form-control">
         <label>Update from file:</label>
@@ -1322,6 +1324,7 @@ async function checkUpdate() {
 
 el("update_btn").onclick = function() { checkUpdate(); };
 el("revert_btn").onclick = function() {
+  el("revert_msg").style.display = "block";
   var stockURL = "https://rojer.me/files/shelly/stock/" + lastInfo.stock_model + ".zip";
   downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
 };
