@@ -188,7 +188,8 @@ def shelly_model(type):
              'dimmer2' : 'ShellyDimmer2',
              'rgbw2' : 'ShellyRGBW2',
   }
-  return(options[type])
+  value = options[type] if type in options else type
+  return(value)
 
 
 def parseVersion(vs):
