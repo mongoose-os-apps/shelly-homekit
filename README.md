@@ -8,9 +8,10 @@ This firmware exposes [Shelly 1](https://shelly.cloud/products/shelly-1-smart-ho
 Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw)), for more info take a look at the flashing wiki [here](Flashing#updating-from-stock-firmware).
 
 At the moment only the following functionality is supported:
- * Switch functionality - all relevant models, with auto-off and separate input tile as an option.
+ * Switch functionality - all relevant models, with auto-off and separate input tile as an option. Configurable as Switch, Outlet or Lock
  * Power measurement: only Shelly 2.5, not Shelly1PM
  * Roller-shutter mode (Shelly 2.5 only)
+ * Garage Door Opener (Shelly 1, 1PM, 2, 2.5 only)
 
 Reverting to stock firmware is also supported [see here](Flashing#reverting-to-stock-firmware).
 
