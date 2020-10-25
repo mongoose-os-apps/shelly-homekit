@@ -705,12 +705,15 @@ el("wifi_save_btn").onclick = function() {
   };
   if (wifiPass.value != "***") data.config.wifi.sta.pass = wifiPass.value;
   axios.post(host + "/rpc/Config.Set", data).then(function(res) {
+    var dn = el("device_name").innerText;
     document.body.innerHTML =
       "<div class='container'><h1>Rebooting...</h1>" +
-      "<p>Device is rebooting and connecting to " + wifiSSID.value + "." +
+      "<p>Device is rebooting and connecting to <i>" + wifiSSID.value + "</i>." +
       "<p>Connect to the same network and visit " +
-      "<a href='http://" + el("device_id").innerText + ".local/'>" +
-      el("device_id").innerText + ".local.</a></div>.";
+      "<a href='http://" + dn + ".local/'>http://" + dn + ".local/</a>." +
+      "<p>If device cannot be contacted, see " +
+      "<a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options." +
+      "</div>.";
   }).catch(function(err) {
     if (err.response) {
       err = err.response.data.message;
