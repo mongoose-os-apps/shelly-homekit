@@ -159,10 +159,26 @@ def shelly_model(type):
              'SHSW-PM' : 'Shelly1PM',
              'SHSW-21' : 'Shelly2',
              'SHSW-25' : 'Shelly25',
+             'SHPLG-1' : 'ShellyPlug',
+             'SHPLG2-1' : 'ShellyPlugE',
              'SHPLG-S' : 'ShellyPlugS',
+             'SHPLG-U1' : 'ShellyPlugUS',
+             'SHIX3-1' : 'ShellyI3',
+             'SHBTN-1' : 'ShellyButton1',
+             'SHBLB-1' : 'ShellyBulb',
+             'SHVIN-1' : 'ShellyVintage',
+             'SHBDUO-1' : 'ShellyDuo',
              'SHDM-1' : 'ShellyDimmer1',
              'SHDM-2' : 'ShellyDimmer2',
              'SHRGBW2' : 'ShellyRGBW2',
+             'SHDW-1' : 'ShellyDoorWindow1',
+             'SHDW-2' : 'ShellyDoorWindow2',
+             'SHHT-1' : 'ShellyHT',
+             'SHSM-01' : 'ShellySmoke',
+             'SHWT-1' : 'ShellyFlood',
+             'SHGS-1' : 'ShellyGas',
+             'SHEM' : 'ShellyEM',
+             'SHEM-3' : 'Shelly3EM',
              'switch1' : 'Shelly1',
              'switch1pm' : 'Shelly1PM',
              'switch2' : 'Shelly2',
@@ -172,7 +188,7 @@ def shelly_model(type):
              'dimmer2' : 'ShellyDimmer2',
              'rgbw2' : 'ShellyRGBW2',
   }
-  return(options[type])
+  return options.get(type, type)
 
 
 def parseVersion(vs):
@@ -337,7 +353,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   if mode == 'homekit':
     cfw_type_str = "HomeKit"
   else:
-    cfw_type_str = "Official"    
+    cfw_type_str = "Official"
   logger.info(f"{WHITE}Latest: {NC}{cfw_type_str} {col}{lfw_label}{NC}")
   logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
   if action != 'list':
