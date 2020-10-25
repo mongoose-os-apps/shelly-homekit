@@ -39,8 +39,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   auto *in1 = new InputPin(1, 13, 1, MGOS_GPIO_PULL_NONE, true);
   in1->AddHandler(std::bind(&HandleInputResetSequence, in1, 4, _1, _2));
   inputs->emplace_back(in1);
-  auto *in2 = new InputPin(2, 5, 1, MGOS_GPIO_PULL_NONE, true);
-  in2->AddHandler(std::bind(&HandleInputResetSequence, in2, 15, _1, _2));
+  auto *in2 = new InputPin(2, 5, 1, MGOS_GPIO_PULL_NONE, false);
   inputs->emplace_back(in2);
   PowerMeterInit(pms);
   sys_temp->reset(new TempSensorSDNT1608X103F3450(0, 3.3f, 33000.0f));
