@@ -99,7 +99,8 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   if (cfg.in_mode != -2 && (cfg.in_mode < 0 || cfg.in_mode > 3)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
   }
-  if (cfg.initial_state < 0 || cfg.initial_state > 3) {
+  if (cfg.initial_state < 0 || cfg.initial_state > 3 ||
+      (cfg_->in_mode == -1 && cfg.initial_state == 3)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
   }
   cfg.auto_off = (cfg.auto_off != 0);
