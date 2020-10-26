@@ -162,6 +162,38 @@ conds:
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
 
+  # Note this is also known as "ShellyPlug 2", as opposed to the original Plug
+  # which was based on CC3200. However, that one is long gone and we can ignore it.
+  - when: build_vars.MODEL == "ShellyPlug"
+    apply:
+      name: shelly-plug2 # To allow OTA from stock fw.
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: esp8266-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        # Note: 4 MB flash chip
+        FS_SIZE: 262144
+        MGOS_ROOT_FS_TYPE: SPIFFS
+        MGOS_MBEDTLS_ENABLE_ATCA: 0
+      cdefs:
+        LED_GPIO: 13  # Green, 14 red, 16 blue.
+        LED_ON: 0
+        BTN_GPIO: 12
+        BTN_DOWN: 1
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHPLG2-1"'
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["device.id", "shellyplug-??????"]
+        - ["shelly.name", "shellyplug-??????"]
+        - ["wifi.ap.ssid", "shellyplug-??????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.name", "Shelly Plug"]
+        - ["sw1.in_mode", -1]
+        - ["sw1.initial_state", 2]
+
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
