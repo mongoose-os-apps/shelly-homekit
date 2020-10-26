@@ -3,15 +3,15 @@
 
 # Apple HomeKit firmware for Shelly switches
 
-This firmware exposes [Shelly 1](https://shelly.cloud/products/shelly-1-smart-home-automation-relay/), [Shelly 1PM](https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/), Shelly 2 and [Shelly 2.5](https://shelly.cloud/products/shelly-25-smart-home-automation-relay/) as Apple HomeKit accessories.
+This firmware exposes [Shelly 1](https://shelly.cloud/products/shelly-1-smart-home-automation-relay/), [Shelly 1PM](https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/), [Shelly Plug](https://shelly.cloud/products/shelly-plug-smart-home-automation-device/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/), Shelly 2 and [Shelly 2.5](https://shelly.cloud/products/shelly-25-smart-home-automation-relay/) as Apple HomeKit accessories.
 
 Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw)), for more info take a look at the flashing wiki [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#updating-from-stock-firmware).
 
 At the moment only the following functionality is supported:
- * Switch functionality - all relevant models, with auto-off and separate input tile as an option. Configurable as Switch, Outlet or Lock
- * Power measurement: only Shelly 2.5, not Shelly1PM
- * Roller-shutter mode (Shelly 2.5 only)
- * Garage Door Opener (Shelly 1, 1PM, 2, 2.5 only)
+ * Switch functionality: all relevant models, with auto-off and separate input tile as an option. Configurable as Switch, Outlet or Lock.
+ * Power measurement: Shelly 2.5
+ * Roller-shutter mode: Shelly 2.5
+ * Garage Door Opener: Shelly 1, Shelly 1PM, Shelly 2, Shelly 2.5
 
 Reverting to stock firmware is also supported [see here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#reverting-to-stock-firmware).
 
@@ -33,6 +33,8 @@ Reverting to stock firmware is also supported [see here](https://github.com/mong
 
     * Shelly 2.5: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip`
 
+    * Shelly Plug: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlug.zip`
+
     * Shelly Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip`
 
   * See [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#updating-from-stock-firmware) for detailed instructions.
@@ -45,9 +47,15 @@ Reverting to stock firmware is also supported [see here](https://github.com/mong
 
 See [Wiki](https://github.com/mongoose-os-apps/shelly-homekit/wiki).
 
+## Getting Support
+
+If you'd like to report a bug or a missing feature, please use [GitHub issue tracker](https://github.com/mongoose-os-apps/shelly-homekit/issues).
+
+Some of us can be found in the [Gitter chat room](https://gitter.im/shelly-homekit/community).
+
 ## Contributions and Development
 
-Code contributions are welcome! See open issues and feel free to pick one up.
+Code contributions are welcome! Check out [open issues](https://github.com/mongoose-os-apps/shelly-homekit/issues) and feel free to pick one up.
 
 See [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Development) for development environment setup.
 
