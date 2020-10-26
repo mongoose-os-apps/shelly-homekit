@@ -18,6 +18,7 @@
 #include "shelly_reset.hpp"
 
 #include "mgos.hpp"
+#include "mgos_vfs.h"
 
 #if CS_PLATFORM == CS_P_ESP8266
 extern "C" {

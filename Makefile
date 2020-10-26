@@ -68,6 +68,10 @@ ShellyU25: PLATFORM=ubuntu
 ShellyU25: build-ShellyU25
 	@true
 
+ShellyT32: PLATFORM=esp32
+ShellyT32: build-ShellyT32
+	@true
+
 fs/index.html.gz: $(wildcard fs_src/*) Makefile
 	mkdir -p $(BUILD_DIR)
 	cat fs_src/index.html | \

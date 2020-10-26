@@ -496,7 +496,8 @@ conds:
         # Size fine-tuning, saves substantial amount of RAM vs defaults.
         HAP_SESSION_SIZE: 392
         HAP_IP_SESSION_SIZE: 600
-        HAP_ACCESSORY_SERVER_SIZE: 1680
+        # XXX: fix size calculation with and without BLE
+        XHAP_ACCESSORY_SERVER_SIZE: 1680
         HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
         HAP_DISABLE_ASSERTS: 1       # 32K
         HAP_DISABLE_PRECONDITIONS: 1 # 40K
@@ -556,5 +557,34 @@ conds:
         - ["wc1.name", "Window 1"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "ShellyU25 GDO"]
+
+  # Test "devicw" for BLE development.
+  - when: build_vars.MODEL == "ShellyT32"
+    apply:
+      libs:
+        # adding bt-common enables BLE support at compile time 
+        - origin: https://github.com/mongoose-os-libs/bt-common
+        - origin: https://github.com/mongoose-os-libs/ethernet
+      build_vars:
+        APP_SLOT_SIZE: 0x1b0000
+        MGOS_HAP_BLE: 1
+      cdefs:
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"XXX"'
+        SHELLY_HAVE_PM: 0
+        BTN_NOISY: 0
+      config_schema:
+        # - ["bt.enable", true]
+        - ["bt.adv_enable", false] # ADK controls advertisement.
+        - ["bt.keep_enabled", true]
+        - ["bt.random_address", true]
+        - ["device.id", "ShellyT32-????"]
+        - ["shelly.name", "ShellyT32-????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.name", "SWT32"]
+        - ["sw1.in_mode", 0]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "SSWT32"]
+        - ["in1.sensor.name", "ST32"]
 
 manifest_version: 2020-01-29
