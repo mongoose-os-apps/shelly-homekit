@@ -160,7 +160,7 @@ def shelly_model(type):
              'SHSW-21' : 'Shelly2',
              'SHSW-25' : 'Shelly25',
              'SHPLG-1' : 'ShellyPlug',
-             'SHPLG2-1' : 'ShellyPlugE',
+             'SHPLG2-1' : 'ShellyPlug',
              'SHPLG-S' : 'ShellyPlugS',
              'SHPLG-U1' : 'ShellyPlugUS',
              'SHIX3-1' : 'ShellyI3',
