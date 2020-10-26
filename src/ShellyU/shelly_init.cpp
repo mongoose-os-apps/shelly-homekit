@@ -43,25 +43,20 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 123, 1));
-  auto *in = new InputPin(1, 456, 1, MGOS_GPIO_PULL_NONE, true);
-  in->AddHandler(std::bind(&HandleInputResetSequence, in, -1, _1, _2));
-  inputs->emplace_back(in);
   s_mock_sys_temp_sensor = new MockTempSensor(33);
   sys_temp->reset(s_mock_sys_temp_sensor);
 
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.TestSetSysTemp",
                      "{temp: %f}", SetSysTempHandler, nullptr);
-
+  (void) inputs;
   (void) pms;
 }
 
 void CreateComponents(std::vector<Component *> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  // Single switch with non-detached input = only one accessory.
-  bool to_pri_acc = (mgos_sys_config_get_sw1_in_mode() != 3);
-  CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
-                  comps, accs, svr, to_pri_acc);
+  CreateHAPSwitch(1, mgos_sys_config_get_sw1(), nullptr, comps, accs, svr,
+                  true /* to_pri_acc */);
 }
 
 }  // namespace shelly

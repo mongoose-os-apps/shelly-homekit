@@ -37,6 +37,7 @@ namespace shelly {
 class ShellySwitch : public Component, public hap::Service {
  public:
   enum class InMode {
+    kAbsent = -1,
     kMomentary = 0,
     kToggle = 1,
     kEdge = 2,

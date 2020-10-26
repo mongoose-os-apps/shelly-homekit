@@ -81,6 +81,7 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
                                bool *restart_required) {
   struct mgos_config_sw cfg = *cfg_;
   cfg.name = nullptr;
+  cfg.in_mode = -2;
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, svc_type: %d, in_mode: %d, initial_state: %d, "
              "auto_off: %B, auto_off_delay: %lf}",
@@ -95,7 +96,7 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   if (cfg.svc_type < -1 || cfg.svc_type > 2) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "svc_type");
   }
-  if (cfg.in_mode < 0 || cfg.in_mode > 3) {
+  if (cfg.in_mode != -2 && (cfg.in_mode < 0 || cfg.in_mode > 3)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
   }
   if (cfg.initial_state < 0 || cfg.initial_state > 3) {
@@ -115,7 +116,7 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
     cfg_->svc_type = cfg.svc_type;
     *restart_required = true;
   }
-  if (cfg_->in_mode != cfg.in_mode) {
+  if (cfg.in_mode != -2 && cfg_->in_mode != cfg.in_mode) {
     if (cfg_->in_mode == (int) InMode::kDetached ||
         cfg.in_mode == (int) InMode::kDetached) {
       *restart_required = true;
@@ -213,6 +214,7 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
         case InMode::kEdge:
           SetState(!out_->GetState(), "button");
           break;
+        case InMode::kAbsent:
         case InMode::kDetached:
           break;
       }

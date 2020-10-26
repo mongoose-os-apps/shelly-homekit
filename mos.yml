@@ -28,7 +28,7 @@ config_schema:
   - ["sw", "o", {"Switch settings"}]
   - ["sw.name", "s", "", {"Name of the switch"}]
   - ["sw.enable", "b", true, {"Enable this switch in the accessory"}]
-  - ["sw.in_mode", "i", 1, {"0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
+  - ["sw.in_mode", "i", 1, {"-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
   - ["sw.state", "b", false, {"State of the switch"}]
   - ["sw.svc_type", "i", 0, {"HAP service type, -1 = disable, 0 = switch, 1 = outlet, 2 = lock"}]
   - ["sw.initial_state", "i", 3, {"Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
@@ -188,8 +188,7 @@ conds:
         - ["wifi.ap.ssid", "shellyplug-s-??????"]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "Shelly SW"]
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Input"]
+        - ["sw1.in_mode", -1]
 
   - when: build_vars.MODEL == "Shelly2"
     apply:
@@ -300,7 +299,6 @@ conds:
         - ["http.document_root", "."]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "SW"]
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "ShellyU Input"]
+        - ["sw1.in_mode", -1]
 
 manifest_version: 2020-01-29

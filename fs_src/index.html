@@ -397,7 +397,7 @@ input:checked + .slider:before {
           <option id="svc_type_2" value="2">Lock</option>
         </select>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="in_mode_container">
         <label>Input Mode:</label>
         <select id="in_mode">
           <option id="in_mode_0" value="0">Momentary</option>
@@ -797,7 +797,6 @@ function nDigitString(num, digits) {
 function swSetConfig(c) {
   var name = el(c, "name").value;
   var svcType = el(c, "svc_type").value;
-  var inMode = el(c, "in_mode").value;
   var initialState = el(c, "initial").value;
   var autoOff = el(c, "auto_off").checked;
   var autoOffDelay = el(c, "auto_off_delay").value;
@@ -815,12 +814,16 @@ function swSetConfig(c) {
 
   var cfg = {
     name: name,
-    svc_type: parseInt(svcType),
-    in_mode: parseInt(inMode),
-    initial_state: parseInt(initialState),
+    svc_type: parseInt(el(c, "svc_type").value),
+    initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
-    auto_off_delay: dateStringToSeconds(autoOffDelay)
   };
+  if (autoOff) {
+    cfg.auto_off_delay = dateStringToSeconds(autoOffDelay);
+  }
+  if (c.data.in_mode >= 0) {
+    cfg.in_mode = parseInt(el(c, "in_mode").value);
+  }
   setComponentConfig(c, cfg, spinner);
 }
 
@@ -978,7 +981,11 @@ function updateComponent(cd) {
       }
       el(c, "btn_label").innerText = "Turn " + (cd.state ? "Off" : "On");
       el(c, "svc_type_" + cd.svc_type).selected = true;
-      el(c, "in_mode_" + cd.in_mode).selected = true;
+      if (cd.in_mode >= 0) {
+        el(c, "in_mode_" + cd.in_mode).selected = true;
+      } else {
+        el(c, "in_mode_container").style.display = "none";
+      }
       el(c, "initial_" + cd.initial).selected = true;
       el(c, "auto_off").checked = cd.auto_off;
       el(c, "auto_off_delay").disabled = !cd.auto_off;
@@ -1296,7 +1303,7 @@ async function checkUpdate() {
       }
       console.log("Version:", latestVersion, "URL:", updateURL);
       if (!latestVersion || !updateURL) {
-        console.log(model, section, updateURL);
+        console.log("Update section not found:", model, curVersion, cfg);
         e.innerHTML = errMsg;
         se.className = "";
         return;

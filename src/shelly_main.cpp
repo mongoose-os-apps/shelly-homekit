@@ -251,7 +251,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     // purely for ownership.
     pri_acc->AddService(std::move(sw));
   }
-  if (sw_cfg->in_mode == 3) {
+  if (ssw_cfg != nullptr && sw_cfg->in_mode == 3) {
     LOG(LL_INFO, ("Creating a stateless switch for input %d", id));
     CreateHAPStatelessSwitch(id, ssw_cfg, comps, accs, svr);
   }
