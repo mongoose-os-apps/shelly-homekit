@@ -30,7 +30,7 @@ static MockTempSensor *s_mock_sys_temp_sensor = nullptr;
 static void SetSysTempHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                               struct mg_rpc_frame_info *fi,
                               struct mg_str args) {
-  float temp = SNANF;
+  float temp = NAN;
   json_scanf(args.p, args.len, ri->args_fmt, &temp);
   s_mock_sys_temp_sensor->SetValue(temp);
   mg_rpc_send_responsef(ri, nullptr);

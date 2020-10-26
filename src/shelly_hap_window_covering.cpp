@@ -17,6 +17,8 @@
 
 #include "shelly_hap_window_covering.hpp"
 
+#include <cmath>
+
 #include "mgos.hpp"
 #include "mgos_system.hpp"
 
