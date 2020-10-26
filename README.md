@@ -5,7 +5,7 @@
 
 This firmware exposes [Shelly 1](https://shelly.cloud/products/shelly-1-smart-home-automation-relay/), [Shelly 1PM](https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/), Shelly 2 and [Shelly 2.5](https://shelly.cloud/products/shelly-25-smart-home-automation-relay/) as Apple HomeKit accessories.
 
-Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw)), for more info take a look at the flashing wiki [here](Flashing#updating-from-stock-firmware).
+Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw)), for more info take a look at the flashing wiki [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#updating-from-stock-firmware).
 
 At the moment only the following functionality is supported:
  * Switch functionality - all relevant models, with auto-off and separate input tile as an option. Configurable as Switch, Outlet or Lock
@@ -13,7 +13,7 @@ At the moment only the following functionality is supported:
  * Roller-shutter mode (Shelly 2.5 only)
  * Garage Door Opener (Shelly 1, 1PM, 2, 2.5 only)
 
-Reverting to stock firmware is also supported [see here](Flashing#reverting-to-stock-firmware).
+Reverting to stock firmware is also supported [see here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#reverting-to-stock-firmware).
 
 *Note:* Only HomeKit is supported, no Shelly Cloud, MQTT or web hooks for now.
 
