@@ -221,6 +221,7 @@ conds:
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["sw1.in_mode", -1]
+        - ["sw1.initial_state", 2]
 
   - when: build_vars.MODEL == "Shelly2"
     apply:
