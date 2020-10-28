@@ -255,7 +255,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
   n = 1
   waittextshown = False
   info = None
-  while n < 40:
+  while n < 15:
     if waittextshown == False:
       logger.info(f"waiting for {friendly_host} to reboot")
       waittextshown = True
@@ -266,16 +266,16 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
     try:
       with urllib.request.urlopen(checkurl) as fp:
         info = json.load(fp)
+      if mode == 'homekit':
+        onlinecheck = info['version']
+      else:
+        onlinecheck = info['fw'].split('/v')[1].split('@')[0]
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
       logger.debug(f"Error: {err}")
       n += 1
-    if info:
-      n=41
-    time.sleep(1)
-  if mode == 'homekit':
-    onlinecheck = info['version']
-  else:
-    onlinecheck = info['fw'].split('/v')[1].split('@')[0]
+    if onlinecheck == lfw:
+      break
+    time.sleep(2)
   if onlinecheck == lfw:
     logger.info(f"{GREEN}Successfully flashed {friendly_host} to {lfw}{NC}")
     if mode == 'stock' and info['type'] == 'SHRGBW2':
@@ -303,7 +303,8 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   friendly_host = device_info['host'].replace('.local', '')
   host = device_info['host']
   device = device_info['device_id']
-  model = device_info['model'] if 'model' in device_info else device_info['stock_model']
+  model = device_info['model']
+  stock_model = device_info['stock_model']
   logger.debug(f"host: {host}")
   logger.debug(f"device: {device}")
   logger.debug(f"model: {model}")
@@ -337,7 +338,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
     if not version:
       dlurl = stock_release_info['data'][device_info['stock_model']]['url']
     else:
-      dlurl = f'http://archive.shelly-faq.de/version/v{version}/{model}.zip'
+      dlurl = f'http://archive.shelly-faq.de/version/v{version}/{stock_model}.zip'
   if dlurl:
     durl_request = requests.get(dlurl)
   if not dlurl or durl_request.status_code != 200:
