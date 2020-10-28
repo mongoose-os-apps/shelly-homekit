@@ -263,6 +263,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
       checkurl = f'http://{host}/rpc/Shelly.GetInfo'
     else:
       checkurl = f'http://{host}/Shelly.GetInfo'
+      time.sleep(17) # some stock devices require time to complete flash process.
     try:
       with urllib.request.urlopen(checkurl) as fp:
         info = json.load(fp)
@@ -303,7 +304,8 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   friendly_host = device_info['host'].replace('.local', '')
   host = device_info['host']
   device = device_info['device_id']
-  model = device_info['model'] if 'model' in device_info else device_info['stock_model']
+  model = device_info['model']
+  stock_model = device_info['stock_model']
   logger.debug(f"host: {host}")
   logger.debug(f"device: {device}")
   logger.debug(f"model: {model}")
@@ -337,7 +339,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
     if not version:
       dlurl = stock_release_info['data'][device_info['stock_model']]['url']
     else:
-      dlurl = f'http://archive.shelly-faq.de/version/v{version}/{model}.zip'
+      dlurl = f'http://archive.shelly-faq.de/version/v{version}/{stock_model}.zip'
   if dlurl:
     durl_request = requests.get(dlurl)
   if not dlurl or durl_request.status_code != 200:
