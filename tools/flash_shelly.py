@@ -274,7 +274,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
       logger.debug(f"Error: {err}")
       n += 1
     if onlinecheck == lfw:
-      n=16
+      break
     time.sleep(2)
   if onlinecheck == lfw:
     logger.info(f"{GREEN}Successfully flashed {friendly_host} to {lfw}{NC}")
