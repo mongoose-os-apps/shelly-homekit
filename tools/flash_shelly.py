@@ -255,7 +255,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
   n = 1
   waittextshown = False
   info = None
-  while n < 40:
+  while n < 15:
     if waittextshown == False:
       logger.info(f"waiting for {friendly_host} to reboot")
       waittextshown = True
@@ -274,7 +274,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
       logger.debug(f"Error: {err}")
       n += 1
     if onlinecheck == lfw:
-      n=41
+      n=16
     time.sleep(2)
   if onlinecheck == lfw:
     logger.info(f"{GREEN}Successfully flashed {friendly_host} to {lfw}{NC}")
