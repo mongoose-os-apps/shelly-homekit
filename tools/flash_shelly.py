@@ -263,20 +263,19 @@ def write_flash(host, lfw, dlurl, cfw_type, mode):
       checkurl = f'http://{host}/rpc/Shelly.GetInfo'
     else:
       checkurl = f'http://{host}/Shelly.GetInfo'
-      time.sleep(17) # some stock devices require time to complete flash process.
     try:
       with urllib.request.urlopen(checkurl) as fp:
         info = json.load(fp)
+      if mode == 'homekit':
+        onlinecheck = info['version']
+      else:
+        onlinecheck = info['fw'].split('/v')[1].split('@')[0]
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
       logger.debug(f"Error: {err}")
       n += 1
-    if info:
+    if onlinecheck == lfw:
       n=41
-    time.sleep(1)
-  if mode == 'homekit':
-    onlinecheck = info['version']
-  else:
-    onlinecheck = info['fw'].split('/v')[1].split('@')[0]
+    time.sleep(2)
   if onlinecheck == lfw:
     logger.info(f"{GREEN}Successfully flashed {friendly_host} to {lfw}{NC}")
     if mode == 'stock' and info['type'] == 'SHRGBW2':
