@@ -80,7 +80,9 @@ InputPin::InputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
     : InputPin(id, {.pin = pin,
                     .on_value = on_value,
                     .pull = pull,
-                    .enable_reset = enable_reset}) {
+                    .enable_reset = enable_reset,
+                    .short_press_duration_ms = kDefaultShortPressDurationMs,
+                    .long_press_duration_ms = kDefaultLongPressDurationMs}) {
 }
 
 InputPin::InputPin(int id, const Config &cfg)

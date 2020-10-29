@@ -171,7 +171,7 @@ static void DoReset(void *arg) {
   }
   s_identify_count = 2;
   LOG(LL_INFO, ("Performing reset"));
-#if 0  // def MGOS_SYS_CONFIG_HAVE_WIFI
+#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
   mgos_sys_config_set_wifi_sta_enable(false);
   mgos_sys_config_set_wifi_ap_enable(true);
   mgos_sys_config_save(&mgos_sys_config, false, nullptr);
