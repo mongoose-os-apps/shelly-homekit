@@ -63,6 +63,7 @@ class ShellySwitch : public Component, public hap::Service {
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
 
+  bool GetState() const;
   void SetState(bool new_state, const char *source);
 
  protected:

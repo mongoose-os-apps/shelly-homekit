@@ -77,19 +77,27 @@ void Input::CallHandlers(Event ev, bool state) {
 
 InputPin::InputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
                    bool enable_reset)
-    : Input(id), pin_(pin), on_value_(on_value), enable_reset_(enable_reset) {
-  mgos_gpio_setup_input(pin_, pull);
-  mgos_gpio_set_button_handler(pin_, pull, MGOS_GPIO_INT_EDGE_ANY, 20,
+    : InputPin(id, {.pin = pin,
+                    .on_value = on_value,
+                    .pull = pull,
+                    .enable_reset = enable_reset}) {
+}
+
+InputPin::InputPin(int id, const Config &cfg)
+    : Input(id), cfg_(cfg), timer_(std::bind(&InputPin::HandleTimer, this)) {
+  mgos_gpio_setup_input(cfg_.pin, cfg_.pull);
+  mgos_gpio_set_button_handler(cfg_.pin, cfg_.pull, MGOS_GPIO_INT_EDGE_ANY, 20,
                                GPIOIntHandler, this);
+  GetState();
 }
 
 InputPin::~InputPin() {
-  mgos_gpio_remove_int_handler(pin_, nullptr, nullptr);
-  ClearTimer();
+  mgos_gpio_remove_int_handler(cfg_.pin, nullptr, nullptr);
 }
 
 bool InputPin::GetState() {
-  return (mgos_gpio_read(pin_) == on_value_);
+  last_state_ = (mgos_gpio_read(cfg_.pin) == cfg_.on_value);
+  return last_state_;
 }
 
 // static
@@ -98,23 +106,8 @@ void InputPin::GPIOIntHandler(int pin, void *arg) {
   (void) pin;
 }
 
-// static
-void InputPin::TimerCB(void *arg) {
-  static_cast<InputPin *>(arg)->HandleTimer();
-}
-
-void InputPin::SetTimer(int ms) {
-  ClearTimer();
-  timer_id_ = mgos_set_timer(ms, 0, &InputPin::TimerCB, this);
-}
-
-void InputPin::ClearTimer() {
-  mgos_clear_timer(timer_id_);
-  timer_id_ = MGOS_INVALID_TIMER_ID;
-}
-
 void InputPin::DetectReset(double now, bool cur_state) {
-  if (enable_reset_ && now < 30) {
+  if (cfg_.enable_reset && now < 30) {
     if (now - last_change_ts_ > 5) {
       change_cnt_ = 0;
     }
@@ -127,16 +120,18 @@ void InputPin::DetectReset(double now, bool cur_state) {
 }
 
 void InputPin::HandleGPIOInt() {
+  bool last_state = last_state_;
   bool cur_state = GetState();
+  if (cur_state == last_state) return;  // Noise
   LOG(LL_DEBUG, ("Input %d: %s (%d), st %d", id(), OnOff(cur_state),
-                 mgos_gpio_read(pin_), (int) state_));
+                 mgos_gpio_read(cfg_.pin), (int) state_));
   CallHandlers(Event::kChange, cur_state);
   double now = mgos_uptime();
   DetectReset(now, cur_state);
   switch (state_) {
     case State::kIdle:
       if (cur_state) {
-        SetTimer(kLongPressDurationMs / 2);
+        timer_.Reset(cfg_.short_press_duration_ms, 0);
         state_ = State::kWaitOffSingle;
         timer_cnt_ = 0;
       }
@@ -148,21 +143,21 @@ void InputPin::HandleGPIOInt() {
       break;
     case State::kWaitOnDouble:
       if (cur_state) {
-        SetTimer(kLongPressDurationMs / 2);
+        timer_.Reset(cfg_.short_press_duration_ms, 0);
         state_ = State::kWaitOffDouble;
         timer_cnt_ = 0;
       }
       break;
     case State::kWaitOffDouble:
       if (!cur_state) {
-        ClearTimer();
+        timer_.Clear();
         CallHandlers(Event::kDouble, cur_state);
         state_ = State::kIdle;
       }
       break;
     case State::kWaitOffLong:
       if (!cur_state) {
-        ClearTimer();
+        timer_.Clear();
         if (timer_cnt_ == 1) {
           CallHandlers(Event::kSingle, cur_state);
         }
@@ -174,7 +169,6 @@ void InputPin::HandleGPIOInt() {
 }
 
 void InputPin::HandleTimer() {
-  timer_id_ = MGOS_INVALID_TIMER_ID;
   timer_cnt_++;
   bool cur_state = GetState();
   LOG(LL_DEBUG, ("Input %d: timer, st %d", id(), (int) state_));
@@ -183,7 +177,8 @@ void InputPin::HandleTimer() {
       break;
     case State::kWaitOffSingle:
     case State::kWaitOffDouble:
-      SetTimer(kLongPressDurationMs / 2);
+      timer_.Reset(cfg_.long_press_duration_ms - cfg_.short_press_duration_ms,
+                   0);
       state_ = State::kWaitOffLong;
       break;
     case State::kWaitOnDouble:

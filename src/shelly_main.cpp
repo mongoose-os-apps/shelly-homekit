@@ -48,6 +48,7 @@
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_rpc_service.hpp"
+#include "shelly_switch.hpp"
 #include "shelly_temp_sensor.hpp"
 
 #define KVS_FILE_NAME "kvs.json"
@@ -124,9 +125,9 @@ static HAPPlatform s_platform = {
         },
 };
 
+static Input *s_btn = nullptr;
 static uint8_t s_service_flags = 0;
-static int16_t s_btn_pressed_count = 0;
-static int16_t s_identify_count = 0;
+static uint8_t s_identify_count = 0;
 
 static void CheckLED(int pin, bool led_act);
 
@@ -168,16 +169,18 @@ static void DoReset(void *arg) {
   if (out_gpio >= 0) {
     mgos_gpio_blink(out_gpio, 0, 0);
   }
+  s_identify_count = 2;
   LOG(LL_INFO, ("Performing reset"));
-#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
+#if 0  // def MGOS_SYS_CONFIG_HAVE_WIFI
   mgos_sys_config_set_wifi_sta_enable(false);
   mgos_sys_config_set_wifi_ap_enable(true);
   mgos_sys_config_save(&mgos_sys_config, false, nullptr);
   mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
 #endif
+  CheckLED(LED_GPIO, LED_ON);
 }
 
-void HandleInputResetSequence(InputPin *in, int out_gpio, Input::Event ev,
+void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
                               bool cur_state) {
   if (ev != Input::Event::kReset) return;
   LOG(LL_INFO, ("%d: Reset sequence detected", in->id()));
@@ -359,39 +362,23 @@ static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
   }
 }
 
-static void CheckButton(int pin, bool btn_down) {
-  if (pin < 0) return;
-  bool pressed = (mgos_gpio_read(pin) == btn_down);
-  if (!pressed) {
-    if (s_btn_pressed_count > 0) {
-      s_btn_pressed_count = 0;
-    }
-    return;
-  }
-  s_btn_pressed_count++;
-  LOG(LL_INFO, ("Button pressed, %d", s_btn_pressed_count));
-  if (s_btn_pressed_count == 10) {
-    DoReset((void *) -1);
-  }
-}
-
 static void CheckLED(int pin, bool led_act) {
   if (pin < 0) return;
   int on_ms = 0, off_ms = 0;
   static int s_on_ms = 0, s_off_ms = 0;
-  // If user is currently holding the button, acknowledge it.
-  if (s_btn_pressed_count > 0 && s_btn_pressed_count < 10) {
-    LOG(LL_DEBUG, ("LED: btn (%d)", s_btn_pressed_count));
-    on_ms = 1;
-    off_ms = 0;
-    goto out;
-  }
   // Identify sequence requested by controller.
   if (s_identify_count > 0) {
     LOG(LL_DEBUG, ("LED: identify (%d)", s_identify_count));
     on_ms = 100;
     off_ms = 100;
     s_identify_count--;
+    goto out;
+  }
+  // If user is currently holding the button, acknowledge it.
+  if (s_btn != nullptr && s_btn->GetState()) {
+    LOG(LL_DEBUG, ("LED: btn"));
+    on_ms = 1;
+    off_ms = 0;
     goto out;
   }
 #ifdef MGOS_HAVE_WIFI
@@ -504,7 +491,6 @@ static void StatusTimerCB(void *arg) {
   }
   /* If provisioning information has been provided, start the server. */
   StartService(true /* quiet */);
-  CheckButton(BTN_GPIO, BTN_DOWN);
   CheckLED(LED_GPIO, LED_ON);
   if (sys_temp.ok()) {
     CheckOverheat(sys_temp.ValueOrDie());
@@ -639,6 +625,56 @@ void RestartService() {
   // Server will be restarted by status timer (unless inhibited).
 }
 
+static void ButtonHandler(Input::Event ev, bool cur_state) {
+  switch (ev) {
+    case Input::Event::kChange: {
+      CheckLED(LED_GPIO, LED_ON);
+      break;
+    }
+    // Single press will toggle the switch, or cycle if there are two.
+    case Input::Event::kSingle: {
+      uint32_t n = 0, i = 0, state = 0;
+      for (Component *c : g_comps) {
+        if (c->type() != Component::Type::kSwitch) continue;
+        const ShellySwitch *sw = static_cast<ShellySwitch *>(c);
+        if (sw->GetState()) state |= (1 << n);
+        n++;
+      }
+      if (n == 0) break;
+      state++;
+      for (Component *c : g_comps) {
+        if (c->type() != Component::Type::kSwitch) continue;
+        ShellySwitch *sw = static_cast<ShellySwitch *>(c);
+        bool new_state = (state & (1 << i));
+        sw->SetState(new_state, "btn");
+        i++;
+      }
+      break;
+    }
+    case Input::Event::kLong: {
+      HandleInputResetSequence(s_btn, LED_GPIO, Input::Event::kReset,
+                               cur_state);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+static void SetupButton(int pin, bool on_value) {
+  if (pin < 0) return;
+  s_btn = new InputPin(
+      0, InputPin::Config{
+             .pin = pin,
+             .on_value = on_value,
+             .pull = MGOS_GPIO_PULL_NONE,
+             .enable_reset = false,
+             .short_press_duration_ms = InputPin::kDefaultShortPressDurationMs,
+             .long_press_duration_ms = 10000,
+         });
+  s_btn->AddHandler(ButtonHandler);
+}
+
 #ifdef MGOS_HAVE_OTA_COMMON
 static void OTABeginCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_begin_arg *arg = (struct mgos_ota_begin_arg *) ev_data;
@@ -732,10 +768,6 @@ bool InitApp() {
 
   mgos_hap_add_rpc_service_cb(&s_server, StartHAPServerCB);
 
-  if (BTN_GPIO >= 0) {
-    mgos_gpio_setup_input(BTN_GPIO, MGOS_GPIO_PULL_UP);
-  }
-
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
   DebugInit(&s_server, &s_kvs, &s_tcpm);
@@ -747,6 +779,8 @@ bool InitApp() {
   mgos_event_add_handler(MGOS_EVENT_OTA_BEGIN, OTABeginCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
 #endif
+
+  SetupButton(BTN_GPIO, BTN_DOWN);
 
   return true;
 }

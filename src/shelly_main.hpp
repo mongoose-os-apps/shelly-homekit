@@ -49,7 +49,7 @@ void CreateHAPStatelessSwitch(
     std::vector<std::unique_ptr<hap::Accessory>> *accs,
     HAPAccessoryServerRef *svr);
 
-void HandleInputResetSequence(InputPin *in, int out_gpio, Input::Event ev,
+void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
                               bool cur_state);
 
 void RestartService();

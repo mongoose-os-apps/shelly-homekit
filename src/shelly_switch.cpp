@@ -161,6 +161,10 @@ Status ShellySwitch::Init() {
   return Status::OK();
 }
 
+bool ShellySwitch::GetState() const {
+  return out_->GetState();
+}
+
 void ShellySwitch::SetState(bool new_state, const char *source) {
   bool cur_state = out_->GetState();
   out_->SetState(new_state, source);

@@ -21,7 +21,7 @@
 
 #include "mgos_event.h"
 #include "mgos_gpio.h"
-#include "mgos_timers.h"
+#include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 
@@ -62,16 +62,27 @@ class Input {
 
 class InputPin : public Input {
  public:
+  static constexpr int kDefaultShortPressDurationMs = 500;
+  static constexpr int kDefaultLongPressDurationMs = 1000;
+
+  struct Config {
+    int pin;
+    int on_value;
+    enum mgos_gpio_pull_type pull;
+    bool enable_reset;
+    int short_press_duration_ms;
+    int long_press_duration_ms;
+  };
+
   InputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
            bool enable_reset);
+  InputPin(int id, const Config &cfg);
   virtual ~InputPin();
 
   // Input interface impl.
   bool GetState() override;
 
  private:
-  static constexpr int kLongPressDurationMs = 1000;
-
   enum class State {
     kIdle = 0,
     kWaitOffSingle = 1,
@@ -81,26 +92,21 @@ class InputPin : public Input {
   };
 
   static void GPIOIntHandler(int pin, void *arg);
-  static void TimerCB(void *arg);
-
-  void SetTimer(int ms);
-  void ClearTimer();
 
   void DetectReset(double now, bool cur_state);
 
   void HandleGPIOInt();
   void HandleTimer();
 
-  const int pin_;
-  const int on_value_;
-  const bool enable_reset_;
+  const Config cfg_;
 
+  bool last_state_ = false;
   int change_cnt_ = 0;         // State change counter for reset.
   double last_change_ts_ = 0;  // Timestamp of last change (uptime).
 
   State state_ = State::kIdle;
   int timer_cnt_ = 0;
-  mgos_timer_id timer_id_ = MGOS_INVALID_TIMER_ID;
+  mgos::ScopedTimer timer_;
 
   InputPin(const InputPin &other) = delete;
 };
