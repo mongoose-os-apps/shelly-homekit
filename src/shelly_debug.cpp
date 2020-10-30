@@ -22,7 +22,7 @@
 #include "mgos_file_logger.h"
 #include "mgos_http_server.h"
 #include "mgos_vfs.h"
-#ifdef MGOS_HAVE_OTA_COMMON
+#if CS_PLATFORM == CS_P_ESP8266
 #include "esp_coredump.h"
 #include "esp_rboot.h"
 #include "mgos_ota.h"
@@ -163,7 +163,7 @@ static void DebugLogHandler(struct mg_connection *nc, int ev, void *ev_data,
   (void) user_data;
 }
 
-#ifdef MGOS_HAVE_OTA_COMMON
+#if CS_PLATFORM == CS_P_ESP8266
 struct CoreHandlerCtx {
   struct mgos_vfs_dev *dev;
   size_t offset;
@@ -266,7 +266,7 @@ static void DebugCoreHandler(struct mg_connection *nc, int ev, void *ev_data,
   (void) ev_data;
   (void) user_data;
 }
-#endif
+#endif  // CS_PLATFORM == CS_P_ESP8266
 
 bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
                HAPPlatformTCPStreamManagerRef tcpm) {
@@ -275,7 +275,7 @@ bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
   s_tcpm = tcpm;
   mgos_register_http_endpoint("/debug/info", DebugInfoHandler, NULL);
   mgos_register_http_endpoint("/debug/log", DebugLogHandler, nullptr);
-#ifdef MGOS_HAVE_OTA_COMMON
+#if CS_PLATFORM == CS_P_ESP8266
   mgos_register_http_endpoint("/debug/core", DebugCoreHandler, nullptr);
 #endif
   return true;

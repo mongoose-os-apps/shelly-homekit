@@ -23,14 +23,15 @@
 #include "mgos_app.h"
 #include "mgos_hap.h"
 #include "mgos_http_server.h"
-#ifdef MGOS_HAVE_OTA_COMMON
-#include "esp_coredump.h"
-#include "esp_rboot.h"
 #include "mgos_ota.h"
-#endif
 #include "mgos_rpc.h"
 
 #include "mongoose.h"
+
+#if CS_PLATFORM == CS_P_ESP8266
+#include "esp_coredump.h"
+#include "esp_rboot.h"
+#endif
 
 #include "HAP.h"
 #include "HAPAccessoryServer+Internal.h"
@@ -394,14 +395,12 @@ static void CheckLED(int pin, bool led_act) {
       break;
   }
 #endif
-#ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_in_progress()) {
     LOG(LL_DEBUG, ("LED: OTA"));
     on_ms = 250;
     off_ms = 250;
     goto out;
   }
-#endif
   // HAP server status (if WiFi is provisioned).
   if (HAPAccessoryServerGetState(&s_server) !=
       kHAPAccessoryServerState_Running) {
@@ -495,7 +494,7 @@ static void StatusTimerCB(void *arg) {
   if (sys_temp.ok()) {
     CheckOverheat(sys_temp.ValueOrDie());
   }
-#ifdef MGOS_HAVE_OTA_COMMON
+#if CS_PLATFORM == CS_P_ESP8266
   // If committed, set up inactive app slot as location for core dumps.
   static bool s_cd_area_set = false;
   struct mgos_ota_status ota_status;
@@ -675,7 +674,6 @@ static void SetupButton(int pin, bool on_value) {
   s_btn->AddHandler(ButtonHandler);
 }
 
-#ifdef MGOS_HAVE_OTA_COMMON
 static void OTABeginCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_begin_arg *arg = (struct mgos_ota_begin_arg *) ev_data;
   // Some other callback objected.
@@ -711,10 +709,8 @@ static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   (void) ev_data;
   (void) userdata;
 }
-#endif
 
 bool InitApp() {
-#ifdef MGOS_HAVE_OTA_COMMON
   if (mgos_ota_is_first_boot()) {
     LOG(LL_INFO, ("Performing cleanup"));
     // In case we're uograding from stock fw, remove its files
@@ -725,7 +721,6 @@ bool InitApp() {
     remove("index.html");
     remove("style.css");
   }
-#endif
 
   // Key-value store.
   static const HAPPlatformKeyValueStoreOptions kvs_opts = {
@@ -775,10 +770,8 @@ bool InitApp() {
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
 
-#ifdef MGOS_HAVE_OTA_COMMON
   mgos_event_add_handler(MGOS_EVENT_OTA_BEGIN, OTABeginCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
-#endif
 
   SetupButton(BTN_GPIO, BTN_DOWN);
 

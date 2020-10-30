@@ -85,8 +85,10 @@ libs:
   - origin: https://github.com/mongoose-os-libs/file-logger
   - origin: https://github.com/mongoose-os-libs/homekit-adk
   - origin: https://github.com/mongoose-os-libs/mqtt
+  - origin: https://github.com/mongoose-os-libs/ota-http-server
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
+  - origin: https://github.com/mongoose-os-libs/rpc-service-ota
   - origin: https://github.com/mongoose-os-libs/rpc-uart
   - origin: https://github.com/mongoose-os-libs/http-server
   - origin: https://github.com/mongoose-os-libs/rpc-mqtt
@@ -310,8 +312,6 @@ conds:
         - ["wifi.ap.dhcp_end", "192.168.33.100"]
       libs:
         - origin: https://github.com/mongoose-os-libs/adc
-        - origin: https://github.com/mongoose-os-libs/ota-http-server
-        - origin: https://github.com/mongoose-os-libs/rpc-service-ota
         - origin: https://github.com/mongoose-os-libs/wifi
 
   - when: build_vars.MODEL == "ShellyI3"
