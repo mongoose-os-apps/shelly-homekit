@@ -87,6 +87,10 @@ InputPin::InputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
 
 InputPin::InputPin(int id, const Config &cfg)
     : Input(id), cfg_(cfg), timer_(std::bind(&InputPin::HandleTimer, this)) {
+}
+
+void InputPin::Init() {
+  LOG(LL_INFO, ("INIT 1 %d", cfg_.pin));
   mgos_gpio_setup_input(cfg_.pin, cfg_.pull);
   mgos_gpio_set_button_handler(cfg_.pin, cfg_.pull, MGOS_GPIO_INT_EDGE_ANY, 20,
                                GPIOIntHandler, this);
@@ -97,8 +101,12 @@ InputPin::~InputPin() {
   mgos_gpio_remove_int_handler(cfg_.pin, nullptr, nullptr);
 }
 
+bool InputPin::ReadPin() {
+  return mgos_gpio_read(cfg_.pin);
+}
+
 bool InputPin::GetState() {
-  last_state_ = (mgos_gpio_read(cfg_.pin) == cfg_.on_value);
+  last_state_ = (ReadPin() == cfg_.on_value);
   return last_state_;
 }
 

@@ -42,6 +42,7 @@ class Input {
   static const char *EventName(Event ev);
 
   int id() const;
+  virtual void Init() = 0;
   virtual bool GetState() = 0;
 
   typedef int HandlerID;
@@ -81,6 +82,13 @@ class InputPin : public Input {
 
   // Input interface impl.
   bool GetState() override;
+  virtual void Init() override;
+
+ protected:
+  virtual bool ReadPin();
+  void HandleGPIOInt();
+
+  const Config cfg_;
 
  private:
   enum class State {
@@ -95,10 +103,7 @@ class InputPin : public Input {
 
   void DetectReset(double now, bool cur_state);
 
-  void HandleGPIOInt();
   void HandleTimer();
-
-  const Config cfg_;
 
   bool last_state_ = false;
   int change_cnt_ = 0;         // State change counter for reset.

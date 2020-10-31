@@ -28,6 +28,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   outputs->emplace_back(new OutputPin(1, 4, 1));
   auto *in = new InputPin(1, 5, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 4, _1, _2));
+  in->Init();
   inputs->emplace_back(in);
   (void) sys_temp;
   (void) pms;

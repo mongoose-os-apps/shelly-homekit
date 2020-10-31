@@ -671,6 +671,7 @@ static void SetupButton(int pin, bool on_value) {
              .short_press_duration_ms = InputPin::kDefaultShortPressDurationMs,
              .long_press_duration_ms = 10000,
          });
+  s_btn->Init();
   s_btn->AddHandler(ButtonHandler);
 }
 

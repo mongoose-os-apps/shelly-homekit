@@ -28,6 +28,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   outputs->emplace_back(new OutputPin(1, 15, 1));
   auto *in = new InputPin(1, 4, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 15, _1, _2));
+  in->Init();
   inputs->emplace_back(in);
   // TODO: PM
   sys_temp->reset(new TempSensorSDNT1608X103F3450(0, 3.3f, 33000.0f));
