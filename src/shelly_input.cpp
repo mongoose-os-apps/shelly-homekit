@@ -90,7 +90,6 @@ InputPin::InputPin(int id, const Config &cfg)
 }
 
 void InputPin::Init() {
-  LOG(LL_INFO, ("INIT 1 %d", cfg_.pin));
   mgos_gpio_setup_input(cfg_.pin, cfg_.pull);
   mgos_gpio_set_button_handler(cfg_.pin, cfg_.pull, MGOS_GPIO_INT_EDGE_ANY, 20,
                                GPIOIntHandler, this);

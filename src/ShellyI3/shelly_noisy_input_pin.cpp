@@ -25,14 +25,17 @@ namespace shelly {
 
 #define NUM_SAMPLES 5
 #define SAMPLE_INTERVAL_MICROS 5000
+
 static uint32_t s_gpio_vals[NUM_SAMPLES] = {0};
 static uint32_t s_gpio_mask = 0, s_gpio_last = 0;
-static uint32_t s_cnt = 0, s_meas_cnt = 0;
-mgos_timer_id s_timer_id = MGOS_INVALID_TIMER_ID;
+static uint32_t s_cnt = 0;
+static volatile uint32_t s_meas_cnt = 0;
+static uint32_t s_int_cnt = 0;
+static mgos_timer_id s_timer_id = MGOS_INVALID_TIMER_ID;
 
-std::vector<NoisyInputPin *> s_noisy_inputs;
+static std::vector<NoisyInputPin *> s_noisy_inputs;
 
-static IRAM void GPIOChangeCB(void *arg) {
+static void GPIOChangeCB(void *arg) {
   // Check all inputs. If nothing changed it will be a no-op.
   for (NoisyInputPin *in : s_noisy_inputs) {
     in->Check();
@@ -52,10 +55,11 @@ static IRAM void GPIOHWTimerCB(void *arg) {
   for (i = 0; i < NUM_SAMPLES; i++) {
     if (s_gpio_vals[i] != gpio_vals) return;
   }
-  // Has anything changed?
-  if (s_meas_cnt != 0 && s_gpio_last == gpio_vals) return;
-  s_gpio_last = gpio_vals;
   s_meas_cnt++;
+  // Has anything changed?
+  if (s_gpio_last == gpio_vals) return;
+  s_gpio_last = gpio_vals;
+  s_int_cnt++;
   mgos_invoke_cb(GPIOChangeCB, nullptr, true /* from_isr */);
   (void) arg;
 }
@@ -79,10 +83,15 @@ NoisyInputPin::~NoisyInputPin() {
 void NoisyInputPin::Init() {
   s_noisy_inputs.push_back(this);
   s_noisy_inputs.shrink_to_fit();
+  mgos_gpio_setup_input(cfg_.pin, cfg_.pull);
   s_gpio_mask |= (1 << cfg_.pin);
   if (s_timer_id == MGOS_INVALID_TIMER_ID) {
-    mgos_set_hw_timer(SAMPLE_INTERVAL_MICROS, MGOS_TIMER_REPEAT, GPIOHWTimerCB,
-                      nullptr);
+    s_timer_id = mgos_set_hw_timer(SAMPLE_INTERVAL_MICROS, MGOS_TIMER_REPEAT,
+                                   GPIOHWTimerCB, nullptr);
+  }
+  uint32_t mc = s_meas_cnt;
+  while (s_meas_cnt == mc) {
+    // Spin.
   }
   GetState();
 }

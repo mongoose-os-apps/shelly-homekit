@@ -28,16 +28,16 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  auto *in1 = new NoisyInputPin(1, 14, 1, MGOS_GPIO_PULL_DOWN, true);
+  auto *in1 = new NoisyInputPin(1, 14, 1, MGOS_GPIO_PULL_NONE, true);
   in1->AddHandler(std::bind(&HandleInputResetSequence, in1, -1, _1, _2));
   inputs->emplace_back(in1);
   in1->Init();
 
-  auto *in2 = new NoisyInputPin(2, 12, 1, MGOS_GPIO_PULL_DOWN, false);
+  auto *in2 = new NoisyInputPin(2, 12, 1, MGOS_GPIO_PULL_NONE, false);
   inputs->emplace_back(in2);
   in2->Init();
 
-  auto *in3 = new NoisyInputPin(3, 13, 1, MGOS_GPIO_PULL_DOWN, false);
+  auto *in3 = new NoisyInputPin(3, 13, 1, MGOS_GPIO_PULL_NONE, false);
   inputs->emplace_back(in3);
   in3->Init();
 
