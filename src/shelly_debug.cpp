@@ -170,6 +170,7 @@ static void DebugWriteHandler(int ev, void *ev_data, void *userdata) {
     mg_send(nc, msg.p, msg.len);
   }
   s_cont = (msg.p[msg.len - 1] != '\n');
+  (void) ev;
   (void) userdata;
 }
 
@@ -182,6 +183,8 @@ static void DebugLogTailHandler(struct mg_connection *nc, int ev, void *ev_data,
       break;
     }
   }
+  (void) ev_data;
+  (void) user_data;
 }
 
 extern "C" void mg_http_handler(struct mg_connection *nc, int ev, void *ev_data,
