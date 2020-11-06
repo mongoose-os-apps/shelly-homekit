@@ -330,7 +330,7 @@ conds:
         MGOS_ROOT_FS_TYPE: SPIFFS
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        PRODUCT_MODEL: '"Shelly-i3"'
+        PRODUCT_MODEL: '"ShellyI3"'
         PRODUCT_HW_REV: '"1.0"'
         MG_ENABLE_SSL: 0
         # HAP_LOG_LEVEL: 0
