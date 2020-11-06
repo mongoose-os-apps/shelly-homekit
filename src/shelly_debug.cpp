@@ -17,6 +17,8 @@
 
 #include "shelly_debug.hpp"
 
+#include <list>
+
 #include "mgos.hpp"
 #include "mgos_core_dump.h"
 #include "mgos_file_logger.h"
@@ -148,18 +150,92 @@ static void DebugInfoHandler(struct mg_connection *nc, int ev, void *ev_data,
   (void) user_data;
 }
 
+#define MG_F_TAIL_LOG (MG_F_USER_1)
+
+std::list<mg_connection *> s_tail_conns;
+
+static void DebugWriteHandler(int ev, void *ev_data, void *userdata) {
+  const struct mgos_debug_hook_arg *arg =
+      (struct mgos_debug_hook_arg *) ev_data;
+  static bool s_cont = false;
+  if (s_tail_conns.empty()) {
+    s_cont = false;
+    return;
+  }
+  int64_t now = mgos_uptime_micros();
+  struct mg_str msg = MG_MK_STR_N(arg->data, arg->len);
+  for (struct mg_connection *nc : s_tail_conns) {
+    if (nc->send_mbuf.len > 1024) continue;
+    if (!s_cont) mg_printf(nc, "%lld ", (long long) now);
+    mg_send(nc, msg.p, msg.len);
+  }
+  s_cont = (msg.p[msg.len - 1] != '\n');
+  (void) userdata;
+}
+
+static void DebugLogTailHandler(struct mg_connection *nc, int ev, void *ev_data,
+                                void *user_data) {
+  if (ev != MG_EV_CLOSE) return;
+  for (auto it = s_tail_conns.begin(); it != s_tail_conns.end(); it++) {
+    if (*it == nc) {
+      s_tail_conns.erase(it);
+      break;
+    }
+  }
+}
+
+extern "C" void mg_http_handler(struct mg_connection *nc, int ev, void *ev_data,
+                                void *user_data);
+
+void mg_http_handler_wrapper(struct mg_connection *nc, int ev, void *ev_data,
+                             void *user_data) {
+  mg_http_handler(nc, ev, ev_data, user_data);
+  if ((nc->flags & MG_F_SEND_AND_CLOSE) != 0 &&
+      (nc->flags & MG_F_TAIL_LOG) != 0) {
+    // File fully sent, switch to tailing.
+    s_tail_conns.push_front(nc);
+    nc->flags &= ~MG_F_SEND_AND_CLOSE;
+    nc->proto_handler = nullptr;
+    nc->handler = DebugLogTailHandler;
+    LOG(LL_INFO, ("Tailing"));
+  }
+}
+
 static void DebugLogHandler(struct mg_connection *nc, int ev, void *ev_data,
                             void *user_data) {
   if (ev != MG_EV_HTTP_REQUEST) return;
   struct http_message *hm = (struct http_message *) ev_data;
+  struct mg_str qs = hm->query_string, k, v;
+  while ((qs = mg_next_query_string_entry_n(qs, &k, &v)).p != NULL) {
+    if (mg_vcmp(&k, "follow") == 0 && mg_vcmp(&v, "1") == 0) {
+      nc->flags |= MG_F_TAIL_LOG;
+    }
+  }
   mgos::ScopedCPtr fn(mgos_file_log_get_cur_file_name());
   if (fn.get() == nullptr) {
-    mg_http_send_error(nc, 404, "No log file");
+    if ((nc->flags & MG_F_TAIL_LOG) == 0) {
+      mg_http_send_error(nc, 404, "No log file");
+    } else {
+      mg_send_response_line(nc, 200,
+                            "Content-type: text/plain\r\n"
+                            "Pragma: no-store\r\n");
+      s_tail_conns.push_front(nc);
+      nc->handler = DebugLogTailHandler;
+    }
     return;
   }
   mgos_file_log_flush();
   mg_http_serve_file(nc, hm, (char *) fn.get(), mg_mk_str("text/plain"),
                      mg_mk_str("Pragma: no-store"));
+  // This is very hacky, I apologize :)
+  // We need to hide the Content-Length header so connection stays open
+  // after the file is sent.
+  const char *cl = mg_strstr(mg_mk_str_n(nc->send_mbuf.buf, nc->send_mbuf.len),
+                             mg_mk_str("Content-Length"));
+  if (cl != nullptr) {
+    ((char *) cl)[0] = 'X';
+  }
+  nc->proto_handler = mg_http_handler_wrapper;
   (void) user_data;
 }
 
@@ -278,6 +354,7 @@ bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
 #if CS_PLATFORM == CS_P_ESP8266
   mgos_register_http_endpoint("/debug/core", DebugCoreHandler, nullptr);
 #endif
+  mgos_event_add_handler(MGOS_EVENT_LOG, DebugWriteHandler, NULL);
   return true;
 }
 
