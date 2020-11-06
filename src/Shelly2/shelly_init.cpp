@@ -18,6 +18,7 @@
 #include <algorithm>
 
 #include "shelly_hap_garage_door_opener.hpp"
+#include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 
 namespace shelly {

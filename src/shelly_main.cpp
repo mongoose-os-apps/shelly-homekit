@@ -47,6 +47,8 @@
 #include "shelly_hap_stateless_switch.hpp"
 #include "shelly_hap_switch.hpp"
 #include "shelly_input.hpp"
+#include "shelly_input_pin.hpp"
+#include "shelly_noisy_input_pin.hpp"
 #include "shelly_output.hpp"
 #include "shelly_rpc_service.hpp"
 #include "shelly_switch.hpp"
@@ -662,15 +664,21 @@ static void ButtonHandler(Input::Event ev, bool cur_state) {
 
 static void SetupButton(int pin, bool on_value) {
   if (pin < 0) return;
-  s_btn = new InputPin(
-      0, InputPin::Config{
-             .pin = pin,
-             .on_value = on_value,
-             .pull = MGOS_GPIO_PULL_NONE,
-             .enable_reset = false,
-             .short_press_duration_ms = InputPin::kDefaultShortPressDurationMs,
-             .long_press_duration_ms = 10000,
-         });
+  s_btn =
+#if CS_PLATFORM == CS_P_ESP8266
+      new NoisyInputPin(
+#else
+      new InputPin(
+#endif
+          0,
+          InputPin::Config{
+              .pin = pin,
+              .on_value = on_value,
+              .pull = MGOS_GPIO_PULL_NONE,
+              .enable_reset = false,
+              .short_press_duration_ms = InputPin::kDefaultShortPressDurationMs,
+              .long_press_duration_ms = 10000,
+          });
   s_btn->Init();
   s_btn->AddHandler(ButtonHandler);
 }

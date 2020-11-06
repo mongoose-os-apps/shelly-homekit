@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "shelly_input.hpp"
+#include "shelly_input_pin.hpp"
 
 namespace shelly {
 
@@ -25,6 +25,7 @@ class NoisyInputPin : public InputPin {
  public:
   NoisyInputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
                 bool enable_reset);
+  NoisyInputPin(int id, const InputPin::Config &cfg);
   virtual ~NoisyInputPin();
 
   void Init() override;

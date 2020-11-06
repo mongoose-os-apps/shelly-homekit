@@ -19,6 +19,8 @@
 
 #include "mgos.h"
 
+#if CS_PLATFORM == CS_P_ESP8266
+
 #include <user_interface.h>
 
 namespace shelly {
@@ -69,6 +71,10 @@ NoisyInputPin::NoisyInputPin(int id, int pin, int on_value,
     : InputPin(id, pin, on_value, pull, enable_reset) {
 }
 
+NoisyInputPin::NoisyInputPin(int id, const InputPin::Config &cfg)
+    : InputPin(id, cfg) {
+}
+
 NoisyInputPin::~NoisyInputPin() {
   s_gpio_mask &= ~(1 << cfg_.pin);
   for (auto it = s_noisy_inputs.begin(); it != s_noisy_inputs.end(); it++) {
@@ -105,3 +111,5 @@ bool NoisyInputPin::ReadPin() {
 }
 
 }  // namespace shelly
+
+#endif  // CS_PLATFORM == CS_P_ESP8266
