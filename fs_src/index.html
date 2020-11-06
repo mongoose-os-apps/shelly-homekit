@@ -42,7 +42,7 @@ h1 { margin: 0; padding-top: 0.5em; text-align: center; }
 .footer { padding: 0 1em; margin: 1em auto; max-width: 640px; background: #f2f1f6; border-radius: 15px; font: 11px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light; color: #aaaaae;}
 .container { padding: 0 1em; margin: 1em auto ; max-width: 640px; background: #fefefe; border-radius: 10px; }
 .form-control { margin: 0.6em 0; }
-.form-control input, .form-control button { min-width: 10em; }
+.form-control input:not([type="checkbox"]), .form-control button { min-width: 10em; }
 .form label { min-width: 9.0em; display: inline-block; }
 .form { padding: 1em 0; }
 .btn { background: #0071e3; }
@@ -128,7 +128,7 @@ h1 { margin: 0; padding-top: 0.5em; text-align: center; }
   vertical-align: middle;
 }
 
-.switch input { 
+.switch input {
   opacity: 0;
   width: 0;
   height: 0;
