@@ -42,6 +42,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in1->Init();
   inputs->emplace_back(in1);
   auto *in2 = new InputPin(2, 5, 1, MGOS_GPIO_PULL_NONE, false);
+  in2->Init();
   inputs->emplace_back(in2);
   PowerMeterInit(pms);
   sys_temp->reset(new TempSensorSDNT1608X103F3450(0, 3.3f, 33000.0f));
