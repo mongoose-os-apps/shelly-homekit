@@ -109,7 +109,7 @@ class WindowCovering : public Component, public Service {
   void HandleInputEvent01(Direction dir, Input::Event ev, bool state);
   void HandleInputEvent2(Input::Event ev, bool state);
   void HandleInputEventNotCalibrated();
-  void HandleInputSingle(const char *src);
+  void HandleInputSingle(const char *src, Direction *last_move_dir);
 
   Input *in_open_, *in_close_;
   Output *out_open_, *out_close_;
@@ -137,8 +137,10 @@ class WindowCovering : public Component, public Service {
   float move_start_pos_ = 0;
   float move_ms_per_pct_ = 0;
   bool obstruction_detected_ = false;
+  int64_t last_hap_set_tgt_pos_ = 0;
   Direction moving_dir_ = Direction::kNone;
   Direction last_ext_move_dir_ = Direction::kNone;
+  Direction last_hap_move_dir_ = Direction::kNone;
 };
 
 }  // namespace hap
