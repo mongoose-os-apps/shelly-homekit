@@ -3,19 +3,36 @@
 
 # Apple HomeKit firmware for Shelly switches
 
-This firmware exposes [Shelly 1](https://shelly.cloud/products/shelly-1-smart-home-automation-relay/), [Shelly 1PM](https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/), [Shelly Plug](https://shelly.cloud/products/shelly-plug-smart-home-automation-device/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/), Shelly 2 and [Shelly 2.5](https://shelly.cloud/products/shelly-25-smart-home-automation-relay/) as Apple HomeKit accessories.
+This firmware exposes Shelly devices as Apple HomeKit accessories.
 
 Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw)), for more info take a look at the flashing wiki [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#updating-from-stock-firmware).
 
-At the moment only the following functionality is supported:
- * Switch functionality: all relevant models, with auto-off and separate input tile as an option. Configurable as Switch, Outlet or Lock.
- * Power measurement: Shelly 2.5
- * Roller-shutter mode: Shelly 2.5
- * Garage Door Opener: Shelly 1, Shelly 1PM, Shelly 2, Shelly 2.5
+Reverting to stock firmware is also possible [see here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#reverting-to-stock-firmware).
 
-Reverting to stock firmware is also supported [see here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#reverting-to-stock-firmware).
+Summary of supported devices and features:
+ * [Shelly 1](https://shelly.cloud/products/shelly-1-smart-home-automation-relay/), [Shelly 1PM](https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/)
+   * Switch/lock/outlet
+   * Stateless input
+   * Garage door opener mode
+ * [Shelly Plug](https://shelly.cloud/products/shelly-plug-smart-home-automation-device/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/)
+   * Switch/lock/outlet
+ * Shelly 2
+   * Switch/lock/outlet
+   * Stateless input
+   * Garage door opener mode
+ * [Shelly 2.5](https://shelly.cloud/products/shelly-25-smart-home-automation-relay/)
+   * Switch/lock/outlet
+   * Stateless input
+   * Garage door opener mode
+   * Roller shutter mode
+   * Power measurement
+ * [Shelly i3](https://shelly.cloud/products/shelly-i3-smart-home-automation-device/)
+   * Stateless input
 
-*Note:* Only HomeKit is supported, no Shelly Cloud, MQTT or web hooks for now.
+Features that are not yet supported:
+ * Shelly 1PM, 2, Plug, Plug S: power measurement
+ * Cloud connections: no Shelly Cloud, no MQTT
+ * Remote actions (web hooks)
 
 ## Quick Start
 
@@ -32,6 +49,8 @@ Reverting to stock firmware is also supported [see here](https://github.com/mong
     * Shelly 2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly2.zip`
 
     * Shelly 2.5: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip`
+
+    * Shelly i3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyI3.zip`
 
     * Shelly Plug: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlug.zip`
 
