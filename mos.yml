@@ -211,8 +211,10 @@ conds:
         MGOS_ROOT_FS_TYPE: SPIFFS
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        LED_GPIO: 0
+        LED_GPIO: 0  # Red, 2 blue.
         LED_ON: 0
+        BTN_GPIO: 13
+        BTN_DOWN: 0
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHPLG-S"'
         MG_ENABLE_SSL: 0
