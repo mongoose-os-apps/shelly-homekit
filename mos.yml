@@ -212,7 +212,7 @@ conds:
         MGOS_ROOT_FS_TYPE: SPIFFS
         MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
-        LED_GPIO: 0  # Red, 2 blue.
+        LED_GPIO: 2  # Blue, 0 red.
         LED_ON: 0
         BTN_GPIO: 13
         BTN_DOWN: 0
@@ -224,7 +224,7 @@ conds:
         - ["shelly.name", "shellyplug-s-??????"]
         - ["wifi.ap.ssid", "shellyplug-s-??????"]
         - ["sw1", "sw", {"title": "Plug settings"}]
-        - ["sw1.name", "Shelly Plug"]
+        - ["sw1.name", "Shelly Plug S"]
         - ["sw1.in_mode", -1]
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]

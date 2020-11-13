@@ -24,7 +24,7 @@ namespace hap {
 
 class Outlet : public ShellySwitch {
  public:
-  Outlet(int id, Input *in, Output *out, PowerMeter *out_pm,
+  Outlet(int id, Input *in, Output *out, PowerMeter *out_pm, Output *led_out,
          struct mgos_config_sw *cfg);
   virtual ~Outlet();
 

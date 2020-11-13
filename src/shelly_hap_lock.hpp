@@ -25,7 +25,7 @@ namespace hap {
 
 class Lock : public ShellySwitch {
  public:
-  Lock(int id, Input *in, Output *out, PowerMeter *out_pm,
+  Lock(int id, Input *in, Output *out, PowerMeter *out_pm, Output *led_out,
        struct mgos_config_sw *cfg);
   virtual ~Lock();
 

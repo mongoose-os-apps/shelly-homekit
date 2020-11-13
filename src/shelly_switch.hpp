@@ -52,7 +52,7 @@ class ShellySwitch : public Component, public hap::Service {
   };
 
   ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
-               struct mgos_config_sw *cfg);
+               Output *led_out, struct mgos_config_sw *cfg);
   virtual ~ShellySwitch();
 
   // Component interface impl.
@@ -75,6 +75,7 @@ class ShellySwitch : public Component, public hap::Service {
 
   Input *const in_;
   Output *const out_;
+  Output *const led_out_;
   PowerMeter *const out_pm_;
   struct mgos_config_sw *cfg_;
 

@@ -37,7 +37,7 @@ namespace hap {
 
 class Switch : public ShellySwitch {
  public:
-  Switch(int id, Input *in, Output *out, PowerMeter *out_pm,
+  Switch(int id, Input *in, Output *out, PowerMeter *out_pm, Output *led_out,
          struct mgos_config_sw *cfg);
   virtual ~Switch();
 

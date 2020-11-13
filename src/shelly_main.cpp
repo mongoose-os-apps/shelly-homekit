@@ -198,7 +198,8 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_ssw *ssw_cfg,
                      std::vector<Component *> *comps,
                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
-                     HAPAccessoryServerRef *svr, bool to_pri_acc) {
+                     HAPAccessoryServerRef *svr, bool to_pri_acc,
+                     Output *led_out) {
   std::unique_ptr<ShellySwitch> sw;
   Input *in = FindInput(id);
   Output *out = FindOutput(id);
@@ -211,20 +212,20 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     case 0:
       cat = kHAPAccessoryCategory_Switches;
       aid = SHELLY_HAP_AID_BASE_SWITCH + id;
-      sw.reset(new hap::Switch(id, in, out, pm, cfg));
+      sw.reset(new hap::Switch(id, in, out, pm, led_out, cfg));
       break;
     case 1:
       cat = kHAPAccessoryCategory_Outlets;
       aid = SHELLY_HAP_AID_BASE_OUTLET + id;
-      sw.reset(new hap::Outlet(id, in, out, pm, cfg));
+      sw.reset(new hap::Outlet(id, in, out, pm, led_out, cfg));
       break;
     case 2:
       cat = kHAPAccessoryCategory_Locks;
       aid = SHELLY_HAP_AID_BASE_LOCK + id;
-      sw.reset(new hap::Lock(id, in, out, pm, cfg));
+      sw.reset(new hap::Lock(id, in, out, pm, led_out, cfg));
       break;
     default:
-      sw.reset(new ShellySwitch(id, in, out, pm, cfg));
+      sw.reset(new ShellySwitch(id, in, out, pm, led_out, cfg));
       sw_hidden = true;
       break;
   }

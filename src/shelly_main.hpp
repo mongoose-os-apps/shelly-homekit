@@ -42,7 +42,8 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_ssw *ssw_cfg,
                      std::vector<Component *> *comps,
                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
-                     HAPAccessoryServerRef *svr, bool to_pri_acc);
+                     HAPAccessoryServerRef *svr, bool to_pri_acc,
+                     Output *led_out = nullptr);
 void CreateHAPStatelessSwitch(
     int id, const struct mgos_config_ssw *ssw_cfg,
     std::vector<Component *> *comps,

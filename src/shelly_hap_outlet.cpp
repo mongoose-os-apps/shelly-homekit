@@ -21,8 +21,8 @@ namespace shelly {
 namespace hap {
 
 Outlet::Outlet(int id, Input *in, Output *out, PowerMeter *out_pm,
-               struct mgos_config_sw *cfg)
-    : ShellySwitch(id, in, out, out_pm, cfg) {
+               Output *led_out, struct mgos_config_sw *cfg)
+    : ShellySwitch(id, in, out, out_pm, led_out, cfg) {
 }
 
 Outlet::~Outlet() {

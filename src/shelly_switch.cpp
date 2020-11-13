@@ -28,10 +28,11 @@
 namespace shelly {
 
 ShellySwitch::ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
-                           struct mgos_config_sw *cfg)
+                           Output *led_out, struct mgos_config_sw *cfg)
     : Component(id),
       in_(in),
       out_(out),
+      led_out_(led_out),
       out_pm_(out_pm),
       cfg_(cfg),
       auto_off_timer_(std::bind(&ShellySwitch::AutoOffTimerCB, this)) {
@@ -168,6 +169,9 @@ bool ShellySwitch::GetState() const {
 void ShellySwitch::SetState(bool new_state, const char *source) {
   bool cur_state = out_->GetState();
   out_->SetState(new_state, source);
+  if (led_out_ != nullptr) {
+    led_out_->SetState(new_state, source);
+  }
   if (cfg_->state != new_state) {
     cfg_->state = new_state;
     dirty_ = true;

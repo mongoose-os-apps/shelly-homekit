@@ -22,9 +22,9 @@
 namespace shelly {
 namespace hap {
 
-Lock::Lock(int id, Input *in, Output *out, PowerMeter *out_pm,
+Lock::Lock(int id, Input *in, Output *out, PowerMeter *out_pm, Output *led_out,
            struct mgos_config_sw *cfg)
-    : ShellySwitch(id, in, out, out_pm, cfg) {
+    : ShellySwitch(id, in, out, out_pm, nullptr, cfg) {
 }
 
 Lock::~Lock() {
