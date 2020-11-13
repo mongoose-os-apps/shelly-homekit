@@ -194,6 +194,7 @@ conds:
         - ["sw1", "sw", {"title": "Plug settings"}]
         - ["sw1.name", "Shelly Plug"]
         - ["sw1.in_mode", -1]
+        - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
 
   - when: build_vars.MODEL == "ShellyPlugS"
@@ -225,6 +226,7 @@ conds:
         - ["sw1", "sw", {"title": "Plug settings"}]
         - ["sw1.name", "Shelly Plug"]
         - ["sw1.in_mode", -1]
+        - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
 
   - when: build_vars.MODEL == "Shelly2"
