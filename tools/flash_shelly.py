@@ -51,6 +51,7 @@ import json
 import logging
 import platform
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -123,6 +124,7 @@ def get_info(host):
       info = json.load(fp)
     info['host'] = host
     info['device_id'] = host.replace('.local','')
+    info['wifi_ip'] = socket.gethostbyname(host)
     info['model'] = shelly_model(info['type'])
     info['stock_model'] = info['type']
     info['version'] = info['fw'].split('/v')[1].split('@')[0] if '/v' in info['fw'] else '0.0.0'
@@ -307,6 +309,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   cfw_type_str = device_info['fw_type_str']
   friendly_host = device_info['host'].replace('.local', '')
   host = device_info['host']
+  wifi_ip = device_info['wifi_ip']
   device = device_info['device_id']
   model = device_info['model']
   stock_model = device_info['stock_model']
@@ -369,6 +372,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
 
   logger.debug(f"requires_upgrade: {requires_upgrade}")
   logger.info(f"{WHITE}Host: {NC}{host}")
+  logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
   logger.info(f"{WHITE}Model: {NC}{model}")
   logger.info(f"{WHITE}Current: {NC}{cfw_type_str} {cfw}")
   col = YELLOW if isNewer(lfw, cfw) else WHITE
