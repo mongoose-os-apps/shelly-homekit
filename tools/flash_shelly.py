@@ -459,13 +459,15 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
       if info is not None:
         device_list.append(info)
   else:
-    logger.info(f"{WHITE}Scanning for Shelly devices...\n{NC}")
+    logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
     time.sleep(10)
     zc.close()
     device_list = listener.device_list
+    nod = len(device_list)
+    logger.info(f"{GREEN}{nod} Devices found.\n{NC}")
   sorted_device_list = sorted(device_list, key=lambda k: k['host'])
   logger.trace(f"device_test: {sorted_device_list}")
   # logger.debug(f"\nproperties: {listener.p_list}")
