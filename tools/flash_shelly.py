@@ -297,6 +297,11 @@ def write_flash(host, lfw, dlurl, cfw_type, mode, requires_upgrade):
     logger.info("Current: %s" % onlinecheck)
 
 def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
+  if device_info['fw_type'] == "homekit" and float(f"{parseVersion(device_info['version'])[0]}.{parseVersion(device_info['version'])[1]}") < 2.1:
+    logger.info(f"{WHITE}Host: {NC}{device_info['host']}")
+    logger.info(f"Version {device_info['version']} is to old for this script,")
+    logger.info(f"please update via the device webUI.\n")
+    return 0
   logger.debug(f"\n{WHITE}parse_info{NC}")
   logger.trace(f"device_info: {device_info}")
   perform_flash = False
