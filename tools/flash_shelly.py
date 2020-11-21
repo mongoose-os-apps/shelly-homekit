@@ -51,6 +51,7 @@ import json
 import logging
 import platform
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -123,6 +124,7 @@ def get_info(host):
       info = json.load(fp)
     info['host'] = host
     info['device_id'] = host.replace('.local','')
+    info['wifi_ip'] = socket.gethostbyname(host)
     info['model'] = shelly_model(info['type'])
     info['stock_model'] = info['type']
     info['version'] = info['fw'].split('/v')[1].split('@')[0] if '/v' in info['fw'] else '0.0.0'
@@ -295,6 +297,11 @@ def write_flash(host, lfw, dlurl, cfw_type, mode, requires_upgrade):
     logger.info("Current: %s" % onlinecheck)
 
 def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
+  if device_info['fw_type'] == "homekit" and float(f"{parseVersion(device_info['version'])[0]}.{parseVersion(device_info['version'])[1]}") < 2.1:
+    logger.info(f"{WHITE}Host: {NC}{device_info['host']}")
+    logger.info(f"Version {device_info['version']} is to old for this script,")
+    logger.info(f"please update via the device webUI.\n")
+    return 0
   logger.debug(f"\n{WHITE}parse_info{NC}")
   logger.trace(f"device_info: {device_info}")
   perform_flash = False
@@ -307,6 +314,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   cfw_type_str = device_info['fw_type_str']
   friendly_host = device_info['host'].replace('.local', '')
   host = device_info['host']
+  wifi_ip = device_info['wifi_ip']
   device = device_info['device_id']
   model = device_info['model']
   stock_model = device_info['stock_model']
@@ -369,6 +377,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
 
   logger.debug(f"requires_upgrade: {requires_upgrade}")
   logger.info(f"{WHITE}Host: {NC}{host}")
+  logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
   logger.info(f"{WHITE}Model: {NC}{model}")
   logger.info(f"{WHITE}Current: {NC}{cfw_type_str} {cfw}")
   col = YELLOW if isNewer(lfw, cfw) else WHITE
@@ -455,13 +464,15 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
       if info is not None:
         device_list.append(info)
   else:
-    logger.info(f"{WHITE}Scanning for Shelly devices...\n{NC}")
+    logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
     time.sleep(10)
     zc.close()
     device_list = listener.device_list
+    nod = len(device_list)
+    logger.info(f"{GREEN}{nod} Devices found.\n{NC}")
   sorted_device_list = sorted(device_list, key=lambda k: k['host'])
   logger.trace(f"device_test: {sorted_device_list}")
   # logger.debug(f"\nproperties: {listener.p_list}")
