@@ -39,8 +39,10 @@ StatusOr<float> NTCTempSensor::GetTemperature() {
   int raw = mgos_adc_read(adc_channel_);
   float v_out = raw / ADC_RESOLUTION;
   float rt = (v_out * rd_) / (vin_ - v_out);
-  // LOG(LL_INFO, ("RAW: %d, v_out %.3f rt %.3f", raw, v_out, rt));
-  return Interpolate(rt);
+  float t = Interpolate(rt);
+  LOG(LL_DEBUG,
+      ("NTC readings: %d, v_out %.3f rt %.3f t %.3f", raw, v_out, rt, t));
+  return t;
 }
 
 float NTCTempSensor::Interpolate(float rt) {
