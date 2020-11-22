@@ -23,11 +23,10 @@
 #include "shelly_hap_window_covering.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_pm.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
-
-extern void PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms);
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,

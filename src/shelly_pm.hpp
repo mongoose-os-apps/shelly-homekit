@@ -38,6 +38,6 @@ class PowerMeter {
   PowerMeter(const PowerMeter &other) = delete;
 };
 
-StatusOr<std::vector<std::unique_ptr<PowerMeter>>> PowerMeterInit();
+Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms);
 
 }  // namespace shelly

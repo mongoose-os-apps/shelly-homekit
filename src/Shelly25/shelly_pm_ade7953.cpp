@@ -81,7 +81,7 @@ class ADE7953PowerMeter : public PowerMeter {
   mgos_timer_id acc_timer_id_ = MGOS_INVALID_TIMER_ID;
 };
 
-void PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
+Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   const struct mgos_ade7953_config ade7953_cfg = {
       .voltage_scale = .0000382602,
       .voltage_offset = -0.068,
@@ -95,11 +95,13 @@ void PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
 
   if (s_ade7953 == nullptr) {
     LOG(LL_ERROR, ("Failed to init ADE7953"));
-    return;
+    return mgos::Errorf(STATUS_UNAVAILABLE, "Failed to init ADE7953");
   }
 
   pms->emplace_back(new ADE7953PowerMeter(1, s_ade7953, 1));
   pms->emplace_back(new ADE7953PowerMeter(2, s_ade7953, 0));
+
+  return Status::OK();
 }
 
 }  // namespace shelly
