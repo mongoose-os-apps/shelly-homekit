@@ -1,6 +1,6 @@
 MAKEFLAGS += --warn-undefined-variables
 
-.PHONY: build format release upload Shelly1 Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS
+.PHONY: build format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS
 
 MOS ?= mos
 # Build locally by default if Docker is available.
@@ -25,7 +25,7 @@ ifeq "$(VERBOSE)" "1"
   MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
-build: Shelly1 Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyU
+build: Shelly1 Shelly1L Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyU
 
 release:
 	$(MAKE) build CLEAN=1 RELEASE=1
@@ -33,6 +33,9 @@ release:
 PLATFORM ?= esp8266
 
 Shelly1: build-Shelly1
+	@true
+
+Shelly1L: build-Shelly1L
 	@true
 
 Shelly1PM: build-Shelly1PM

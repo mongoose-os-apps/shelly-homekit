@@ -128,6 +128,41 @@ conds:
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
 
+  - when: build_vars.MODEL == "Shelly1L"
+    apply:
+      name: switch1l # To allow OTA from stock fw.
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: esp8266-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
+        MGOS_ROOT_FS_TYPE: SPIFFS
+        # We don't need the cryptochip support. Saves approx 12K flash.
+        MGOS_MBEDTLS_ENABLE_ATCA: 0
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 13
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-L"'
+        # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["device.id", "shelly1l-??????"]
+        - ["shelly.name", "shelly1l-??????"]
+        - ["wifi.ap.ssid", "shelly1l-??????"]
+        - ["sw1", "sw", {"title": "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Input 1"]
+        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2.name", "Input 2"]
+
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
       name: switch1pm # To allow OTA from stock fw.
