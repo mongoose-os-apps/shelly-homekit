@@ -26,11 +26,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 5, 1));
-  auto *in1 = new InputPin(1, 14, 1, MGOS_GPIO_PULL_NONE, true);
-  in1->AddHandler(std::bind(&HandleInputResetSequence, in1, 15, _1, _2));
+  auto *in1 = new InputPin(1, 4, 1, MGOS_GPIO_PULL_NONE, true);
+  in1->AddHandler(std::bind(&HandleInputResetSequence, in1, 5, _1, _2));
   in1->Init();
   inputs->emplace_back(in1);
-  auto *in2 = new InputPin(2, 12, 1, MGOS_GPIO_PULL_NONE, false);
+  auto *in2 = new InputPin(2, 14, 1, MGOS_GPIO_PULL_NONE, false);
   in2->Init();
   inputs->emplace_back(in2);
   // TODO: PM
