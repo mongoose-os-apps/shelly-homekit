@@ -675,7 +675,7 @@ static void SetupButton(int pin, bool on_value) {
           InputPin::Config{
               .pin = pin,
               .on_value = on_value,
-              .pull = MGOS_GPIO_PULL_NONE,
+              .pull = (on_value ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP),
               .enable_reset = false,
               .short_press_duration_ms = InputPin::kDefaultShortPressDurationMs,
               .long_press_duration_ms = 10000,
