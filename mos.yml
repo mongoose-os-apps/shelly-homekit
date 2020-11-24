@@ -361,7 +361,6 @@ conds:
           variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
-        - origin: https://github.com/mongoose-os-libs/rpc-service-gpio
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
