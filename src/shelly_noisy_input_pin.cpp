@@ -25,7 +25,7 @@
 
 namespace shelly {
 
-#define NUM_SAMPLES 5
+#define NUM_SAMPLES 10
 #define SAMPLE_INTERVAL_MICROS 5000
 
 static uint32_t s_gpio_vals[NUM_SAMPLES] = {0};
