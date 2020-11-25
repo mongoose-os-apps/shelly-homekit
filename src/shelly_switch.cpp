@@ -53,17 +53,18 @@ StatusOr<std::string> ShellySwitch::GetInfo() const {
   int in_st = -1;
   if (in_ != nullptr) in_st = in_->GetState();
   const_cast<ShellySwitch *>(this)->SaveState();
-  return mgos::SPrintf("st:%d in_st:%d inm:%d", out_->GetState(), in_st,
-                       cfg_->in_mode);
+  return mgos::SPrintf("st:%d in_st:%d inm:%d ininv:%d", out_->GetState(),
+                       in_st, cfg_->in_mode, cfg_->in_inverted);
 }
 
 StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
-      "{id: %d, type: %d, name: %Q, svc_type: %d, in_mode: %d, initial: %d, "
-      "state: %B, auto_off: %B, auto_off_delay: %.3f",
+      "{id: %d, type: %d, name: %Q, svc_type: %d, in_mode: %d, "
+      "in_inverted: %B, initial: %d, state: %B, auto_off: %B, "
+      "auto_off_delay: %.3f",
       id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type,
-      cfg_->in_mode, cfg_->initial_state, out_->GetState(), cfg_->auto_off,
-      cfg_->auto_off_delay);
+      cfg_->in_mode, cfg_->in_inverted, cfg_->initial_state, out_->GetState(),
+      cfg_->auto_off, cfg_->auto_off_delay);
   if (out_pm_ != nullptr) {
     auto power = out_pm_->GetPowerW();
     if (power.ok()) {
@@ -81,13 +82,15 @@ StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
 Status ShellySwitch::SetConfig(const std::string &config_json,
                                bool *restart_required) {
   struct mgos_config_sw cfg = *cfg_;
+  int8_t in_inverted = -1;
   cfg.name = nullptr;
   cfg.in_mode = -2;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, svc_type: %d, in_mode: %d, initial_state: %d, "
+             "{name: %Q, svc_type: %d, in_mode: %d, in_inverted: %B, "
+             "initial_state: %d, "
              "auto_off: %B, auto_off_delay: %lf}",
-             &cfg.name, &cfg.svc_type, &cfg.in_mode, &cfg.initial_state,
-             &cfg.auto_off, &cfg.auto_off_delay);
+             &cfg.name, &cfg.svc_type, &cfg.in_mode, &in_inverted,
+             &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -127,6 +130,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
     }
     cfg_->in_mode = cfg.in_mode;
   }
+  if (in_inverted != -1 && cfg_->in_inverted != in_inverted) {
+    cfg_->in_inverted = in_inverted;
+    *restart_required = true;
+  }
   cfg_->initial_state = cfg.initial_state;
   cfg_->auto_off = cfg.auto_off;
   cfg_->auto_off_delay = cfg.auto_off_delay;
@@ -137,6 +144,11 @@ Status ShellySwitch::Init() {
   if (!cfg_->enable) {
     LOG(LL_INFO, ("'%s' is disabled", cfg_->name));
     return Status::OK();
+  }
+  if (in_ != nullptr) {
+    handler_id_ = in_->AddHandler(
+        std::bind(&ShellySwitch::InputEventHandler, this, _1, _2));
+    in_->SetInvert(cfg_->in_inverted);
   }
   switch (static_cast<InitialState>(cfg_->initial_state)) {
     case InitialState::kOff:
@@ -159,10 +171,6 @@ Status ShellySwitch::Init() {
   }
   LOG(LL_INFO, ("Exporting '%s': type %d, state: %d", cfg_->name,
                 cfg_->svc_type, out_->GetState()));
-  if (in_ != nullptr) {
-    handler_id_ = in_->AddHandler(
-        std::bind(&ShellySwitch::InputEventHandler, this, _1, _2));
-  }
   return Status::OK();
 }
 

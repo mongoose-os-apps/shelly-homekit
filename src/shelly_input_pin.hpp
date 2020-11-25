@@ -46,12 +46,14 @@ class InputPin : public Input {
   // Input interface impl.
   bool GetState() override;
   virtual void Init() override;
+  void SetInvert(bool invert) override;
 
  protected:
   virtual bool ReadPin();
   void HandleGPIOInt();
 
   const Config cfg_;
+  bool invert_ = false;
 
  private:
   enum class State {

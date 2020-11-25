@@ -327,6 +327,9 @@ static bool StartService(bool quiet) {
     pri_acc->AddHAPService(&mgos_hap_protocol_information_service);
     pri_acc->AddHAPService(&mgos_hap_pairing_service);
     s_accs.push_back(std::move(pri_acc));
+    for (auto &in : s_inputs) {
+      in->SetInvert(false);
+    }
     CreateComponents(&g_comps, &s_accs, &s_server);
     s_accs.shrink_to_fit();
     g_comps.shrink_to_fit();

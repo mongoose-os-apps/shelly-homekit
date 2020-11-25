@@ -40,6 +40,7 @@ class Input {
   int id() const;
   virtual void Init() = 0;
   virtual bool GetState() = 0;
+  virtual void SetInvert(bool invert) = 0;
 
   typedef int HandlerID;
   static constexpr HandlerID kInvalidHandlerID = -1;

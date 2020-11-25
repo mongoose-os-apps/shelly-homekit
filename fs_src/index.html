@@ -408,6 +408,13 @@ input:checked + .slider:before {
           <option id="in_mode_4" value="4">Activation</option>
         </select>
       </div>
+      <div class="form-control" id="in_inverted_container" style="display: none">
+        <label for="in_inverted">Inverted Input:</label>
+          <label class="switch">
+            <input type="checkbox" id="in_inverted">
+          <span class="slider round"></span>
+        </label>
+      </div>
       <div class="form-control">
         <label for="initial">Initial state:</label>
         <select id="initial">
@@ -819,6 +826,7 @@ function swSetConfig(c) {
     svc_type: parseInt(el(c, "svc_type").value),
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
+    in_inverted: el(c, "in_inverted").checked,
   };
   if (autoOff) {
     cfg.auto_off_delay = dateStringToSeconds(autoOffDelay);
@@ -986,8 +994,13 @@ function updateComponent(cd) {
       el(c, "initial_" + cd.initial).selected = true;
       if (cd.in_mode >= 0) {
         el(c, "in_mode_" + cd.in_mode).selected = true;
+        if (cd.in_mode != 3) {
+          el(c, "in_inverted").checked = cd.in_inverted;
+          el(c, "in_inverted_container").style.display = "block";
+        }
       } else {
         el(c, "in_mode_container").style.display = "none";
+        el(c, "in_inverted_container").style.display = "none";
         if (el(c, "initial_3")) el(c, "initial_3").remove();
       }
       el(c, "auto_off").checked = cd.auto_off;

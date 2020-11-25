@@ -42,6 +42,11 @@ void InputPin::Init() {
   GetState();
 }
 
+void InputPin::SetInvert(bool invert) {
+  invert_ = invert;
+  GetState();
+}
+
 InputPin::~InputPin() {
   mgos_gpio_remove_int_handler(cfg_.pin, nullptr, nullptr);
 }
@@ -51,7 +56,7 @@ bool InputPin::ReadPin() {
 }
 
 bool InputPin::GetState() {
-  last_state_ = (ReadPin() == cfg_.on_value);
+  last_state_ = (ReadPin() == cfg_.on_value) ^ invert_;
   return last_state_;
 }
 
