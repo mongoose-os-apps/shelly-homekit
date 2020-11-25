@@ -189,8 +189,9 @@ input:checked + .slider:before {
   <div class="logodiv"><img class="img" src="logo.png" alt=""></div>
   <div class="apl_thin">
     Shelly-<b>HomeKit</b>
-    <div class="badge" id="notifyFW" style="display: none">Update available</div>
-    <div class="badge" id="notifyOverheat" style="display: none">Overheating</div>
+    <div class="badge" id="notify_update" style="display: none">Update</div>
+    <div class="badge" id="notify_overheat" style="display: none">Overheating</div>
+    <div class="badge" id="notify_failsafe" style="display: none">Failsafe mode</div>
   </div>
   <h1 class="" id="device_name" style="visibility: hidden"></h1>
   <br>
@@ -203,7 +204,7 @@ input:checked + .slider:before {
   </button>
  <br><br>
 </div>
-<div class="container" id="sys_container">
+<div class="container" id="gs_container" style="display: none">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/General-Settings" target="_blank">?</a>
   <h1 class="">General Settings</h1>
   <div class="form">
@@ -230,7 +231,7 @@ input:checked + .slider:before {
   </div>
 </div>
 <div id="components"></div>
-<div class="container" id="homekit_container" style="visibility: hidden">
+<div class="container" id="homekit_container" style="display: none">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/HomeKit-settings" target="_blank">?</a>
   <h1 class="">HomeKit Settings</h1>
   <div class="form">
@@ -259,7 +260,7 @@ input:checked + .slider:before {
     </div>
   </div>
 </div>
-<div class="container" id="wifi_container" style="visibility: hidden">
+<div class="container" id="wifi_container" style="display: none">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/WiFi-Settings" target="_blank">?</a>
   <h1 class="">WiFi Settings</h1>
   <div class="form">
@@ -293,7 +294,7 @@ input:checked + .slider:before {
   </div>
 </div>
 
-<div class="container" id="fw_container" style="visibility: hidden">
+<div class="container" id="sys_container">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/System-Settings" target="_blank">?</a>
   <h1 class="">System</h1>
   <div class="form">
@@ -307,7 +308,7 @@ input:checked + .slider:before {
         <label>Version:</label>
         <span id="app_version"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="update_container" style="display: none">
         <label>Update: </label>
         <button class="btn" id="update_btn">
           <label>
@@ -317,7 +318,7 @@ input:checked + .slider:before {
         </button>
         <span id="update_status"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="revert_to_stock_container" style="display: none">
         <label>Revert to stock:</label>
         <button class="btn" id="revert_btn">
           <label><span id="revert_btn_spinner"></span>Revert</label>
@@ -335,7 +336,7 @@ input:checked + .slider:before {
           </button>
         </form>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="debug_log_container" style="display: none">
         <label>Debug Log:</label>
         <label class="switch">
           <input type="checkbox" id="debug_en">
@@ -355,11 +356,11 @@ input:checked + .slider:before {
   <div class="form" style="text-align: center">
     &copy; Copyright 2020 <a href="https://github.com/mongoose-os-apps/shelly-homekit/blob/master/AUTHORS.md">Shelly-HomeKit contributors</a>.
     <br>Use <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">GitHub</a> to report bugs and request features.
-    <br><br>
+    <br>
     <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
       <input type="hidden" name="cmd" value="_s-xclick" />
       <input type="hidden" name="hosted_button_id" value="6KPSKWJDHVLB4" />
-      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="Donate via PayPal" alt="Donate via PayPal" />
+      <input type="image" id="donate_form_submit" src="" border="0" name="submit" title="Donate via PayPal" alt="Donate via PayPal" style="display: none" />
     </form>
   </div>
 </div>
@@ -1071,25 +1072,41 @@ function getInfo() {
     var data = res.data;
     lastInfo = data;
     console.log(data);
+    el("uptime").innerText = durationStr(data.uptime);
+    el("uptime_label").style.visibility = "visible";
+    el("model").innerText = data.model;
+    el("device_id").innerText = data.device_id;
+    el("app_version").innerText = data.version + ' (build ' + data.fw_build + ')';
+    if (data.failsafe_mode) {
+      el("notify_failsafe").style.display = "inline";
+      return;
+    }
+
+    el("device_name").innerText = el("sys_name").value = document.title = data.name;
+    el("device_name").style.visibility = "visible";
     wifiEn.checked = data.wifi_en;
     wifiSSID.value = data.wifi_ssid;
     wifiPass.value = data.wifi_pass;
     var wifiStatus = "";
     if (data.wifi_rssi != 0) wifiStatus += "RSSI: " + data.wifi_rssi;
     if (data.wifi_ip != "") wifiStatus += ", IP: " + data.wifi_ip;
-    if (!wifiStatus) wifiStatus = "not connected";
+    if (!wifiStatus) {
+      wifiStatus = "not connected";
+    } else {
+      // These only make sense if we are connected to WiFi.
+      el("update_container").style.display = "block";
+      el("revert_to_stock_container").style.display = "block";
+      // We set external image URL to prevent loading it when not on WiFi, as it slows things down.
+      el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
+      el("donate_form_submit").style.display = "inline";
+    }
     el("wifi_status").innerText = (wifiStatus ? wifiStatus : "not connected");
-    el("device_id").innerText = data.device_id;
-    el("device_name").innerText = el("sys_name").value = document.title = data.name;
-    el("model").innerText = data.model;
     if (data.hap_running) {
       hapSetupCode.value = "***-**-***";
     } else {
       hapSetupCode.value = "";
     }
     el("hap_paired").innerText = (data.hap_paired ? "yes" : "no");
-    el("app_version").innerText = data.version + ' (build ' + data.fw_build + ')';
-    el("uptime").innerText = durationStr(data.uptime);
     if (data.hap_cn != el("components").cn) {
       el("components").innerHTML = "";
     }
@@ -1098,11 +1115,11 @@ function getInfo() {
       updateComponent(data.components[i]);
     }
     el("components").cn = data.hap_cn;
-    el("homekit_container").style.visibility = "visible";
-    el("wifi_container").style.visibility = "visible";
-    el("fw_container").style.visibility = "visible";
-    el("device_name").style.visibility = "visible";
-    el("uptime_label").style.visibility = "visible";
+    el("homekit_container").style.display = "block";
+    if (data.wifi_ip !== undefined) {
+      el("wifi_container").style.display = "block";
+    }
+    el("gs_container").style.display = "block";
     if (data.hap_running) {
       el("hap_conn_stats").innerText =
           data.hap_ip_conns_pending + " pending, " +
@@ -1131,17 +1148,19 @@ function getInfo() {
       if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
         checkUpdate();
       }
-      el("notifyFW").style.display = (getCookie("update_available") ? "block" : "none");
+      el("notify_update").style.display = (getCookie("update_available") ? "block" : "none");
     }
     if (data.sys_temp !== undefined) {
       el("sys_temp").innerText = data.sys_temp;
-      el("notifyOverheat").style.display = (data.overheat_on ? "block" : "none");
+      el("notify_overheat").style.display = (data.overheat_on ? "block" : "none");
       el("sys_temp_container").style.display = "block";
     } else {
       el("sys_temp_container").style.display = "none";
     }
+    el("debug_log_container").style.display = "block";
   }).catch(function(err) {
     alert(err);
+    console.log(err);
   }).then(function() {
     el("spinner").className = "";
   });
@@ -1310,7 +1329,7 @@ async function checkUpdate() {
         return;
       }
       var updateAvailable = isNewer(latestVersion, curVersion);
-      el("notifyFW").style.display = (updateAvailable ? "block" : "none");
+      el("notify_update").style.display = (updateAvailable ? "block" : "none");
       setCookie("last_update_check", (new Date()).getTime());
       setCookie("update_available", updateAvailable);
       if (!updateAvailable) {

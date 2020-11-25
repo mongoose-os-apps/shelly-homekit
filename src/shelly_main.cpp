@@ -149,6 +149,7 @@ static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 static std::vector<std::unique_ptr<hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
+static bool s_failsafe_mode = false;
 
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
@@ -165,6 +166,25 @@ Output *FindOutput(int id) {
 }
 PowerMeter *FindPM(int id) {
   return FindById(s_pms, id);
+}
+
+// Executed very early, pretty much nothing is available here.
+extern "C" void mgos_app_preinit(void) {
+#if BTN_GPIO >= 0
+  mgos_gpio_setup_input(BTN_GPIO,
+                        (BTN_DOWN ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP));
+  int i = 10;
+  while (mgos_gpio_read(BTN_GPIO) == BTN_DOWN && i > 0) {
+    mgos_msleep(10);
+    i--;
+  }
+  if (i == 0) {
+    s_failsafe_mode = true;
+#if LED_GPIO >= 0
+    mgos_gpio_setup_output(LED_GPIO, LED_ON);
+#endif
+  }
+#endif
 }
 
 static void DoReset(void *arg) {
@@ -720,7 +740,20 @@ static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
-bool InitApp() {
+void InitApp() {
+  if (s_failsafe_mode) {
+    if (remove(CONF_USER_FILE) == 0 || remove(KVS_FILE_NAME) == 0) {
+      LOG(LL_INFO, ("== Wiped config, rebooting"));
+      mgos_vfs_gc("/");
+      mgos_system_restart_after(100);
+      return;
+    } else {
+      LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
+      shelly_rpc_service_init(nullptr, nullptr, nullptr);
+    }
+    return;
+  }
+
   if (mgos_ota_is_first_boot()) {
     LOG(LL_INFO, ("Performing cleanup"));
     // In case we're uograding from stock fw, remove its files
@@ -730,6 +763,11 @@ bool InitApp() {
     remove("relaydata");
     remove("index.html");
     remove("style.css");
+  }
+
+  if (shelly_cfg_migrate()) {
+    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                         nullptr /* msg */);
   }
 
   // Key-value store.
@@ -759,11 +797,6 @@ bool InitApp() {
   HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
                            &s_callbacks, nullptr /* context */);
 
-  if (shelly_cfg_migrate()) {
-    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
-                         nullptr /* msg */);
-  }
-
   CreatePeripherals(&s_inputs, &s_outputs, &s_pms, &s_sys_temp_sensor);
 
   StartService(false /* quiet */);
@@ -784,14 +817,13 @@ bool InitApp() {
   mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
 
   SetupButton(BTN_GPIO, BTN_DOWN);
-
-  return true;
 }
 
 }  // namespace shelly
 
 extern "C" {
 enum mgos_app_init_result mgos_app_init(void) {
-  return (shelly::InitApp() ? MGOS_APP_INIT_SUCCESS : MGOS_APP_INIT_ERROR);
+  shelly::InitApp();
+  return MGOS_APP_INIT_SUCCESS;
 }
 }

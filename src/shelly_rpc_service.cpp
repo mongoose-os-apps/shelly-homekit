@@ -67,7 +67,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
   std::string res = mgos::JSONPrintStringf(
       "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_model: %Q, "
-      "host: %Q, version: %Q, fw_build: %Q, uptime: %d, "
+      "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
       "wifi_rssi: %d, wifi_ip: %Q,"
@@ -80,7 +80,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
       CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
-      (int) mgos_uptime(),
+      (int) mgos_uptime(), false /* failsafe_mode */,
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (wifi_ssid ? wifi_ssid : ""),
       (mgos_sys_config_get_wifi_sta_pass() ? "***" : ""), wifi_rssi, wifi_ip,
@@ -120,6 +120,24 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   mgos::JSONAppendStringf(&res, "]}");
 
   mg_rpc_send_responsef(ri, "%s", res.c_str());
+
+  (void) cb_arg;
+  (void) fi;
+  (void) args;
+}
+
+static void GetInfoFailsafeHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                                   struct mg_rpc_frame_info *fi,
+                                   struct mg_str args) {
+  mg_rpc_send_responsef(
+      ri,
+      "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_model: %Q, "
+      "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B}",
+      mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
+      MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
+      CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
+      mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
+      (int) mgos_uptime(), true /* failsafe_mode */);
 
   (void) cb_arg;
   (void) fi;
@@ -269,15 +287,20 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   s_server = server;
   s_kvs = kvs;
   s_tcpm = tcpm;
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
-                     GetInfoHandler, nullptr);
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
-                     "{id: %d, type: %d, config: %T}", SetConfigHandler,
-                     nullptr);
+  if (server != nullptr) {
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
+                       GetInfoHandler, nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
+                       "{id: %d, type: %d, config: %T}", SetConfigHandler,
+                       nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
+                       "{id: %d, state: %B}", SetSwitchHandler, nullptr);
+  } else {
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
+                       GetInfoFailsafeHandler, nullptr);
+  }
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
                      GetDebugInfoHandler, nullptr);
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
-                     "{id: %d, state: %B}", SetSwitchHandler, nullptr);
   return true;
 }
 
