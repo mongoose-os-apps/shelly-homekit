@@ -97,15 +97,17 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   if (cfg.svc_type < -1 || cfg.svc_type > 2) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "svc_type");
   }
-  if (cfg.in_mode != -2 && (cfg.in_mode < 0 || cfg.in_mode > 3)) {
+  if (cfg.in_mode != -2 &&
+      (cfg.in_mode < 0 || cfg.in_mode >= (int) InMode::kMax)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
   }
-  if (cfg.initial_state < 0 || cfg.initial_state > 3 ||
-      (cfg_->in_mode == -1 && cfg.initial_state == 3)) {
+  if (cfg.initial_state < 0 || cfg.initial_state >= (int) InitialState::kMax ||
+      (cfg_->in_mode == -1 &&
+       cfg.initial_state == (int) InitialState::kInput)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
   }
   cfg.auto_off = (cfg.auto_off != 0);
-  if (cfg.initial_state < 0 || cfg.initial_state > 3) {
+  if (cfg.initial_state < 0 || cfg.initial_state > (int) InitialState::kMax) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
   }
   // Now copy over.
@@ -151,6 +153,8 @@ Status ShellySwitch::Init() {
           cfg_->in_mode == static_cast<int>(InMode::kToggle)) {
         SetState(in_->GetState(), "init");
       }
+      break;
+    case InitialState::kMax:
       break;
   }
   LOG(LL_INFO, ("Exporting '%s': type %d, state: %d", cfg_->name,
@@ -223,8 +227,12 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
         case InMode::kEdge:
           SetState(!out_->GetState(), "button");
           break;
+        case InMode::kActivation:
+          SetState(true, "button");
+          break;
         case InMode::kAbsent:
         case InMode::kDetached:
+        case InMode::kMax:
           break;
       }
       break;

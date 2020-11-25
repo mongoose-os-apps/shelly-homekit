@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include "shelly_noisy_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_noisy_input_pin.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {

@@ -42,6 +42,8 @@ class ShellySwitch : public Component, public hap::Service {
     kToggle = 1,
     kEdge = 2,
     kDetached = 3,
+    kActivation = 4,
+    kMax,
   };
 
   enum class InitialState {
@@ -49,6 +51,7 @@ class ShellySwitch : public Component, public hap::Service {
     kOn = 1,
     kLast = 2,
     kInput = 3,
+    kMax,
   };
 
   ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
