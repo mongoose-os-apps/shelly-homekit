@@ -747,7 +747,9 @@ void InitApp() {
   if (s_failsafe_mode) {
     if (remove(CONF_USER_FILE) == 0 || remove(KVS_FILE_NAME) == 0) {
       LOG(LL_INFO, ("== Wiped config, rebooting"));
+#if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
       mgos_vfs_gc("/");
+#endif
       mgos_system_restart_after(100);
       return;
     } else {

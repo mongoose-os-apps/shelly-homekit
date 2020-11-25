@@ -24,7 +24,7 @@ namespace hap {
 
 Lock::Lock(int id, Input *in, Output *out, PowerMeter *out_pm, Output *led_out,
            struct mgos_config_sw *cfg)
-    : ShellySwitch(id, in, out, out_pm, nullptr, cfg) {
+    : ShellySwitch(id, in, out, out_pm, led_out, cfg) {
 }
 
 Lock::~Lock() {
