@@ -333,12 +333,12 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   logger.debug(f"host: {host}")
   logger.debug(f"device: {device}")
   logger.debug(f"model: {model}")
-  logger.debug(f"stock_model: {device_info['stock_model']}")
+  logger.debug(f"stock_model: {stock_model}")
   logger.debug(f"colour_mode: {colour_mode}")
   logger.debug(f"action: {action}")
   logger.debug(f"dry_run: {dry_run}")
   logger.debug(f"silent_run: {silent_run}")
-  logger.debug(f"mode: {mode}")
+  logger.debug(f"flash mode: {mode}")
   logger.debug(f"exclude: {exclude}")
   logger.debug(f"version: {version}")
   logger.debug(f"variant: {variant}")
@@ -359,7 +359,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
         homekit_dlurl = f'http://rojer.me/files/shelly/{version}/shelly-homekit-{model}.zip'
       break
 
-  stock_lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
+  stock_lfw = stock_release_info['data'][stock_model]['version'].split('/v')[1].split('@')[0]
   if not version:
     if device_info['stock_model']  == 'SHRGBW2':
       stock_dlurl = stock_release_info['data'][stock_model]['url'].replace('.zip','-'+colour_mode+'.zip')
