@@ -110,6 +110,10 @@ def get_info(host):
       info['model'] = shelly_model(info['app'])
     info['fw_type'] = 'homekit'
     info['fw_type_str'] = 'HomeKit'
+    if info['model']  == 'ShellyRGBW2':
+      info['colour_mode'] = None
+    else:
+      info['colour_mode'] = None
     return(info)
   except (urllib.error.HTTPError) as err:
     pass
@@ -121,13 +125,17 @@ def get_info(host):
     logger.trace(f"data: {fp}")
     return None
   try:
-    with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
+    with urllib.request.urlopen(f'http://{host}/settings') as fp:
       info = json.load(fp)
     info['host'] = host
     info['device_id'] = host.replace('.local','')
     info['wifi_ip'] = socket.gethostbyname(host)
-    info['model'] = shelly_model(info['type'])
-    info['stock_model'] = info['type']
+    info['model'] = shelly_model(info['device']['type'])
+    info['stock_model'] = info['device']['type']
+    if info['stock_model']  == 'SHRGBW2':
+      info['colour_mode'] = info['mode']
+    else:
+      info['colour_mode'] = None
     info['version'] = info['fw'].split('/v')[1].split('@')[0] if '/v' in info['fw'] else '0.0.0'
     info['fw_type'] = 'stock'
     info['fw_type_str'] = 'Official'
@@ -283,20 +291,21 @@ def write_flash(host, lfw, dlurl, cfw_type, mode, requires_upgrade):
     time.sleep(2)
   if onlinecheck == lfw:
     logger.info(f"{GREEN}Successfully flashed {friendly_host} to {lfw}{NC}")
-    if mode == 'stock' and info['type'] == 'SHRGBW2':
+  else:
+    if info['stock_model'] == 'SHRGBW2':
       logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
-      logger.info(f"{WHITE}WARNING!!{NC} If you are using this device in conjunction with Homebridge it will")
-      logger.info("result in ALL scenes / automations to be removed within HomeKit.")
+      logger.info(f"{WHITE}WARNING!!{NC} If you are using this device in conjunction with Homebridge")
+      logger.info(f"{WHITE}STOP!!{NC} homebridge before performing next steps.")
       logger.info(f"Goto http://{host} in your web browser")
       logger.info("Goto settings section")
       logger.info("Goto 'Device Type' and switch modes")
-      logger.info("Once mode has been changed, you can switch it back to your preferred mode.")
-  else:
-    if onlinecheck == '0.0.0':
+      logger.info("Once mode has been changed, you can switch it back to your preferred mode")
+      logger.info(f"Restart homebridge.")
+    elif onlinecheck == '0.0.0':
       logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
     else:
       logger.info(f"{RED}Failed to flash {friendly_host} to {lfw}{NC}")
-    logger.info("Current: %s" % onlinecheck)
+    logger.debug("Current: %s" % onlinecheck)
 
 def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
   if device_info['fw_type'] == "homekit" and float(f"{parseVersion(device_info['version'])[0]}.{parseVersion(device_info['version'])[1]}") < 2.1:
@@ -320,10 +329,12 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   device = device_info['device_id']
   model = device_info['model']
   stock_model = device_info['stock_model']
+  colour_mode = device_info['colour_mode']
   logger.debug(f"host: {host}")
   logger.debug(f"device: {device}")
   logger.debug(f"model: {model}")
   logger.debug(f"stock_model: {device_info['stock_model']}")
+  logger.debug(f"colour_mode: {colour_mode}")
   logger.debug(f"action: {action}")
   logger.debug(f"dry_run: {dry_run}")
   logger.debug(f"silent_run: {silent_run}")
@@ -350,7 +361,10 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
 
   stock_lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
   if not version:
-    stock_dlurl = stock_release_info['data'][device_info['stock_model']]['url']
+    if device_info['stock_model']  == 'SHRGBW2':
+      stock_dlurl = stock_release_info['data'][stock_model]['url'].replace('.zip','-'+colour_mode+'.zip')
+    else:
+      stock_dlurl = stock_release_info['data'][stock_model]['url']
   else:
     stock_dlurl = f'http://archive.shelly-faq.de/version/v{version}/{stock_model}.zip'
 
