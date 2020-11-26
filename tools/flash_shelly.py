@@ -267,10 +267,12 @@ def write_flash(host, lfw, dlurl, cfw_type, mode, requires_upgrade):
   n = 1
   waittextshown = False
   info = None
-  while n < 15:
+  while n < 30:
     if waittextshown == False:
-      logger.info(f"waiting for {friendly_host} to reboot")
+      logger.info(f"waiting for {friendly_host} to reboot...")
       waittextshown = True
+    if n == 16:
+      logger.info(f"still waiting for {friendly_host} to reboot...")
     if mode == 'homekit' and not requires_upgrade:
       checkurl = f'http://{host}/rpc/Shelly.GetInfo'
     else:
