@@ -203,10 +203,16 @@ void ShellySwitch::SetState(bool new_state, const char *source) {
 }
 
 void ShellySwitch::AutoOffTimerCB() {
-  if (cfg_->auto_off) {
-    // Don't set state if auto off has been disabled during timer run
-    SetState(false, "auto_off");
+  // Don't set state if auto off has been disabled during timer run
+  if (!cfg_->auto_off) return;
+  if (static_cast<InMode>(cfg_->in_mode) == InMode::kActivation &&
+      in_ != nullptr && in_->GetState() && GetState()) {
+    // Input is active, re-arm.
+    LOG(LL_INFO, ("Input is active, re-arming auto off timer"));
+    auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
+    return;
   }
+  SetState(false, "auto_off");
 }
 
 void ShellySwitch::SaveState() {
@@ -226,17 +232,23 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
       switch (static_cast<InMode>(cfg_->in_mode)) {
         case InMode::kMomentary:
           if (state) {  // Only on 0 -> 1 transitions.
-            SetState(!out_->GetState(), "button");
+            SetState(!out_->GetState(), "ext_mom");
           }
           break;
         case InMode::kToggle:
           SetState(state, "switch");
           break;
         case InMode::kEdge:
-          SetState(!out_->GetState(), "button");
+          SetState(!out_->GetState(), "ext_edge");
           break;
         case InMode::kActivation:
-          SetState(true, "button");
+          if (state) {
+            SetState(true, "ext_act");
+          } else if (GetState() && cfg_->auto_off) {
+            // On 1 -> 0 transitions do not turn on output
+            // but re-arm auto off timer if running.
+            auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
+          }
           break;
         case InMode::kAbsent:
         case InMode::kDetached:
