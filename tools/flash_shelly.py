@@ -66,6 +66,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 arch = platform.system()
+python_version = float(f"{sys.version_info[0]}.{sys.version_info[1]}")
 # Windows does not support acsii colours
 if not arch.startswith('Win'):
   WHITE = '\033[1m'
@@ -502,6 +503,7 @@ if __name__ == '__main__':
     logger.setLevel(logging.TRACE)
   logger.debug(f"{WHITE}app{NC}")
   logger.debug(f"{PURPLE}OS: {arch}{NC}")
+  logger.debug(f"{PURPLE}Python Ver: {python_version}{NC}")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
   logger.debug(f"do_all: {args.do_all}")
@@ -513,6 +515,10 @@ if __name__ == '__main__':
   logger.debug(f"variant: {args.variant}")
   logger.debug(f"verbose: {args.verbose}")
   logger.debug(f"hosts: {args.hosts}")
+
+  if python_version < 3.6:
+    logger.info(F"{WHITE}Requires python 3.6 or higher{NC}")
+    sys.exit(1)
   if not args.hosts and not args.do_all:
     logger.info("Requires a hostname or {-a|--all}.")
     parser.print_help()
