@@ -159,6 +159,7 @@ class MyListener:
 
 def shelly_model(type):
   options = {'SHSW-1' : 'Shelly1',
+             'SHSW-L' : 'Shelly1L',
              'SHSW-PM' : 'Shelly1PM',
              'SHSW-21' : 'Shelly2',
              'SHSW-25' : 'Shelly25',
