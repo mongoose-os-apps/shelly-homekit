@@ -371,7 +371,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   stock_lfw = parseStockVersion(stock_model_info['version'])
   if not version:
     if device_info['stock_model']  == 'SHRGBW2':
-      stock_dlurl = stock_model_info['url'].replace('.zip','-'+colour_mode+'.zip')
+      stock_dlurl = stock_model_info['url'].replace('.zip',f'-{colour_mode}.zip')
     else:
       stock_dlurl = stock_model_info['url']
   else:
