@@ -109,9 +109,7 @@ def get_info(host):
       info['model'] = shelly_model(info['app'])
     info['fw_type'] = 'homekit'
     info['fw_type_str'] = 'HomeKit'
-    if info['model']  == 'ShellyRGBW2':
-      info['colour_mode'] = None
-    else:
+    if 'colour_mode' not in info:
       info['colour_mode'] = None
     return(info)
   except (urllib.error.HTTPError) as err:
