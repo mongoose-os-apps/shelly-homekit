@@ -135,7 +135,7 @@ def get_info(host):
       info['colour_mode'] = info['mode']
     else:
       info['colour_mode'] = None
-    info['version'] = info['fw'].split('/v')[1].split('@')[0] if '/v' in info['fw'] else '0.0.0'
+    info['version'] = parseStockVersion(info['fw'])
     info['fw_type'] = 'stock'
     info['fw_type_str'] = 'Official'
     return(info)
@@ -201,6 +201,13 @@ def shelly_model(type):
   }
   return options.get(type, type)
 
+def parseStockVersion(version):
+  # stock version is '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
+  if '/v' in version:
+    parsed_version = version.split('/v')[1].split('@')[0]
+  else:
+    parsed_version = '0.0.0'
+  return (parsed_version)
 
 def parseVersion(vs):
   pp = vs.split('-');
@@ -282,7 +289,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode, requires_upgrade):
       if mode == 'homekit' and not requires_upgrade:
         onlinecheck = info['version']
       else:
-        onlinecheck = info['fw'].split('/v')[1].split('@')[0] if '/v' in info['fw'] else '0.0.0'
+        onlinecheck = parseStockVersion(info['fw'])
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
       onlinecheck = False
       logger.debug(f"Error: {err}")
@@ -360,12 +367,13 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
         homekit_dlurl = f'http://rojer.me/files/shelly/{version}/shelly-homekit-{model}.zip'
       break
 
-  stock_lfw = stock_release_info['data'][stock_model]['version'].split('/v')[1].split('@')[0]
+  stock_model_info = stock_release_info['data'][stock_model]
+  stock_lfw = parseStockVersion(stock_model_info['version'])
   if not version:
     if device_info['stock_model']  == 'SHRGBW2':
-      stock_dlurl = stock_release_info['data'][stock_model]['url'].replace('.zip','-'+colour_mode+'.zip')
+      stock_dlurl = stock_model_info['url'].replace('.zip','-'+colour_mode+'.zip')
     else:
-      stock_dlurl = stock_release_info['data'][stock_model]['url']
+      stock_dlurl = stock_model_info['url']
   else:
     stock_dlurl = f'http://archive.shelly-faq.de/version/v{version}/{stock_model}.zip'
 
