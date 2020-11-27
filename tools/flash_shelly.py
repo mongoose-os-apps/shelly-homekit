@@ -109,6 +109,8 @@ def get_info(host):
       info['model'] = shelly_model(info['app'])
     info['fw_type'] = 'homekit'
     info['fw_type_str'] = 'HomeKit'
+    if 'colour_mode' not in info:
+      info['colour_mode'] = None
     return(info)
   except (urllib.error.HTTPError) as err:
     pass
@@ -120,14 +122,18 @@ def get_info(host):
     logger.trace(f"data: {fp}")
     return None
   try:
-    with urllib.request.urlopen(f'http://{host}/Shelly.GetInfo') as fp:
+    with urllib.request.urlopen(f'http://{host}/settings') as fp:
       info = json.load(fp)
     info['host'] = host
     info['device_id'] = host.replace('.local','')
     info['wifi_ip'] = socket.gethostbyname(host)
-    info['model'] = shelly_model(info['type'])
-    info['stock_model'] = info['type']
-    info['version'] = info['fw'].split('/v')[1].split('@')[0] if '/v' in info['fw'] else '0.0.0'
+    info['model'] = shelly_model(info['device']['type'])
+    info['stock_model'] = info['device']['type']
+    if info['stock_model']  == 'SHRGBW2':
+      info['colour_mode'] = info['mode']
+    else:
+      info['colour_mode'] = None
+    info['version'] = parseStockVersion(info['fw'])
     info['fw_type'] = 'stock'
     info['fw_type_str'] = 'Official'
     return(info)
@@ -158,6 +164,7 @@ class MyListener:
 
 def shelly_model(type):
   options = {'SHSW-1' : 'Shelly1',
+             'SHSW-L' : 'Shelly1L',
              'SHSW-PM' : 'Shelly1PM',
              'SHSW-21' : 'Shelly2',
              'SHSW-25' : 'Shelly25',
@@ -192,6 +199,13 @@ def shelly_model(type):
   }
   return options.get(type, type)
 
+def parseStockVersion(version):
+  # stock version is '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
+  if '/v' in version:
+    parsed_version = version.split('/v')[1].split('@')[0]
+  else:
+    parsed_version = '0.0.0'
+  return (parsed_version)
 
 def parseVersion(vs):
   pp = vs.split('-');
@@ -257,10 +271,12 @@ def write_flash(host, lfw, dlurl, cfw_type, mode, requires_upgrade):
   n = 1
   waittextshown = False
   info = None
-  while n < 15:
+  while n < 30:
     if waittextshown == False:
-      logger.info(f"waiting for {friendly_host} to reboot")
+      logger.info(f"waiting for {friendly_host} to reboot...")
       waittextshown = True
+    if n == 16:
+      logger.info(f"still waiting for {friendly_host} to reboot...")
     if mode == 'homekit' and not requires_upgrade:
       checkurl = f'http://{host}/rpc/Shelly.GetInfo'
     else:
@@ -271,7 +287,7 @@ def write_flash(host, lfw, dlurl, cfw_type, mode, requires_upgrade):
       if mode == 'homekit' and not requires_upgrade:
         onlinecheck = info['version']
       else:
-        onlinecheck = info['fw'].split('/v')[1].split('@')[0] if '/v' in info['fw'] else '0.0.0'
+        onlinecheck = parseStockVersion(info['fw'])
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
       onlinecheck = False
       logger.debug(f"Error: {err}")
@@ -281,20 +297,21 @@ def write_flash(host, lfw, dlurl, cfw_type, mode, requires_upgrade):
     time.sleep(2)
   if onlinecheck == lfw:
     logger.info(f"{GREEN}Successfully flashed {friendly_host} to {lfw}{NC}")
-    if mode == 'stock' and info['type'] == 'SHRGBW2':
+  else:
+    if info['stock_model'] == 'SHRGBW2':
       logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
-      logger.info(f"{WHITE}WARNING!!{NC} If you are using this device in conjunction with Homebridge it will")
-      logger.info("result in ALL scenes / automations to be removed within HomeKit.")
+      logger.info(f"{WHITE}WARNING!!{NC} If you are using this device in conjunction with Homebridge")
+      logger.info(f"{WHITE}STOP!!{NC} homebridge before performing next steps.")
       logger.info(f"Goto http://{host} in your web browser")
       logger.info("Goto settings section")
       logger.info("Goto 'Device Type' and switch modes")
-      logger.info("Once mode has been changed, you can switch it back to your preferred mode.")
-  else:
-    if onlinecheck == '0.0.0':
+      logger.info("Once mode has been changed, you can switch it back to your preferred mode")
+      logger.info(f"Restart homebridge.")
+    elif onlinecheck == '0.0.0':
       logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
     else:
       logger.info(f"{RED}Failed to flash {friendly_host} to {lfw}{NC}")
-    logger.info("Current: %s" % onlinecheck)
+    logger.debug("Current: %s" % onlinecheck)
 
 def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, variant, stock_release_info, homekit_release_info):
   if device_info['fw_type'] == "homekit" and float(f"{parseVersion(device_info['version'])[0]}.{parseVersion(device_info['version'])[1]}") < 2.1:
@@ -318,14 +335,16 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   device = device_info['device_id']
   model = device_info['model']
   stock_model = device_info['stock_model']
+  colour_mode = device_info['colour_mode']
   logger.debug(f"host: {host}")
   logger.debug(f"device: {device}")
   logger.debug(f"model: {model}")
-  logger.debug(f"stock_model: {device_info['stock_model']}")
+  logger.debug(f"stock_model: {stock_model}")
+  logger.debug(f"colour_mode: {colour_mode}")
   logger.debug(f"action: {action}")
   logger.debug(f"dry_run: {dry_run}")
   logger.debug(f"silent_run: {silent_run}")
-  logger.debug(f"mode: {mode}")
+  logger.debug(f"flash mode: {mode}")
   logger.debug(f"exclude: {exclude}")
   logger.debug(f"version: {version}")
   logger.debug(f"variant: {variant}")
@@ -346,9 +365,13 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
         homekit_dlurl = f'http://rojer.me/files/shelly/{version}/shelly-homekit-{model}.zip'
       break
 
-  stock_lfw = stock_release_info['data'][device_info['stock_model']]['version'].split('/v')[1].split('@')[0]
+  stock_model_info = stock_release_info['data'][stock_model]
+  stock_lfw = parseStockVersion(stock_model_info['version'])
   if not version:
-    stock_dlurl = stock_release_info['data'][device_info['stock_model']]['url']
+    if device_info['stock_model']  == 'SHRGBW2':
+      stock_dlurl = stock_model_info['url'].replace('.zip',f'-{colour_mode}.zip')
+    else:
+      stock_dlurl = stock_model_info['url']
   else:
     stock_dlurl = f'http://archive.shelly-faq.de/version/v{version}/{stock_model}.zip'
 
@@ -513,6 +536,7 @@ if __name__ == '__main__':
   logger.debug(f"variant: {args.variant}")
   logger.debug(f"verbose: {args.verbose}")
   logger.debug(f"hosts: {args.hosts}")
+
   if not args.hosts and not args.do_all:
     logger.info("Requires a hostname or {-a|--all}.")
     parser.print_help()
