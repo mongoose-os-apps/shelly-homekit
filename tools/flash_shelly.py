@@ -390,7 +390,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
     dlurl = stock_dlurl
 
   if dlurl:
-    durl_request = requests.get(dlurl)
+    durl_request = requests.head(dlurl)
   if not dlurl or durl_request.status_code != 200:
     lfw_label = f"{RED}Not available{NC}"
     lfw = '0.0.0'
