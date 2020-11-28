@@ -1,7 +1,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Gitter](https://badges.gitter.im/shelly-homekit/community.svg)](https://gitter.im/shelly-homekit/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-# Apple HomeKit firmware for Shelly switches
+# Apple HomeKit firmware for Shelly devices
 
 This firmware exposes Shelly devices as Apple HomeKit accessories.
 
@@ -14,6 +14,9 @@ Summary of supported devices and features:
    * Switch/lock/outlet
    * Stateless input
    * Garage door opener mode
+ * [Shelly 1L](https://shelly.cloud/products/shelly-1l-single-wire-smart-home-automation-relay/)
+   * Switch/lock/outlet
+   * Stateless input
  * [Shelly Plug](https://shelly.cloud/products/shelly-plug-smart-home-automation-device/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/)
    * Switch/lock/outlet
  * Shelly 2
@@ -30,7 +33,7 @@ Summary of supported devices and features:
    * Stateless input
 
 Features that are not yet supported:
- * Shelly 1PM, 2, Plug, Plug S: power measurement
+ * Shelly 1L, 1PM, 2, Plug, Plug S: power measurement
  * Cloud connections: no Shelly Cloud, no MQTT
  * Remote actions (web hooks)
 
@@ -43,6 +46,8 @@ Features that are not yet supported:
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
     * Shelly 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
+
+    * Shelly 1L: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
 
     * Shelly 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1PM.zip`
 
