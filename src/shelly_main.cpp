@@ -770,11 +770,6 @@ void InitApp() {
     remove("style.css");
   }
 
-  if (shelly_cfg_migrate()) {
-    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
-                         nullptr /* msg */);
-  }
-
   // Key-value store.
   static const HAPPlatformKeyValueStoreOptions kvs_opts = {
       .fileName = KVS_FILE_NAME,
@@ -801,6 +796,11 @@ void InitApp() {
   // Initialize accessory server.
   HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
                            &s_callbacks, nullptr /* context */);
+
+  if (shelly_cfg_migrate()) {
+    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                         nullptr /* msg */);
+  }
 
   CreatePeripherals(&s_inputs, &s_outputs, &s_pms, &s_sys_temp_sensor);
 
