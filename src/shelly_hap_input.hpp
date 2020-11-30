@@ -20,56 +20,61 @@
 #include <memory>
 #include <vector>
 
+#include "HAP.h"
 #include "mgos_sys_config.h"
-#include "mgos_timers.h"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_chars.hpp"
+#include "shelly_hap_accessory.hpp"
 #include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
-#include "shelly_output.hpp"
-#include "shelly_pm.hpp"
 
 namespace shelly {
 namespace hap {
 
-// Common base for Switch, Outlet and Lock services.
-class StatelessSwitch : public Component, public Service {
+// A service that represents a single Shelly input.
+// Internally it instantiates either a Stateless Switch or Motion Sensor
+// and forwards API calls to it.
+class ShellyInput : public Component {
  public:
-  enum class InMode {
-    kMomentary = 0,
-    kToggleShort = 1,
-    kToggleShortLong = 2,
+  enum class ServiceType {
+    kDisabled = 0,
+    kStatelessSwitch = 1,
+    kMotionSensor = 2,
+    kOccupancySensor = 3,
+    kMax,
   };
 
-  StatelessSwitch(int id, Input *in, struct mgos_config_in_ssw *cfg);
-  virtual ~StatelessSwitch();
+  ShellyInput(int id, Input *in, struct mgos_config_in *cfg);
+  virtual ~ShellyInput();
 
   // Component interface impl.
-  Status Init() override;
   Type type() const override;
+  Status Init() override;
   std::string name() const override;
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
 
+  uint16_t GetAIDBase() const;
+  Service *GetService() const;
+
  private:
-  void InputEventHandler(Input::Event ev, bool state);
-
-  void RaiseEvent(uint8_t ev);
-
   Input *const in_;
-  struct mgos_config_in_ssw *cfg_;
+  struct mgos_config_in *cfg_;
+  ServiceType svc_type_;  // Service type at creation.
 
-  Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
+  std::unique_ptr<Component> c_;
+  Service *s_ = nullptr;
 
-  uint8_t last_ev_ = 0;
-  double last_ev_ts_ = 0;
-
-  StatelessSwitch(const StatelessSwitch &other) = delete;
+  ShellyInput(const ShellyInput &other) = delete;
 };
+
+void CreateHAPInput(int id, const struct mgos_config_in *cfg,
+                    std::vector<std::unique_ptr<Component>> *comps,
+                    std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                    HAPAccessoryServerRef *svr);
 
 }  // namespace hap
 }  // namespace shelly

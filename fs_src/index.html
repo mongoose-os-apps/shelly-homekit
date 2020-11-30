@@ -452,6 +452,15 @@ input:checked + .slider:before {
   <div class="form">
     <div class="">
       <div class="form-control">
+        <label>HAP Type:</label>
+        <select id="svc_type">
+          <option id="svc_type_0" value="0">Disabled</option>
+          <option id="svc_type_1" value="1">Stateless Input</option>
+          <option id="svc_type_2" value="2">Motion Sensor</option>
+          <option id="svc_type_3" value="3">Occupancy Sensor</option>
+        </select>
+      </div>
+      <div class="form-control">
         <label>Name:</label>
         <input type="text" id="name">
       </div>
@@ -464,8 +473,89 @@ input:checked + .slider:before {
         </select>
       </div>
       <div class="form-control">
+        <label for="inverted">Inverted Input:</label>
+          <label class="switch">
+            <input type="checkbox" id="inverted">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="form-control">
         <label>Last Event:</label>
         <span id="last_event"></span>
+      </div>
+      <div class="form-control">
+        <label></label>
+        <button class="btn" id="save_btn">
+          <label><span id="save_spinner"></span>Save</label>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="di_template" style="display: none">
+  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Switch-Settings#detached-input" target="_blank">?</a>
+  <h1 id="head">Disabled Input</h1>
+  <div class="form">
+    <div class="">
+      <div class="form-control">
+        <label>HAP Type:</label>
+        <select id="svc_type">
+          <option id="svc_type_0" value="0">Disabled</option>
+          <option id="svc_type_1" value="1">Stateless Input</option>
+          <option id="svc_type_2" value="2">Motion Sensor</option>
+          <option id="svc_type_3" value="3">Occupancy Sensor</option>
+        </select>
+      </div>
+      <div class="form-control">
+        <label></label>
+        <button class="btn" id="save_btn">
+          <label><span id="save_spinner"></span>Save</label>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="mos_template" style="display: none">
+  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/MotionSensor" target="_blank">?</a>
+  <h1 id="head">Motion Sensor</h1>
+  <div class="form">
+    <div class="">
+      <div class="form-control">
+        <label>HAP Type:</label>
+        <select id="svc_type">
+          <option id="svc_type_0" value="0">Disabled</option>
+          <option id="svc_type_1" value="1">Stateless Input</option>
+          <option id="svc_type_2" value="2">Motion Sensor</option>
+          <option id="svc_type_3" value="3">Occupancy Sensor</option>
+        </select>
+      </div>
+      <div class="form-control">
+        <label>Name:</label>
+        <input type="text" id="name">
+      </div>
+      <div class="form-control">
+        <label for="inverted">Inverted Input:</label>
+          <label class="switch">
+            <input type="checkbox" id="inverted">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="form-control">
+        <label>Input Mode:</label>
+        <select id="in_mode">
+          <option id="in_mode_0" value="0">Level</option>
+          <option id="in_mode_1" value="1">Pulse</option>
+        </select>
+      </div>
+      <div class="form-control" id="idle_time_container">
+        <label>Idle Time:</label>
+        <input type="text" id="idle_time" style="width: 2em; min-width: 2em"> s
+      </div>
+      <div class="form-control">
+        <label>Status:</label>
+        <span id="status"></span>
       </div>
       <div class="form-control">
         <label></label>
@@ -839,17 +929,40 @@ function swSetConfig(c) {
 
 function sswSetConfig(c) {
   var name = el(c, "name").value;
-  var spinner = el(c, "save_spinner");
-
   if (name == "") {
     alert("Name must not be empty");
     return;
   }
   var cfg = {
     name: name,
+    svc_type: parseInt(el(c, "svc_type").value),
+    inverted: el(c, "inverted").checked,
     in_mode: parseInt(el(c, "in_mode").value),
   };
-  setComponentConfig(c, cfg, spinner);
+  setComponentConfig(c, cfg, el(c, "save_spinner"));
+}
+
+function diSetConfig(c) {
+  var cfg = {
+    svc_type: parseInt(el(c, "svc_type").value),
+  };
+  setComponentConfig(c, cfg, el(c, "save_spinner"));
+}
+
+function mosSetConfig(c) {
+  var name = el(c, "name").value;
+  if (name == "") {
+    alert("Name must not be empty");
+    return;
+  }
+  var cfg = {
+    name: name,
+    svc_type: parseInt(el(c, "svc_type").value),
+    inverted: el(c, "inverted").checked,
+    in_mode: parseInt(el(c, "in_mode").value),
+    idle_time: parseInt(el(c, "idle_time").value),
+  };
+  setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
 
 function wcSetConfig(c, cfg, spinner) {
@@ -966,6 +1079,17 @@ function findOrAddContainer(cd) {
         gdoSetConfig(c, {toggle: true}, el(c, "toggle_spinner"));
       };
       break;
+    case 6: // Disabled Input.
+      c = el("di_template").cloneNode(true);
+      c.id = elId;
+      el(c, "save_btn").onclick = function() { diSetConfig(c); };
+      break;
+    case 7: // Motion Sensor.
+    case 8: // Occupancy Sensor.
+      c = el("mos_template").cloneNode(true);
+      c.id = elId;
+      el(c, "save_btn").onclick = function() { mosSetConfig(c); };
+      break;
   }
   if (c) {
     c.style.display = "block";
@@ -1013,6 +1137,8 @@ function updateComponent(cd) {
       el(c, "head").innerText = headText;
       el(c, "name").value = cd.name;
       el(c, "in_mode_" + cd.in_mode).selected = true;
+      el(c, "svc_type_" + cd.svc_type).selected = true;
+      el(c, "inverted").checked = cd.inverted;
       var lastEvText = "n/a";
       if (cd.last_ev_age > 0) {
         var lastEv = cd.last_ev;
@@ -1077,6 +1203,29 @@ function updateComponent(cd) {
         el(c, "out_mode_container").style.display = "none";
       }
       break;
+    case 6: // Disabled Input
+      var headText = "Input " + cd.id;
+      el(c, "head").innerText = headText;
+      el(c, "svc_type_" + cd.svc_type).selected = true;
+      break;
+    case 7: // Motion Sensor
+    case 8: // Occupancy Sensor
+      var headText = "Input " + cd.id;
+      if (cd.name) headText += " (" + cd.name + ")";
+      el(c, "head").innerText = headText;
+      el(c, "name").value = cd.name;
+      el(c, "svc_type_" + cd.svc_type).selected = true;
+      el(c, "inverted").checked = cd.inverted;
+      el(c, "in_mode_" + cd.in_mode).selected = true;
+      el(c, "idle_time").value = cd.idle_time;
+      el(c, "idle_time_container").style.display = (cd.in_mode == 0 ? "none" : "block");
+      var what = (cd.type == 6 ? "motion" : "occupancy");
+      var statusText = (cd.state ? what + " detected" : "no " + what + " detected");
+      if (cd.last_ev_age > 0) {
+        statusText += "; last " + secondsToDateString(cd.last_ev_age) + " ago";
+      }
+      el(c, "status").innerText = statusText;
+      break;
   }
   c.data = cd;
 }
@@ -1085,7 +1234,7 @@ function getInfo() {
   axios.get(host + "/rpc/Shelly.GetInfo").then(function(res) {
     var data = res.data;
     lastInfo = data;
-    console.log(data);
+    console.log("Info:", data);
     el("uptime").innerText = durationStr(data.uptime);
     el("uptime_label").style.visibility = "visible";
     el("model").innerText = data.model;

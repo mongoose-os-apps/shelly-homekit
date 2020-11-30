@@ -50,6 +50,10 @@ Component::Type GarageDoorOpener::type() const {
   return Type::kGarageDoorOpener;
 }
 
+std::string GarageDoorOpener::name() const {
+  return cfg_->name;
+}
+
 Status GarageDoorOpener::Init() {
   uint16_t iid = svc_.iid + 1;
   // Name

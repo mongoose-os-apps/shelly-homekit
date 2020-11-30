@@ -73,9 +73,15 @@ void Accessory::SetCategory(HAPAccessoryCategory category) {
   hai_.acc.category = category;
 }
 
-void Accessory::AddService(std::unique_ptr<Service> svc) {
+void Accessory::AddService(Service *svc) {
+  if (svc == nullptr) return;
   svc->set_parent(this);
   AddHAPService(svc->GetHAPService());
+}
+
+void Accessory::AddService(std::unique_ptr<Service> svc) {
+  if (svc == nullptr) return;
+  AddService(svc.get());
   svcs_.emplace_back(std::move(svc));
 }
 

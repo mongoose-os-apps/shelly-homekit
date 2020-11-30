@@ -30,6 +30,10 @@ class Component {
     kStatelessSwitch = 3,
     kWindowCovering = 4,
     kGarageDoorOpener = 5,
+    kDisabledInput = 6,
+    kMotionSensor = 7,
+    kOccupancySensor = 8,
+    kMax,
   };
 
   explicit Component(int id);
@@ -37,10 +41,10 @@ class Component {
 
   int id() const;
 
-  virtual Type type() const = 0;
-
   // Complex initialization after construction.
   virtual Status Init() = 0;
+  virtual Type type() const = 0;
+  virtual std::string name() const = 0;
   // Short status snippet string.
   virtual StatusOr<std::string> GetInfo() const = 0;
   // Full JSON status for UI.

@@ -42,6 +42,7 @@ class GarageDoorOpener : public Component, public Service {
 
   // Component interface impl.
   Type type() const override;
+  std::string name() const override;
   Status Init() override;
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;

@@ -25,8 +25,8 @@
 namespace shelly {
 namespace hap {
 
-StatelessSwitch::StatelessSwitch(int id, Input *in, struct mgos_config_ssw *cfg,
-                                 const uint16_t label_service_iid)
+StatelessSwitch::StatelessSwitch(int id, Input *in,
+                                 struct mgos_config_in_ssw *cfg)
     : Component(id),
       Service(
           // IDs used to start at 0, preserve compat.
@@ -36,7 +36,6 @@ StatelessSwitch::StatelessSwitch(int id, Input *in, struct mgos_config_ssw *cfg,
           kHAPServiceDebugDescription_StatelessProgrammableSwitch),
       in_(in),
       cfg_(cfg) {
-  AddLink(label_service_iid);
 }
 
 StatelessSwitch::~StatelessSwitch() {
@@ -45,6 +44,10 @@ StatelessSwitch::~StatelessSwitch() {
 
 Component::Type StatelessSwitch::type() const {
   return Type::kStatelessSwitch;
+}
+
+std::string StatelessSwitch::name() const {
+  return cfg_->name;
 }
 
 Status StatelessSwitch::Init() {
@@ -65,18 +68,6 @@ Status StatelessSwitch::Init() {
       },
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_ProgrammableSwitchEvent));
-  if (!links_.empty()) {
-    // Service Label Index
-    AddChar(new UInt8Characteristic(
-        iid++, &kHAPCharacteristicType_ServiceLabelIndex, 1, UINT8_MAX, 1,
-        [this](HAPAccessoryServerRef *,
-               const HAPUInt8CharacteristicReadRequest *, uint8_t *value) {
-          *value = id();
-          return kHAPError_None;
-        },
-        false /* supports_notification */, nullptr /* write_handler */,
-        kHAPCharacteristicDebugDescription_ServiceLabelIndex));
-  }
 
   handler_id_ = in_->AddHandler(
       std::bind(&StatelessSwitch::InputEventHandler, this, _1, _2));
@@ -112,7 +103,6 @@ Status StatelessSwitch::SetConfig(const std::string &config_json,
   json_scanf(config_json.c_str(), config_json.size(), "{name: %Q, in_mode: %d}",
              &name, &in_mode);
   mgos::ScopedCPtr name_owner(name);
-  *restart_required = false;
   // Validation.
   if (name != nullptr && strlen(name) > 64) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",

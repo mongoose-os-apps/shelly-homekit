@@ -108,7 +108,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   }
   mgos::JSONAppendStringf(&res, ", components: [");
   bool first = true;
-  for (const auto *c : g_comps) {
+  for (const auto &c : g_comps) {
     const auto &is = c->GetInfoJSON();
     if (is.ok()) {
       if (!first) res.append(", ");
@@ -208,9 +208,9 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   } else {
     // Component settings.
     Component *c = nullptr;
-    for (auto *cp : g_comps) {
+    for (auto &cp : g_comps) {
       if (cp->id() == id && (int) cp->type() == type) {
-        c = cp;
+        c = cp.get();
         break;
       }
     }
@@ -223,6 +223,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     }
   }
   if (st.ok()) {
+    LOG(LL_ERROR, ("SetConfig ok, %d", restart_required));
     mgos_sys_config_save(&mgos_sys_config, false /* try once */, nullptr);
     if (restart_required) {
       LOG(LL_INFO, ("Configuration change requires server restart"));
@@ -260,13 +261,13 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     return;
   }
 
-  for (auto *c : g_comps) {
+  for (auto &c : g_comps) {
     if (c->id() != id) continue;
     switch (c->type()) {
       case Component::Type::kSwitch:
       case Component::Type::kOutlet:
       case Component::Type::kLock: {
-        ShellySwitch *sw = static_cast<ShellySwitch *>(c);
+        ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
         sw->SetState(bool(state), "web");
         mg_rpc_send_responsef(ri, nullptr);
         return;

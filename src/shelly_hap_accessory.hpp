@@ -30,6 +30,8 @@
 #define SHELLY_HAP_AID_BASE_LOCK 0x300
 #define SHELLY_HAP_AID_BASE_STATELESS_SWITCH 0x400
 #define SHELLY_HAP_AID_BASE_WINDOW_COVERING 0x500
+#define SHELLY_HAP_AID_BASE_MOTION_SENSOR 0x600
+#define SHELLY_HAP_AID_BASE_OCCUPANCY_SENSOR 0x700
 
 namespace shelly {
 namespace hap {
@@ -49,6 +51,7 @@ class Accessory {
 
   void SetCategory(HAPAccessoryCategory category);
 
+  void AddService(Service *svc);
   void AddService(std::unique_ptr<Service> svc);
   void AddHAPService(const HAPService *svc);
 

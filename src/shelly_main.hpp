@@ -32,23 +32,18 @@
 
 namespace shelly {
 
-extern std::vector<Component *> g_comps;
+extern std::vector<std::unique_ptr<Component>> g_comps;
 
 Input *FindInput(int id);
 Output *FindOutput(int id);
 PowerMeter *FindPM(int id);
 
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
-                     const struct mgos_config_ssw *ssw_cfg,
-                     std::vector<Component *> *comps,
+                     const struct mgos_config_in *in_cfg,
+                     std::vector<std::unique_ptr<Component>> *comps,
                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
                      HAPAccessoryServerRef *svr, bool to_pri_acc,
                      Output *led_out = nullptr);
-void CreateHAPStatelessSwitch(
-    int id, const struct mgos_config_ssw *ssw_cfg,
-    std::vector<Component *> *comps,
-    std::vector<std::unique_ptr<hap::Accessory>> *accs,
-    HAPAccessoryServerRef *svr);
 
 void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
                               bool cur_state);
@@ -71,7 +66,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp);
 
-void CreateComponents(std::vector<Component *> *comps,
+void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr);
 

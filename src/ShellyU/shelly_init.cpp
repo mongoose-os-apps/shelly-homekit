@@ -20,6 +20,7 @@
 #include "mgos_rpc.h"
 #include "mgos_sys_config.h"
 
+#include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_mock_temp_sensor.hpp"
 
@@ -42,21 +43,23 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  outputs->emplace_back(new OutputPin(1, 123, 1));
+  Input *in = new InputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true);
+  in->Init();
+  inputs->emplace_back(in);
+  outputs->emplace_back(new OutputPin(1, 34, 1));
   s_mock_sys_temp_sensor = new MockTempSensor(33);
   sys_temp->reset(s_mock_sys_temp_sensor);
 
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.TestSetSysTemp",
                      "{temp: %f}", SetSysTempHandler, nullptr);
-  (void) inputs;
   (void) pms;
 }
 
-void CreateComponents(std::vector<Component *> *comps,
+void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  CreateHAPSwitch(1, mgos_sys_config_get_sw1(), nullptr, comps, accs, svr,
-                  true /* to_pri_acc */);
+  CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
+                  comps, accs, svr, false /* to_pri_acc */);
 }
 
 }  // namespace shelly

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "shelly_hap_input.hpp"
 #include "shelly_hap_stateless_switch.hpp"
 #include "shelly_main.hpp"
 #include "shelly_noisy_input_pin.hpp"
@@ -46,12 +47,12 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   (void) pms;
 }
 
-void CreateComponents(std::vector<Component *> *comps,
+void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  CreateHAPStatelessSwitch(1, mgos_sys_config_get_ssw1(), comps, accs, svr);
-  CreateHAPStatelessSwitch(2, mgos_sys_config_get_ssw2(), comps, accs, svr);
-  CreateHAPStatelessSwitch(3, mgos_sys_config_get_ssw3(), comps, accs, svr);
+  hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
+  hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
+  hap::CreateHAPInput(3, mgos_sys_config_get_in3(), comps, accs, svr);
 }
 
 }  // namespace shelly

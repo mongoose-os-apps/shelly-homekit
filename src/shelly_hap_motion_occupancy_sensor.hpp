@@ -17,34 +17,28 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include "mgos_sys_config.h"
-#include "mgos_timers.h"
+#include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_chars.hpp"
 #include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
-#include "shelly_output.hpp"
-#include "shelly_pm.hpp"
 
 namespace shelly {
 namespace hap {
 
-// Common base for Switch, Outlet and Lock services.
-class StatelessSwitch : public Component, public Service {
+class MotionOccupancySensor : public Component, public Service {
  public:
   enum class InMode {
-    kMomentary = 0,
-    kToggleShort = 1,
-    kToggleShortLong = 2,
+    kLevel = 0,
+    kPulse = 1,
+    kMax,
   };
 
-  StatelessSwitch(int id, Input *in, struct mgos_config_in_ssw *cfg);
-  virtual ~StatelessSwitch();
+  MotionOccupancySensor(int id, Input *in, struct mgos_config_in_ms *cfg,
+                        bool occupancy);
+  virtual ~MotionOccupancySensor();
 
   // Component interface impl.
   Status Init() override;
@@ -56,19 +50,24 @@ class StatelessSwitch : public Component, public Service {
                    bool *restart_required) override;
 
  private:
+  HAPError MotionDetectedRead(HAPAccessoryServerRef *,
+                              const HAPBoolCharacteristicReadRequest *,
+                              bool *value);
   void InputEventHandler(Input::Event ev, bool state);
-
-  void RaiseEvent(uint8_t ev);
+  void SetMotionOccupancyDetected(bool motion_detected);
+  void AutoOffTimerCB();
 
   Input *const in_;
-  struct mgos_config_in_ssw *cfg_;
+  struct mgos_config_in_ms *cfg_;
+  const bool occupancy_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
 
-  uint8_t last_ev_ = 0;
+  bool motion_detected_ = false;
   double last_ev_ts_ = 0;
+  mgos::ScopedTimer auto_off_timer_;
 
-  StatelessSwitch(const StatelessSwitch &other) = delete;
+  MotionOccupancySensor(const MotionOccupancySensor &other) = delete;
 };
 
 }  // namespace hap

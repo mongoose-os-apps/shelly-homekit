@@ -42,9 +42,9 @@
 #include "HAPPlatformTCPStreamManager+Init.h"
 
 #include "shelly_debug.hpp"
+#include "shelly_hap_input.hpp"
 #include "shelly_hap_lock.hpp"
 #include "shelly_hap_outlet.hpp"
-#include "shelly_hap_stateless_switch.hpp"
 #include "shelly_hap_switch.hpp"
 #include "shelly_input.hpp"
 #include "shelly_input_pin.hpp"
@@ -142,7 +142,6 @@ HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request) {
   return kHAPError_None;
 }
 
-std::vector<Component *> g_comps;
 static std::vector<std::unique_ptr<Input>> s_inputs;
 static std::vector<std::unique_ptr<Output>> s_outputs;
 static std::vector<std::unique_ptr<PowerMeter>> s_pms;
@@ -150,6 +149,7 @@ static std::vector<std::unique_ptr<hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
 static bool s_failsafe_mode = false;
+std::vector<std::unique_ptr<Component>> g_comps;
 
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
@@ -215,8 +215,8 @@ void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
 }
 
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
-                     const struct mgos_config_ssw *ssw_cfg,
-                     std::vector<Component *> *comps,
+                     const struct mgos_config_in *in_cfg,
+                     std::vector<std::unique_ptr<Component>> *comps,
                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
                      HAPAccessoryServerRef *svr, bool to_pri_acc,
                      Output *led_out) {
@@ -255,15 +255,16 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     LOG(LL_ERROR, ("Error creating switch: %s", s.c_str()));
     return;
   }
-  comps->push_back(sw.get());
+  ShellySwitch *sw2 = sw.get();
+  comps->push_back(std::move(sw));
   hap::Accessory *pri_acc = accs->front().get();
   if (to_pri_acc) {
     // NB: this produces duplicate primary services on multi-switch devices in
     // legacy mode. This is necessary to ensure accessory configuration remains
     // exactly the same.
-    sw->set_primary(true);
+    sw2->set_primary(true);
     pri_acc->SetCategory(cat);
-    pri_acc->AddService(std::move(sw));
+    pri_acc->AddHAPService(sw2->GetHAPService());
     return;
   }
   if (!sw_hidden) {
@@ -271,37 +272,12 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
         new hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
                            sw_cfg->name, &AccessoryIdentifyCB, svr));
     acc->AddHAPService(&mgos_hap_accessory_information_service);
-    acc->AddService(std::move(sw));
+    acc->AddHAPService(sw2->GetHAPService());
     accs->push_back(std::move(acc));
-  } else {
-    // This one will not be exported so shove it into primary,
-    // purely for ownership.
-    pri_acc->AddService(std::move(sw));
   }
-  if (ssw_cfg != nullptr && sw_cfg->in_mode == 3) {
-    LOG(LL_INFO, ("Creating a stateless switch for input %d", id));
-    CreateHAPStatelessSwitch(id, ssw_cfg, comps, accs, svr);
+  if (sw_cfg->in_mode == 3) {
+    hap::CreateHAPInput(id, in_cfg, comps, accs, svr);
   }
-}
-
-void CreateHAPStatelessSwitch(
-    int id, const struct mgos_config_ssw *ssw_cfg,
-    std::vector<Component *> *comps,
-    std::vector<std::unique_ptr<hap::Accessory>> *accs,
-    HAPAccessoryServerRef *svr) {
-  std::unique_ptr<hap::StatelessSwitch> ssw(new hap::StatelessSwitch(
-      id, FindInput(id), (struct mgos_config_ssw *) ssw_cfg, 0));
-  if (ssw == nullptr || !ssw->Init().ok()) {
-    return;
-  }
-  comps->push_back(ssw.get());
-  std::unique_ptr<hap::Accessory> acc(
-      new hap::Accessory(SHELLY_HAP_AID_BASE_STATELESS_SWITCH + id,
-                         kHAPAccessoryCategory_BridgedAccessory, ssw_cfg->name,
-                         &AccessoryIdentifyCB, svr));
-  acc->AddHAPService(&mgos_hap_accessory_information_service);
-  acc->AddService(std::move(ssw));
-  accs->push_back(std::move(acc));
 }
 
 static void DisableLegacyHAPLayout() {
@@ -541,7 +517,7 @@ static void StatusTimerCB(void *arg) {
     HAPAccessoryServerEnumerateConnectedSessions(&s_server, CountHAPSessions,
                                                  &num_sessions);
     std::string status;
-    for (const Component *c : g_comps) {
+    for (const auto &c : g_comps) {
       if (!status.empty()) status.append("; ");
       status.append(mgos::SPrintf("%d.%d: ", (int) c->type(), c->id()));
       auto sts = c->GetInfo();
@@ -618,6 +594,22 @@ static bool shelly_cfg_migrate(void) {
     mgos_sys_config_set_shelly_cfg_version(3);
     changed = true;
   }
+  if (mgos_sys_config_get_shelly_cfg_version() == 3) {
+#ifdef MGOS_CONFIG_HAVE_SSW1
+    mgos_sys_config_set_in1_ssw_name(mgos_sys_config_get_ssw1_name());
+    mgos_sys_config_set_in1_ssw_in_mode(mgos_sys_config_get_ssw1_in_mode());
+#endif
+#ifdef MGOS_CONFIG_HAVE_SSW2
+    mgos_sys_config_set_in2_ssw_name(mgos_sys_config_get_ssw2_name());
+    mgos_sys_config_set_in2_ssw_in_mode(mgos_sys_config_get_ssw2_in_mode());
+#endif
+#ifdef MGOS_CONFIG_HAVE_SSW3
+    mgos_sys_config_set_in3_ssw_name(mgos_sys_config_get_ssw3_name());
+    mgos_sys_config_set_in3_ssw_in_mode(mgos_sys_config_get_ssw3_in_mode());
+#endif
+    mgos_sys_config_set_shelly_cfg_version(4);
+    changed = true;
+  }
   return changed;
 }
 
@@ -659,17 +651,17 @@ static void ButtonHandler(Input::Event ev, bool cur_state) {
     // Single press will toggle the switch, or cycle if there are two.
     case Input::Event::kSingle: {
       uint32_t n = 0, i = 0, state = 0;
-      for (Component *c : g_comps) {
+      for (auto &c : g_comps) {
         if (c->type() != Component::Type::kSwitch) continue;
-        const ShellySwitch *sw = static_cast<ShellySwitch *>(c);
+        const ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
         if (sw->GetState()) state |= (1 << n);
         n++;
       }
       if (n == 0) break;
       state++;
-      for (Component *c : g_comps) {
+      for (auto &c : g_comps) {
         if (c->type() != Component::Type::kSwitch) continue;
-        ShellySwitch *sw = static_cast<ShellySwitch *>(c);
+        ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
         bool new_state = (state & (1 << i));
         sw->SetState(new_state, "btn");
         i++;

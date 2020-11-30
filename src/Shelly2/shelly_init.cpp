@@ -40,7 +40,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   (void) pms;
 }
 
-void CreateComponents(std::vector<Component *> *comps,
+void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   // Garage door opener mode.
@@ -52,10 +52,10 @@ void CreateComponents(std::vector<Component *> *comps,
       return;
     }
     gdo->set_primary(true);
-    comps->push_back(gdo.get());
     hap::Accessory *pri_acc = (*accs)[0].get();
     pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
-    pri_acc->AddService(std::move(gdo));
+    pri_acc->AddService(gdo.get());
+    comps->emplace_back(std::move(gdo));
     return;
   }
   // Use legacy layout if upgraded from an older version (pre-2.1).
@@ -64,14 +64,14 @@ void CreateComponents(std::vector<Component *> *comps,
                     mgos_sys_config_get_sw1_in_mode() != 3 &&
                     mgos_sys_config_get_sw2_in_mode() != 3);
   if (!compat_20) {
-    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
+    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                     comps, accs, svr, false /* to_pri_acc */);
-    CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_ssw2(),
+    CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_in2(),
                     comps, accs, svr, false /* to_pri_acc */);
   } else {
-    CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_ssw2(),
+    CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_in2(),
                     comps, accs, svr, true /* to_pri_acc */);
-    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_ssw1(),
+    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                     comps, accs, svr, true /* to_pri_acc */);
     std::reverse(comps->begin(), comps->end());
   }

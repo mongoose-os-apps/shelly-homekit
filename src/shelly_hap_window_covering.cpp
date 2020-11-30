@@ -179,6 +179,10 @@ Component::Type WindowCovering::type() const {
   return Type::kWindowCovering;
 }
 
+std::string WindowCovering::name() const {
+  return cfg_->name;
+}
+
 StatusOr<std::string> WindowCovering::GetInfo() const {
   return mgos::SPrintf("c:%d mp:%.2f mt_ms:%d cp:%.2f tp:%.2f lemd:%d lhmd:%d",
                        cfg_->calibrated, cfg_->move_power, cfg_->move_time_ms,

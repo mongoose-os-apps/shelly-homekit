@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.6.1
+version: 2.7.0-alpha1
 platform: esp8266
 
 libs_version: latest
@@ -25,6 +25,13 @@ config_schema:
   - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
 
+  - ["shelly.name", "s", "", {"title": "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
+  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
+  - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
+  - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
+  - ["shelly.overheat_on", "i", 100, {"Overheat protection mode kicks in at or above this temperature"}]
+  - ["shelly.overheat_off", "i", 90, {"Overheat protection mode turns off when the temperature is back below this threshold"}]
+
   - ["sw", "o", {"Switch settings"}]
   - ["sw.name", "s", "", {"Name of the switch"}]
   - ["sw.enable", "b", true, {"Enable this switch in the accessory"}]
@@ -36,9 +43,16 @@ config_schema:
   - ["sw.auto_off", "b", false, {"Whether the switch should automatically turn OFF after turning ON"}]
   - ["sw.auto_off_delay", "d", 0, {"Delay for automatically turning OFF, in seconds"}]
 
-  - ["ssw", "o", {"Stateless Switch settings"}]
-  - ["ssw.name", "s", "", {"Name of the switch"}]
-  - ["ssw.in_mode", "i", 0, {"0 - Momentary; 1 - Toggle, single press event on change; 2 - Toggle, on = single press, off = double press"}]
+  - ["in", "o", {"Detached Input settings"}]
+  - ["in.svc_type", "i", 1, {"HAP service type, 0 = disabled, 1 = Stateless switch, 2 = Motion sensor, 3 = Occupancy sensor"}]
+  - ["in.inverted", "b", false, {"Invert input, set to true for normally closed input"}]
+  - ["in.ssw", "o", {"Stateless Switch settings"}]
+  - ["in.ssw.name", "s", "", {"Name of the switch"}]
+  - ["in.ssw.in_mode", "i", 0, {"0 - Momentary; 1 - Toggle, single press event on change; 2 - Toggle, on = single press, off = double press"}]
+  - ["in.ms", "o", {"Motion Sensor settings"}]
+  - ["in.ms.name", "s", "", {"Name of the sensor"}]
+  - ["in.ms.in_mode", "i", 0, {"0 - Level, 1 - Pulse"}]
+  - ["in.ms.idle_time", "i", 15, {"In pulse mode, go back to 'no motion' after no pulse received within this interval"}]
 
   - ["wc", "o", {"Roller shutter settings"}]
   - ["wc.name", "s", "Shutter 1", {"title": "Accessory name"}]
@@ -59,16 +73,11 @@ config_schema:
   - ["gdo.move_time_ms", "i", 30000, {"title": "Movement time, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {"title": "Output active time, ms"}]
 
-  - ["shelly.name", "s", "", {"title": "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
-  - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
-  - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
-  - ["shelly.overheat_on", "i", 100, {"Overheat protection mode kicks in at or above this temperature"}]
-  - ["shelly.overheat_off", "i", 90, {"Overheat protection mode turns off when the temperature is back below this threshold"}]
-
   # Deprecated settings, only kept to enable migration.
   - ["sw.persist_state", "b", false, {"Deprecated"}]  # Since cfg v1
-
+  - ["ssw", "o", {"Deprecated"}]
+  - ["ssw.name", "s", "", {"title": "Deprecated"}]
+  - ["ssw.in_mode", "i", 0, {"title": "Deprecated"}]
 
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
@@ -123,11 +132,15 @@ conds:
         - ["wifi.ap.ssid", "shelly1-??????"]
         - ["sw1", "sw", {"title": "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Input"]
+        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.ms.name", "Shelly MS1"]
         - ["gdo1", "gdo", {"title": "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Input"]
 
   - when: build_vars.MODEL == "Shelly1L"
     apply:
@@ -159,10 +172,18 @@ conds:
         - ["wifi.ap.ssid", "shelly1l-??????"]
         - ["sw1", "sw", {"title": "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.ms.name", "Shelly MS1"]
+        - ["in2", "in", {"title": "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.ms.name", "Shelly MS2"]
+        # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
         - ["ssw2", "ssw", {"title": "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
+
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
@@ -194,11 +215,105 @@ conds:
         - ["wifi.ap.ssid", "shelly1pm-??????"]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "Shelly SW"]
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Input"]
+        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.ms.name", "Shelly MS1"]
         - ["gdo1", "gdo", {"title": "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Input"]
+
+  - when: build_vars.MODEL == "Shelly2"
+    apply:
+      name: switch
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: esp8266-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x1000
+        MGOS_ROOT_FS_TYPE: SPIFFS
+        MGOS_MBEDTLS_ENABLE_ATCA: 0
+      cdefs:
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-21"'
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["device.id", "shellyswitch21-??????"]
+        - ["shelly.name", "shellyswitch21-??????"]
+        - ["wifi.ap.ssid", "shellyswitch21-??????"]
+        - ["sw1", "sw", {"title": "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.ms.name", "Shelly MS1"]
+        - ["sw2", "sw", {"title": "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["in2", "in", {"title": "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.ms.name", "Shelly MS2"]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Input 1"]
+        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2.name", "Input 2"]
+
+  - when: build_vars.MODEL == "Shelly25"
+    apply:
+      name: switch25
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mbedtls
+          variant: esp8266-noatca
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+        - origin: https://github.com/mongoose-os-libs/ade7953
+          version: master # Until 2.18 is out.
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x1000
+        MGOS_ROOT_FS_TYPE: SPIFFS
+        MGOS_MBEDTLS_ENABLE_ATCA: 0
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 2
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"2.5"'
+        STOCK_FW_MODEL: '"SHSW-25"'
+        MG_ENABLE_SSL: 0
+        SHELLY_HAVE_PM: 1
+      config_schema:
+        - ["device.id", "shellyswitch25-??????"]
+        - ["shelly.name", "shellyswitch25-??????"]
+        - ["wifi.ap.ssid", "shellyswitch25-??????"]
+        - ["i2c.enable", true]
+        - ["sw1", "sw", {"title": "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.ms.name", "Shelly MS1"]
+        - ["sw2", "sw", {"title": "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["in2", "in", {"title": "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.ms.name", "Shelly MS2"]
+        - ["wc1", "wc", {"title": "WC1 settings"}]
+        - ["wc1.name", "Window 1"]
+        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1.name", "Input 1"]
+        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2.name", "Input 2"]
 
   # Note this is also known as "ShellyPlug 2", as opposed to the original Plug
   # which was based on CC3200. However, that one is long gone and we can ignore it.
@@ -265,82 +380,6 @@ conds:
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
 
-  - when: build_vars.MODEL == "Shelly2"
-    apply:
-      name: switch
-      libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
-        - origin: https://github.com/mongoose-os-libs/mongoose
-          variant: esp8266-nossl
-      build_vars:
-        FLASH_SIZE: 2097152
-        FS_SIZE: 262144
-        BOOT_CONFIG_ADDR: 0x1000
-        MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
-      cdefs:
-        PRODUCT_HW_REV: '"1.0"'
-        STOCK_FW_MODEL: '"SHSW-21"'
-        MG_ENABLE_SSL: 0
-      config_schema:
-        - ["device.id", "shellyswitch21-??????"]
-        - ["shelly.name", "shellyswitch21-??????"]
-        - ["wifi.ap.ssid", "shellyswitch21-??????"]
-        - ["sw1", "sw", {"title": "SW1 settings"}]
-        - ["sw1.name", "Shelly SW1"]
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Input 1"]
-        - ["sw2", "sw", {"title": "SW2 settings"}]
-        - ["sw2.name", "Shelly SW2"]
-        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
-        - ["ssw2.name", "Input 2"]
-        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
-        - ["gdo1.name", "Garage Door"]
-
-  - when: build_vars.MODEL == "Shelly25"
-    apply:
-      name: switch25
-      libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
-        - origin: https://github.com/mongoose-os-libs/mongoose
-          variant: esp8266-nossl
-        - origin: https://github.com/mongoose-os-libs/ade7953
-          version: master # Until 2.18 is out.
-      build_vars:
-        FLASH_SIZE: 2097152
-        FS_SIZE: 262144
-        BOOT_CONFIG_ADDR: 0x1000
-        MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
-      cdefs:
-        LED_GPIO: 0
-        LED_ON: 0
-        BTN_GPIO: 2
-        BTN_DOWN: 0
-        PRODUCT_HW_REV: '"2.5"'
-        STOCK_FW_MODEL: '"SHSW-25"'
-        MG_ENABLE_SSL: 0
-        SHELLY_HAVE_PM: 1
-      config_schema:
-        - ["device.id", "shellyswitch25-??????"]
-        - ["shelly.name", "shellyswitch25-??????"]
-        - ["wifi.ap.ssid", "shellyswitch25-??????"]
-        - ["i2c.enable", true]
-        - ["sw1", "sw", {"title": "SW1 settings"}]
-        - ["sw1.name", "Shelly SW1"]
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
-        - ["ssw1.name", "Input 1"]
-        - ["sw2", "sw", {"title": "SW2 settings"}]
-        - ["sw2.name", "Shelly SW2"]
-        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
-        - ["ssw2.name", "Input 2"]
-        - ["wc1", "wc", {"title": "WC1 settings"}]
-        - ["wc1.name", "Window 1"]
-        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
-        - ["gdo1.name", "Garage Door"]
-
   - when: mos.platform != "ubuntu"
     apply:
       config_schema:
@@ -380,12 +419,23 @@ conds:
       config_schema:
         - ["device.id", "shellyix3-????????????"]
         - ["wifi.ap.ssid", "shellyix3-????????????"]
+        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1.ssw.name", "Input 1"]
+        - ["in1.ms.name", "Shelly MS1"]
+        - ["in2", "in", {"title": "Input 2 settings"}]
+        - ["in2.ssw.name", "Input 2"]
+        - ["in2.ms.name", "Shelly MS2"]
+        - ["in3", "in", {"title": "Input 3 settings"}]
+        - ["in3.ssw.name", "Input 3"]
+        - ["in3.ms.name", "Shelly MS3"]
+        # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
         - ["ssw2", "ssw", {"title": "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
         - ["ssw3", "ssw", {"title": "SSW3 settings"}]
         - ["ssw3.name", "Input 3"]
+
 
   - when: mos.platform == "ubuntu"
     apply:
@@ -405,6 +455,9 @@ conds:
         - ["http.document_root", "."]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "SW"]
-        - ["sw1.in_mode", -1]
+        - ["sw1.in_mode", 3]
+        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.ms.name", "Shelly MS1"]
 
 manifest_version: 2020-01-29

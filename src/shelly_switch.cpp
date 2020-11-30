@@ -49,6 +49,10 @@ Component::Type ShellySwitch::type() const {
   return Type::kSwitch;
 }
 
+std::string ShellySwitch::name() const {
+  return cfg_->name;
+}
+
 StatusOr<std::string> ShellySwitch::GetInfo() const {
   int in_st = -1;
   if (in_ != nullptr) in_st = in_->GetState();
@@ -114,7 +118,6 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
   }
   // Now copy over.
-  *restart_required = false;
   if (cfg_->name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
     *restart_required = true;
