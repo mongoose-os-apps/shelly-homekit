@@ -157,13 +157,17 @@ class Device():
       elif stock_fwcheck.status_code == 200:
         self.fw_type = "stock"
         self.device_url = f'http://{self.wifi_ip}/settings'
+    logger.trace(f"Device URL: {self.device_url}")
 
   def getDeviceInfo(self):
     info = None
     self.getDeviceURL()
     if self.device_url:
-      with urllib.request.urlopen(url=self.device_url, timeout=3) as fp:
-        info = json.load(fp)
+      try:
+        with urllib.request.urlopen(self.device_url) as fp:
+          info = json.load(fp)
+      except:
+        pass
     self.info = info
     return info
 
@@ -177,6 +181,8 @@ class Device():
 
   def getCurrentVersion(self): # used when flashing between formware versions.
     info = self.getDeviceInfo()
+    if not info:
+      return None
     if self.fw_type == 'homekit':
       version = info['version']
     elif self.fw_type == 'stock':
@@ -254,12 +260,15 @@ class HomeKitDevice(Device):
     super().__init__(host, wifi_ip, fw_type, device_url, info, variant, version)
 
   def getInfo(self):
+    if not self.info:
+      return False
     self.fw_type_str = 'HomeKit'
     self.fw_version = self.info['version']
     self.model = self.info['model'] if 'model' in self.info else self.shelly_model(self.info['app'])
     self.stock_model = self.info['stock_model'] if 'stock_model' in self.info else None
     self.device_id = self.info['device_id'] if 'device_id' in self.info else None
     self.colour_mode = self.info['colour_mode'] if 'colour_mode' in self.info else None
+    return True
 
   def UpdateToHK(self, release_info=None):
     logger.debug('Mode: HomeKit To HomeKit')
@@ -292,12 +301,15 @@ class StockDevice(Device):
     super().__init__(host, wifi_ip, fw_type, device_url, info, variant, version)
 
   def getInfo(self):
+    if not self.info:
+      return False
     self.fw_type_str = 'Stock'
     self.fw_version = self.parseStockVersion(self.info['fw'])  # current firmware version
     self.model = self.shelly_model(self.info['device']['type'])
     self.stock_model = self.info['device']['type']
     self.device_id = self.info['mqtt']['id'] if 'id' in self.info['mqtt'] else self.friendly_host
     self.colour_mode = self.info['mode'] if 'mode' in self.info else None
+    return True
 
   def UpdateToHK(self, release_info=None):
     logger.debug('Mode: Stock To HomeKit')
@@ -557,7 +569,9 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
       deviceinfo = HomeKitDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], variant, version)
     elif device['fw_type'] == 'stock':
       deviceinfo = StockDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], variant, version)
-    deviceinfo.getInfo()
+    if not deviceinfo.getInfo():
+      logger.warning(f"{RED}Failed to lookup local information of {device['host']}{NC}")
+      continue
 
     if flashmode == 'homekit' and deviceinfo.fw_type == 'stock':
       deviceinfo.UpdateToStock(stock_release_info)
@@ -625,7 +639,7 @@ if __name__ == '__main__':
     with urllib.request.urlopen("https://api.shelly.cloud/files/firmware") as fp:
       stock_release_info = json.load(fp)
   except:
-    logger.warning("Failed to lookup version information")
+    logger.warning(F"{RED}Failed to lookup online version information{NC}")
     sys.exit(1)
   try:
     with urllib.request.urlopen("https://rojer.me/files/shelly/update.json") as fp:
