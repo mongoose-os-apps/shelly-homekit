@@ -86,17 +86,25 @@ else:
   PURPLE = ''
   NC = ''
 
+def upgrade_pip():
+  if not arch.startswith('Win'):
+    pipe = subprocess.check_output(['pip3', 'install', '--upgrade', 'pip'])
+  else:
+    pipe = subprocess.check_output(['python.exe', '-m', 'pip', 'install', '--upgrade', 'pip'])
+
 try:
   import zeroconf
 except ImportError:
   logger.info("Installing zeroconf...")
-  pipe = subprocess.check_output(['pip3', 'install', 'zeroconf'])
+  upgrade_pip()
+  pipe = subprocess.check_output(['pip', 'install', 'zeroconf'])
   import zeroconf
 try:
   import requests
 except ImportError:
   logger.info("Installing requests...")
-  pipe = subprocess.check_output(['pip3', 'install', 'requests'])
+  upgrade_pip()
+  pipe = subprocess.check_output(['pip', 'install', 'requests'])
   import requests
 
 class MyListener:
