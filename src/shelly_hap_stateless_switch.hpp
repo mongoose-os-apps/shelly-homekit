@@ -20,13 +20,12 @@
 #include <memory>
 #include <vector>
 
+#include "mgos_hap.hpp"
 #include "mgos_sys_config.h"
 #include "mgos_timers.h"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_chars.hpp"
-#include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_pm.hpp"
@@ -35,7 +34,7 @@ namespace shelly {
 namespace hap {
 
 // Common base for Switch, Outlet and Lock services.
-class StatelessSwitch : public Component, public Service {
+class StatelessSwitch : public Component, public mgos::hap::Service {
  public:
   enum class InMode {
     kMomentary = 0,

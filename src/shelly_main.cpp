@@ -145,7 +145,7 @@ HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request) {
 static std::vector<std::unique_ptr<Input>> s_inputs;
 static std::vector<std::unique_ptr<Output>> s_outputs;
 static std::vector<std::unique_ptr<PowerMeter>> s_pms;
-static std::vector<std::unique_ptr<hap::Accessory>> s_accs;
+static std::vector<std::unique_ptr<mgos::hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
 static bool s_failsafe_mode = false;
@@ -217,7 +217,7 @@ void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_in *in_cfg,
                      std::vector<std::unique_ptr<Component>> *comps,
-                     std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                      HAPAccessoryServerRef *svr, bool to_pri_acc,
                      Output *led_out) {
   std::unique_ptr<ShellySwitch> sw;
@@ -257,7 +257,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
   }
   ShellySwitch *sw2 = sw.get();
   comps->push_back(std::move(sw));
-  hap::Accessory *pri_acc = accs->front().get();
+  mgos::hap::Accessory *pri_acc = accs->front().get();
   if (to_pri_acc) {
     // NB: this produces duplicate primary services on multi-switch devices in
     // legacy mode. This is necessary to ensure accessory configuration remains
@@ -268,9 +268,9 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     return;
   }
   if (!sw_hidden) {
-    std::unique_ptr<hap::Accessory> acc(
-        new hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
-                           sw_cfg->name, &AccessoryIdentifyCB, svr));
+    std::unique_ptr<mgos::hap::Accessory> acc(
+        new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
+                                 sw_cfg->name, &AccessoryIdentifyCB, svr));
     acc->AddHAPService(&mgos_hap_accessory_information_service);
     acc->AddHAPService(sw2->GetHAPService());
     accs->push_back(std::move(acc));
@@ -296,7 +296,7 @@ static bool StartService(bool quiet) {
   }
   if (s_accs.empty()) {
     LOG(LL_INFO, ("=== Creating accessories"));
-    std::unique_ptr<hap::Accessory> pri_acc(new hap::Accessory(
+    std::unique_ptr<mgos::hap::Accessory> pri_acc(new mgos::hap::Accessory(
         SHELLY_HAP_AID_PRIMARY, kHAPAccessoryCategory_Bridges,
         mgos_sys_config_get_shelly_name(), &AccessoryIdentifyCB, &s_server));
     pri_acc->AddHAPService(&mgos_hap_accessory_information_service);

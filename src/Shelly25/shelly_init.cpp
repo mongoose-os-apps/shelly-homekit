@@ -49,7 +49,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
-                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   // Roller-shutter mode.
   if (mgos_sys_config_get_shelly_mode() == 1) {
@@ -68,17 +68,17 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       case hap::WindowCovering::InMode::kSeparateMomentary:
       case hap::WindowCovering::InMode::kSeparateToggle: {
         // Single accessory with a single primary service.
-        hap::Accessory *pri_acc = (*accs)[0].get();
+        mgos::hap::Accessory *pri_acc = (*accs)[0].get();
         pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
         pri_acc->AddService(wc.get());
         break;
       }
       case hap::WindowCovering::InMode::kSingle:
       case hap::WindowCovering::InMode::kDetached: {
-        std::unique_ptr<hap::Accessory> acc(
-            new hap::Accessory(SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
-                               kHAPAccessoryCategory_BridgedAccessory,
-                               wc_cfg->name, &AccessoryIdentifyCB, svr));
+        std::unique_ptr<mgos::hap::Accessory> acc(
+            new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
+                                     kHAPAccessoryCategory_BridgedAccessory,
+                                     wc_cfg->name, &AccessoryIdentifyCB, svr));
         acc->AddHAPService(&mgos_hap_accessory_information_service);
         acc->AddService(wc.get());
         accs->push_back(std::move(acc));
@@ -105,7 +105,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       return;
     }
     gdo->set_primary(true);
-    hap::Accessory *pri_acc = (*accs)[0].get();
+    mgos::hap::Accessory *pri_acc = (*accs)[0].get();
     pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
     pri_acc->AddService(gdo.get());
     comps->emplace_back(std::move(gdo));

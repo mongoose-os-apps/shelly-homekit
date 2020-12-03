@@ -18,8 +18,7 @@
 #include "shelly_hap_switch.hpp"
 
 #include "mgos.hpp"
-
-#include "shelly_hap_chars.hpp"
+#include "mgos_hap_chars.hpp"
 
 namespace shelly {
 namespace hap {
@@ -45,7 +44,7 @@ Status Switch::Init() {
   // Name
   AddNameChar(iid++, cfg_->name);
   // On
-  auto *on_char = new BoolCharacteristic(
+  auto *on_char = new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_On,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
              bool *value) {

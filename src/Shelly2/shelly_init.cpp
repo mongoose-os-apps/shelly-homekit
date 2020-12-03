@@ -41,7 +41,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
-                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   // Garage door opener mode.
   if (mgos_sys_config_get_shelly_mode() == 2) {
@@ -52,7 +52,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       return;
     }
     gdo->set_primary(true);
-    hap::Accessory *pri_acc = (*accs)[0].get();
+    mgos::hap::Accessory *pri_acc = (*accs)[0].get();
     pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
     pri_acc->AddService(gdo.get());
     comps->emplace_back(std::move(gdo));

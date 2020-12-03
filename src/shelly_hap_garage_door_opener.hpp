@@ -20,13 +20,13 @@
 #include <memory>
 #include <vector>
 
+#include "mgos_hap_chars.hpp"
+#include "mgos_hap_service.hpp"
 #include "mgos_sys_config.h"
 #include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_chars.hpp"
-#include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 
@@ -34,7 +34,7 @@ namespace shelly {
 namespace hap {
 
 // Common base for Switch, Outlet and Lock services.
-class GarageDoorOpener : public Component, public Service {
+class GarageDoorOpener : public Component, public mgos::hap::Service {
  public:
   GarageDoorOpener(int id, Input *in_close, Input *in_open, Output *out_open,
                    Output *out_close, struct mgos_config_gdo *cfg);
@@ -77,9 +77,9 @@ class GarageDoorOpener : public Component, public Service {
 
   mgos::ScopedTimer state_timer_;
 
-  Characteristic *cur_state_char_ = nullptr;
-  Characteristic *tgt_state_char_ = nullptr;
-  Characteristic *obst_char_ = nullptr;
+  mgos::hap::Characteristic *cur_state_char_ = nullptr;
+  mgos::hap::Characteristic *tgt_state_char_ = nullptr;
+  mgos::hap::Characteristic *obst_char_ = nullptr;
 
   State cur_state_;
   State tgt_state_;

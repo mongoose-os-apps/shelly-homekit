@@ -20,13 +20,11 @@
 #include <memory>
 #include <vector>
 
-#include "HAP.h"
+#include "mgos_hap.hpp"
 #include "mgos_sys_config.h"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_accessory.hpp"
-#include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
 
 namespace shelly {
@@ -58,7 +56,7 @@ class ShellyInput : public Component {
                    bool *restart_required) override;
 
   uint16_t GetAIDBase() const;
-  Service *GetService() const;
+  mgos::hap::Service *GetService() const;
 
  private:
   Input *const in_;
@@ -66,14 +64,14 @@ class ShellyInput : public Component {
   ServiceType svc_type_;  // Service type at creation.
 
   std::unique_ptr<Component> c_;
-  Service *s_ = nullptr;
+  mgos::hap::Service *s_ = nullptr;
 
   ShellyInput(const ShellyInput &other) = delete;
 };
 
 void CreateHAPInput(int id, const struct mgos_config_in *cfg,
                     std::vector<std::unique_ptr<Component>> *comps,
-                    std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                     HAPAccessoryServerRef *svr);
 
 }  // namespace hap

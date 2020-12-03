@@ -34,7 +34,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
-                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), nullptr, comps, accs, svr,
                   true /* to_pri_acc */);

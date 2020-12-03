@@ -41,7 +41,7 @@ Status Outlet::Init() {
   // Name
   AddNameChar(iid++, cfg_->name);
   // On
-  auto *on_char = new BoolCharacteristic(
+  auto *on_char = new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_On,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
              bool *value) {
@@ -58,7 +58,7 @@ Status Outlet::Init() {
   state_notify_chars_.push_back(on_char);
   AddChar(on_char);
   // In Use
-  AddChar(new BoolCharacteristic(
+  AddChar(new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_OutletInUse,
       [](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
          bool *value) {

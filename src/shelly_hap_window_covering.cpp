@@ -75,7 +75,7 @@ Status WindowCovering::Init() {
   // Name
   AddNameChar(iid++, cfg_->name);
   // Target Position
-  tgt_pos_char_ = new UInt8Characteristic(
+  tgt_pos_char_ = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_TargetPosition, 0, 100, 1,
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
@@ -94,7 +94,7 @@ Status WindowCovering::Init() {
       kHAPCharacteristicDebugDescription_TargetPosition);
   AddChar(tgt_pos_char_);
   // Current Position
-  cur_pos_char_ = new UInt8Characteristic(
+  cur_pos_char_ = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_CurrentPosition, 0, 100, 1,
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
@@ -105,7 +105,7 @@ Status WindowCovering::Init() {
       kHAPCharacteristicDebugDescription_CurrentPosition);
   AddChar(cur_pos_char_);
   // Position State
-  pos_state_char_ = new UInt8Characteristic(
+  pos_state_char_ = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_PositionState, 0, 2, 1,
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
@@ -126,7 +126,7 @@ Status WindowCovering::Init() {
       kHAPCharacteristicDebugDescription_PositionState);
   AddChar(pos_state_char_);
   // Hold Position
-  AddChar(new BoolCharacteristic(
+  AddChar(new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_HoldPosition, nullptr /* read_handler */,
       false /* supports_notification */,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicWriteRequest *,
@@ -139,7 +139,7 @@ Status WindowCovering::Init() {
       },
       kHAPCharacteristicDebugDescription_HoldPosition));
   // Obstruction Detected
-  obst_char_ = new BoolCharacteristic(
+  obst_char_ = new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_ObstructionDetected,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
              bool *value) {

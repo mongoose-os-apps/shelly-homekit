@@ -20,8 +20,6 @@
 #include "mgos.hpp"
 #include "mgos_hap.h"
 
-#include "shelly_hap_accessory.hpp"
-#include "shelly_hap_chars.hpp"
 #include "shelly_hap_motion_occupancy_sensor.hpp"
 #include "shelly_hap_stateless_switch.hpp"
 #include "shelly_main.hpp"
@@ -29,7 +27,7 @@
 namespace shelly {
 namespace hap {
 
-class ShellyDisabledInput : public Component, public Service {
+class ShellyDisabledInput : public Component, public mgos::hap::Service {
  public:
   explicit ShellyDisabledInput(int id)
       : Component(id), Service(0, nullptr, nullptr) {
@@ -184,13 +182,13 @@ uint16_t ShellyInput::GetAIDBase() const {
   }
 }
 
-Service *ShellyInput::GetService() const {
+mgos::hap::Service *ShellyInput::GetService() const {
   return s_;
 }
 
 void CreateHAPInput(int id, const struct mgos_config_in *cfg,
                     std::vector<std::unique_ptr<Component>> *comps,
-                    std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                     HAPAccessoryServerRef *svr) {
   Input *in = FindInput(id);
   if (in == nullptr) return;
@@ -203,7 +201,7 @@ void CreateHAPInput(int id, const struct mgos_config_in *cfg,
     return;
   }
   if (sin->GetService() != nullptr) {
-    std::unique_ptr<hap::Accessory> acc(new hap::Accessory(
+    std::unique_ptr<mgos::hap::Accessory> acc(new mgos::hap::Accessory(
         sin->GetAIDBase() + id, kHAPAccessoryCategory_BridgedAccessory,
         sin->name(), &AccessoryIdentifyCB, svr));
     acc->AddHAPService(&mgos_hap_accessory_information_service);

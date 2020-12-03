@@ -17,18 +17,18 @@
 
 #pragma once
 
+#include "mgos_hap_service.hpp"
 #include "mgos_sys_config.h"
 #include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
 
 namespace shelly {
 namespace hap {
 
-class MotionOccupancySensor : public Component, public Service {
+class MotionOccupancySensor : public Component, public mgos::hap::Service {
  public:
   enum class InMode {
     kLevel = 0,

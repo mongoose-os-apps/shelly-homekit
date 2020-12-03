@@ -22,9 +22,9 @@
 
 #include "mgos_sys_config.h"
 
+#include "mgos_hap_accessory.hpp"
+#include "mgos_hap_service.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_accessory.hpp"
-#include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_pm.hpp"
@@ -41,7 +41,7 @@ PowerMeter *FindPM(int id);
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_in *in_cfg,
                      std::vector<std::unique_ptr<Component>> *comps,
-                     std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                      HAPAccessoryServerRef *svr, bool to_pri_acc,
                      Output *led_out = nullptr);
 
@@ -67,7 +67,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::unique_ptr<TempSensor> *sys_temp);
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
-                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr);
 
 }  // namespace shelly

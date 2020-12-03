@@ -20,13 +20,12 @@
 #include <memory>
 #include <vector>
 
+#include "mgos_hap.hpp"
 #include "mgos_sys_config.h"
 #include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_chars.hpp"
-#include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_pm.hpp"
@@ -35,7 +34,7 @@ namespace shelly {
 namespace hap {
 
 // Common base for Switch, Outlet and Lock services.
-class WindowCovering : public Component, public Service {
+class WindowCovering : public Component, public mgos::hap::Service {
  public:
   enum class InMode {
     kSeparateMomentary = 0,
@@ -121,10 +120,10 @@ class WindowCovering : public Component, public Service {
   Input::HandlerID in_close_handler_ = Input::kInvalidHandlerID;
   mgos::ScopedTimer state_timer_;
 
-  Characteristic *cur_pos_char_ = nullptr;
-  Characteristic *tgt_pos_char_ = nullptr;
-  Characteristic *pos_state_char_ = nullptr;
-  Characteristic *obst_char_ = nullptr;
+  mgos::hap::Characteristic *cur_pos_char_ = nullptr;
+  mgos::hap::Characteristic *tgt_pos_char_ = nullptr;
+  mgos::hap::Characteristic *pos_state_char_ = nullptr;
+  mgos::hap::Characteristic *obst_char_ = nullptr;
 
   float cur_pos_ = kNotSet;
   float tgt_pos_ = kNotSet;

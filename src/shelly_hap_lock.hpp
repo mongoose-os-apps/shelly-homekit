@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "shelly_hap_chars.hpp"
+#include "mgos_hap_chars.hpp"
 #include "shelly_switch.hpp"
 
 namespace shelly {

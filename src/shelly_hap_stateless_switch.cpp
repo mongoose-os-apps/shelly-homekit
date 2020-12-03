@@ -18,9 +18,7 @@
 #include "shelly_hap_stateless_switch.hpp"
 
 #include "mgos.hpp"
-
-#include "shelly_hap_accessory.hpp"
-#include "shelly_hap_chars.hpp"
+#include "mgos_hap.hpp"
 
 namespace shelly {
 namespace hap {
@@ -58,7 +56,7 @@ Status StatelessSwitch::Init() {
   // Name
   AddNameChar(iid++, cfg_->name);
   // Programmable Switch Event
-  AddChar(new UInt8Characteristic(
+  AddChar(new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_ProgrammableSwitchEvent, 0, 2, 1,
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {

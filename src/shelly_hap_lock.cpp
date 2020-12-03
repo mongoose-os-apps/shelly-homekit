@@ -17,7 +17,7 @@
 
 #include "shelly_hap_lock.hpp"
 
-#include "shelly_hap_accessory.hpp"
+#include "mgos_hap_accessory.hpp"
 
 namespace shelly {
 namespace hap {
@@ -42,7 +42,7 @@ Status Lock::Init() {
   // Name
   AddNameChar(iid++, cfg_->name);
   // Current State
-  auto *cur_state_char = new UInt8Characteristic(
+  auto *cur_state_char = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_LockCurrentState, 0, 3, 1,
       std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
       true /* supports_notification */, nullptr /* write_handler */,
@@ -50,7 +50,7 @@ Status Lock::Init() {
   state_notify_chars_.push_back(cur_state_char);
   AddChar(cur_state_char);
   // Target State
-  auto *tgt_state_char = new UInt8Characteristic(
+  auto *tgt_state_char = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_LockTargetState, 0, 3, 1,
       std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
       true /* supports_notification */,

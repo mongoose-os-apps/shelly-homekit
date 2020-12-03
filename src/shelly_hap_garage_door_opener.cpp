@@ -59,7 +59,7 @@ Status GarageDoorOpener::Init() {
   // Name
   AddNameChar(iid++, cfg_->name);
   // Current Door State
-  cur_state_char_ = new UInt8Characteristic(
+  cur_state_char_ = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_CurrentDoorState, 0, 4, 1,
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
@@ -71,7 +71,7 @@ Status GarageDoorOpener::Init() {
       kHAPCharacteristicDebugDescription_CurrentDoorState);
   AddChar(cur_state_char_);
   // Target Door State
-  tgt_state_char_ = new UInt8Characteristic(
+  tgt_state_char_ = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_TargetDoorState, 0, 1, 1,
       [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
              uint8_t *value) {
@@ -84,7 +84,7 @@ Status GarageDoorOpener::Init() {
       kHAPCharacteristicDebugDescription_CurrentPosition);
   AddChar(tgt_state_char_);
   // Obstruction Detected
-  obst_char_ = new BoolCharacteristic(
+  obst_char_ = new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_ObstructionDetected,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
              bool *value) {

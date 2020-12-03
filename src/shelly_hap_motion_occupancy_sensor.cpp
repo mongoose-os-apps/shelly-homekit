@@ -18,9 +18,7 @@
 #include "shelly_hap_motion_occupancy_sensor.hpp"
 
 #include "mgos.hpp"
-
-#include "shelly_hap_accessory.hpp"
-#include "shelly_hap_chars.hpp"
+#include "mgos_hap.hpp"
 
 namespace shelly {
 namespace hap {
@@ -64,13 +62,13 @@ Status MotionOccupancySensor::Init() {
   AddNameChar(iid++, cfg_->name);
   // Motion or Occupancy Detected
   if (occupancy_) {
-    AddChar(new BoolCharacteristic(
+    AddChar(new mgos::hap::BoolCharacteristic(
         iid++, &kHAPCharacteristicType_OccupancyDetected,
         std::bind(&MotionOccupancySensor::MotionDetectedRead, this, _1, _2, _3),
         true /* supports_notification */, nullptr /* write_handler */,
         kHAPCharacteristicDebugDescription_OccupancyDetected));
   } else {
-    AddChar(new BoolCharacteristic(
+    AddChar(new mgos::hap::BoolCharacteristic(
         iid++, &kHAPCharacteristicType_MotionDetected,
         std::bind(&MotionOccupancySensor::MotionDetectedRead, this, _1, _2, _3),
         true /* supports_notification */, nullptr /* write_handler */,

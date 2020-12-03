@@ -23,10 +23,10 @@
 #include "mgos_sys_config.h"
 #include "mgos_timers.hpp"
 
+#include "mgos_hap_chars.hpp"
+#include "mgos_hap_service.hpp"
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_hap_chars.hpp"
-#include "shelly_hap_service.hpp"
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_pm.hpp"
@@ -34,7 +34,7 @@
 namespace shelly {
 
 // Common base for Switch, Outlet and Lock services.
-class ShellySwitch : public Component, public hap::Service {
+class ShellySwitch : public Component, public mgos::hap::Service {
  public:
   enum class InMode {
     kAbsent = -1,
@@ -84,7 +84,7 @@ class ShellySwitch : public Component, public hap::Service {
   struct mgos_config_sw *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
-  std::vector<hap::Characteristic *> state_notify_chars_;
+  std::vector<mgos::hap::Characteristic *> state_notify_chars_;
 
   mgos::ScopedTimer auto_off_timer_;
   bool dirty_ = false;

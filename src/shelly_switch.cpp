@@ -18,12 +18,8 @@
 #include "shelly_switch.hpp"
 
 #include "mgos.hpp"
-
-#include "shelly_hap_accessory.hpp"
-#include "shelly_hap_chars.hpp"
-
-#define SHELLY_HAP_IID_BASE_SWITCH 0x100
-#define SHELLY_HAP_IID_STEP_SWITCH 4
+#include "mgos_hap_accessory.hpp"
+#include "mgos_hap_chars.hpp"
 
 namespace shelly {
 

@@ -48,7 +48,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
-                      std::vector<std::unique_ptr<hap::Accessory>> *accs,
+                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
   hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
