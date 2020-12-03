@@ -43,10 +43,10 @@ class NTCTempSensor : public TempSensor {
   const float vin_, rd_;
 };
 
-class TempSensorSDNT1608X103F3450 : public NTCTempSensor {
+class TempSensorSDNT1608X103F3950 : public NTCTempSensor {
  public:
-  TempSensorSDNT1608X103F3450(int adc_channel, float vin, float rd);
-  virtual ~TempSensorSDNT1608X103F3450();
+  TempSensorSDNT1608X103F3950(int adc_channel, float vin, float rd);
+  virtual ~TempSensorSDNT1608X103F3950();
 
  protected:
   virtual const CurveDataPoint *GetCurve() override;

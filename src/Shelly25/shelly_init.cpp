@@ -44,7 +44,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in2->Init();
   inputs->emplace_back(in2);
   PowerMeterInit(pms);
-  sys_temp->reset(new TempSensorSDNT1608X103F3450(0, 3.3f, 33000.0f));
+  sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
 }
 
 void CreateComponents(std::vector<Component *> *comps,

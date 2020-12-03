@@ -29,7 +29,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 15, 1));
   s_led_out = new OutputPin(99, 0, 0);  // Red LED.
-  sys_temp->reset(new TempSensorSDNT1608X103F3450(0, 3.3f, 33000.0f));
+  sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
   (void) pms;
 }
 

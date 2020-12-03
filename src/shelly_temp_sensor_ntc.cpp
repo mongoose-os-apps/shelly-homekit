@@ -66,53 +66,49 @@ float NTCTempSensor::Interpolate(float rt) {
   return t;
 }
 
-TempSensorSDNT1608X103F3450::TempSensorSDNT1608X103F3450(int adc_channel,
+TempSensorSDNT1608X103F3950::TempSensorSDNT1608X103F3950(int adc_channel,
                                                          float vin, float rd)
     : NTCTempSensor(adc_channel, vin, rd) {
 }
 
-TempSensorSDNT1608X103F3450 ::~TempSensorSDNT1608X103F3450() {
+TempSensorSDNT1608X103F3950 ::~TempSensorSDNT1608X103F3950() {
 }
 
-const NTCTempSensor::CurveDataPoint *TempSensorSDNT1608X103F3450::GetCurve() {
+const NTCTempSensor::CurveDataPoint *TempSensorSDNT1608X103F3950::GetCurve() {
   // clang-format off
-  static const CurveDataPoint s_SDNT1608X103F3450_curve[] = {
-      {200000, -39},
-      {150000, -33},
-      {100000, -26},
-      {90000, -25},
-      {80000, -22},
-      {70000, -19},
-      {60000, -16},
-      {55000, -14},
-      {50000, -13},
-      {45000, -10},
-      {40000, -8},
-      {35000, -5},
-      {30000, -2},
-      {25000, 2},
-      {20000, 8},
-      {15000, 13},
-      {10000, 25},
-      {9000, 27},
-      {8000, 31},
-      {7000, 34},
-      {6000, 38.5},
-      {5000, 44.5},
-      {4500, 46.5},
-      {4000, 51.5},
-      {3500, 54},
-      {3000, 59},
-      {2500, 64},
-      {2000, 72.5},
-      {1500, 82},
-      {1000, 98},
-      {900, 103},
-      {800, 108},
+  static const CurveDataPoint s_SDNT1608X103F3950_curve[] = {
+      {300000, -36.5},
+      {200000, -31.0},
+      {100000, -19.5},
+      {90000, -18.0},
+      {80000, -16.0},
+      {70000, -14.0},
+      {60000, -11.0},
+      {50000, -7.5},
+      {40000, -3.5},
+      {30000, 2.0},
+      {20000, 10.5},
+      {10000, 25.0},
+      {9000, 27.5},
+      {8000, 30.0},
+      {7000, 33.5},
+      {6000, 37.0},
+      {5000, 41.5},
+      {4000, 46.5},
+      {3000, 55.0},
+      {2000, 66.0},
+      {1000, 87.0},
+      {900, 90.0},
+      {800, 94.0},
+      {700, 99.0},
+      {600, 104.0},
+      {500, 111.0},
+      {400, 114.5},
+      {340, 120.0},
       {0, 0},
   };
   // clang-format on
-  return s_SDNT1608X103F3450_curve;
+  return s_SDNT1608X103F3950_curve;
 }
 
 }  // namespace shelly
