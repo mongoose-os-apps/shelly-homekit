@@ -420,12 +420,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   logger.debug(f"stock_model: {stock_model}")
   logger.debug(f"colour_mode: {colour_mode}")
   logger.debug(f"action: {action}")
-  logger.debug(f"dry_run: {dry_run}")
-  logger.debug(f"silent_run: {silent_run}")
   logger.debug(f"flash mode: {mode}")
-  logger.debug(f"homekit mode: {hap_code}")
-  logger.debug(f"exclude: {exclude}")
-  logger.debug(f"version: {version}")
   logger.debug(f"requires_upgrade: {requires_upgrade}\n")
 
   if dlurl:
@@ -438,6 +433,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
     latest_fw_label = flash_fw_version
 
   logger.info(f"{WHITE}Host: {NC}{host}")
+  logger.info(f"{WHITE}Device ID: {NC}{device}")
   logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
   logger.info(f"{WHITE}Model: {NC}{model}")
   logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
@@ -509,16 +505,6 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
 
 def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug(f"\n{WHITE}device_scan{NC}")
-  logger.debug(f"devices: {hosts}")
-  logger.debug(f"action: {action}")
-  logger.debug(f"do_all: {do_all}")
-  logger.debug(f"dry_run: {dry_run}")
-  logger.debug(f"silent_run: {silent_run}")
-  logger.debug(f"mode: {mode}")
-  logger.debug(f"code: {hap_code}")
-  logger.debug(f"exclude: {exclude}")
-  logger.debug(f"version: {version}")
-  logger.debug(f"variant: {variant}")
   requires_upgrade = False
 
   if not do_all:
@@ -603,8 +589,10 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
   elif args.verbose and '1' in args.verbose:
     logger.setLevel(logging.TRACE)
+
   logger.debug(f"{WHITE}app{NC}")
   logger.debug(f"{PURPLE}OS: {arch}{NC}")
+  logger.debug(f"manual_hosts: {args.hosts}")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
   logger.debug(f"do_all: {args.do_all}")
@@ -615,7 +603,6 @@ if __name__ == '__main__':
   logger.debug(f"exclude: {args.exclude}")
   logger.debug(f"variant: {args.variant}")
   logger.debug(f"verbose: {args.verbose}")
-  logger.debug(f"hosts: {args.hosts}")
 
   if not args.hosts and not args.do_all:
     logger.info("Requires a hostname or {-a|--all}.")
