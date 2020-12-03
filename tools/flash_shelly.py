@@ -441,7 +441,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   else:
     latest_fw_label = flash_fw_version
 
-  logger.info(f"{WHITE}Host: {NC}{host}")
+  logger.info(f"{WHITE}Host: {NC}http://{host}")
   logger.info(f"{WHITE}Device ID: {NC}{device}")
   logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
   logger.info(f"{WHITE}Model: {NC}{model}")
