@@ -87,8 +87,9 @@ else:
   NC = ''
 
 def upgrade_pip():
+  logger.info("Updating pip...")
   if not arch.startswith('Win'):
-    pipe = subprocess.check_output(['pip3', 'install', '--upgrade', 'pip'])
+    pipe = subprocess.check_output(['python3', '-m', 'pip', 'install', '--upgrade', 'pip'])
   else:
     pipe = subprocess.check_output(['python.exe', '-m', 'pip', 'install', '--upgrade', 'pip'])
 
