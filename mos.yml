@@ -44,7 +44,7 @@ config_schema:
   - ["sw.auto_off_delay", "d", 0, {"Delay for automatically turning OFF, in seconds"}]
 
   - ["in", "o", {"Detached Input settings"}]
-  - ["in.svc_type", "i", 1, {"HAP service type, 0 = disabled, 1 = Stateless switch, 2 = Motion sensor, 3 = Occupancy sensor"}]
+  - ["in.type", "i", 3, {"HAP service type, 3 - Stateless switch, 7 - Motion sensor, 8 - Occupancy sensor, 6 - Disabled"}]
   - ["in.inverted", "b", false, {"Invert input, set to true for normally closed input"}]
   - ["in.ssw", "o", {"Stateless Switch settings"}]
   - ["in.ssw.name", "s", "", {"Name of the switch"}]

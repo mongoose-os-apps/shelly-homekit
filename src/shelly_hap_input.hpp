@@ -35,14 +35,6 @@ namespace hap {
 // and forwards API calls to it.
 class ShellyInput : public Component {
  public:
-  enum class ServiceType {
-    kDisabled = 0,
-    kStatelessSwitch = 1,
-    kMotionSensor = 2,
-    kOccupancySensor = 3,
-    kMax,
-  };
-
   ShellyInput(int id, Input *in, struct mgos_config_in *cfg);
   virtual ~ShellyInput();
 
@@ -59,9 +51,11 @@ class ShellyInput : public Component {
   mgos::hap::Service *GetService() const;
 
  private:
+  static bool IsValidType(int type);
+
   Input *const in_;
   struct mgos_config_in *cfg_;
-  ServiceType svc_type_;  // Service type at creation.
+  Type initial_type_;  // Type at creation.
 
   std::unique_ptr<Component> c_;
   mgos::hap::Service *s_ = nullptr;

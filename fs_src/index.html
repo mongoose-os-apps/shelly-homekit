@@ -453,11 +453,11 @@ input:checked + .slider:before {
     <div class="">
       <div class="form-control">
         <label>HAP Type:</label>
-        <select id="svc_type">
-          <option id="svc_type_0" value="0">Disabled</option>
-          <option id="svc_type_1" value="1">Stateless Input</option>
-          <option id="svc_type_2" value="2">Motion Sensor</option>
-          <option id="svc_type_3" value="3">Occupancy Sensor</option>
+        <select id="type">
+          <option id="type_6" value="6">Disabled</option>
+          <option id="type_3" value="3">Stateless Switch</option>
+          <option id="type_7" value="7">Motion Sensor</option>
+          <option id="type_8" value="8">Occupancy Sensor</option>
         </select>
       </div>
       <div class="form-control">
@@ -500,11 +500,11 @@ input:checked + .slider:before {
     <div class="">
       <div class="form-control">
         <label>HAP Type:</label>
-        <select id="svc_type">
-          <option id="svc_type_0" value="0">Disabled</option>
-          <option id="svc_type_1" value="1">Stateless Input</option>
-          <option id="svc_type_2" value="2">Motion Sensor</option>
-          <option id="svc_type_3" value="3">Occupancy Sensor</option>
+        <select id="type">
+          <option id="type_6" value="6">Disabled</option>
+          <option id="type_3" value="3">Stateless Switch</option>
+          <option id="type_7" value="7">Motion Sensor</option>
+          <option id="type_8" value="8">Occupancy Sensor</option>
         </select>
       </div>
       <div class="form-control">
@@ -524,11 +524,11 @@ input:checked + .slider:before {
     <div class="">
       <div class="form-control">
         <label>HAP Type:</label>
-        <select id="svc_type">
-          <option id="svc_type_0" value="0">Disabled</option>
-          <option id="svc_type_1" value="1">Stateless Input</option>
-          <option id="svc_type_2" value="2">Motion Sensor</option>
-          <option id="svc_type_3" value="3">Occupancy Sensor</option>
+        <select id="type">
+          <option id="type_6" value="6">Disabled</option>
+          <option id="type_3" value="3">Stateless Switch</option>
+          <option id="type_7" value="7">Motion Sensor</option>
+          <option id="type_8" value="8">Occupancy Sensor</option>
         </select>
       </div>
       <div class="form-control">
@@ -935,7 +935,7 @@ function sswSetConfig(c) {
   }
   var cfg = {
     name: name,
-    svc_type: parseInt(el(c, "svc_type").value),
+    type: parseInt(el(c, "type").value),
     inverted: el(c, "inverted").checked,
     in_mode: parseInt(el(c, "in_mode").value),
   };
@@ -944,7 +944,7 @@ function sswSetConfig(c) {
 
 function diSetConfig(c) {
   var cfg = {
-    svc_type: parseInt(el(c, "svc_type").value),
+    type: parseInt(el(c, "type").value),
   };
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
@@ -957,7 +957,7 @@ function mosSetConfig(c) {
   }
   var cfg = {
     name: name,
-    svc_type: parseInt(el(c, "svc_type").value),
+    type: parseInt(el(c, "type").value),
     inverted: el(c, "inverted").checked,
     in_mode: parseInt(el(c, "in_mode").value),
     idle_time: parseInt(el(c, "idle_time").value),
@@ -1137,7 +1137,7 @@ function updateComponent(cd) {
       el(c, "head").innerText = headText;
       el(c, "name").value = cd.name;
       el(c, "in_mode_" + cd.in_mode).selected = true;
-      el(c, "svc_type_" + cd.svc_type).selected = true;
+      el(c, "type_" + cd.type).selected = true;
       el(c, "inverted").checked = cd.inverted;
       var lastEvText = "n/a";
       if (cd.last_ev_age > 0) {
@@ -1206,7 +1206,7 @@ function updateComponent(cd) {
     case 6: // Disabled Input
       var headText = "Input " + cd.id;
       el(c, "head").innerText = headText;
-      el(c, "svc_type_" + cd.svc_type).selected = true;
+      el(c, "type_" + cd.type).selected = true;
       break;
     case 7: // Motion Sensor
     case 8: // Occupancy Sensor
@@ -1214,12 +1214,12 @@ function updateComponent(cd) {
       if (cd.name) headText += " (" + cd.name + ")";
       el(c, "head").innerText = headText;
       el(c, "name").value = cd.name;
-      el(c, "svc_type_" + cd.svc_type).selected = true;
+      el(c, "type_" + cd.type).selected = true;
       el(c, "inverted").checked = cd.inverted;
       el(c, "in_mode_" + cd.in_mode).selected = true;
       el(c, "idle_time").value = cd.idle_time;
       el(c, "idle_time_container").style.display = (cd.in_mode == 0 ? "none" : "block");
-      var what = (cd.type == 6 ? "motion" : "occupancy");
+      var what = (cd.type == 7 ? "motion" : "occupancy");
       var statusText = (cd.state ? what + " detected" : "no " + what + " detected");
       if (cd.last_ev_age > 0) {
         statusText += "; last " + secondsToDateString(cd.last_ev_age) + " ago";
