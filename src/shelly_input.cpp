@@ -69,7 +69,7 @@ void Input::RemoveHandler(HandlerID hi) {
 void Input::CallHandlers(Event ev, bool state) {
   LOG(LL_INFO, ("Input %d: %s (state %d)", id(), EventName(ev), state));
   for (auto &h : handlers_) {
-    h(ev, state);
+    if (h != nullptr) h(ev, state);
   }
 }
 
