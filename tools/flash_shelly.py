@@ -258,7 +258,7 @@ class HomeKitDevice(Device):
     self.fw_version = self.info['version']
     self.model = self.info['model'] if 'model' in self.info else self.shelly_model(self.info['app'])
     self.stock_model = self.info['stock_model'] if 'stock_model' in self.info else None
-    self.device_id = self.info['device_id'] if 'device_id' in self.info else self.info['id']
+    self.device_id = self.info['device_id'] if 'device_id' in self.info else None
     self.colour_mode = self.info['colour_mode'] if 'colour_mode' in self.info else None
 
   def UpdateToHK(self, release_info=None):
@@ -296,7 +296,7 @@ class StockDevice(Device):
     self.fw_version = self.parseStockVersion(self.info['fw'])  # current firmware version
     self.model = self.shelly_model(self.info['device']['type'])
     self.stock_model = self.info['device']['type']
-    self.device_id = self.info['device_id'] if 'device_id' in self.info else self.friendly_host
+    self.device_id = self.info['mqtt']['id'] if 'id' in self.info['mqtt'] else self.friendly_host
     self.colour_mode = self.info['mode'] if 'mode' in self.info else None
 
   def UpdateToHK(self, release_info=None):
