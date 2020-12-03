@@ -347,16 +347,16 @@ def isNewer(v1, v2):
   else:
     return False
 
-def write_hap_code(wifi_ip, hap_code):
+def write_hap_setup_code(wifi_ip, hap_setup_code):
   logger.info("Configuring HomeKit setup code...")
-  value={'code': hap_code}
+  value={'code': hap_setup_code}
   logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/HAP.Setup', json={value}")
-  response = requests.post(url=f'http://{wifi_ip}/rpc/HAP.Setup', json={'code': hap_code})
+  response = requests.post(url=f'http://{wifi_ip}/rpc/HAP.Setup', json={'code': hap_setup_code})
   logger.debug(response.text)
   if response.text.startswith('null'):
     logger.info(f"Done.")
 
-def write_flash(device_info, hap_code):
+def write_flash(device_info, hap_setup_code):
   logger.debug(f"\n{WHITE}write_flash{NC}")
   flashed = False
   device_info.flashFirmware()
@@ -376,8 +376,8 @@ def write_flash(device_info, hap_code):
     time.sleep(2)
   if onlinecheck == device_info.flash_fw_version:
     logger.info(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
-    if hap_code:
-      write_hap_code(device_info.wifi_ip, hap_code)
+    if hap_setup_code:
+      write_hap_setup_code(device_info.wifi_ip, hap_setup_code)
   else:
     if device_info.stock_model == 'SHRGBW2':
       logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
@@ -394,7 +394,7 @@ def write_flash(device_info, hap_code):
       logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     logger.debug("Current: %s" % onlinecheck)
 
-def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, hap_code, requires_upgrade):
+def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, hap_setup_code, requires_upgrade):
   logger.debug(f"\n{WHITE}parse_info{NC}")
   logger.trace(f"device_info: {device_info}")
 
@@ -503,11 +503,11 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
     elif perform_flash == True and dry_run == True:
       logger.info(f"{message} {keyword}...")
     if flash == True:
-      write_flash(device_info, hap_code)
+      write_flash(device_info, hap_setup_code)
   logger.info(" ")
 
 
-def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, hap_code):
+def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug(f"\n{WHITE}device_scan{NC}")
   logger.debug(f"devices: {hosts}")
   logger.debug(f"action: {action}")
@@ -580,7 +580,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
       logger.info(f"Version {deviceinfo.info['version']} is to old for this script,")
       logger.info(f"please update via the device webUI.\n")
       continue
-    parse_info(deviceinfo, action, dry_run, silent_run, flashmode, exclude, version, hap_code, requires_upgrade)
+    parse_info(deviceinfo, action, dry_run, silent_run, flashmode, exclude, version, hap_setup_code, requires_upgrade)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
@@ -591,14 +591,14 @@ if __name__ == '__main__':
   parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', default=False, help="Do a dummy run through.")
   parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=False, help="Do not ask any confirmation to perform the flash.")
   parser.add_argument('-V', '--version',type=str, action="store", dest="version", default=False, help="Force a particular version.")
-  parser.add_argument('--hap_setup_code', action="store", dest="hap_code", default=False, help="Configure HomeKit setup code, after flashing.")
+  parser.add_argument('-c', '--hap-setup-code', action="store", dest="hap_setup_code", default=False, help="Configure HomeKit setup code, after flashing.")
   parser.add_argument('--variant', action="store", dest="variant", default=False, help="Prerelease variant name.")
   parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1'], help="Enable verbose logging level.")
   parser.add_argument('hosts', type=str, nargs='*')
   args = parser.parse_args()
   action = 'list' if args.list else 'flash'
   args.mode = 'stock' if args.mode == 'revert' else args.mode
-
+  args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if '-' not in args.hap_setup_code else args.hap_setup_code
   if args.verbose and '0' in args.verbose:
     logger.setLevel(logging.DEBUG)
   elif args.verbose and '1' in args.verbose:
@@ -610,7 +610,7 @@ if __name__ == '__main__':
   logger.debug(f"do_all: {args.do_all}")
   logger.debug(f"dry_run: {args.dry_run}")
   logger.debug(f"silent_run: {args.silent_run}")
-  logger.debug(f"code: {args.hap_code}")
+  logger.debug(f"hap_setup_code: {args.hap_setup_code}")
   logger.debug(f"version: {args.version}")
   logger.debug(f"exclude: {args.exclude}")
   logger.debug(f"variant: {args.variant}")
@@ -651,4 +651,4 @@ if __name__ == '__main__':
     if not variant_check:
       logger.info(f"{WHITE}Firmware variant {args.variant} not found.{NC}")
       sys.exit(3)
-  device_scan(args.hosts, action, args.do_all, args.dry_run, args.silent_run, args.mode, args.exclude, args.version, args.variant, args.hap_code)
+  device_scan(args.hosts, action, args.do_all, args.dry_run, args.silent_run, args.mode, args.exclude, args.version, args.variant, args.hap_setup_code)
