@@ -584,7 +584,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
   action = 'list' if args.list else 'flash'
   args.mode = 'stock' if args.mode == 'revert' else args.mode
-  args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if '-' not in args.hap_setup_code else args.hap_setup_code
+  args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
   if args.verbose and '0' in args.verbose:
     logger.setLevel(logging.DEBUG)
   elif args.verbose and '1' in args.verbose:
