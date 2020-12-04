@@ -165,16 +165,17 @@ void MotionOccupancySensor::InputEventHandler(Input::Event ev, bool state) {
 }
 
 void MotionOccupancySensor::SetMotionOccupancyDetected(bool motion_detected) {
-  if (motion_detected == motion_detected_) return;
-  LOG(LL_INFO, ("MotionOccupancy detected: %d -> %d", motion_detected_,
-                motion_detected));
-  motion_detected_ = motion_detected;
-  chars_[1]->RaiseEvent();
-  if (motion_detected) {
-    last_ev_ts_ = mgos_uptime();
-    if (cfg_->in_mode == (int) InMode::kPulse) {
-      auto_off_timer_.Reset(cfg_->idle_time * 1000, 0);
+  if (motion_detected != motion_detected_) {
+    LOG(LL_INFO, ("MotionOccupancy detected: %d -> %d", motion_detected_,
+                  motion_detected));
+    if (motion_detected) {
+      last_ev_ts_ = mgos_uptime();
     }
+    motion_detected_ = motion_detected;
+    chars_[1]->RaiseEvent();
+  }
+  if (motion_detected && cfg_->in_mode == (int) InMode::kPulse) {
+    auto_off_timer_.Reset(cfg_->idle_time * 1000, 0);
   }
 }
 
