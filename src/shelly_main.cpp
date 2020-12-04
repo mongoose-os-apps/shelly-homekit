@@ -264,7 +264,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     // exactly the same.
     sw2->set_primary(true);
     pri_acc->SetCategory(cat);
-    pri_acc->AddHAPService(sw2->GetHAPService());
+    pri_acc->AddService(sw2);
     return;
   }
   if (!sw_hidden) {
@@ -272,7 +272,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
         new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
                                  sw_cfg->name, &AccessoryIdentifyCB, svr));
     acc->AddHAPService(&mgos_hap_accessory_information_service);
-    acc->AddHAPService(sw2->GetHAPService());
+    acc->AddService(sw2);
     accs->push_back(std::move(acc));
   }
   if (sw_cfg->in_mode == 3) {
