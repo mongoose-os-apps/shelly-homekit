@@ -17,7 +17,7 @@
 
 #include <algorithm>
 
-#include "mgos_hap.h"
+#include "mgos_ade7953.h"
 
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_input.hpp"
@@ -25,9 +25,41 @@
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_pm.hpp"
+#include "shelly_pm_ade7953.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
+
+static struct mgos_ade7953 *s_ade7953 = NULL;
+
+static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
+  const struct mgos_ade7953_config ade7953_cfg = {
+      .voltage_scale = .0000382602,
+      .voltage_offset = -0.068,
+      .current_scale = {0.00000949523, 0.00000949523},
+      .current_offset = {-0.017, -0.017},
+      .apower_scale = {(1 / 164.0), (1 / 164.0)},
+      .aenergy_scale = {(1 / 25240.0), (1 / 25240.0)},
+  };
+
+  s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
+
+  if (s_ade7953 == nullptr) {
+    LOG(LL_ERROR, ("Failed to init ADE7953"));
+    return mgos::Errorf(STATUS_UNAVAILABLE, "Failed to init ADE7953");
+  }
+
+  Status st;
+  std::unique_ptr<PowerMeter> pm1(new ADE7953PowerMeter(1, s_ade7953, 1));
+  if (!(st = pm1->Init()).ok()) return st;
+  std::unique_ptr<PowerMeter> pm2(new ADE7953PowerMeter(2, s_ade7953, 0));
+  if (!(st = pm2->Init()).ok()) return st;
+
+  pms->emplace_back(std::move(pm1));
+  pms->emplace_back(std::move(pm2));
+
+  return Status::OK();
+}
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
@@ -44,7 +76,13 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   auto *in2 = new InputPin(2, 5, 1, MGOS_GPIO_PULL_NONE, false);
   in2->Init();
   inputs->emplace_back(in2);
-  PowerMeterInit(pms);
+
+  const Status &st = PowerMeterInit(pms);
+  if (!st.ok()) {
+    const std::string &s = st.ToString();
+    LOG(LL_ERROR, ("Failed to init ADE7953: %s", s.c_str()));
+  }
+
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
 }
 

@@ -18,6 +18,7 @@
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_pm_bl0937.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
@@ -31,9 +32,16 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 15, _1, _2));
   in->Init();
   inputs->emplace_back(in);
-  // TODO: PM
+  std::unique_ptr<PowerMeter> pm(
+      new BL0937PowerMeter(1, 5 /* CF */, -1 /* CF1 */, -1 /* SEL */, 2));
+  const Status &st = pm->Init();
+  if (st.ok()) {
+    pms->emplace_back(std::move(pm));
+  } else {
+    const std::string &s = st.ToString();
+    LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
+  }
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
-  (void) pms;
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

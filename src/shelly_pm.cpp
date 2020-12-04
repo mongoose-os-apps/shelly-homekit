@@ -15,30 +15,18 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#include <memory>
-#include <vector>
-
-#include "shelly_common.hpp"
+#include "shelly_pm.hpp"
 
 namespace shelly {
 
-class PowerMeter {
- public:
-  explicit PowerMeter(int id);
-  virtual ~PowerMeter();
+PowerMeter::PowerMeter(int id) : id_(id) {
+}
 
-  int id() const;
+PowerMeter::~PowerMeter() {
+}
 
-  virtual Status Init() = 0;
-  virtual StatusOr<float> GetPowerW() = 0;
-  virtual StatusOr<float> GetEnergyWH() = 0;
-
- private:
-  const int id_;
-
-  PowerMeter(const PowerMeter &other) = delete;
-};
+int PowerMeter::id() const {
+  return id_;
+}
 
 }  // namespace shelly

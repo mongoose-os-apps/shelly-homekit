@@ -18,6 +18,7 @@
 #include "mgos_gpio.h"
 
 #include "shelly_main.hpp"
+#include "shelly_pm_bl0937.hpp"
 
 namespace shelly {
 
@@ -28,9 +29,17 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   outputs->emplace_back(new OutputPin(1, 4, 1));
   mgos_gpio_setup_output(14, 0);  // Red
   mgos_gpio_setup_output(16, 0);  // Blue
+  std::unique_ptr<PowerMeter> pm(
+      new BL0937PowerMeter(1, 5 /* CF */, -1 /* CF1 */, -1 /* SEL */, 3));
+  const Status &st = pm->Init();
+  if (st.ok()) {
+    pms->emplace_back(std::move(pm));
+  } else {
+    const std::string &s = st.ToString();
+    LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
+  }
   (void) sys_temp;
   (void) inputs;
-  (void) pms;
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

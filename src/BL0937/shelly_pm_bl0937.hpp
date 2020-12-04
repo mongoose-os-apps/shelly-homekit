@@ -15,30 +15,34 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "shelly_pm.hpp"
 
-#include <memory>
-#include <vector>
-
-#include "shelly_common.hpp"
+#include "mgos_timers.hpp"
 
 namespace shelly {
 
-class PowerMeter {
+class BL0937PowerMeter : public PowerMeter {
  public:
-  explicit PowerMeter(int id);
-  virtual ~PowerMeter();
+  BL0937PowerMeter(int id, int cf_pin, int cf1_pin, int sel_pin, int meas_time);
+  virtual ~BL0937PowerMeter();
 
-  int id() const;
-
-  virtual Status Init() = 0;
-  virtual StatusOr<float> GetPowerW() = 0;
-  virtual StatusOr<float> GetEnergyWH() = 0;
+  Status Init() override;
+  StatusOr<float> GetPowerW() override;
+  StatusOr<float> GetEnergyWH() override;
 
  private:
-  const int id_;
+  static void GPIOIntHandler(int pin, void *arg);
+  void MeasureTimerCB();
 
-  PowerMeter(const PowerMeter &other) = delete;
+  const int cf_pin_, cf1_pin_, sel_pin_, meas_time_;
+
+  volatile uint32_t cf_count_ = 0, cf1_count_ = 0;
+  int64_t meas_start_ = 0;
+
+  float apa_ = 0;  // Last active power reading, W.
+  float aea_ = 0;  // Accumulated active energy, Wh.
+
+  mgos::ScopedTimer meas_timer_;
 };
 
 }  // namespace shelly

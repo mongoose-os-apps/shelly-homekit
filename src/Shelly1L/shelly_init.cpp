@@ -19,6 +19,7 @@
 #include "shelly_input.hpp"
 #include "shelly_main.hpp"
 #include "shelly_noisy_input_pin.hpp"
+#include "shelly_pm_bl0937.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
@@ -35,9 +36,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   auto *in2 = new NoisyInputPin(2, 14, 1, MGOS_GPIO_PULL_NONE, false);
   in2->Init();
   inputs->emplace_back(in2);
-  // TODO: PM
+  std::unique_ptr<PowerMeter> pm(new BL0937PowerMeter(1, -1, 4, -1));
+  if (pm->Init().ok()) {
+    pms->emplace_back(std::move(pm));
+  }
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
-  (void) pms;
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

@@ -15,30 +15,32 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "shelly_pm.hpp"
 
-#include <memory>
-#include <vector>
+#include <cmath>
 
-#include "shelly_common.hpp"
+#include "mgos.hpp"
+#include "mgos_ade7953.h"
 
 namespace shelly {
 
-class PowerMeter {
+class ADE7953PowerMeter : public PowerMeter {
  public:
-  explicit PowerMeter(int id);
-  virtual ~PowerMeter();
+  ADE7953PowerMeter(int id, struct mgos_ade7953 *ade7953, int channel);
+  virtual ~ADE7953PowerMeter();
 
-  int id() const;
-
-  virtual Status Init() = 0;
-  virtual StatusOr<float> GetPowerW() = 0;
-  virtual StatusOr<float> GetEnergyWH() = 0;
+  Status Init() override;
+  StatusOr<float> GetPowerW() override;
+  StatusOr<float> GetEnergyWH() override;
 
  private:
-  const int id_;
+  StatusOr<float> GetEnergyWH(bool reset);
+  void AEAAccumulateTimerCB();
 
-  PowerMeter(const PowerMeter &other) = delete;
+  struct mgos_ade7953 *const ade7953_;
+  const int channel_;
+  float aea_acc_ = 0;  // Accumulated active energy.
+  mgos::ScopedTimer acc_timer_;
 };
 
 }  // namespace shelly
