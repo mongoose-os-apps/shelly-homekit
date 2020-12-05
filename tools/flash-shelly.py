@@ -121,7 +121,7 @@ class MyListener:
       dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
       self.device_list.append(dict)
 
-class Device():
+class Device:
   def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
     self.host = f'{host}.local' if '.local' not in host else host
     self.friendly_host = host
@@ -256,9 +256,6 @@ class Device():
       self.dlurl = f'http://archive.shelly-faq.de/version/v{self.version}/{self.stock_model}.zip'
 
 class HomeKitDevice(Device):
-  def __init__(self, host, wifi_ip, fw_type, device_url, info, variant, version):
-    super().__init__(host, wifi_ip, fw_type, device_url, info, variant, version)
-
   def get_info(self):
     if not self.info:
       return False
@@ -297,9 +294,6 @@ class HomeKitDevice(Device):
 
 
 class StockDevice(Device):
-  def __init__(self, host, wifi_ip, fw_type, device_url, info, variant, version):
-    super().__init__(host, wifi_ip, fw_type, device_url, info, variant, version)
-
   def get_info(self):
     if not self.info:
       return False
