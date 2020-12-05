@@ -87,11 +87,13 @@ IRAM void BL0937PowerMeter::GPIOIntHandler(int pin, void *arg) {
 void BL0937PowerMeter::MeasureTimerCB() {
   uint32_t cf_count = cf_count_, cf1_count = cf1_count_;
   float elapsed_sec = (mgos_uptime_micros() - meas_start_) / 1000000.0f;
+  if (cf_count < 2) cf_count = 0;    // Noise
+  if (cf1_count < 2) cf1_count = 0;  // Noise
   float cfps = (cf_count / elapsed_sec), cf1ps = (cf1_count / elapsed_sec);
   apa_ = cfps * mgos_sys_config_get_bl0937_power_coeff();  // Watts
   aea_ += (apa_ / (3600.0f / meas_time_));                 // Watt-hours
-  LOG(LL_DEBUG, ("Elapsed %.2f, cfps %.2f cf1ps %.2f; apa %.2f aea %.2f",
-                 elapsed_sec, cfps, cf1ps, apa_, aea_));
+  LOG(LL_DEBUG, ("cfcnt %d cfps %.2f, cf1cnt %d cf1ps %.2f; apa %.2f aea %.2f",
+                 (int) cf_count, cfps, (int) cf1_count, cf1ps, apa_, aea_));
   // Start new measurement cycle.
   mgos_ints_disable();
   cf_count_ = cf1_count_ = 0;
