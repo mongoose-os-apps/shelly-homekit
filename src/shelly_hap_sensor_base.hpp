@@ -28,7 +28,7 @@
 namespace shelly {
 namespace hap {
 
-class MotionOccupancySensor : public Component, public mgos::hap::Service {
+class SensorBase : public Component, public mgos::hap::Service {
  public:
   enum class InMode {
     kLevel = 0,
@@ -36,38 +36,39 @@ class MotionOccupancySensor : public Component, public mgos::hap::Service {
     kMax,
   };
 
-  MotionOccupancySensor(int id, Input *in, struct mgos_config_in_ms *cfg,
-                        bool occupancy);
-  virtual ~MotionOccupancySensor();
+  SensorBase(int id, Input *in, struct mgos_config_in_sensor *cfg,
+             uint16_t iid_base, const HAPUUID *type,
+             const char *debug_description);
+  virtual ~SensorBase();
 
   // Component interface impl.
-  Status Init() override;
-  Type type() const override;
+  virtual Status Init() override;
   std::string name() const override;
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
 
+ protected:
+  HAPError BoolStateCharRead(HAPAccessoryServerRef *,
+                             const HAPBoolCharacteristicReadRequest *,
+                             bool *value);
+  bool state_ = false;
+
  private:
-  HAPError MotionDetectedRead(HAPAccessoryServerRef *,
-                              const HAPBoolCharacteristicReadRequest *,
-                              bool *value);
   void InputEventHandler(Input::Event ev, bool state);
-  void SetMotionOccupancyDetected(bool motion_detected);
+  void SetState(bool motion_detected);
   void AutoOffTimerCB();
 
   Input *const in_;
-  struct mgos_config_in_ms *cfg_;
-  const bool occupancy_;
+  struct mgos_config_in_sensor *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
 
-  bool motion_detected_ = false;
   double last_ev_ts_ = 0;
   mgos::ScopedTimer auto_off_timer_;
 
-  MotionOccupancySensor(const MotionOccupancySensor &other) = delete;
+  SensorBase(const SensorBase &other) = delete;
 };
 
 }  // namespace hap

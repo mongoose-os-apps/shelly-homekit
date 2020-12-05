@@ -20,7 +20,9 @@
 #include "mgos.hpp"
 #include "mgos_hap.h"
 
-#include "shelly_hap_motion_occupancy_sensor.hpp"
+#include "shelly_hap_contact_sensor.hpp"
+#include "shelly_hap_motion_sensor.hpp"
+#include "shelly_hap_occupancy_sensor.hpp"
 #include "shelly_hap_stateless_switch.hpp"
 #include "shelly_main.hpp"
 
@@ -105,19 +107,24 @@ Status ShellyInput::Init() {
       break;
     }
     case Type::kMotionSensor: {
-      auto *ms = new hap::MotionOccupancySensor(
-          id(), in_, (struct mgos_config_in_ms *) &cfg_->ms,
-          false /* occupancy */);
+      auto *ms = new hap::MotionSensor(
+          id(), in_, (struct mgos_config_in_sensor *) &cfg_->sensor);
       c_.reset(ms);
       s_ = ms;
       break;
     }
     case Type::kOccupancySensor: {
-      auto *ms = new hap::MotionOccupancySensor(
-          id(), in_, (struct mgos_config_in_ms *) &cfg_->ms,
-          true /* occupancy */);
-      c_.reset(ms);
-      s_ = ms;
+      auto *os = new hap::OccupancySensor(
+          id(), in_, (struct mgos_config_in_sensor *) &cfg_->sensor);
+      c_.reset(os);
+      s_ = os;
+      break;
+    }
+    case Type::kContactSensor: {
+      auto *cs = new hap::ContactSensor(
+          id(), in_, (struct mgos_config_in_sensor *) &cfg_->sensor);
+      c_.reset(cs);
+      s_ = cs;
       break;
     }
     default: {
@@ -176,6 +183,8 @@ uint16_t ShellyInput::GetAIDBase() const {
       return SHELLY_HAP_AID_BASE_MOTION_SENSOR;
     case Type::kOccupancySensor:
       return SHELLY_HAP_AID_BASE_OCCUPANCY_SENSOR;
+    case Type::kContactSensor:
+      return SHELLY_HAP_AID_BASE_CONTACT_SENSOR;
     default:
       return 0;
   }
@@ -192,6 +201,7 @@ bool ShellyInput::IsValidType(int type) {
     case (int) Type::kStatelessSwitch:
     case (int) Type::kMotionSensor:
     case (int) Type::kOccupancySensor:
+    case (int) Type::kContactSensor:
       return true;
   }
   return false;

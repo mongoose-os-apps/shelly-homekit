@@ -33,6 +33,7 @@ class Component {
     kDisabledInput = 6,
     kMotionSensor = 7,
     kOccupancySensor = 8,
+    kContactSensor = 9,
     kMax,
   };
 

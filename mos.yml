@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.7.0-alpha5
+version: 2.7.0-alpha6
 platform: esp8266
 
 libs_version: latest
@@ -54,10 +54,10 @@ config_schema:
   - ["in.ssw", "o", {"Stateless Switch settings"}]
   - ["in.ssw.name", "s", "", {"Name of the switch"}]
   - ["in.ssw.in_mode", "i", 0, {"0 - Momentary; 1 - Toggle, single press event on change; 2 - Toggle, on = single press, off = double press"}]
-  - ["in.ms", "o", {"Motion Sensor settings"}]
-  - ["in.ms.name", "s", "", {"Name of the sensor"}]
-  - ["in.ms.in_mode", "i", 0, {"0 - Level, 1 - Pulse"}]
-  - ["in.ms.idle_time", "i", 15, {"In pulse mode, go back to 'no motion' after no pulse received within this interval"}]
+  - ["in.sensor", "o", {"Motion Sensor settings"}]
+  - ["in.sensor.name", "s", "", {"Name of the sensor"}]
+  - ["in.sensor.in_mode", "i", 0, {"0 - Level, 1 - Pulse"}]
+  - ["in.sensor.idle_time", "i", 15, {"In pulse mode, go back to 'no motion' after no pulse received within this interval"}]
 
   - ["wc", "o", {"Roller shutter settings"}]
   - ["wc.name", "s", "Shutter 1", {"title": "Accessory name"}]
@@ -143,7 +143,7 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {"title": "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
-        - ["in1.ms.name", "Shelly MS1"]
+        - ["in1.sensor.name", "Shelly S1"]
         - ["gdo1", "gdo", {"title": "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
@@ -183,10 +183,10 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {"title": "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
-        - ["in1.ms.name", "Shelly MS1"]
+        - ["in1.sensor.name", "Shelly S1"]
         - ["in2", "in", {"title": "Input 2 settings"}]
         - ["in2.ssw.name", "Shelly SSW2"]
-        - ["in2.ms.name", "Shelly MS2"]
+        - ["in2.sensor.name", "Shelly S2"]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
@@ -226,7 +226,7 @@ conds:
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {"title": "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
-        - ["in1.ms.name", "Shelly MS1"]
+        - ["in1.sensor.name", "Shelly S1"]
         - ["gdo1", "gdo", {"title": "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
@@ -261,12 +261,12 @@ conds:
         - ["sw1.name", "Shelly SW1"]
         - ["in1", "in", {"title": "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
-        - ["in1.ms.name", "Shelly MS1"]
+        - ["in1.sensor.name", "Shelly S1"]
         - ["sw2", "sw", {"title": "SW2 settings"}]
         - ["sw2.name", "Shelly SW2"]
         - ["in2", "in", {"title": "Input 2 settings"}]
         - ["in2.ssw.name", "Shelly SSW2"]
-        - ["in2.ms.name", "Shelly MS2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {"title": "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         # Only for backward compatibility (config <= v3).
@@ -313,12 +313,12 @@ conds:
         - ["sw1.name", "Shelly SW1"]
         - ["in1", "in", {"title": "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
-        - ["in1.ms.name", "Shelly MS1"]
+        - ["in1.sensor.name", "Shelly S1"]
         - ["sw2", "sw", {"title": "SW2 settings"}]
         - ["sw2.name", "Shelly SW2"]
         - ["in2", "in", {"title": "Input 2 settings"}]
         - ["in2.ssw.name", "Shelly SSW2"]
-        - ["in2.ms.name", "Shelly MS2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["wc1", "wc", {"title": "WC1 settings"}]
         - ["wc1.name", "Window 1"]
         - ["gdo1", "gdo", {"title": "GDO1 settings"}]
@@ -437,13 +437,13 @@ conds:
         - ["wifi.ap.ssid", "shellyix3-????????????"]
         - ["in1", "in", {"title": "Input 1 settings"}]
         - ["in1.ssw.name", "Input 1"]
-        - ["in1.ms.name", "Shelly MS1"]
+        - ["in1.sensor.name", "Shelly S1"]
         - ["in2", "in", {"title": "Input 2 settings"}]
         - ["in2.ssw.name", "Input 2"]
-        - ["in2.ms.name", "Shelly MS2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["in3", "in", {"title": "Input 3 settings"}]
         - ["in3.ssw.name", "Input 3"]
-        - ["in3.ms.name", "Shelly MS3"]
+        - ["in3.sensor.name", "Shelly S3"]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {"title": "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
@@ -474,6 +474,6 @@ conds:
         - ["sw1.in_mode", 3]
         - ["in1", "in", {"title": "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
-        - ["in1.ms.name", "Shelly MS1"]
+        - ["in1.sensor.name", "Shelly MS1"]
 
 manifest_version: 2020-01-29
