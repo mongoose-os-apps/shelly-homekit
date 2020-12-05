@@ -90,8 +90,8 @@ void BL0937PowerMeter::MeasureTimerCB() {
   float cfps = (cf_count / elapsed_sec), cf1ps = (cf1_count / elapsed_sec);
   apa_ = cfps * mgos_sys_config_get_bl0937_power_coeff();  // Watts
   aea_ += (apa_ / (3600.0f / meas_time_));                 // Watt-hours
-  LOG(LL_INFO, ("Elapsed %.2f, cfps %.2f cf1ps %.2f; apa %.2f aea %.2f",
-                elapsed_sec, cfps, cf1ps, apa_, aea_));
+  LOG(LL_DEBUG, ("Elapsed %.2f, cfps %.2f cf1ps %.2f; apa %.2f aea %.2f",
+                 elapsed_sec, cfps, cf1ps, apa_, aea_));
   // Start new measurement cycle.
   mgos_ints_disable();
   cf_count_ = cf1_count_ = 0;
