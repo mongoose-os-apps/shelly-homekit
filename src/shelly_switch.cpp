@@ -265,6 +265,7 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
     case Input::Event::kSingle:
     case Input::Event::kDouble:
     case Input::Event::kReset:
+    case Input::Event::kMax:
       break;
   }
 }

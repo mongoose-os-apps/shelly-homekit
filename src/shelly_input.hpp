@@ -31,6 +31,7 @@ class Input {
     kDouble = 2,
     kLong = 3,
     kReset = 4,
+    kMax,
   };
   explicit Input(int id);
   virtual ~Input();
@@ -48,8 +49,10 @@ class Input {
   HandlerID AddHandler(HandlerFn h);
   void RemoveHandler(HandlerID hi);
 
+  void InjectEvent(Event ev, bool state);
+
  protected:
-  void CallHandlers(Event ev, bool state);
+  void CallHandlers(Event ev, bool state, bool injected = false);
 
  private:
   const int id_;

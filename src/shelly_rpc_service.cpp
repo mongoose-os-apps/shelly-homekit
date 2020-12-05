@@ -282,6 +282,41 @@ static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) fi;
 }
 
+static void InjectInputEventHandler(struct mg_rpc_request_info *ri,
+                                    void *cb_arg, struct mg_rpc_frame_info *fi,
+                                    struct mg_str args) {
+  int id = -1, ev = -1;
+
+  json_scanf(args.p, args.len, ri->args_fmt, &id, &ev);
+
+  if (id < 0 || ev < 0) {
+    mg_rpc_send_errorf(ri, 400, "%s are required", "id and event");
+    return;
+  }
+  // Should we allow Reset event to be injected? Maybe. Disallow for now.
+  // For now we only allow "higher-level" events to be injected,
+  // since injecting Change won't match with the value returne by GetState.
+  if (ev != (int) Input::Event::kSingle && ev != (int) Input::Event::kDouble &&
+      ev != (int) Input::Event::kLong) {
+    mg_rpc_send_errorf(ri, 400, "invalid %s", "event");
+    return;
+  }
+
+  Input *in = FindInput(id);
+
+  if (in == nullptr) {
+    mg_rpc_send_errorf(ri, 400, "%s not found", "input");
+    return;
+  }
+
+  in->InjectEvent(static_cast<Input::Event>(ev), false);
+
+  mg_rpc_send_responsef(ri, nullptr);
+
+  (void) cb_arg;
+  (void) fi;
+}
+
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm) {
@@ -296,6 +331,8 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                        nullptr);
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
                        "{id: %d, state: %B}", SetSwitchHandler, nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.InjectInputEvent",
+                       "{id: %d, event: %d}", InjectInputEventHandler, nullptr);
   } else {
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                        GetInfoFailsafeHandler, nullptr);

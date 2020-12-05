@@ -41,6 +41,8 @@ const char *Input::EventName(Event ev) {
       return "long";
     case Event::kReset:
       return "reset";
+    case Event::kMax:
+      break;
   }
   return "";
 }
@@ -66,8 +68,13 @@ void Input::RemoveHandler(HandlerID hi) {
   handlers_[hi] = nullptr;
 }
 
-void Input::CallHandlers(Event ev, bool state) {
-  LOG(LL_INFO, ("Input %d: %s (state %d)", id(), EventName(ev), state));
+void Input::InjectEvent(Event ev, bool state) {
+  CallHandlers(ev, state, true /* injected */);
+}
+
+void Input::CallHandlers(Event ev, bool state, bool injected) {
+  LOG(LL_INFO, ("Input %d: %s (state %d)%s", id(), EventName(ev), state,
+                (injected ? " [injected]" : "")));
   for (auto &h : handlers_) {
     if (h != nullptr) h(ev, state);
   }

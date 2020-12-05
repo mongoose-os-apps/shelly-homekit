@@ -137,6 +137,7 @@ void StatelessSwitch::InputEventHandler(Input::Event ev, bool state) {
           break;
         case Input::Event::kChange:
         case Input::Event::kReset:
+        case Input::Event::kMax:
           // Ignore.
           break;
       }
