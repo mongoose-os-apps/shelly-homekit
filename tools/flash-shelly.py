@@ -234,24 +234,33 @@ class Device:
         re_search = '-*'
       else:
         re_search = i[0]
-      if re.search(re_search, self.fw_version):
+      if self.variant in i[1]['version'] and re.search(re_search, self.fw_version):
         self.flash_fw_version = i[1]['version']
         if not self.version:
           self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
         else:
           self.dlurl = f'http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.model}.zip'
         break
+      else:
+        self.flash_fw_version = 'novariant'
+        self.dlurl = None
+        return
 
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
     self.flash_fw_type = 'stock'
     stock_model_info = release_info['data'][self.stock_model]
-    self.flash_fw_version = self.parse_stock_version(stock_model_info['version'])
+    if self.variant == 'beta':
+      self.flash_fw_version = self.parse_stock_version(stock_model_info['beta_ver']) if 'beta_ver' in stock_model_info else self.parse_stock_version(stock_model_info['version'])
+    else:
+      self.flash_fw_version = self.parse_stock_version(stock_model_info['version'])
     if not self.version:
-      if self.stock_model  == 'SHRGBW2':
-        self.dlurl = stock_model_info['url'].replace('.zip',f'-{self.colour_mode}.zip')
+      if self.variant == 'beta':
+        self.dlurl = stock_model_info['beta_url'] if 'beta_ver' in stock_model_info else stock_model_info['url']
       else:
         self.dlurl = stock_model_info['url']
+      if self.stock_model  == 'SHRGBW2':
+        self.dlurl = self.dlurl.replace('.zip',f'-{self.colour_mode}.zip')
     else:
       self.dlurl = f'http://archive.shelly-faq.de/version/v{self.version}/{self.stock_model}.zip'
 
@@ -440,7 +449,11 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
 
   if dlurl:
     durl_request = requests.head(dlurl)
-  if not dlurl or durl_request.status_code != 200:
+  if flash_fw_version == 'novariant':
+    latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
+    flash_fw_version = '0.0.0'
+    dlurl = None
+  elif not dlurl or durl_request.status_code != 200:
     latest_fw_label = f"{RED}Not available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
@@ -643,16 +656,5 @@ if __name__ == '__main__':
     sys.exit(1)
   logger.trace(f"\n{WHITE}stock_release_info:{NC}{stock_release_info}")
   logger.trace(f"\n{WHITE}homekit_release_info:{NC}{homekit_release_info}")
-  if args.variant:
-    for i in homekit_release_info:
-      logger.trace(f"i: {i[1]}")
-      logger.trace(f"version: {i[1]['version']}")
-      if args.variant in i[1]['version']:
-        variant_check = True
-        break
-      else:
-        variant_check = False
-    if not variant_check:
-      logger.info(f"{WHITE}Firmware variant {args.variant} not found.{NC}")
-      sys.exit(3)
+
   device_scan(args.hosts, action, args.do_all, args.dry_run, args.silent_run, args.mode, args.exclude, args.version, args.variant, args.hap_setup_code)
