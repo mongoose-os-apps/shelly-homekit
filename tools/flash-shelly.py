@@ -230,21 +230,21 @@ class Device:
     self.flash_fw_type_str = 'HomeKit'
     self.flash_fw_type = 'homekit'
     for i in release_info:
+      if self.variant and self.variant not in i[1]['version']:
+        self.flash_fw_version = 'novariant'
+        self.dlurl = None
+        return
       if self.variant:
         re_search = '-*'
       else:
         re_search = i[0]
-      if self.variant in i[1]['version'] and re.search(re_search, self.fw_version):
+      if re.search(re_search, self.fw_version):
         self.flash_fw_version = i[1]['version']
         if not self.version:
           self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
         else:
           self.dlurl = f'http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.model}.zip'
         break
-      else:
-        self.flash_fw_version = 'novariant'
-        self.dlurl = None
-        return
 
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
