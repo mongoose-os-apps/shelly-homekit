@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.7.0-alpha6
+version: 2.7.0-alpha7
 platform: esp8266
 
 libs_version: latest
@@ -28,6 +28,7 @@ config_schema:
   - ["file_logger.max_num_files", 1]
   - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
+  - ["wifi.sta_all_chan_scan", true]
 
   - ["shelly.name", "s", "", {"title": "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
   - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
