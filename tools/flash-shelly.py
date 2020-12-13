@@ -476,7 +476,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
     if exclude and friendly_host in exclude:
       logger.info("Skipping as device has been excluded...\n")
       return 0
-    elif version and dlurl:
+    elif version and dlurl and parse_version(version) != parse_version(current_fw_version):
       perform_flash = True
       device_info.set_force_version(version)
       flash_fw_version = version
