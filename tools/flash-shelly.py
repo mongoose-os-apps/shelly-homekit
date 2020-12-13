@@ -131,6 +131,7 @@ class Device:
     self.variant = variant
     self.version = version
     self.wifi_ip = wifi_ip
+    self.flash_label = "Latest:"
 
   def is_valid_hostname(self, hostname):
     if len(hostname) > 255:
@@ -229,40 +230,43 @@ class Device:
   def update_homekit(self, release_info=None):
     self.flash_fw_type_str = 'HomeKit'
     self.flash_fw_type = 'homekit'
-    for i in release_info:
-      if self.variant and self.variant not in i[1]['version']:
-        self.flash_fw_version = 'novariant'
-        self.dlurl = None
-        return
-      if self.variant:
-        re_search = '-*'
-      else:
-        re_search = i[0]
-      if re.search(re_search, self.fw_version):
-        self.flash_fw_version = i[1]['version']
-        if not self.version:
-          self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
+    if not self.version:
+      for i in release_info:
+        if self.variant and self.variant not in i[1]['version']:
+          self.flash_fw_version = 'novariant'
+          self.dlurl = None
+          return
+        if self.variant:
+          re_search = '-*'
         else:
-          self.dlurl = f'http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.model}.zip'
-        break
+          re_search = i[0]
+        if re.search(re_search, self.fw_version):
+          self.flash_fw_version = i[1]['version']
+          if not self.version:
+            self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
+          break
+    else:
+      self.flash_label = "Manual:"
+      self.flash_fw_version = self.version
+      self.dlurl = f'http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.model}.zip'
 
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
     self.flash_fw_type = 'stock'
     stock_model_info = release_info['data'][self.stock_model]
-    if self.variant == 'beta':
-      self.flash_fw_version = self.parse_stock_version(stock_model_info['beta_ver']) if 'beta_ver' in stock_model_info else self.parse_stock_version(stock_model_info['version'])
-    else:
-      self.flash_fw_version = self.parse_stock_version(stock_model_info['version'])
     if not self.version:
       if self.variant == 'beta':
+        self.flash_fw_version = self.parse_stock_version(stock_model_info['beta_ver']) if 'beta_ver' in stock_model_info else self.parse_stock_version(stock_model_info['version'])
         self.dlurl = stock_model_info['beta_url'] if 'beta_ver' in stock_model_info else stock_model_info['url']
       else:
+        self.flash_fw_version = self.parse_stock_version(stock_model_info['version'])
         self.dlurl = stock_model_info['url']
-      if self.stock_model  == 'SHRGBW2':
-        self.dlurl = self.dlurl.replace('.zip',f'-{self.colour_mode}.zip')
     else:
+      self.flash_label = "Manual:"
+      self.flash_fw_version = self.version
       self.dlurl = f'http://archive.shelly-faq.de/version/v{self.version}/{self.stock_model}.zip'
+    if self.stock_model  == 'SHRGBW2':
+      self.dlurl = self.dlurl.replace('.zip',f'-{self.colour_mode}.zip')
 
 class HomeKitDevice(Device):
   def get_info(self):
@@ -283,10 +287,6 @@ class HomeKitDevice(Device):
   def update_to_stock(self, release_info=None):
     logger.debug('Mode: HomeKit To Stock')
     self.update_stock(release_info)
-
-  def get_lastest_version(self):
-    info = self.get_device_info()
-    return self.parse_stock_version(info['version'])
 
   def set_force_version(self, version):
     self.flash_fw_version = version
@@ -321,10 +321,6 @@ class StockDevice(Device):
   def update_to_stock(self, release_info=None):
     logger.debug('Mode: Stock To Stock')
     self.update_stock(release_info)
-
-  def get_lastest_version(self):
-    info = self.get_device_info()
-    return self.parse_stock_version(info['fw'])
 
   def set_force_version(self, version):
     self.flash_fw_version = version
@@ -437,6 +433,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   stock_model = device_info.stock_model
   colour_mode = device_info.colour_mode
   dlurl = device_info.dlurl
+  flash_label = device_info.flash_label
 
   logger.debug(f"host: {host}")
   logger.debug(f"device: {device}")
@@ -466,7 +463,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   logger.info(f"{WHITE}Model: {NC}{model}")
   logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
   col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
-  logger.info(f"{WHITE}Latest: {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
+  logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
   logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
 
   if action != 'list':
@@ -479,7 +476,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
     if exclude and friendly_host in exclude:
       logger.info("Skipping as device has been excluded...\n")
       return 0
-    elif version and dlurl:
+    elif version and dlurl and parse_version(version) != parse_version(current_fw_version):
       perform_flash = True
       device_info.set_force_version(version)
       flash_fw_version = version
