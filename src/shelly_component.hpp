@@ -53,6 +53,8 @@ class Component {
   // Set configuration from UI.
   virtual Status SetConfig(const std::string &config_json,
                            bool *restart_required) = 0;
+  // Set state from UI.
+  virtual Status SetState(const std::string &state_json) = 0;
 
  private:
   const int id_;

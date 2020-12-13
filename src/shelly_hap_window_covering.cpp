@@ -133,7 +133,7 @@ Status WindowCovering::Init() {
              bool value) {
         if (value) {
           LOG(LL_INFO, ("WC %d: Hold position", id()));
-          SetState(State::kStop);
+          SetInternalState(State::kStop);
         }
         return kHAPError_None;
       },
@@ -206,13 +206,11 @@ Status WindowCovering::SetConfig(const std::string &config_json,
                                  bool *restart_required) {
   struct mgos_config_wc cfg = *cfg_;
   cfg.name = nullptr;
-  int state = -2, tgt_pos = -2, in_mode = -1;
+  int in_mode = -1;
   int8_t swap_inputs = -1, swap_outputs = -1;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, state: %d, tgt_pos: %d, "
-             "in_mode: %d, swap_inputs: %B, swap_outputs: %B}",
-             &cfg.name, &state, &tgt_pos, &in_mode, &swap_inputs,
-             &swap_outputs);
+             "{name: %Q, in_mode: %d, swap_inputs: %B, swap_outputs: %B}",
+             &cfg.name, &in_mode, &swap_inputs, &swap_outputs);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -222,24 +220,7 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   if (in_mode > 3) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
   }
-  if (state != -2 && strcmp(StateStr(static_cast<State>(state)), "???") == 0) {
-    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "state");
-  }
   // Apply.
-  if (state >= 0) {
-    tgt_state_ = static_cast<State>(state);
-    if (state_ != State::kIdle) {
-      SetState(State::kStop);
-    }
-    return Status::OK();
-  }
-  if (tgt_pos >= 0) {
-    SetTgtPos(tgt_pos, "rpc");
-  } else if (tgt_pos == -1) {
-    RunOnce();
-    SetTgtPos(cur_pos_, "rpc");  // Stop
-    RunOnce();
-  }
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
     *restart_required = true;
@@ -255,6 +236,30 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   if (swap_outputs != -1 && swap_outputs != cfg_->swap_outputs) {
     cfg_->swap_outputs = swap_outputs;
     *restart_required = true;
+  }
+  return Status::OK();
+}
+
+Status WindowCovering::SetState(const std::string &state_json) {
+  int state = -2, tgt_pos = -2;
+  json_scanf(state_json.c_str(), state_json.size(), "{state: %d, tgt_pos: %d}",
+             &state, &tgt_pos);
+  if (state != -2 && strcmp(StateStr(static_cast<State>(state)), "???") == 0) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "state");
+  }
+  if (state >= 0) {
+    tgt_state_ = static_cast<State>(state);
+    if (state_ != State::kIdle) {
+      SetInternalState(State::kStop);
+    }
+    return Status::OK();
+  }
+  if (tgt_pos >= 0) {
+    SetTgtPos(tgt_pos, "RPC");
+  } else if (tgt_pos == -1) {
+    RunOnce();
+    SetTgtPos(cur_pos_, "RPC");  // Stop
+    RunOnce();
   }
   return Status::OK();
 }
@@ -308,7 +313,7 @@ void WindowCovering::SaveState() {
   mgos_sys_config_save(&mgos_sys_config, false /* try_once */, NULL /* msg */);
 }
 
-void WindowCovering::SetState(State new_state) {
+void WindowCovering::SetInternalState(State new_state) {
   if (state_ == new_state) return;
   LOG(LL_INFO, ("WC %d: State: %s -> %s (%d -> %d)", id(), StateStr(state_),
                 StateStr(new_state), (int) state_, (int) new_state));
@@ -420,12 +425,12 @@ void WindowCovering::RunOnce() {
     case State::kNone:
     case State::kIdle: {
       if (tgt_state_ != State::kNone && tgt_state_ != state_) {
-        SetState(tgt_state_);
+        SetInternalState(tgt_state_);
         tgt_state_ = State::kNone;
         break;
       }
       if (GetDesiredMoveDirection() != Direction::kNone) {
-        SetState(State::kMove);
+        SetInternalState(State::kMove);
       }
       break;
     }
@@ -437,14 +442,14 @@ void WindowCovering::RunOnce() {
       SaveState();
       out_open_->SetState(true, ss);
       out_close_->SetState(false, ss);
-      SetState(State::kCal0);
+      SetInternalState(State::kCal0);
       break;
     }
     case State::kCal0: {
       auto p0v = pm_open_->GetPowerW();
       if (!p0v.ok()) {
         LOG(LL_ERROR, ("PM error"));
-        SetState(State::kError);
+        SetInternalState(State::kError);
         break;
       }
       const float p0 = p0v.ValueOrDie();
@@ -452,14 +457,14 @@ void WindowCovering::RunOnce() {
       if (p0 < cfg_->idle_power_thr &&
           (mgos_uptime_micros() - begin_ > 1000000)) {
         out_open_->SetState(false, ss);
-        SetState(State::kPostCal0);
+        SetInternalState(State::kPostCal0);
       }
       break;
     }
     case State::kPostCal0: {
       out_open_->SetState(false, ss);
       out_close_->SetState(false, ss);
-      SetState(State::kPreCal1);
+      SetInternalState(State::kPreCal1);
       break;
     }
     case State::kPreCal1: {
@@ -467,14 +472,14 @@ void WindowCovering::RunOnce() {
       out_close_->SetState(true, ss);
       p_sum_ = 0;
       p_num_ = 0;
-      SetState(State::kCal1);
+      SetInternalState(State::kCal1);
       break;
     }
     case State::kCal1: {
       auto p1v = pm_close_->GetPowerW();
       if (!p1v.ok()) {
         LOG(LL_ERROR, ("PM error"));
-        SetState(State::kError);
+        SetInternalState(State::kError);
         break;
       }
       const float p1 = p1v.ValueOrDie();
@@ -488,7 +493,7 @@ void WindowCovering::RunOnce() {
         cfg_->move_time_ms = move_time_ms;
         cfg_->move_power = move_power;
         move_ms_per_pct_ = cfg_->move_time_ms / 100.0;
-        SetState(State::kPostCal1);
+        SetInternalState(State::kPostCal1);
       } else {
         p_sum_ += p1;
         p_num_++;
@@ -500,7 +505,7 @@ void WindowCovering::RunOnce() {
       SetCurPos(kFullyClosed, -1);
       SaveState();
       SetTgtPos((kFullyOpen - kFullyClosed) / 2, "postcal1");
-      SetState(State::kIdle);
+      SetInternalState(State::kIdle);
       break;
     }
     case State::kMove: {
@@ -508,7 +513,7 @@ void WindowCovering::RunOnce() {
       if (dir == Direction::kNone ||
           (dir == Direction::kClose && cur_pos_ == kFullyClosed) ||
           (dir == Direction::kOpen && cur_pos_ == kFullyOpen)) {
-        SetState(State::kStop);
+        SetInternalState(State::kStop);
         break;
       }
       if (obstruction_detected_) {
@@ -517,7 +522,7 @@ void WindowCovering::RunOnce() {
       }
       move_start_pos_ = cur_pos_;
       Move(dir);
-      SetState(State::kRampUp);
+      SetInternalState(State::kRampUp);
       break;
     }
     case State::kRampUp: {
@@ -529,19 +534,19 @@ void WindowCovering::RunOnce() {
       } else {
         LOG(LL_ERROR, ("PM error"));
         tgt_state_ = State::kError;
-        SetState(State::kStop);
+        SetInternalState(State::kStop);
         break;
       }
       LOG(LL_INFO, ("P = %.2f -> %.2f", p, cfg_->move_power));
       if (p >= cfg_->move_power * 0.75) {
-        SetState(State::kMoving);
+        SetInternalState(State::kMoving);
         break;
       }
       int elapsed_us = (mgos_uptime_micros() - begin_);
       if (elapsed_us > 1000000) {
         LOG(LL_ERROR, ("Failed to start moving"));
         tgt_state_ = State::kError;
-        SetState(State::kStop);
+        SetInternalState(State::kStop);
       }
       break;
     }
@@ -559,7 +564,7 @@ void WindowCovering::RunOnce() {
       } else {
         LOG(LL_ERROR, ("PM error"));
         tgt_state_ = State::kError;
-        SetState(State::kStop);
+        SetInternalState(State::kStop);
         break;
       }
       SetCurPos(new_cur_pos, p);
@@ -571,7 +576,7 @@ void WindowCovering::RunOnce() {
         obst_char_->RaiseEvent();
         LOG(LL_ERROR, ("Obstruction: p = %.2f t = %d", p, moving_time_ms));
         tgt_state_ = State::kError;
-        SetState(State::kStop);
+        SetInternalState(State::kStop);
         break;
       }
       Direction want_move_dir = GetDesiredMoveDirection();
@@ -603,13 +608,13 @@ void WindowCovering::RunOnce() {
         }
       }
       Move(Direction::kNone);  // Stop moving immediately to minimize error.
-      SetState(State::kStop);
+      SetInternalState(State::kStop);
       break;
     }
     case State::kStop: {
       Move(Direction::kNone);
       SaveState();
-      SetState(State::kStopping);
+      SetInternalState(State::kStopping);
       break;
     }
     case State::kStopping: {
@@ -619,14 +624,14 @@ void WindowCovering::RunOnce() {
       auto p1v = pm_close_->GetPowerW();
       if (p1v.ok()) p1 = p1v.ValueOrDie();
       if (p0 < cfg_->idle_power_thr && p1 < cfg_->idle_power_thr) {
-        SetState(State::kIdle);
+        SetInternalState(State::kIdle);
       }
       break;
     }
     case State::kError: {
       Move(Direction::kNone);
       SetTgtPos(cur_pos_, "error");
-      SetState(State::kIdle);
+      SetInternalState(State::kIdle);
       break;
     }
   }

@@ -53,7 +53,7 @@ Status SensorBase::Init() {
       in_->AddHandler(std::bind(&SensorBase::InputEventHandler, this, _1, _2));
 
   if (cfg_->in_mode == (int) InMode::kLevel) {
-    SetState(in_->GetState());
+    SetInternalState(in_->GetState());
   }
 
   return Status::OK();
@@ -106,12 +106,17 @@ Status SensorBase::SetConfig(const std::string &config_json,
   if (in_mode != -1) {
     cfg_->in_mode = in_mode;
     bool md = (in_mode == (int) InMode::kLevel ? in_->GetState() : false);
-    SetState(md);
+    SetInternalState(md);
   }
   if (idle_time != -1) {
     cfg_->idle_time = idle_time;
   }
   return Status::OK();
+}
+
+Status SensorBase::SetState(const std::string &state_json) {
+  (void) state_json;
+  return Status::UNIMPLEMENTED();
 }
 
 HAPError SensorBase::BoolStateCharRead(HAPAccessoryServerRef *,
@@ -126,11 +131,11 @@ void SensorBase::InputEventHandler(Input::Event ev, bool state) {
   const auto in_mode = static_cast<InMode>(cfg_->in_mode);
   switch (in_mode) {
     case InMode::kLevel:
-      SetState(state);
+      SetInternalState(state);
       break;
     case InMode::kPulse:
       if (state) {
-        SetState(true);
+        SetInternalState(true);
       }
       break;
     case InMode::kMax:
@@ -138,7 +143,7 @@ void SensorBase::InputEventHandler(Input::Event ev, bool state) {
   }
 }
 
-void SensorBase::SetState(bool state) {
+void SensorBase::SetInternalState(bool state) {
   if (state != state_) {
     LOG(LL_INFO, ("Sensor state: %d -> %d", state_, state));
     if (state) {
@@ -154,7 +159,7 @@ void SensorBase::SetState(bool state) {
 
 void SensorBase::AutoOffTimerCB() {
   if (cfg_->in_mode != (int) InMode::kPulse) return;
-  SetState(false);
+  SetInternalState(false);
 }
 
 }  // namespace hap

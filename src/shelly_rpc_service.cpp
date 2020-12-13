@@ -207,19 +207,16 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     }
   } else {
     // Component settings.
-    Component *c = nullptr;
-    for (auto &cp : g_comps) {
-      if (cp->id() == id && (int) cp->type() == type) {
-        c = cp.get();
-        break;
-      }
-    }
-    if (c == nullptr) {
-      st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "component not found");
-      return;
-    } else {
+    bool found = false;
+    for (auto &c : g_comps) {
+      if (c->id() != id || (int) c->type() != type) continue;
       st = c->SetConfig(std::string(config_tok.ptr, config_tok.len),
                         &restart_required);
+      found = true;
+      break;
+    }
+    if (!found) {
+      st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "component not found");
     }
   }
   if (st.ok()) {
@@ -229,54 +226,38 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       LOG(LL_INFO, ("Configuration change requires server restart"));
       RestartService();
     }
-    mg_rpc_send_responsef(ri, nullptr);
-  } else {
-    SendStatusResp(ri, st);
   }
+  SendStatusResp(ri, st);
 
   (void) cb_arg;
   (void) fi;
 }
 
-static void GetDebugInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
-                                struct mg_rpc_frame_info *fi,
-                                struct mg_str args) {
-  std::string res;
-  GetDebugInfo(&res);
-  mg_rpc_send_responsef(ri, "{info: %Q}", res.c_str());
-  (void) cb_arg;
-  (void) args;
-  (void) fi;
-}
-
-static void SetSwitchHandler(struct mg_rpc_request_info *ri, void *cb_arg,
-                             struct mg_rpc_frame_info *fi, struct mg_str args) {
+static void SetStateHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                            struct mg_rpc_frame_info *fi, struct mg_str args) {
   int id = -1;
-  int8_t state = -1;
+  int type = -1;
+  struct json_token state_tok = JSON_INVALID_TOKEN;
 
-  json_scanf(args.p, args.len, ri->args_fmt, &id, &state);
+  json_scanf(args.p, args.len, ri->args_fmt, &id, &type, &state_tok);
 
-  if (id < 0 || state < 0) {
-    mg_rpc_send_errorf(ri, 400, "%s are required", "id and state");
+  if (state_tok.len == 0) {
+    mg_rpc_send_errorf(ri, 400, "%s is required", "state");
     return;
   }
 
+  Status st = Status::OK();
+  bool found = false;
   for (auto &c : g_comps) {
-    if (c->id() != id) continue;
-    switch (c->type()) {
-      case Component::Type::kSwitch:
-      case Component::Type::kOutlet:
-      case Component::Type::kLock: {
-        ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
-        sw->SetState(bool(state), "web");
-        mg_rpc_send_responsef(ri, nullptr);
-        return;
-      }
-      default:
-        break;
-    }
+    if (c->id() != id || (int) c->type() != type) continue;
+    st = c->SetState(std::string(state_tok.ptr, state_tok.len));
+    found = true;
+    break;
   }
-  mg_rpc_send_errorf(ri, 400, "component not found");
+  if (!found) {
+    st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "component not found");
+  }
+  SendStatusResp(ri, st);
 
   (void) cb_arg;
   (void) fi;
@@ -317,6 +298,17 @@ static void InjectInputEventHandler(struct mg_rpc_request_info *ri,
   (void) fi;
 }
 
+static void GetDebugInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                                struct mg_rpc_frame_info *fi,
+                                struct mg_str args) {
+  std::string res;
+  GetDebugInfo(&res);
+  mg_rpc_send_responsef(ri, "{info: %Q}", res.c_str());
+  (void) cb_arg;
+  (void) args;
+  (void) fi;
+}
+
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm) {
@@ -329,8 +321,9 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
                        "{id: %d, type: %d, config: %T}", SetConfigHandler,
                        nullptr);
-    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetSwitch",
-                       "{id: %d, state: %B}", SetSwitchHandler, nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetState",
+                       "{id: %d, type: %d, state: %T}", SetStateHandler,
+                       nullptr);
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.InjectInputEvent",
                        "{id: %d, event: %d}", InjectInputEventHandler, nullptr);
   } else {

@@ -654,7 +654,7 @@ static void ButtonHandler(Input::Event ev, bool cur_state) {
       for (auto &c : g_comps) {
         if (c->type() != Component::Type::kSwitch) continue;
         const ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
-        if (sw->GetState()) state |= (1 << n);
+        if (sw->GetOutputState()) state |= (1 << n);
         n++;
       }
       if (n == 0) break;
@@ -663,7 +663,7 @@ static void ButtonHandler(Input::Event ev, bool cur_state) {
         if (c->type() != Component::Type::kSwitch) continue;
         ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
         bool new_state = (state & (1 << i));
-        sw->SetState(new_state, "btn");
+        sw->SetOutputState(new_state, "btn");
         i++;
       }
       break;

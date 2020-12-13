@@ -847,19 +847,25 @@ function setComponentConfig(c, cfg, spinner) {
     });
 }
 
-function swSetState(c, newState) {
-  var spinner = el(c, "set_spinner");
-  spinner.className = "spin";
-  axios.post(host + "/rpc/Shelly.SetSwitch", {id: c.data.id, state: newState}).then(function(res) {
-  }).catch(function(err) {
-    if (err.response) {
-      err = err.response.data.message;
-    }
-    alert(err);
-  }).then(function() {
-    spinner.className = "";
-    getInfo();
-  });
+function setComponentState(c, state, spinner) {
+  if (spinner) spinner.className = "spin";
+  var data = {
+    id: c.data.id,
+    type: c.data.type,
+    state: state,
+  };
+  console.log("SetState:", data);
+  axios.post(host + "/rpc/Shelly.SetState", data)
+    .then(function(res) {
+      if (spinner) spinner.className = "";
+      setTimeout(getInfo, 100);
+    }).catch(function(err) {
+      if (spinner) spinner.className = "";
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+    });
 }
 
 function autoOffDelayValid(value) {
@@ -1034,7 +1040,7 @@ function findOrAddContainer(cd) {
     case 2: // Lock
       c = el("sw_template").cloneNode(true);
       c.id = elId;
-      el(c, "toggle_btn").onclick = function() { swSetState(c, !c.data.state); };
+      el(c, "toggle_btn").onclick = function() { setComponentState(c, {state: !c.data.state}, el(c, "set_spinner")); };
       el(c, "save_btn").onclick = function() { swSetConfig(c); };
       el(c, "auto_off").onchange = function() { el(c, "auto_off_delay").disabled = !this.checked; };
       break;
@@ -1046,41 +1052,21 @@ function findOrAddContainer(cd) {
     case 4: // Window Covering
       c = el("wc_template").cloneNode(true);
       c.id = elId;
-      el(c, "open_btn").onclick = function() {
-        if (el(c, "open_spinner").className == "") {
-          wcSetConfig(c, {tgt_pos: 100}, null);
-          el(c, "open_spinner").className = "spin";
-        } else {
-          wcSetConfig(c, {tgt_pos: -1}, null);
-        }
-        el(c, "close_spinner").className = "";
-      };
-      el(c, "close_btn").onclick = function() {
-        if (el(c, "close_spinner").className == "") {
-          wcSetConfig(c, {tgt_pos: 0}, null);
-          el(c, "close_spinner").className = "spin";
-        } else {
-          wcSetConfig(c, {tgt_pos: -1}, null);
-        }
-        el(c, "open_spinner").className = "";
-      };
-      el(c, "save_btn").onclick = function() {
-        wcSetConfig(c, null, el(c, "save_spinner"));
-      };
+      el(c, "open_btn").onclick = function() { setComponentState(c, {tgt_pos: 100}, el(c, "open_spinner")); };
+      el(c, "close_btn").onclick = function() { setComponentState(c, {tgt_pos: 0}, el(c, "close_spinner")); };
+      el(c, "save_btn").onclick = function() { wcSetConfig(c, null, el(c, "save_spinner")) };
       el(c, "cal_btn").onclick = function() {
-        wcSetConfig(c, {state: 10}, null);
+        setComponentState(c, {state: 10}, null);
         el(c, "cal_spinner").className = "spin";
       };
       break;
-    case 5: // Garage Doot Opener
+    case 5: // Garage Door Opener
       c = el("gdo_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
         gdoSetConfig(c, null, el(c, "save_spinner"));
       };
-      el(c, "toggle_btn").onclick = function() {
-        gdoSetConfig(c, {toggle: true}, el(c, "toggle_spinner"));
-      };
+      el(c, "toggle_btn").onclick = function() { setComponentState(c, {toggle: true}, el(c, "toggle_spinner")); };
       break;
     case 6: // Disabled Input.
       c = el("di_template").cloneNode(true);

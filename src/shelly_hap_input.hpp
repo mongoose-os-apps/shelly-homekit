@@ -46,6 +46,7 @@ class ShellyInput : public Component {
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
+  Status SetState(const std::string &state_json) override;
 
   uint16_t GetAIDBase() const;
   mgos::hap::Service *GetService() const;

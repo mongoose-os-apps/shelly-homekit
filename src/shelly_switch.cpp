@@ -139,6 +139,16 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   return Status::OK();
 }
 
+Status ShellySwitch::SetState(const std::string &state_json) {
+  int8_t state = -1;
+  json_scanf(state_json.c_str(), state_json.size(), "{state: %B}", &state);
+  if (state < 0) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "%s is required", "state");
+  }
+  SetOutputState(state, "RPC");
+  return Status::OK();
+}
+
 Status ShellySwitch::Init() {
   if (!cfg_->enable) {
     LOG(LL_INFO, ("'%s' is disabled", cfg_->name));
@@ -151,18 +161,18 @@ Status ShellySwitch::Init() {
   }
   switch (static_cast<InitialState>(cfg_->initial_state)) {
     case InitialState::kOff:
-      SetState(false, "init");
+      SetOutputState(false, "init");
       break;
     case InitialState::kOn:
-      SetState(true, "init");
+      SetOutputState(true, "init");
       break;
     case InitialState::kLast:
-      SetState(cfg_->state, "init");
+      SetOutputState(cfg_->state, "init");
       break;
     case InitialState::kInput:
       if (in_ != nullptr &&
           cfg_->in_mode == static_cast<int>(InMode::kToggle)) {
-        SetState(in_->GetState(), "init");
+        SetOutputState(in_->GetState(), "init");
       }
       break;
     case InitialState::kMax:
@@ -173,11 +183,11 @@ Status ShellySwitch::Init() {
   return Status::OK();
 }
 
-bool ShellySwitch::GetState() const {
+bool ShellySwitch::GetOutputState() const {
   return out_->GetState();
 }
 
-void ShellySwitch::SetState(bool new_state, const char *source) {
+void ShellySwitch::SetOutputState(bool new_state, const char *source) {
   bool cur_state = out_->GetState();
   out_->SetState(new_state, source);
   if (led_out_ != nullptr) {
@@ -205,13 +215,13 @@ void ShellySwitch::AutoOffTimerCB() {
   // Don't set state if auto off has been disabled during timer run
   if (!cfg_->auto_off) return;
   if (static_cast<InMode>(cfg_->in_mode) == InMode::kActivation &&
-      in_ != nullptr && in_->GetState() && GetState()) {
+      in_ != nullptr && in_->GetState() && GetOutputState()) {
     // Input is active, re-arm.
     LOG(LL_INFO, ("Input is active, re-arming auto off timer"));
     auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
     return;
   }
-  SetState(false, "auto_off");
+  SetOutputState(false, "auto_off");
 }
 
 void ShellySwitch::SaveState() {
@@ -231,19 +241,19 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
       switch (static_cast<InMode>(cfg_->in_mode)) {
         case InMode::kMomentary:
           if (state) {  // Only on 0 -> 1 transitions.
-            SetState(!out_->GetState(), "ext_mom");
+            SetOutputState(!out_->GetState(), "ext_mom");
           }
           break;
         case InMode::kToggle:
-          SetState(state, "switch");
+          SetOutputState(state, "switch");
           break;
         case InMode::kEdge:
-          SetState(!out_->GetState(), "ext_edge");
+          SetOutputState(!out_->GetState(), "ext_edge");
           break;
         case InMode::kActivation:
           if (state) {
-            SetState(true, "ext_act");
-          } else if (GetState() && cfg_->auto_off) {
+            SetOutputState(true, "ext_act");
+          } else if (GetOutputState() && cfg_->auto_off) {
             // On 1 -> 0 transitions do not turn on output
             // but re-arm auto off timer if running.
             auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);

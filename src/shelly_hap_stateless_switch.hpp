@@ -53,6 +53,7 @@ class StatelessSwitch : public Component, public mgos::hap::Service {
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
+  Status SetState(const std::string &state_json) override;
 
  private:
   void InputEventHandler(Input::Event ev, bool state);

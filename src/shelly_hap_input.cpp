@@ -63,6 +63,11 @@ class ShellyDisabledInput : public Component, public mgos::hap::Service {
     (void) restart_required;
     return Status::OK();
   }
+
+  Status SetState(const std::string &state_json) override {
+    (void) state_json;
+    return Status::UNIMPLEMENTED();
+  }
 };
 
 ShellyInput::ShellyInput(int id, Input *in, struct mgos_config_in *cfg)
@@ -171,6 +176,11 @@ Status ShellyInput::SetConfig(const std::string &config_json,
   }
   // Service may have changed but we still call SetConfig for the current one.
   return c_->SetConfig(config_json, restart_required);
+}
+
+Status ShellyInput::SetState(const std::string &state_json) {
+  (void) state_json;
+  return Status::UNIMPLEMENTED();
 }
 
 uint16_t ShellyInput::GetAIDBase() const {

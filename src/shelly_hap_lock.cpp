@@ -74,7 +74,7 @@ HAPError Lock::HandleCurrentStateRead(
 HAPError Lock::HandleTargetStateWrite(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
-  SetState((value == 0), "HAP");
+  SetOutputState((value == 0), "HAP");
   state_notify_chars_[1]->RaiseEvent();
   (void) server;
   (void) request;

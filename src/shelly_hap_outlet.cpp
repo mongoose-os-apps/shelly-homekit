@@ -51,7 +51,7 @@ Status Outlet::Init() {
       true /* supports_notification */,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicWriteRequest *,
              bool value) {
-        SetState(value, "HAP");
+        SetOutputState(value, "HAP");
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_On);

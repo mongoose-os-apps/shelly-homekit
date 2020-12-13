@@ -118,6 +118,11 @@ Status StatelessSwitch::SetConfig(const std::string &config_json,
   return Status::OK();
 }
 
+Status StatelessSwitch::SetState(const std::string &state_json) {
+  (void) state_json;
+  return Status::UNIMPLEMENTED();
+}
+
 void StatelessSwitch::InputEventHandler(Input::Event ev, bool state) {
   const auto in_mode = static_cast<InMode>(cfg_->in_mode);
   switch (in_mode) {

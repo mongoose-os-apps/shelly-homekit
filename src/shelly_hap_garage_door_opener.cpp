@@ -127,11 +127,10 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   cfg.name = nullptr;
   int move_time = -1, pulse_time_ms = -1, out_mode = -1;
   int close_sensor_mode = -1, open_sensor_mode = -1;
-  int8_t toggle = -1;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, toggle: %B, move_time: %d, pulse_time_ms: %d, "
+             "{name: %Q, move_time: %d, pulse_time_ms: %d, "
              "close_sensor_mode: %d, open_sensor_mode: %d, out_mode: %d}",
-             &cfg.name, &toggle, &move_time, &pulse_time_ms, &close_sensor_mode,
+             &cfg.name, &move_time, &pulse_time_ms, &close_sensor_mode,
              &open_sensor_mode, &out_mode);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
@@ -152,10 +151,6 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   }
   // We don't impose a limit on pulse time.
   // Apply.
-  if (toggle != -1 && toggle) {
-    ToggleState("RPC");
-    RunOnce();
-  }
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
     *restart_required = true;
@@ -175,6 +170,16 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   if (out_mode >= 0) {
     cfg_->out_mode = out_mode;
     *restart_required = true;
+  }
+  return Status::OK();
+}
+
+Status GarageDoorOpener::SetState(const std::string &state_json) {
+  int8_t toggle = -1;
+  json_scanf(state_json.c_str(), state_json.size(), "{toggle: %B}", &toggle);
+  if (toggle != -1 && toggle) {
+    ToggleState("RPC");
+    RunOnce();
   }
   return Status::OK();
 }

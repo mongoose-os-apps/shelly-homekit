@@ -55,6 +55,7 @@ class WindowCovering : public Component, public mgos::hap::Service {
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
+  Status SetState(const std::string &state_json) override;
 
  private:
   enum class State {
@@ -95,7 +96,7 @@ class WindowCovering : public Component, public mgos::hap::Service {
 
   void SaveState();
 
-  void SetState(State new_state);
+  void SetInternalState(State new_state);
   void SetCurPos(float new_cur_pos, float p);
   void SetTgtPos(float new_tgt_pos, const char *src);
 
