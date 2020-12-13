@@ -148,22 +148,26 @@ class Device:
       return False
 
   def get_device_url(self):
+    self.device_url = None
     logger.trace(f"Valid Hostname: {self.host} {self.is_valid_hostname(self.host)}")
     if self.is_valid_hostname(self.host) and self.is_host_online(self.host):
-      homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo')
-      stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings')
-      if homekit_fwcheck.status_code == 200:
-        self.fw_type = "homekit"
-        self.device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
-      elif stock_fwcheck.status_code == 200:
-        self.fw_type = "stock"
-        self.device_url = f'http://{self.wifi_ip}/settings'
+      try:
+        homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo')
+        stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings')
+        if homekit_fwcheck.status_code == 200:
+          self.fw_type = "homekit"
+          self.device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
+        elif stock_fwcheck.status_code == 200:
+          self.fw_type = "stock"
+          self.device_url = f'http://{self.wifi_ip}/settings'
+      except:
+        pass
     logger.trace(f"Device URL: {self.device_url}")
+    return self.device_url
 
   def get_device_info(self):
     info = None
-    self.get_device_url()
-    if self.device_url:
+    if self.get_device_url():
       try:
         with urllib.request.urlopen(self.device_url) as fp:
           info = json.load(fp)
