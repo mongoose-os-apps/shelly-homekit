@@ -123,7 +123,7 @@ class MyListener:
 
 class Device:
   def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
-    self.host = f'{host}.local' if '.local' not in host else host
+    self.host = f'{host}.local' if '.local' not in host and not host[0:3].isdigit() else host
     self.friendly_host = host
     self.fw_type = fw_type
     self.device_url = device_url
@@ -147,15 +147,15 @@ class Device:
       logger.trace(f"Hostname: {self.host} is Online")
       return True
     except:
-      logger.warning(f"{RED}Could not resolve host: {self.host}\n{NC}")
+      logger.warning(f"{RED}Could not resolve host: {self.host}{NC}")
       return False
 
   def get_device_url(self):
     self.device_url = None
     if self.is_valid_hostname(self.host) and self.is_host_online(self.host):
       try:
-        homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo')
-        stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings')
+        homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=1)
+        stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings', timeout=1)
         if homekit_fwcheck.status_code == 200:
           self.fw_type = "homekit"
           self.device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
@@ -175,6 +175,8 @@ class Device:
           info = json.load(fp)
       except:
         pass
+    else:
+      logger.warning(f"{RED}Could not get info from device: {self.host}\n{NC}")
     self.info = info
     return info
 
