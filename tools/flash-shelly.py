@@ -154,8 +154,8 @@ class Device:
     self.device_url = None
     if self.is_valid_hostname(self.host) and self.is_host_online(self.host):
       try:
-        homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=1)
-        stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings', timeout=1)
+        homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
+        stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings', timeout=3)
         if homekit_fwcheck.status_code == 200:
           self.fw_type = "homekit"
           self.device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
