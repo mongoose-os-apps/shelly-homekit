@@ -338,8 +338,8 @@ class StockDevice(Device):
 
 
 def parse_version(vs):
-  pp = vs.split('-');
-  v = pp[0].split('.');
+  pp = vs.split('_') if '_' in vs else vs.split('-')
+  v = pp[0].split('.')
   variant = ""
   varSeq = 0
   if len(pp) > 1:
