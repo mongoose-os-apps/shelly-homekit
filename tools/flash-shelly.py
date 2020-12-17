@@ -639,11 +639,15 @@ if __name__ == '__main__':
   logger.debug(f"verbose: {args.verbose}")
 
   if not args.hosts and not args.do_all:
-    logger.info("Requires a hostname or {-a|--all}.")
+    logger.info(f"{WHITE}Requires a hostname or {-a|--all}.{NC}")
     parser.print_help()
     sys.exit(1)
   elif args.hosts and args.do_all:
-    logger.info("Invalid option hostname or {-a|--all} not both.")
+    logger.info(f"{WHITE}Invalid option hostname or {-a|--all} not both.{NC}")
+    parser.print_help()
+    sys.exit(1)
+  if args.version and len(args.version.split('.')) < 3:
+    logger.info(f"{WHITE}Incorect version formatting i.e '1.9.0'{NC}")
     parser.print_help()
     sys.exit(1)
   try:
