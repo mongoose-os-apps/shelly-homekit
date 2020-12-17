@@ -135,13 +135,16 @@ class Device:
 
   def is_valid_hostname(self, hostname):
     if len(hostname) > 255:
-        return False
+        result = False
     allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    return all(allowed.match(x) for x in hostname.split("."))
+    result = all(allowed.match(x) for x in hostname.split("."))
+    logger.trace(f"Valid Hostname: {self.host} {result}")
+    return result
 
   def is_host_online(self, host):
     try:
       self.wifi_ip = socket.gethostbyname(self.host)
+      logger.trace(f"Hostname: {self.host} is Online")
       return True
     except:
       logger.warning(f"{RED}Could not resolve host: {self.host}\n{NC}")
@@ -149,7 +152,6 @@ class Device:
 
   def get_device_url(self):
     self.device_url = None
-    logger.trace(f"Valid Hostname: {self.host} {self.is_valid_hostname(self.host)}")
     if self.is_valid_hostname(self.host) and self.is_host_online(self.host):
       try:
         homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo')
