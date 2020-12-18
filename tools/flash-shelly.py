@@ -342,6 +342,8 @@ class StockDevice(Device):
 
 
 def parse_version(vs):
+  # 1.9.2_1L
+  # 1.9.3-rc3 / 2.7.0-beta1
   pp = vs.split('_') if '_' in vs else vs.split('-')
   v = pp[0].split('.')
   variant = ""
