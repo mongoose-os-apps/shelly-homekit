@@ -123,7 +123,7 @@ class MyListener:
 
 class Device:
   def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
-    self.host = f'{host}.local' if '.local' not in host else host
+    self.host = f'{host}.local' if '.local' not in host and not host[0:3].isdigit() else host
     self.friendly_host = host
     self.fw_type = fw_type
     self.device_url = device_url
@@ -135,25 +135,27 @@ class Device:
 
   def is_valid_hostname(self, hostname):
     if len(hostname) > 255:
-        return False
+        result = False
     allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    return all(allowed.match(x) for x in hostname.split("."))
+    result = all(allowed.match(x) for x in hostname.split("."))
+    logger.trace(f"Valid Hostname: {self.host} {result}")
+    return result
 
   def is_host_online(self, host):
     try:
       self.wifi_ip = socket.gethostbyname(self.host)
+      logger.trace(f"Hostname: {self.host} is Online")
       return True
     except:
-      logger.warning(f"{RED}Could not resolve host: {self.host}\n{NC}")
+      logger.warning(f"{RED}Could not resolve host: {self.host}{NC}")
       return False
 
   def get_device_url(self):
     self.device_url = None
-    logger.trace(f"Valid Hostname: {self.host} {self.is_valid_hostname(self.host)}")
     if self.is_valid_hostname(self.host) and self.is_host_online(self.host):
       try:
-        homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo')
-        stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings')
+        homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
+        stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings', timeout=3)
         if homekit_fwcheck.status_code == 200:
           self.fw_type = "homekit"
           self.device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
@@ -173,6 +175,8 @@ class Device:
           info = json.load(fp)
       except:
         pass
+    else:
+      logger.warning(f"{RED}Could not get info from device: {self.host}\n{NC}")
     self.info = info
     return info
 
@@ -338,8 +342,10 @@ class StockDevice(Device):
 
 
 def parse_version(vs):
-  pp = vs.split('-');
-  v = pp[0].split('.');
+  # 1.9.2_1L
+  # 1.9.3-rc3 / 2.7.0-beta1
+  pp = vs.split('_') if '_' in vs else vs.split('-')
+  v = pp[0].split('.')
   variant = ""
   varSeq = 0
   if len(pp) > 1:
@@ -550,6 +556,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
+    zc.wait(100)
     count = 1
     total_loop = 1
     while count < 10:
@@ -636,11 +643,15 @@ if __name__ == '__main__':
   logger.debug(f"verbose: {args.verbose}")
 
   if not args.hosts and not args.do_all:
-    logger.info("Requires a hostname or {-a|--all}.")
+    logger.info(f"{WHITE}Requires a hostname or {-a|--all}.{NC}")
     parser.print_help()
     sys.exit(1)
   elif args.hosts and args.do_all:
-    logger.info("Invalid option hostname or {-a|--all} not both.")
+    logger.info(f"{WHITE}Invalid option hostname or {-a|--all} not both.{NC}")
+    parser.print_help()
+    sys.exit(1)
+  if args.version and len(args.version.split('.')) < 3:
+    logger.info(f"{WHITE}Incorect version formatting i.e '1.9.0'{NC}")
     parser.print_help()
     sys.exit(1)
   try:
