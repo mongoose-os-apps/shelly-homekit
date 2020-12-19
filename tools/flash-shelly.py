@@ -121,6 +121,9 @@ class MyListener:
       dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
       self.device_list.append(dict)
 
+  def update_service(self, *args, **kwargs):
+    pass
+
 class Device:
   def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
     self.host = f'{host}.local' if '.local' not in host and not host[0:3].isdigit() else host
@@ -138,16 +141,16 @@ class Device:
         result = False
     allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
     result = all(allowed.match(x) for x in hostname.split("."))
-    logger.trace(f"Valid Hostname: {self.host} {result}")
+    logger.trace(f"Valid Hostname: {hostname} {result}")
     return result
 
   def is_host_online(self, host):
     try:
-      self.wifi_ip = socket.gethostbyname(self.host)
-      logger.trace(f"Hostname: {self.host} is Online")
+      self.wifi_ip = socket.gethostbyname(host)
+      logger.trace(f"Hostname: {host} is Online")
       return True
     except:
-      logger.warning(f"{RED}Could not resolve host: {self.host}{NC}")
+      logger.warning(f"{RED}Could not resolve host: {host}{NC}")
       return False
 
   def get_device_url(self):
@@ -176,7 +179,7 @@ class Device:
       except:
         pass
     else:
-      logger.warning(f"{RED}Could not get info from device: {self.host}\n{NC}")
+      logger.debug(f"{RED}Could not get info from device: {self.host}\n{NC}")
     self.info = info
     return info
 
@@ -643,11 +646,11 @@ if __name__ == '__main__':
   logger.debug(f"verbose: {args.verbose}")
 
   if not args.hosts and not args.do_all:
-    logger.info(f"{WHITE}Requires a hostname or {-a|--all}.{NC}")
+    logger.info(f"{WHITE}Requires a hostname or -a | --all{NC}")
     parser.print_help()
     sys.exit(1)
   elif args.hosts and args.do_all:
-    logger.info(f"{WHITE}Invalid option hostname or {-a|--all} not both.{NC}")
+    logger.info(f"{WHITE}Invalid option hostname or -a | --all not both.{NC}")
     parser.print_help()
     sys.exit(1)
   if args.version and len(args.version.split('.')) < 3:
@@ -657,14 +660,16 @@ if __name__ == '__main__':
   try:
     with urllib.request.urlopen("https://api.shelly.cloud/files/firmware") as fp:
       stock_release_info = json.load(fp)
-  except:
-    logger.warning(F"{RED}Failed to lookup online version information{NC}")
+  except urllib.error.URLError as e:
+    logger.warning(f"{RED}Failed to lookup online version information{NC}")
+    logger.debug(e.reason)
     sys.exit(1)
   try:
     with urllib.request.urlopen("https://rojer.me/files/shelly/update.json") as fp:
       homekit_release_info = json.load(fp)
-  except:
-    logger.warning("Failed to lookup version information")
+  except urllib.error.URLError as e:
+    logger.warning(f"{RED}Failed to lookup online version information{NC}")
+    logger.debug(e.reason)
     sys.exit(1)
   logger.trace(f"\n{WHITE}stock_release_info:{NC}{stock_release_info}")
   logger.trace(f"\n{WHITE}homekit_release_info:{NC}{homekit_release_info}")
