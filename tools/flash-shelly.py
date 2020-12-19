@@ -121,7 +121,7 @@ class MyListener:
       dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
       self.device_list.append(dict)
 
-  def update_service(self, zeroconf):
+  def update_service(self, *args, **kwargs):
     pass
 
 class Device:
