@@ -121,6 +121,9 @@ class MyListener:
       dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
       self.device_list.append(dict)
 
+  def update_service(self, zeroconf):
+    pass
+
 class Device:
   def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
     self.host = f'{host}.local' if '.local' not in host and not host[0:3].isdigit() else host
