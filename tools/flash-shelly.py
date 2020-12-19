@@ -564,7 +564,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     total_loop = 1
     while count < 10:
       nod = len(listener.device_list)
-      time.sleep(2)
+      time.sleep(4)
       count += 1
       if len(listener.device_list) == nod:
         total_loop += 1
