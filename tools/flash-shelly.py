@@ -52,6 +52,7 @@ import functools
 import json
 import logging
 import platform
+import queue
 import re
 import socket
 import subprocess
@@ -112,6 +113,7 @@ class MyListener:
   def __init__(self):
     self.device_list = []
     self.p_list = []
+    self.queue = queue.Queue()
 
   def add_service(self, zeroconf, type, device):
     device = device.replace('._http._tcp.local.', '')
@@ -120,6 +122,7 @@ class MyListener:
     if deviceinfo.fw_type is not None:
       dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
       self.device_list.append(dict)
+      self.queue.put(dict)
 
   def update_service(self, *args, **kwargs):
     pass
@@ -540,12 +543,12 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
       write_flash(device_info, hap_setup_code)
   logger.info(" ")
 
-
 def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug(f"\n{WHITE}device_scan{NC}")
   requires_upgrade = False
 
   if not do_all:
+    d_queue = queue.Queue()
     device_list = []
     logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
     for host in hosts:
@@ -554,30 +557,32 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
       if deviceinfo.fw_type is not None:
         dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
         device_list.append(dict)
+        d_queue.put(dict)
   else:
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
     zc.wait(100)
-    count = 1
-    total_loop = 1
-    while count < 10:
-      nod = len(listener.device_list)
-      time.sleep(2)
-      count += 1
-      if len(listener.device_list) == nod:
-        total_loop += 1
-      if total_loop > 3:
-        break
-    zc.close()
-    device_list = listener.device_list
-    nod = len(device_list)
-    logger.info(f"{GREEN}{nod} Devices found.\n{NC}")
-  sorted_device_list = sorted(device_list, key=lambda k: k['host'])
-  logger.trace(f"device_test: {sorted_device_list}")
+    time.sleep(1)
+    d_queue = listener.queue
 
-  for device in sorted_device_list:
+  total_loop = 1
+  nod = 0
+  scan_finished = zc.done
+  while not scan_finished:
+    while d_queue.empty() and total_loop < 4: # do 4 loops of 2 seconds, if queue is still empty close scanner.
+      time.sleep(2)
+      total_loop += 1
+      if not d_queue.empty():
+        break
+    if d_queue.empty():
+      zc.close()
+      scan_finished = zc.done
+      logger.info(f"{GREEN}{nod} Devices found.\n{NC}")
+      continue
+    device = d_queue.get()
+    nod += 1
     if mode == 'keep':
       flashmode = device['fw_type']
     else:
@@ -608,6 +613,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
       logger.info(f"please update via the device webUI.\n")
       continue
     parse_info(deviceinfo, action, dry_run, silent_run, flashmode, exclude, version, hap_setup_code, requires_upgrade)
+
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
