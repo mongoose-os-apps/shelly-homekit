@@ -130,7 +130,7 @@ class MyListener:
 class Device:
   def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
     self.host = f'{host}.local' if '.local' not in host and not host[0:3].isdigit() else host
-    self.friendly_host = host
+    self.friendly_host = host.replace('.local','')
     self.fw_type = fw_type
     self.device_url = device_url
     self.info = info
