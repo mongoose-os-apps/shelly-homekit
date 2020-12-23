@@ -111,8 +111,6 @@ except ImportError:
 
 class MyListener:
   def __init__(self):
-    self.device_list = []
-    self.p_list = []
     self.queue = queue.Queue()
 
   def add_service(self, zeroconf, type, device):
@@ -121,7 +119,6 @@ class MyListener:
     deviceinfo.get_device_info()
     if deviceinfo.fw_type is not None:
       dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
-      self.device_list.append(dict)
       self.queue.put(dict)
 
   def update_service(self, *args, **kwargs):
@@ -549,14 +546,12 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
 
   if not do_all:
     d_queue = queue.Queue()
-    device_list = []
     logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
     for host in hosts:
       deviceinfo = Device(host)
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
-        device_list.append(dict)
         d_queue.put(dict)
   else:
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
@@ -571,7 +566,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
   nod = 0
   scan_finished = zc.done
   while not scan_finished:
-    while d_queue.empty() and total_loop < 6: # do 4 loops of 2 seconds, if queue is still empty close scanner.
+    while d_queue.empty() and total_loop < 6: # do 6 loops of 2 seconds, if queue is still empty close scanner.
       time.sleep(2)
       total_loop += 1
       if not d_queue.empty():
