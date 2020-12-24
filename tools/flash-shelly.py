@@ -580,6 +580,8 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
+        d_info = json.dumps(device, indent = 4)
+        logger.trace(f"Device Info: {d_info}")
         probe_device(device, action, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code)
   else:
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
