@@ -427,7 +427,7 @@ def write_flash(device_info, hap_setup_code):
       logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     logger.debug("Current: %s" % onlinecheck)
 
-def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version, hap_setup_code, requires_upgrade):
+def parse_info(device_info, action, dry_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
   logger.debug(f"\n{WHITE}parse_info{NC}")
   logger.trace(f"device_info: {device_info}")
 
@@ -442,6 +442,7 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
   current_fw_type_str = device_info.fw_type_str
   flash_fw_version = device_info.flash_fw_version
   flash_fw_type_str = device_info.flash_fw_type_str
+  force_version = device_info.version
   model = device_info.model
   stock_model = device_info.stock_model
   colour_mode = device_info.colour_mode
@@ -489,11 +490,11 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
     if exclude and friendly_host in exclude:
       logger.info("Skipping as device has been excluded...\n")
       return 0
-    elif version and dlurl and parse_version(version) != parse_version(current_fw_version):
+    elif force_version and dlurl and parse_version(force_version) != parse_version(current_fw_version):
       perform_flash = True
-      device_info.set_force_version(version)
-      flash_fw_version = version
-      keyword = f"reflashed version {version}"
+      device_info.set_force_version(force_version)
+      flash_fw_version = force_version
+      keyword = f"reflashed version {force_version}"
     elif requires_upgrade:
       perform_flash = True
       if mode == 'stock':
@@ -511,8 +512,8 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
       perform_flash = True
       keyword = f"upgraded from {current_fw_version} to version {flash_fw_version}"
     elif not dlurl:
-      if version:
-        keyword = f"Version {version} is not available..."
+      if force_version:
+        keyword = f"Version {force_version} is not available..."
       else:
         keyword = "Is not supported yet..."
       logger.info(f"{keyword}\n")
