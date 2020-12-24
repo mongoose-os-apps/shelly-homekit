@@ -540,57 +540,20 @@ def parse_info(device_info, action, dry_run, silent_run, mode, exclude, version,
       write_flash(device_info, hap_setup_code)
   logger.info(" ")
 
-def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code):
-  logger.debug(f"\n{WHITE}device_scan{NC}")
+def probe_device(device, action, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code):
+  logger.debug(f"\n{WHITE}probe_device{NC}")
   requires_upgrade = False
-
-  if not do_all:
-    d_queue = queue.Queue()
-    logger.info(f"{WHITE}Probing Shelly device for info...\n{NC}")
-    for host in hosts:
-      deviceinfo = Device(host)
-      deviceinfo.get_device_info()
-      if deviceinfo.fw_type is not None:
-        dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
-        d_queue.put(dict)
+  if mode == 'keep':
+    flashmode = device['fw_type']
   else:
-    logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
-    zc = zeroconf.Zeroconf()
-    listener = MyListener()
-    browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
-    zc.wait(100)
-    time.sleep(1)
-    d_queue = listener.queue
-
-  total_loop = 1
-  nod = 0
-  scan_finished = zc.done
-  while not scan_finished:
-    while d_queue.empty() and total_loop < 6: # do 6 loops of 2 seconds, if queue is still empty close scanner.
-      time.sleep(2)
-      total_loop += 1
-      if not d_queue.empty():
-        break
-    if d_queue.empty():
-      zc.close()
-      scan_finished = zc.done
-      logger.info(f"{GREEN}{nod} Devices found.\n{NC}")
-      continue
-    device = d_queue.get()
-    nod += 1
-    if mode == 'keep':
-      flashmode = device['fw_type']
-    else:
-      flashmode = mode
-
-    if device['fw_type'] == 'homekit':
-      deviceinfo = HomeKitDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], variant, version)
-    elif device['fw_type'] == 'stock':
-      deviceinfo = StockDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], variant, version)
-    if not deviceinfo.get_info():
-      logger.warning(f"{RED}Failed to lookup local information of {device['host']}{NC}")
-      continue
-
+    flashmode = mode
+  if device['fw_type'] == 'homekit':
+    deviceinfo = HomeKitDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], variant, version)
+  elif device['fw_type'] == 'stock':
+    deviceinfo = StockDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], variant, version)
+  if not deviceinfo.get_info():
+    logger.warning(f"{RED}Failed to lookup local information of {device['host']}{NC}")
+  else:
     if flashmode == 'homekit' and deviceinfo.fw_type == 'stock':
       deviceinfo.update_to_stock(stock_release_info)
       if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
@@ -601,14 +564,49 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
       deviceinfo.update_to_homekit(homekit_release_info)
     elif flashmode == 'stock':
       deviceinfo.update_to_stock(stock_release_info)
-
     if deviceinfo.fw_type == "homekit" and float(f"{parse_version(deviceinfo.info['version'])[0]}.{parse_version(deviceinfo.info['version'])[1]}") < 2.1:
       logger.info(f"{WHITE}Host: {NC}{deviceinfo.host}")
       logger.info(f"Version {deviceinfo.info['version']} is to old for this script,")
       logger.info(f"please update via the device webUI.\n")
-      continue
-    parse_info(deviceinfo, action, dry_run, silent_run, flashmode, exclude, version, hap_setup_code, requires_upgrade)
+    else:
+      parse_info(deviceinfo, action, dry_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
 
+def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code):
+  logger.debug(f"\n{WHITE}device_scan{NC}")
+  if not do_all:
+    for host in hosts:
+      deviceinfo = Device(host)
+      deviceinfo.get_device_info()
+      if deviceinfo.fw_type is not None:
+        device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
+        probe_device(device, action, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code)
+  else:
+    logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
+    zc = zeroconf.Zeroconf()
+    listener = MyListener()
+    browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
+    zc.wait(100)
+    time.sleep(1)
+    d_queue = listener.queue
+    total_loop = 1
+    nod = 0
+    scan_finished = zc.done
+    while not scan_finished:
+      while d_queue.empty() and total_loop < 6: # do 6 loops of 2 seconds, if queue is still empty close scanner.
+        time.sleep(2)
+        total_loop += 1
+        if not d_queue.empty():
+          break
+      if d_queue.empty():
+        zc.close()
+        scan_finished = zc.done
+        logger.info(f"{GREEN}Devices found: {nod}{NC}")
+        continue
+      device = d_queue.get()
+      d_info = json.dumps(device, indent = 4)
+      logger.trace(f"Device Info: {d_info}")
+      nod += 1
+      probe_device(device, action, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
