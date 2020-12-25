@@ -597,7 +597,7 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     while not scan_finished:
       try:
         device = d_queue.get(timeout=20)
-      except queue.Empty as error:
+      except queue.Empty:
         logger.info(f"{GREEN}Devices found: {nod}{NC}")
         zc.close()
         scan_finished = zc.done
