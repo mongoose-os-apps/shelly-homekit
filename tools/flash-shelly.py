@@ -595,20 +595,16 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     nod = 0
     scan_finished = zc.done
     while not scan_finished:
-      while d_queue.empty() and total_loop < 6: # do 6 loops of 2 seconds, if queue is still empty close scanner.
-        time.sleep(2)
-        total_loop += 1
-        if not d_queue.empty():
-          break
-      if d_queue.empty():
+      try:
+        device = d_queue.get(timeout=20)
+      except queue.Empty as error:
+        logger.info(f"{GREEN}Devices found: {nod}{NC}")
         zc.close()
         scan_finished = zc.done
-        logger.info(f"{GREEN}Devices found: {nod}{NC}")
         continue
-      device = d_queue.get()
       d_info = json.dumps(device, indent = 4)
-      logger.trace(f"Device Info: {d_info}")
       nod += 1
+      logger.trace(f"Device Info: {d_info}")
       probe_device(device, action, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code)
 
 if __name__ == '__main__':
