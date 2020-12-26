@@ -597,15 +597,15 @@ def device_scan(hosts, action, do_all, dry_run, silent_run, mode, exclude, versi
     while not scan_finished:
       try:
         device = d_queue.get(timeout=20)
+        d_info = json.dumps(device, indent = 4)
+        nod += 1
+        logger.trace(f"Device Info: {d_info}")
+        probe_device(device, action, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code)
       except queue.Empty:
         logger.info(f"{GREEN}Devices found: {nod}{NC}")
         zc.close()
         scan_finished = zc.done
         continue
-      d_info = json.dumps(device, indent = 4)
-      nod += 1
-      logger.trace(f"Device Info: {d_info}")
-      probe_device(device, action, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
