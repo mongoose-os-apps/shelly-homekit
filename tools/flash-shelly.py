@@ -657,6 +657,8 @@ if __name__ == '__main__':
       stock_release_info = json.load(fp)
   except urllib.error.URLError as e:
     logger.warning(f"{RED}Failed to lookup online version information{NC}")
+    logger.warning("For more information please point your web browser to:")
+    logger.warning("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
     logger.debug(e.reason)
     sys.exit(1)
   try:
@@ -664,6 +666,8 @@ if __name__ == '__main__':
       homekit_release_info = json.load(fp)
   except urllib.error.URLError as e:
     logger.warning(f"{RED}Failed to lookup online version information{NC}")
+    logger.warning("For more information please point your web browser to:")
+    logger.warning("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
     logger.debug(e.reason)
     sys.exit(1)
   logger.trace(f"\n{WHITE}stock_release_info:{NC}{stock_release_info}")
