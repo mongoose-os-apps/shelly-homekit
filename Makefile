@@ -67,7 +67,10 @@ fs/index.html.gz: fs_src/index.html
 fs/style.css.gz: fs_src/style.css
 	gzip -9 -c fs_src/style.css > fs/style.css.gz
 
-build-%: fs/index.html.gz fs/style.css.gz
+fs/script.js.gz: fs_src/script.js
+	gzip -9 -c fs_src/script.js > fs/script.js.gz
+
+build-%: fs/index.html.gz fs/style.css.gz fs/script.js.gz
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
 	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL)
 ifeq "$(RELEASE)" "1"
