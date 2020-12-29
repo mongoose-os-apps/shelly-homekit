@@ -119,8 +119,12 @@ class MyListener:
       dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
       self.queue.put(dict)
 
+  def remove_service(self, *args, **kwargs):
+    pass
+
   def update_service(self, *args, **kwargs):
     pass
+
 
 class Device:
   def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
