@@ -693,6 +693,7 @@ function connectWebSocket() {
 
       // attempt to reconnect
       setTimeout(function () {
+        // connectionTries < 5 => 1 + 2 + 3 + 4 = try for ten seconds
         if (connectionTries < 5) {
           connectWebSocket().catch(() => console.log("[error] Could not reconnect to Shelly"));
         } else if (connectionTries === 5) {
@@ -768,7 +769,8 @@ function onLoad() {
   });
 
   setInterval(function () {
-    if (autoRefresh) getInfo();
+    // if the socket is open and connected
+    if (autoRefresh && socket.readyState === 1) getInfo();
   }, 1000);
 }
 
