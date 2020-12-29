@@ -1,7 +1,8 @@
 var lastInfo = null;
-var host = "";
 
-var autoRefresh = false;
+var socket = null;
+
+var autoRefresh = true;
 
 var wifiEn = el("wifi_en");
 var wifiSSID = el("wifi_ssid");
@@ -46,7 +47,7 @@ el("sys_save_btn").onclick = function () {
   };
   console.log("sysSetCfg:", data);
   el("sys_save_spinner").className = "spin";
-  axios.post(host + "/rpc/Shelly.SetConfig", data).then(function (res) {
+  sendMessageWebSocket("Shelly.SetConfig", data).then(function () {
     el("sys_save_spinner").className = "";
     setTimeout(getInfo, 1100);
   }).catch(function (err) {
@@ -69,8 +70,8 @@ el("hap_save_btn").onclick = function () {
     }
   }
   hapSaveSpinner.className = "spin";
-  axios.post(host + "/rpc/HAP.Setup", {"code": code}).then(function (res) {
-  }).catch(function (err) {
+  sendMessageWebSocket("HAP.Setup", {"code": code})
+    .catch(function (err) {
     if (err.response) {
       err = err.response.data.message;
     }
@@ -83,8 +84,8 @@ el("hap_save_btn").onclick = function () {
 
 el("hap_reset_btn").onclick = function () {
   hapResetSpinner.className = "spin";
-  axios.post(host + "/rpc/HAP.Reset", {"reset_server": true, "reset_code": true}).then(function (res) {
-  }).catch(function (err) {
+  sendMessageWebSocket("HAP.Reset", {"reset_server": true, "reset_code": true})
+    .catch(function (err) {
     if (err.response) {
       err = err.response.data.message;
     }
@@ -113,7 +114,7 @@ el("wifi_save_btn").onclick = function () {
     reboot: true,
   };
   if (wifiPass.value != "***") data.config.wifi.sta.pass = wifiPass.value;
-  axios.post(host + "/rpc/Config.Set", data).then(function (res) {
+  sendMessageWebSocket("Config.Set", data).then(function () {
     var dn = el("device_name").innerText;
     document.body.innerHTML =
       "<div class='container'><h1>Rebooting...</h1>" +
@@ -141,8 +142,8 @@ function setComponentConfig(c, cfg, spinner) {
     config: cfg,
   };
   console.log("SetConfig:", data);
-  axios.post(host + "/rpc/Shelly.SetConfig", data)
-    .then(function (res) {
+  sendMessageWebSocket("Shelly.SetConfig", data)
+    .then(function () {
       if (spinner) spinner.className = "";
       setTimeout(getInfo, 1100);
     }).catch(function (err) {
@@ -162,8 +163,8 @@ function setComponentState(c, state, spinner) {
     state: state,
   };
   console.log("SetState:", data);
-  axios.post(host + "/rpc/Shelly.SetState", data)
-    .then(function (res) {
+  sendMessageWebSocket("Shelly.SetState", data)
+    .then(function () {
       if (spinner) spinner.className = "";
       setTimeout(getInfo, 100);
     }).catch(function (err) {
@@ -332,7 +333,7 @@ function gdoSetConfig(c, cfg, spinner) {
 }
 
 el("reboot_btn").onclick = function () {
-  axios.post(host + "/rpc/Sys.Reboot", {delay_ms: 500}).then(function (res) {
+  sendMessageWebSocket("Sys.Reboot", {delay_ms: 500}).then(function () {
     alert("System is rebooting, please refresh the page.");
   });
 }
@@ -556,101 +557,101 @@ function updateComponent(cd) {
 }
 
 function getInfo() {
-  axios.get(host + "/rpc/Shelly.GetInfo").then(function (res) {
-    var data = res.data;
-    lastInfo = data;
-    console.log("Info:", data);
-    el("uptime").innerText = durationStr(data.uptime);
-    el("uptime_label").style.visibility = "visible";
-    el("model").innerText = data.model;
-    el("device_id").innerText = data.device_id;
-    el("app_version").innerText = data.version + ' (build ' + data.fw_build + ')';
-    if (data.failsafe_mode) {
-      el("notify_failsafe").style.display = "inline";
+  return new Promise(function (resolve, reject) {
+    if (socket.readyState !== 1) {
+      reject();
       return;
     }
 
-    el("device_name").innerText = el("sys_name").value = document.title = data.name;
-    el("device_name").style.visibility = "visible";
-    wifiEn.checked = data.wifi_en;
-    wifiSSID.value = data.wifi_ssid;
-    wifiPass.value = data.wifi_pass;
-    var wifiStatus = "";
-    if (data.wifi_rssi != 0) wifiStatus += "RSSI: " + data.wifi_rssi;
-    if (data.wifi_ip != "") wifiStatus += ", IP: " + data.wifi_ip;
-    if (!wifiStatus) {
-      wifiStatus = "not connected";
-    } else {
-      // These only make sense if we are connected to WiFi.
-      el("update_container").style.display = "block";
-      el("revert_to_stock_container").style.display = "block";
-      // We set external image URL to prevent loading it when not on WiFi, as it slows things down.
-      el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
-      el("donate_form_submit").style.display = "inline";
-    }
-    el("wifi_status").innerText = (wifiStatus ? wifiStatus : "not connected");
-    if (data.hap_running) {
-      hapSetupCode.value = "***-**-***";
-    } else {
-      hapSetupCode.value = "";
-    }
-    el("hap_paired").innerText = (data.hap_paired ? "yes" : "no");
-    if (data.hap_cn != el("components").cn) {
-      el("components").innerHTML = "";
-    }
-    autoRefresh = false;
-    for (var i in data.components) {
-      updateComponent(data.components[i]);
-    }
-    el("components").cn = data.hap_cn;
-    el("homekit_container").style.display = "block";
-    if (data.wifi_ip !== undefined) {
-      el("wifi_container").style.display = "block";
-    }
-    el("gs_container").style.display = "block";
-    if (data.hap_running) {
-      el("hap_conn_stats").innerText =
-        data.hap_ip_conns_pending + " pending, " +
-        data.hap_ip_conns_active + " active (" +
-        data.hap_ip_conns_max + " max)";
-    } else {
-      el("hap_conn_stats").innerText = "server not running";
-    }
-    if (data.rsh_avail || data.gdo_avail) {
-      if (!data.rsh_avail && el("sys_mode_1")) el("sys_mode_1").remove();
-      if (!data.gdo_avail && el("sys_mode_2")) el("sys_mode_2").remove();
-      (el("sys_mode_" + data.sys_mode) || {}).selected = true;
-      el("sys_mode_container").style.display = "block";
-    }
-    if (data.debug_en) {
-      el("debug_en").checked = true;
-      el("debug_link").style.visibility = "visible";
-    } else {
-      el("debug_en").checked = false;
-      el("debug_link").style.visibility = "hidden";
-    }
-    if (data.wifi_rssi != 0) {
-      var last_update_check = parseInt(getCookie("last_update_check"));
-      var now = new Date();
-      console.log("Last update check:", last_update_check, new Date(last_update_check));
-      if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
-        checkUpdate();
+    sendMessageWebSocket("Shelly.GetInfo").then(function (res) {
+      var data = res.result;
+      lastInfo = data;
+      el("uptime").innerText = durationStr(data.uptime);
+      el("uptime_label").style.visibility = "visible";
+      el("model").innerText = data.model;
+      el("device_id").innerText = data.device_id;
+      el("app_version").innerText = data.version + ' (build ' + data.fw_build + ')';
+      if (data.failsafe_mode) {
+        el("notify_failsafe").style.display = "inline";
+        reject();
+        return;
       }
-      el("notify_update").style.display = (getCookie("update_available") ? "block" : "none");
-    }
-    if (data.sys_temp !== undefined) {
-      el("sys_temp").innerText = data.sys_temp;
-      el("notify_overheat").style.display = (data.overheat_on ? "block" : "none");
-      el("sys_temp_container").style.display = "block";
-    } else {
-      el("sys_temp_container").style.display = "none";
-    }
-    el("debug_log_container").style.display = "block";
-  }).catch(function (err) {
-    alert(err);
-    console.log(err);
-  }).then(function () {
-    el("spinner").className = "";
+
+      el("device_name").innerText = el("sys_name").value = document.title = data.name;
+      el("device_name").style.visibility = "visible";
+      wifiEn.checked = data.wifi_en;
+      wifiSSID.value = data.wifi_ssid;
+      wifiPass.value = data.wifi_pass;
+      var wifiStatus = "";
+      if (data.wifi_rssi != 0) wifiStatus += "RSSI: " + data.wifi_rssi;
+      if (data.wifi_ip != "") wifiStatus += ", IP: " + data.wifi_ip;
+      if (!wifiStatus) {
+        wifiStatus = "not connected";
+      } else {
+        // These only make sense if we are connected to WiFi.
+        el("update_container").style.display = "block";
+        el("revert_to_stock_container").style.display = "block";
+        // We set external image URL to prevent loading it when not on WiFi, as it slows things down.
+        el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
+        el("donate_form_submit").style.display = "inline";
+      }
+      el("wifi_status").innerText = (wifiStatus ? wifiStatus : "not connected");
+      if (data.hap_running) {
+        hapSetupCode.value = "***-**-***";
+      } else {
+        hapSetupCode.value = "";
+      }
+      el("hap_paired").innerText = (data.hap_paired ? "yes" : "no");
+      if (data.hap_cn != el("components").cn) {
+        el("components").innerHTML = "";
+      }
+      autoRefresh = true;
+      for (var i in data.components) {
+        updateComponent(data.components[i]);
+      }
+      el("components").cn = data.hap_cn;
+      el("homekit_container").style.display = "block";
+      if (data.wifi_ip !== undefined) {
+        el("wifi_container").style.display = "block";
+      }
+      el("gs_container").style.display = "block";
+      if (data.hap_running) {
+        el("hap_conn_stats").innerText =
+          data.hap_ip_conns_pending + " pending, " +
+          data.hap_ip_conns_active + " active (" +
+          data.hap_ip_conns_max + " max)";
+      } else {
+        el("hap_conn_stats").innerText = "server not running";
+      }
+      if (data.rsh_avail || data.gdo_avail) {
+        if (!data.rsh_avail && el("sys_mode_1")) el("sys_mode_1").remove();
+        if (!data.gdo_avail && el("sys_mode_2")) el("sys_mode_2").remove();
+        (el("sys_mode_" + data.sys_mode) || {}).selected = true;
+        el("sys_mode_container").style.display = "block";
+      }
+      if (data.debug_en) {
+        el("debug_en").checked = true;
+        el("debug_link").style.visibility = "visible";
+      } else {
+        el("debug_en").checked = false;
+        el("debug_link").style.visibility = "hidden";
+      }
+      if (data.sys_temp !== undefined) {
+        el("sys_temp").innerText = data.sys_temp;
+        el("notify_overheat").style.display = (data.overheat_on ? "block" : "none");
+        el("sys_temp_container").style.display = "block";
+      } else {
+        el("sys_temp_container").style.display = "none";
+      }
+      el("debug_log_container").style.display = "block";
+    }).catch(function (err) {
+      alert(err);
+      console.log(err);
+      reject(err);
+    }).then(function () {
+      el("spinner").className = "";
+      resolve();
+    });
   });
 }
 
@@ -669,7 +670,7 @@ function setCookie(key, value) {
 
 el("debug_en").onclick = function () {
   var debugEn = el("debug_en").checked;
-  axios.post(host + "/rpc/Shelly.SetConfig", {config: {debug_en: debugEn}})
+  sendMessageWebSocket("Shelly.SetConfig", {config: {debug_en: debugEn}})
     .then(function (res) {
       getInfo();
     }).catch(function (err) {
@@ -680,13 +681,92 @@ el("debug_en").onclick = function () {
   });
 };
 
+var connectionTries = 0;
+
+function connectWebSocket() {
+  return new Promise(function (resolve, reject) {
+    socket = new WebSocket("ws://" + location.host + "/rpc");
+    connectionTries += 1;
+
+    socket.onclose = function(event) {
+      console.log(`[close] Connection died (code ${event.code})`);
+
+      // attempt to reconnect
+      setTimeout(function () {
+        if (connectionTries < 5) {
+          connectWebSocket().catch(() => console.log("[error] Could not reconnect to Shelly"));
+        } else if (connectionTries === 5) {
+          // inform the user that we will not be trying to reconnect again
+          alert("[error] Could not reconnect to Shelly, please refresh the page")
+        }
+      }, connectionTries * 1000);
+    };
+
+    socket.onerror = function(error) {
+      console.log(`[error] ${error.message}`);
+      alert(error.data.message);
+    };
+
+    socket.onopen = function () {
+      console.log("[open] Connection established");
+      connectionTries = 0;
+      resolve(socket);
+    };
+
+    socket.onerror = function (error) {
+      reject(error);
+    };
+  });
+}
+
+function randomInt(minimum = 1024, maximum = 65536) {
+  return (Math.random() * (maximum - minimum + 1) ) << 0;
+}
+
+function sendMessageWebSocket(method, params = [], id = randomInt()) {
+  return new Promise(function (resolve, reject) {
+    try {
+      socket.send(JSON.stringify({"method": method, "id": id, "params": params}));
+      console.log("[send] Data sent: " + JSON.stringify({"method": method, "id": id, "params": params}));
+    } catch (e) {
+      reject(e);
+    }
+
+    socket.onmessage = function (event) {
+      console.log("[message] Data received: " + event.data);
+      let data = JSON.parse(event.data);
+      if (data.id === id) {
+        resolve(data);
+      }
+    }
+
+    socket.onerror = function(error) {
+      reject(error);
+    }
+  });
+}
+
 el("refresh_btn").onclick = function () {
   el("spinner").className = "spin";
   getInfo();
 }
 
 function onLoad() {
-  getInfo();
+  connectWebSocket().then(() => {
+    getInfo().then(() => {
+      // check for update only once when loading the page (not each time in getInfo)
+      if (lastInfo.wifi_rssi !== 0) {
+        var last_update_check = parseInt(getCookie("last_update_check"));
+        var now = new Date();
+        console.log("Last update check:", last_update_check, new Date(last_update_check));
+        if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
+          checkUpdate();
+        }
+        el("notify_update").style.display = (getCookie("update_available") ? "block" : "none");
+      }
+    });
+  });
+
   setInterval(function () {
     if (autoRefresh) getInfo();
   }, 1000);
@@ -802,6 +882,10 @@ async function checkUpdate() {
     })
     .then(resp => resp.json())
     .then((resp) => {
+      // save the cookie before anything else, so that if update not
+      // found we still remember that we tried to check for an update
+      setCookie("last_update_check", (new Date()).getTime());
+
       var cfg, latestVersion, updateURL, relNotesURL;
       for (var i in resp) {
         var re = new RegExp(resp[i][0]);
@@ -824,7 +908,7 @@ async function checkUpdate() {
       }
       var updateAvailable = isNewer(latestVersion, curVersion);
       el("notify_update").style.display = (updateAvailable ? "block" : "none");
-      setCookie("last_update_check", (new Date()).getTime());
+
       setCookie("update_available", updateAvailable);
       if (!updateAvailable) {
         e.innerText = "Up to date";
