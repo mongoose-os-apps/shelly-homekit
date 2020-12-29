@@ -290,6 +290,7 @@ class HomeKitDevice(Device):
     self.model = self.info['model'] if 'model' in self.info else self.shelly_model(self.info['app'])
     self.stock_model = self.info['stock_model'] if 'stock_model' in self.info else None
     self.device_id = self.info['device_id'] if 'device_id' in self.info else None
+    self.device_name = self.info['name'] if 'name' in self.info else None
     self.colour_mode = self.info['colour_mode'] if 'colour_mode' in self.info else None
     return True
 
@@ -324,6 +325,7 @@ class StockDevice(Device):
     self.model = self.shelly_model(self.info['device']['type'])
     self.stock_model = self.info['device']['type']
     self.device_id = self.info['mqtt']['id'] if 'id' in self.info['mqtt'] else self.friendly_host
+    self.device_name = self.info['name'] if 'name' in self.info else None
     self.colour_mode = self.info['mode'] if 'mode' in self.info else None
     return True
 
@@ -437,7 +439,8 @@ def parse_info(device_info, action, do_selection, dry_run, silent_run, mode, exc
   flash = False
   host = device_info.host
   friendly_host = device_info.friendly_host
-  device = device_info.device_id
+  device_id = device_info.device_id
+  device_name = device_info.device_name
   wifi_ip = device_info.wifi_ip
   current_fw_version = device_info.fw_version
   current_fw_type = device_info.fw_type
@@ -452,7 +455,8 @@ def parse_info(device_info, action, do_selection, dry_run, silent_run, mode, exc
   flash_label = device_info.flash_label
 
   logger.debug(f"host: {host}")
-  logger.debug(f"device: {device}")
+  logger.debug(f"device_name: {device_name}")
+  logger.debug(f"device_id: {device_id}")
   logger.debug(f"model: {model}")
   logger.debug(f"stock_model: {stock_model}")
   logger.debug(f"colour_mode: {colour_mode}")
@@ -484,7 +488,8 @@ def parse_info(device_info, action, do_selection, dry_run, silent_run, mode, exc
     global nod
     nod += 1
     logger.info(f"\n{WHITE}Host: {NC}http://{host}")
-    logger.info(f"{WHITE}Device ID: {NC}{device}")
+    logger.info(f"{WHITE}Device Name: {NC}{device_name}")
+    logger.info(f"{WHITE}Device ID: {NC}{device_id}")
     logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
     logger.info(f"{WHITE}Model: {NC}{model}")
     logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
