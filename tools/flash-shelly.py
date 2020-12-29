@@ -476,7 +476,7 @@ def parse_info(device_info, action, do_selection, dry_run, silent_run, mode, exc
   else:
     latest_fw_label = flash_fw_version
 
-  if do_selection == 'all' or (do_selection == 'upgrade_only' and is_newer(flash_fw_version, current_fw_version)):
+  if do_selection in ('all', 'manual') or (do_selection == 'upgrade_only' and is_newer(flash_fw_version, current_fw_version)):
     global nod
     nod += 1
     logger.info(f"\n{WHITE}Host: {NC}http://{host}")
@@ -530,7 +530,7 @@ def parse_info(device_info, action, do_selection, dry_run, silent_run, mode, exc
         logger.info("Does not need flashing...")
       return 0
 
-    if do_selection == 'all' or (do_selection == 'upgrade_only' and is_newer(flash_fw_version, current_fw_version)):
+    if do_selection in ('all', 'manual') or (do_selection == 'upgrade_only' and is_newer(flash_fw_version, current_fw_version)):
       logger.debug(f"\nperform_flash: {perform_flash}\n")
       if perform_flash == True and dry_run == False and silent_run == False:
         if requires_upgrade == True:
@@ -582,7 +582,7 @@ def probe_device(device, action, do_selection, dry_run, silent_run, mode, exclud
 
 def device_scan(hosts, action, do_selection, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug(f"\n{WHITE}device_scan{NC}")
-  if not do_selection:
+  if hosts:
     for host in hosts:
       deviceinfo = Device(host)
       deviceinfo.get_device_info()
@@ -630,12 +630,14 @@ if __name__ == '__main__':
   args = parser.parse_args()
   action = 'list' if args.list else 'flash'
   args.mode = 'stock' if args.mode == 'revert' else args.mode
-  if not args.do_all and not args.do_upgrade_only:
+  if not args.do_all and not args.do_upgrade_only and not args.hosts:
     args.do_selection = False
   elif args.do_all:
     args.do_selection = 'all'
   elif args.do_upgrade_only:
     args.do_selection = 'upgrade_only'
+  elif args.hosts:
+    args.do_selection = 'manual'
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
   if args.verbose and '0' in args.verbose:
     logger.setLevel(logging.DEBUG)
@@ -660,7 +662,7 @@ if __name__ == '__main__':
     logger.info(f"{WHITE}Requires a hostname or -a | --all or -u | --upgrade{NC}")
     parser.print_help()
     sys.exit(1)
-  elif args.hosts and args.do_selection:
+  elif args.hosts and args.do_selection != 'manual':
     logger.info(f"{WHITE}Invalid option hostname or (-a | --all / -u | --upgrade) not both.{NC}")
     parser.print_help()
     sys.exit(1)
