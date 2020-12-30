@@ -55,7 +55,7 @@ class OutputPin : public Output {
   const int on_value_;
 
   bool pulse_active_ = false;
-  mgos::ScopedTimer pulse_timer_;
+  mgos::Timer pulse_timer_;
 
   OutputPin(const OutputPin &other) = delete;
 };

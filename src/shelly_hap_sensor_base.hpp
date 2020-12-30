@@ -67,7 +67,7 @@ class SensorBase : public Component, public mgos::hap::Service {
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
 
   double last_ev_ts_ = 0;
-  mgos::ScopedTimer auto_off_timer_;
+  mgos::Timer auto_off_timer_;
 
   SensorBase(const SensorBase &other) = delete;
 };

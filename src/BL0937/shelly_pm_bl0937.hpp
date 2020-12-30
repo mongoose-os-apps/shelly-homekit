@@ -42,7 +42,7 @@ class BL0937PowerMeter : public PowerMeter {
   float apa_ = 0;  // Last active power reading, W.
   float aea_ = 0;  // Accumulated active energy, Wh.
 
-  mgos::ScopedTimer meas_timer_;
+  mgos::Timer meas_timer_;
 };
 
 }  // namespace shelly
