@@ -481,7 +481,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   else:
     latest_fw_label = flash_fw_version
 
-  if not quiet_run or (quiet_run and is_newer(flash_fw_version, current_fw_version)):
+  if not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version))):
     logger.info(f"\n{WHITE}Host: {NC}http://{host}")
     logger.info(f"{WHITE}Device Name: {NC}{device_name}")
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
@@ -492,7 +492,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
     logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
 
-  if is_newer(flash_fw_version, current_fw_version):
+  if is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version):
     global upgradeable_devices
     upgradeable_devices += 1
 
