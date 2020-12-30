@@ -11,7 +11,14 @@ RELEASE ?= 0
 RELEASE_SUFFIX ?=
 MOS_BUILD_FLAGS ?=
 BUILD_DIR ?= ./build_$*
-MINIFY_JS ?= $(shell which terser> /dev/null && echo -n 1 || echo -n 0)
+
+# minify for production
+ifeq "$(RELEASE)" "1"
+  # JS minifier: `npm install terser -g`
+  MINIFY_JS ?= $(shell which terser> /dev/null && echo -n 1 || echo -n 0)
+else
+  MINIFY_JS ?= 0
+endif
 
 MAKEFLAGS += --warn-undefined-variables
 
