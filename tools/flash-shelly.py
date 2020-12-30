@@ -606,21 +606,18 @@ def device_scan(hosts, action, do_selection, dry_run, silent_run, mode, exclude,
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
     zc.wait(100)
-    time.sleep(1)
-    d_queue = listener.queue
     total_loop = 1
     scan_finished = zc.done
-    while not scan_finished:
+    while True:
       try:
-        device = d_queue.get(timeout=20)
+        device = listener.queue.get(timeout=20)
         d_info = json.dumps(device, indent = 4)
         logger.trace(f"Device Info: {d_info}")
         probe_device(device, action, do_selection, dry_run, silent_run, mode, exclude, version, variant, hap_setup_code)
       except queue.Empty:
         logger.info(f"\n{GREEN}Devices found: {nod}{NC}")
         zc.close()
-        scan_finished = zc.done
-        continue
+        break
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
