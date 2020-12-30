@@ -644,6 +644,9 @@ if __name__ == '__main__':
   elif args.verbose and '1' in args.verbose:
     logger.setLevel(logging.TRACE)
 
+  homekit_release_info = None
+  stock_release_info = None
+
   logger.debug(f"{WHITE}app{NC}")
   logger.debug(f"{PURPLE}OS: {arch}{NC}")
   logger.debug(f"manual_hosts: {args.hosts}")
@@ -670,25 +673,26 @@ if __name__ == '__main__':
     logger.info(f"{WHITE}Incorect version formatting i.e '1.9.0'{NC}")
     parser.print_help()
     sys.exit(1)
-  fp = requests.get("https://api.shelly.cloud/files/firmware", timeout=3)
-  if fp.status_code == 200:
-    stock_release_info = json.loads(fp.content)
-  else:
-    logger.warning(f"{RED}Failed to lookup online version information{NC}")
-    logger.warning("For more information please point your web browser to:")
-    logger.warning("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
+
+  try:
+    fp = requests.get("https://api.shelly.cloud/files/firmware", timeout=3)
+    if fp.status_code == 200:
+      stock_release_info = json.loads(fp.content)
+  except requests.exceptions.RequestException as err:
     logger.debug(fp.status_code)
-    sys.exit(1)
-  fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
-  if fp.status_code == 200:
-    homekit_release_info = json.loads(fp.content)
-  else:
-    logger.warning(f"{RED}Failed to lookup online version information{NC}")
-    logger.warning("For more information please point your web browser to:")
-    logger.warning("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
-    logger.debug(fp.status_code)
-    sys.exit(1)
+  try:
+    fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
+    if fp.status_code == 200:
+      homekit_release_info = json.loads(fp.content)
+  except requests.exceptions.RequestException as err:
+    logger.debug(err)
+
   logger.trace(f"\n{WHITE}stock_release_info:{NC}{stock_release_info}")
   logger.trace(f"\n{WHITE}homekit_release_info:{NC}{homekit_release_info}")
 
-  device_scan(args.hosts, action, args.do_selection, args.dry_run, args.silent_run, args.mode, args.exclude, args.version, args.variant, args.hap_setup_code)
+  if not stock_release_info or not homekit_release_info:
+    logger.warning(f"{RED}Failed to lookup online version information{NC}")
+    logger.warning("For more information please point your web browser to:")
+    logger.warning("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
+  else:
+    device_scan(args.hosts, action, args.do_selection, args.dry_run, args.silent_run, args.mode, args.exclude, args.version, args.variant, args.hap_setup_code)
