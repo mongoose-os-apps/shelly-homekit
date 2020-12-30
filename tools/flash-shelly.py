@@ -503,28 +503,29 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     else:
       message = f"Do you wish to flash"
       keyword = f"{friendly_host} to firmware version {flash_fw_version}"
-    if exclude and friendly_host in exclude:
-      logger.info("Skipping as device has been excluded...\n")
-      return 0
-    elif force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version):
-      perform_flash = True
-      keyword = f"reflashed version {force_version}"
-    elif requires_upgrade:
-      perform_flash = True
-      if mode == 'stock':
-        keyword = f"upgraded to version {flash_fw_version}"
-      elif mode == 'homekit':
-        message = "This device needs to be"
-        keyword = "upgraded to latest stock firmware version, before you can flash to HomeKit"
-    elif current_fw_type != mode and dlurl:
-      perform_flash = True
-      if mode == 'stock':
-        keyword = "converted to Official firmware"
-      elif mode == 'homekit':
-        keyword = "converted to HomeKit firmware"
-    elif current_fw_type == mode and is_newer(flash_fw_version, current_fw_version):
-      perform_flash = True
-      keyword = f"upgraded from {current_fw_version} to version {flash_fw_version}"
+    if dlurl:
+      if exclude and friendly_host in exclude:
+        logger.info("Skipping as device has been excluded...\n")
+        return 0
+      elif force_version and parse_version(flash_fw_version) != parse_version(current_fw_version):
+        perform_flash = True
+        keyword = f"reflashed version {force_version}"
+      elif requires_upgrade:
+        perform_flash = True
+        if mode == 'stock':
+          keyword = f"upgraded to version {flash_fw_version}"
+        elif mode == 'homekit':
+          message = "This device needs to be"
+          keyword = "upgraded to latest stock firmware version, before you can flash to HomeKit"
+      elif current_fw_type != mode:
+        perform_flash = True
+        if mode == 'stock':
+          keyword = "converted to Official firmware"
+        elif mode == 'homekit':
+          keyword = "converted to HomeKit firmware"
+      elif current_fw_type == mode and is_newer(flash_fw_version, current_fw_version):
+        perform_flash = True
+        keyword = f"upgraded from {current_fw_version} to version {flash_fw_version}"
     elif not dlurl:
       if force_version:
         keyword = f"Version {force_version} is not available..."
