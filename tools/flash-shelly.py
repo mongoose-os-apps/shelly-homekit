@@ -175,11 +175,9 @@ class Device:
   def get_device_info(self):
     info = None
     if self.get_device_url():
-      try:
-        with urllib.request.urlopen(self.device_url) as fp:
-          info = json.load(fp)
-      except:
-        pass
+      fp = requests.get(self.device_url, timeout=3)
+      if fp.status_code == 200:
+        info = json.loads(fp.content)
     else:
       logger.debug(f"{RED}Could not get info from device: {self.host}\n{NC}")
     self.info = info
@@ -605,7 +603,7 @@ def device_scan(hosts, action, do_selection, dry_run, silent_run, mode, exclude,
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
-    zc.wait(100)
+    # zc.wait(100)
     total_loop = 1
     scan_finished = zc.done
     while True:
