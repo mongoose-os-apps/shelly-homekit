@@ -11,6 +11,7 @@ RELEASE ?= 0
 RELEASE_SUFFIX ?=
 MOS_BUILD_FLAGS ?=
 BUILD_DIR ?= ./build_$*
+MINIFY_JS ?= $(shell which terser> /dev/null && echo -n 1 || echo -n 0)
 
 MAKEFLAGS += --warn-undefined-variables
 
@@ -61,16 +62,24 @@ ShellyU: MOS_BUILD_FLAGS=--build-var=ASAN=1 --build-var=UBSAN=1
 ShellyU: build-ShellyU
 	@true
 
-fs/index.html.gz: fs_src/index.html
-	gzip -9 -c fs_src/index.html > fs/index.html.gz
+fs_src/script.min.js: fs_src/script.js
+ifeq "$(MINIFY_JS)" "1"
+	terser --mangle --comments --safari10 --output fs_src/script.min.js fs_src/script.js
+else
+	cp fs_src/script.js fs_src/script.min.js
+endif
 
-fs/style.css.gz: fs_src/style.css
-	gzip -9 -c fs_src/style.css > fs/style.css.gz
+fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.min.js
+	sed -e '/<style>/ r fs_src/style.css' -e '/<script>/ r fs_src/script.min.js' fs_src/index.html 2>&1 | gzip -9 -c >| fs/index.html.gz
+	rm -f fs_src/script.min.js
 
-fs/script.js.gz: fs_src/script.js
-	gzip -9 -c fs_src/script.js > fs/script.js.gz
+fs/style.css.gz:
+	echo "/* Empty file */" | gzip -9 -c >| fs/style.css.gz
 
-build-%: fs/index.html.gz fs/style.css.gz fs/script.js.gz
+fs/axios.min.js.gz:
+	echo "/* Empty file */" | gzip -9 -c >| fs/axios.min.js.gz
+
+build-%: fs/index.html.gz fs/style.css.gz
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
 	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL)
 ifeq "$(RELEASE)" "1"

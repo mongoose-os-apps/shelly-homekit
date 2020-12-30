@@ -26,7 +26,7 @@ function el(container, id) {
 
 function checkName(name) {
   var ok = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-";
-  if (name.length == 0 || name.length > 63) return false;
+  if (name.length === 0 || name.length > 63) return false;
   for (var i in name) {
     if (ok.indexOf(name[i]) < 0) return false;
   }
@@ -689,7 +689,7 @@ function connectWebSocket() {
     connectionTries += 1;
 
     socket.onclose = function(event) {
-      console.log(`[close] Connection died (code ${event.code})`);
+      console.log("[close] Connection died (code " + event.code + ")");
 
       // attempt to reconnect
       setTimeout(function () {
@@ -704,7 +704,7 @@ function connectWebSocket() {
     };
 
     socket.onerror = function(error) {
-      console.log(`[error] ${error.message}`);
+      console.log("[error] " + error.message);
       alert(error.data.message);
     };
 
@@ -720,11 +720,7 @@ function connectWebSocket() {
   });
 }
 
-function randomInt(minimum = 1024, maximum = 65536) {
-  return (Math.random() * (maximum - minimum + 1) ) << 0;
-}
-
-function sendMessageWebSocket(method, params = [], id = randomInt()) {
+function sendMessageWebSocket(method, params = [], id = 0) {
   return new Promise(function (resolve, reject) {
     try {
       socket.send(JSON.stringify({"method": method, "id": id, "params": params}));
@@ -735,10 +731,7 @@ function sendMessageWebSocket(method, params = [], id = randomInt()) {
 
     socket.onmessage = function (event) {
       console.log("[message] Data received: " + event.data);
-      let data = JSON.parse(event.data);
-      if (data.id === id) {
-        resolve(data);
-      }
+      resolve(JSON.parse(event.data));
     }
 
     socket.onerror = function(error) {
