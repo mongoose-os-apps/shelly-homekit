@@ -58,7 +58,6 @@ import socket
 import subprocess
 import sys
 import time
-import urllib
 
 logging.TRACE = 5
 logging.addLevelName(logging.TRACE, 'TRACE')
@@ -674,23 +673,23 @@ if __name__ == '__main__':
     logger.info(f"{WHITE}Incorect version formatting i.e '1.9.0'{NC}")
     parser.print_help()
     sys.exit(1)
-  try:
-    with urllib.request.urlopen("https://api.shelly.cloud/files/firmware") as fp:
-      stock_release_info = json.load(fp)
-  except urllib.error.URLError as e:
+  fp = requests.get("https://api.shelly.cloud/files/firmware", timeout=3)
+  if fp.status_code == 200:
+    stock_release_info = json.loads(fp.content)
+  else:
     logger.warning(f"{RED}Failed to lookup online version information{NC}")
     logger.warning("For more information please point your web browser to:")
     logger.warning("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
-    logger.debug(e.reason)
+    logger.debug(fp.status_code)
     sys.exit(1)
-  try:
-    with urllib.request.urlopen("https://rojer.me/files/shelly/update.json") as fp:
-      homekit_release_info = json.load(fp)
-  except urllib.error.URLError as e:
+  fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
+  if fp.status_code == 200:
+    homekit_release_info = json.loads(fp.content)
+  else:
     logger.warning(f"{RED}Failed to lookup online version information{NC}")
     logger.warning("For more information please point your web browser to:")
     logger.warning("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
-    logger.debug(e.reason)
+    logger.debug(fp.status_code)
     sys.exit(1)
   logger.trace(f"\n{WHITE}stock_release_info:{NC}{stock_release_info}")
   logger.trace(f"\n{WHITE}homekit_release_info:{NC}{homekit_release_info}")
