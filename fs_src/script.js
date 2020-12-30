@@ -13,6 +13,8 @@ var hapSetupCode = el("hap_setup_code");
 var hapSaveSpinner = el("hap_save_spinner");
 var hapResetSpinner = el("hap_reset_spinner");
 
+var connection_state = el("notify_connection");
+
 var sw1 = el("sw1_container");
 var sw2 = el("sw2_container");
 
@@ -690,32 +692,30 @@ function connectWebSocket() {
 
     socket.onclose = function(event) {
       console.log("[close] Connection died (code " + event.code + ")");
-
+      connection_state.textContent = "Disconnected";
+      connection_state.classList.remove("grey", "green");
       // attempt to reconnect
       setTimeout(function () {
-        // connectionTries < 5 => 1 + 2 + 3 + 4 = try for ten seconds
-        if (connectionTries < 5) {
-          connectWebSocket().catch(() => console.log("[error] Could not reconnect to Shelly"));
-        } else if (connectionTries === 5) {
-          // inform the user that we will not be trying to reconnect again
-          alert("[error] Could not reconnect to Shelly, please refresh the page")
-        }
-      }, connectionTries * 1000);
+        connectWebSocket()
+          // reload the page once we reconnect (the web ui could have changed)
+          .then(() => location.reload())
+          .catch(() => console.log("[error] Could not reconnect to Shelly"));
+      }, Math.min(3000, connectionTries * 1000));
     };
 
     socket.onerror = function(error) {
-      console.log("[error] " + error.message);
-      alert(error.data.message);
+      el("notify_connection").textContent = "Error";
+      connection_state.classList.remove("grey", "green");
+      reject(error);
     };
 
     socket.onopen = function () {
       console.log("[open] Connection established");
+      connection_state.textContent = "Connected";
+      connection_state.classList.remove("grey");
+      connection_state.classList.add("green");
       connectionTries = 0;
       resolve(socket);
-    };
-
-    socket.onerror = function (error) {
-      reject(error);
     };
   });
 }
@@ -762,8 +762,8 @@ function onLoad() {
   });
 
   setInterval(function () {
-    // if the socket is open and connected
-    if (autoRefresh && socket.readyState === 1) getInfo();
+    // if the socket is open and connected and the page is visible to the user  
+    if (autoRefresh && socket.readyState === 1 && !document.hidden) getInfo();
   }, 1000);
 }
 
