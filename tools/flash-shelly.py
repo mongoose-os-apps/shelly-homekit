@@ -602,7 +602,6 @@ def device_scan(hosts, action, do_selection, dry_run, silent_run, mode, exclude,
     zc = zeroconf.Zeroconf()
     listener = MyListener()
     browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
-    # zc.wait(100)
     total_loop = 1
     scan_finished = zc.done
     while True:
