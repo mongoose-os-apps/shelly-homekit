@@ -137,16 +137,6 @@ h1 {
   position: absolute;
 }
 
-.badge.green {
-  background-color: limegreen;
-  border: 2px solid limegreen;
-}
-
-.badge.grey {
-  background-color: grey;
-  border: 2px solid grey;
-}
-
 .helpbadge {
   background-color: #fefefe;
   border: 1px solid #999999;

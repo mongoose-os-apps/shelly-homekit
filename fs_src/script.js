@@ -13,8 +13,6 @@ var hapSetupCode = el("hap_setup_code");
 var hapSaveSpinner = el("hap_save_spinner");
 var hapResetSpinner = el("hap_reset_spinner");
 
-var connection_state = el("notify_connection");
-
 var sw1 = el("sw1_container");
 var sw2 = el("sw2_container");
 
@@ -754,8 +752,7 @@ function connectWebSocket() {
 
     socket.onclose = function(event) {
       console.log("[close] Connection died (code " + event.code + ")");
-      connection_state.textContent = "Disconnected";
-      connection_state.classList.remove("grey", "green");
+      el("notify_disconnected").style.display = "inline"
       // attempt to reconnect
       setTimeout(function () {
         connectWebSocket()
@@ -766,16 +763,13 @@ function connectWebSocket() {
     };
 
     socket.onerror = function(error) {
-      el("notify_connection").textContent = "Error";
-      connection_state.classList.remove("grey", "green");
+      el("notify_disconnected").style.display = "inline"
       reject(error);
     };
 
     socket.onopen = function () {
       console.log("[open] Connection established");
-      connection_state.textContent = "Connected";
-      connection_state.classList.remove("grey");
-      connection_state.classList.add("green");
+      el("notify_disconnected").style.display = "none";
       connectionTries = 0;
       resolve(socket);
     };
