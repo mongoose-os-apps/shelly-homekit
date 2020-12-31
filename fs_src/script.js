@@ -336,7 +336,7 @@ function gdoSetConfig(c, cfg, spinner) {
 
 el("reboot_btn").onclick = function () {
   sendMessageWebSocket("Sys.Reboot", {delay_ms: 500}).then(function () {
-    alert("System is rebooting, please refresh the page.");
+    alert("System is rebooting and will reconnect when ready.");
   });
 }
 
@@ -558,6 +558,123 @@ function updateComponent(cd) {
   c.data = cd;
 }
 
+function updateElement(key, value) {
+  switch (key) {
+    case "uptime":
+      el("uptime").innerText = durationStr(value);
+      el("uptime_label").style.visibility = "visible";
+      break;
+    case "model":
+    case "device_id":
+    case "version":
+    case "fw_build":
+      el(key).innerText = value;
+      break;
+    case "name":
+      el("device_name").innerText = el("sys_name").value = document.title = value;
+      el("device_name").style.visibility = "visible";
+      break;
+    case "wifi_en":
+      wifiEn.checked = value;
+      break;
+    case "wifi_ssid":
+      wifiSSID.value = value;
+      break;
+    case "wifi_pass":
+      wifiPass.value = value;
+      break;
+    case "wifi_rssi":
+      if (value !== 0) {
+        el("wifi_rssi").innerText = "RSSI: " + value;
+        el("wifi_rssi").style.display = "inline";
+      } else el("wifi_rssi").style.display = "none";
+      break;
+    case "wifi_ip":
+      if (value !== undefined) {
+        // These only make sense if we are connected to WiFi.
+        el("update_container").style.display = "block";
+        el("revert_to_stock_container").style.display = "block";
+        // We set external image URL to prevent loading it when not on WiFi, as it slows things down.
+        el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
+        el("donate_form_submit").style.display = "inline";
+
+        el("wifi_ip").innerText = "IP: " + value;
+        el("wifi_container").style.display = "block";
+      } else {
+        el("wifi_ip").innerText = "Not connected";
+      }
+      break;
+    case "host":
+      if (value !== "") {
+        el("host").innerText = "Host: " + value;
+        el("host").style.display = "inline";
+      } else el("host").style.display = "none";
+      break;
+    case "hap_paired":
+      el(key).innerText = (value ? "yes" : "no");
+      break;
+    case "hap_cn":
+      if (value !== el("components").cn) {
+        el("components").innerHTML = "";
+      }
+      el("components").cn = value;
+      break;
+    case "components":
+      for (let i in value) {
+        let update = false;
+        if (lastInfo !== null) {
+          for (let comp_el in value[i]) {
+            if (lastInfo.components[i][comp_el] !== value[i][comp_el]) {
+              update = true;
+              break;
+            }
+          }
+        }
+        if (lastInfo === null || update) updateComponent(value[i]);
+      }
+      break;
+    case "hap_running":
+      hapSetupCode.value = value ? "***-**-***" : "";
+      if (!value)
+        el("hap_ip_conns_max").innerText = "Server not running"
+        el("hap_ip_conns_pending").style.display
+        = el("hap_ip_conns_active").style.display
+        = "none";
+      break;
+    case "hap_ip_conns_pending":
+    case "hap_ip_conns_active":
+    case "hap_ip_conns_max":
+      el(key).style.display = "inline";
+      el(key).innerText = value + " " + key.split("_").slice(-1)[0];
+      break;
+    case "debug_en":
+      el("debug_en").checked = value;
+      el("debug_link").style.visibility = value ? "visible" : "hidden";
+      break;
+    case "rsh_avail":
+    case "gdo_avail":
+      if (!value) break;
+      if (key === "rsh_avail" && !value && el("sys_mode_1")) el("sys_mode_1").remove();
+      if (key === "gdo_avail" && !value && el("sys_mode_2")) el("sys_mode_2").remove();
+      (el("sys_mode_" + data.sys_mode) || {}).selected = true;
+      el("sys_mode_container").style.display = "block";
+      break;
+    case "sys_temp":
+      if (value !== undefined) {
+        el("sys_temp").innerText = value;
+        el("sys_temp_container").style.display = "block";
+      } else {
+        el("sys_temp_container").style.display = "none";
+      }
+      break;
+    case "overheat_on":
+      el("notify_overheat").style.display = (value ? "block" : "none");
+      break;
+    default:
+      console.log(key, value);
+  }
+}
+
 function getInfo() {
   return new Promise(function (resolve, reject) {
     if (socket.readyState !== 1) {
@@ -567,84 +684,29 @@ function getInfo() {
 
     sendMessageWebSocket("Shelly.GetInfo").then(function (res) {
       var data = res.result;
-      lastInfo = data;
-      el("uptime").innerText = durationStr(data.uptime);
-      el("uptime_label").style.visibility = "visible";
-      el("model").innerText = data.model;
-      el("device_id").innerText = data.device_id;
-      el("app_version").innerText = data.version + ' (build ' + data.fw_build + ')';
-      if (data.failsafe_mode) {
-        el("notify_failsafe").style.display = "inline";
+
+      if (data == null) {
         reject();
         return;
       }
 
-      el("device_name").innerText = el("sys_name").value = document.title = data.name;
-      el("device_name").style.visibility = "visible";
-      wifiEn.checked = data.wifi_en;
-      wifiSSID.value = data.wifi_ssid;
-      wifiPass.value = data.wifi_pass;
-      var wifiStatus = "";
-      if (data.wifi_rssi != 0) wifiStatus += "RSSI: " + data.wifi_rssi;
-      if (data.wifi_ip != "") wifiStatus += ", IP: " + data.wifi_ip;
-      if (!wifiStatus) {
-        wifiStatus = "not connected";
-      } else {
-        // These only make sense if we are connected to WiFi.
-        el("update_container").style.display = "block";
-        el("revert_to_stock_container").style.display = "block";
-        // We set external image URL to prevent loading it when not on WiFi, as it slows things down.
-        el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
-        el("donate_form_submit").style.display = "inline";
+      if (data.failsafe_mode) {
+        el("notify_failsafe").style.display = "inline";
+        resolve();
+        return;
       }
-      el("wifi_status").innerText = (wifiStatus ? wifiStatus : "not connected");
-      if (data.hap_running) {
-        hapSetupCode.value = "***-**-***";
-      } else {
-        hapSetupCode.value = "";
+
+      for (let element in data) {
+        if (lastInfo == null || (lastInfo[element] !== data[element])) {
+          updateElement(element, data[element]);
+        }
       }
-      el("hap_paired").innerText = (data.hap_paired ? "yes" : "no");
-      if (data.hap_cn != el("components").cn) {
-        el("components").innerHTML = "";
-      }
+
+      lastInfo = data;
       autoRefresh = true;
-      for (var i in data.components) {
-        updateComponent(data.components[i]);
-      }
-      el("components").cn = data.hap_cn;
+
       el("homekit_container").style.display = "block";
-      if (data.wifi_ip !== undefined) {
-        el("wifi_container").style.display = "block";
-      }
       el("gs_container").style.display = "block";
-      if (data.hap_running) {
-        el("hap_conn_stats").innerText =
-          data.hap_ip_conns_pending + " pending, " +
-          data.hap_ip_conns_active + " active (" +
-          data.hap_ip_conns_max + " max)";
-      } else {
-        el("hap_conn_stats").innerText = "server not running";
-      }
-      if (data.rsh_avail || data.gdo_avail) {
-        if (!data.rsh_avail && el("sys_mode_1")) el("sys_mode_1").remove();
-        if (!data.gdo_avail && el("sys_mode_2")) el("sys_mode_2").remove();
-        (el("sys_mode_" + data.sys_mode) || {}).selected = true;
-        el("sys_mode_container").style.display = "block";
-      }
-      if (data.debug_en) {
-        el("debug_en").checked = true;
-        el("debug_link").style.visibility = "visible";
-      } else {
-        el("debug_en").checked = false;
-        el("debug_link").style.visibility = "hidden";
-      }
-      if (data.sys_temp !== undefined) {
-        el("sys_temp").innerText = data.sys_temp;
-        el("notify_overheat").style.display = (data.overheat_on ? "block" : "none");
-        el("sys_temp_container").style.display = "block";
-      } else {
-        el("sys_temp_container").style.display = "none";
-      }
       el("debug_log_container").style.display = "block";
     }).catch(function (err) {
       alert(err);
@@ -740,6 +802,7 @@ function sendMessageWebSocket(method, params = [], id = 0) {
   });
 }
 
+el("refresh_btn").style.display = autoRefresh ? "none" : "inline";
 el("refresh_btn").onclick = function () {
   el("spinner").className = "spin";
   getInfo();
@@ -762,7 +825,7 @@ function onLoad() {
   });
 
   setInterval(function () {
-    // if the socket is open and connected and the page is visible to the user  
+    // if the socket is open and connected and the page is visible to the user
     if (autoRefresh && socket.readyState === 1 && !document.hidden) getInfo();
   }, 1000);
 }

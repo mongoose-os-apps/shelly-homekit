@@ -17,10 +17,10 @@
   <div class="logodiv"><img class="img" src="logo.png" alt=""></div>
   <div class="apl_thin">
     Shelly-<b>HomeKit</b>
+    <div class="badge grey" id="notify_connection" style="display: block">Unknown</div>
     <div class="badge" id="notify_update" style="display: none">Update</div>
     <div class="badge" id="notify_overheat" style="display: none">Overheating</div>
     <div class="badge" id="notify_failsafe" style="display: none">Failsafe mode</div>
-    <div class="badge grey" id="notify_connection" style="display: block">Unknown</div>
   </div>
   <h1 class="" id="device_name" style="visibility: hidden"></h1>
   <br>
@@ -73,7 +73,11 @@
       </div>
       <div class="form-control">
         <label>Connections:</label>
-        <span id="hap_conn_stats"></span>
+        <ul id="hap_conn_stats" class="comma-list">
+          <li id="hap_ip_conns_pending"></li>
+          <li id="hap_ip_conns_active"></li>
+          <li id="hap_ip_conns_max"></li>
+        </ul>
       </div>
       <div class="form-control">
         <label>Setup code:</label>
@@ -114,7 +118,11 @@
       </div>
       <div class="form-control">
         <label>Status:</label>
-        <span id="wifi_status"></span>
+        <ul class="comma-list" id="wifi_status">
+          <li id="wifi_rssi"></li>
+          <li id="host"></li>
+          <li id="wifi_ip"></li>
+        </ul>
       </div>
       <div class="form-control">
         <label></label>
@@ -139,7 +147,11 @@
       </div>
       <div class="form-control">
         <label>Version:</label>
-        <span id="app_version"></span>
+        <span id="version"></span>
+      </div>
+      <div class="form-control">
+        <label>Firmware:</label>
+        <span id="fw_build"></span>
       </div>
       <div class="form-control" id="update_container" style="display: none">
         <label>Update: </label>
