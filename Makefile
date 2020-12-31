@@ -12,14 +12,6 @@ RELEASE_SUFFIX ?=
 MOS_BUILD_FLAGS ?=
 BUILD_DIR ?= ./build_$*
 
-# minify for production
-ifeq "$(RELEASE)" "1"
-  # if JS minifier available: `npm install terser -g`
-  MINIFY_JS ?= $(shell which terser> /dev/null && echo -n 1 || echo -n 0)
-else
-  MINIFY_JS ?= 0
-endif
-
 MAKEFLAGS += --warn-undefined-variables
 
 MOS_BUILD_FLAGS_FINAL = $(MOS_BUILD_FLAGS)
