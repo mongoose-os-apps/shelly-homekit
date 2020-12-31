@@ -14,7 +14,7 @@ BUILD_DIR ?= ./build_$*
 
 # minify for production
 ifeq "$(RELEASE)" "1"
-  # JS minifier: `npm install terser -g`
+  # if JS minifier available: `npm install terser -g`
   MINIFY_JS ?= $(shell which terser> /dev/null && echo -n 1 || echo -n 0)
 else
   MINIFY_JS ?= 0
@@ -69,16 +69,14 @@ ShellyU: MOS_BUILD_FLAGS=--build-var=ASAN=1 --build-var=UBSAN=1
 ShellyU: build-ShellyU
 	@true
 
-fs_src/script.min.js: fs_src/script.js
+fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js
 ifeq "$(MINIFY_JS)" "1"
 	terser --mangle --comments --safari10 --output fs_src/script.min.js fs_src/script.js
-else
-	cp fs_src/script.js fs_src/script.min.js
-endif
-
-fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.min.js
 	sed -e '/<style>/ r fs_src/style.css' -e '/<script>/ r fs_src/script.min.js' fs_src/index.html 2>&1 | gzip -9 -c >| fs/index.html.gz
 	rm -f fs_src/script.min.js
+else
+	sed -e '/<style>/ r fs_src/style.css' -e '/<script>/ r fs_src/script.js' fs_src/index.html 2>&1 | gzip -9 -c >| fs/index.html.gz
+endif
 
 fs/style.css.gz:
 	echo "/* Empty file */" | gzip -9 -c >| fs/style.css.gz
