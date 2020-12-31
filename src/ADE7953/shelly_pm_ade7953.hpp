@@ -40,7 +40,7 @@ class ADE7953PowerMeter : public PowerMeter {
   struct mgos_ade7953 *const ade7953_;
   const int channel_;
   float aea_acc_ = 0;  // Accumulated active energy.
-  mgos::ScopedTimer acc_timer_;
+  mgos::Timer acc_timer_;
 };
 
 }  // namespace shelly

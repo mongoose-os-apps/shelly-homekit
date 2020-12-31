@@ -87,7 +87,7 @@ class ShellySwitch : public Component, public mgos::hap::Service {
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
   std::vector<mgos::hap::Characteristic *> state_notify_chars_;
 
-  mgos::ScopedTimer auto_off_timer_;
+  mgos::Timer auto_off_timer_;
   bool dirty_ = false;
 
   ShellySwitch(const ShellySwitch &other) = delete;

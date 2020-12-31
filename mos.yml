@@ -120,8 +120,6 @@ conds:
     apply:
       name: switch1 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -129,8 +127,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
-        # We don't need the cryptochip support. Saves approx 12K flash.
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-1"'
@@ -156,8 +152,6 @@ conds:
     apply:
       name: switch1l # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -165,8 +159,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
-        # We don't need the cryptochip support. Saves approx 12K flash.
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -199,8 +191,6 @@ conds:
     apply:
       name: switch1pm # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -208,8 +198,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
-        # We don't need the cryptochip support. Saves approx 12K flash.
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -240,8 +228,6 @@ conds:
     apply:
       name: switch
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -249,7 +235,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-21"'
@@ -284,8 +269,6 @@ conds:
       includes:
         - src/ADE7953
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
         - origin: https://github.com/mongoose-os-libs/ade7953
@@ -295,7 +278,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -336,15 +318,12 @@ conds:
     apply:
       name: shelly-plug2 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         # Note: 4 MB flash chip
         FS_SIZE: 262144
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 13  # Green, 14 red, 16 blue.
         LED_ON: 0
@@ -368,8 +347,6 @@ conds:
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -377,7 +354,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x7000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 2  # Blue, 0 red.
         LED_ON: 0
@@ -414,8 +390,6 @@ conds:
     apply:
       name: ix3
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -423,7 +397,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHIX3-1"'
@@ -461,8 +434,6 @@ conds:
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: ubuntu-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       config_schema:
