@@ -796,12 +796,6 @@ function sendMessageWebSocket(method, params = [], id = 0) {
   });
 }
 
-el("refresh_btn").style.display = autoRefresh ? "none" : "inline";
-el("refresh_btn").onclick = function () {
-  el("spinner").className = "spin";
-  getInfo();
-}
-
 function onLoad() {
   connectWebSocket().then(() => {
     getInfo().then(() => {
