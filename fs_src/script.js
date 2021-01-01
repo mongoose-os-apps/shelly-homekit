@@ -678,9 +678,11 @@ function getInfo() {
         return;
       }
 
+      data.failsafe_mode = true;
+
       if (data.failsafe_mode) {
         el("notify_failsafe").style.display = "inline";
-        el("uptime_label").style.dispaly = "none";
+        el("uptime_label").style.display = "none";
         // only show this limited set of infos
         ["model", "device_id", "version", "fw_build"]
           .forEach(element => updateElement(element, data[element]));
@@ -805,6 +807,8 @@ function onLoad() {
         // if the socket is open and connected and the page is visible to the user
         if (socket.readyState === 1 && !document.hidden) getInfo();
       }, 1000);
+    }).catch(() => {
+      console.log("getInfo() rejected; failsafe mode?");
     });
   });
 }
