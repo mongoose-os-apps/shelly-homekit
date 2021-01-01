@@ -2,8 +2,6 @@ var lastInfo = null;
 
 var socket = null;
 
-var autoRefresh = true;
-
 var wifiEn = el("wifi_en");
 var wifiSSID = el("wifi_ssid");
 var wifiPass = el("wifi_pass");
@@ -49,7 +47,6 @@ el("sys_save_btn").onclick = function () {
   el("sys_save_spinner").className = "spin";
   sendMessageWebSocket("Shelly.SetConfig", data).then(function () {
     el("sys_save_spinner").className = "";
-    setTimeout(getInfo, 1100);
   }).catch(function (err) {
     el("sys_save_spinner").className = "";
     if (err.response) {
@@ -72,13 +69,12 @@ el("hap_save_btn").onclick = function () {
   hapSaveSpinner.className = "spin";
   sendMessageWebSocket("HAP.Setup", {"code": code})
     .catch(function (err) {
-    if (err.response) {
-      err = err.response.data.message;
-    }
-    alert(err);
-  }).then(function () {
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+    }).then(function () {
     hapSaveSpinner.className = "";
-    getInfo();
   });
 };
 
@@ -86,13 +82,12 @@ el("hap_reset_btn").onclick = function () {
   hapResetSpinner.className = "spin";
   sendMessageWebSocket("HAP.Reset", {"reset_server": true, "reset_code": true})
     .catch(function (err) {
-    if (err.response) {
-      err = err.response.data.message;
-    }
-    alert(err);
-  }).then(function () {
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+    }).then(function () {
     hapResetSpinner.className = "";
-    getInfo();
   });
 };
 
@@ -145,7 +140,6 @@ function setComponentConfig(c, cfg, spinner) {
   sendMessageWebSocket("Shelly.SetConfig", data)
     .then(function () {
       if (spinner) spinner.className = "";
-      setTimeout(getInfo, 1100);
     }).catch(function (err) {
     if (spinner) spinner.className = "";
     if (err.response) {
@@ -166,7 +160,6 @@ function setComponentState(c, state, spinner) {
   sendMessageWebSocket("Shelly.SetState", data)
     .then(function () {
       if (spinner) spinner.className = "";
-      setTimeout(getInfo, 100);
     }).catch(function (err) {
     if (spinner) spinner.className = "";
     if (err.response) {
@@ -501,10 +494,7 @@ function updateComponent(cd) {
       if (cd.state >= 10 && cd.state < 20) {  // Calibration is ongoing.
         el(c, "cal_spinner").className = "spin";
         el(c, "cal").innerText = "in progress";
-        autoRefresh = true;
-      } else if (cd.state >= 20 && cd.state <= 25) {
-        autoRefresh = true;
-      } else {
+      } else if (!(cd.state >= 20 && cd.state <= 25)) {
         el(c, "cal_spinner").className = "";
         el(c, "open_spinner").className = "";
         el(c, "close_spinner").className = "";
@@ -635,7 +625,7 @@ function updateElement(key, value) {
       hapSetupCode.value = value ? "***-**-***" : "";
       if (!value)
         el("hap_ip_conns_max").innerText = "Server not running"
-        el("hap_ip_conns_pending").style.display
+      el("hap_ip_conns_pending").style.display
         = el("hap_ip_conns_active").style.display
         = "none";
       break;
@@ -690,7 +680,11 @@ function getInfo() {
 
       if (data.failsafe_mode) {
         el("notify_failsafe").style.display = "inline";
-        resolve();
+        el("uptime_label").style.dispaly = "none";
+        // only show this limited set of infos
+        ["model", "device_id", "version", "fw_build"]
+          .forEach(element => updateElement(element, data[element]));
+        reject();
         return;
       }
 
@@ -701,7 +695,6 @@ function getInfo() {
       }
 
       lastInfo = data;
-      autoRefresh = true;
 
       el("homekit_container").style.display = "block";
       el("gs_container").style.display = "block";
@@ -710,10 +703,7 @@ function getInfo() {
       alert(err);
       console.log(err);
       reject(err);
-    }).then(function () {
-      el("spinner").className = "";
-      resolve();
-    });
+    }).then(resolve);
   });
 }
 
@@ -733,9 +723,7 @@ function setCookie(key, value) {
 el("debug_en").onclick = function () {
   var debugEn = el("debug_en").checked;
   sendMessageWebSocket("Shelly.SetConfig", {config: {debug_en: debugEn}})
-    .then(function (res) {
-      getInfo();
-    }).catch(function (err) {
+    .catch(function (err) {
     if (err.response) {
       err = err.response.data.message;
     }
@@ -750,7 +738,7 @@ function connectWebSocket() {
     socket = new WebSocket("ws://" + location.host + "/rpc");
     connectionTries += 1;
 
-    socket.onclose = function(event) {
+    socket.onclose = function (event) {
       console.log("[close] Connection died (code " + event.code + ")");
       el("notify_disconnected").style.display = "inline"
       // attempt to reconnect
@@ -762,7 +750,7 @@ function connectWebSocket() {
       }, Math.min(3000, connectionTries * 1000));
     };
 
-    socket.onerror = function(error) {
+    socket.onerror = function (error) {
       el("notify_disconnected").style.display = "inline"
       reject(error);
     };
@@ -790,12 +778,14 @@ function sendMessageWebSocket(method, params = [], id = 0) {
       resolve(JSON.parse(event.data));
     }
 
-    socket.onerror = function(error) {
+    socket.onerror = function (error) {
       reject(error);
     }
   });
 }
 
+
+// noinspection JSUnusedGlobalSymbols
 function onLoad() {
   connectWebSocket().then(() => {
     getInfo().then(() => {
@@ -809,13 +799,14 @@ function onLoad() {
         }
         el("notify_update").style.display = (getCookie("update_available") ? "block" : "none");
       }
+
+      // auto-refresh if getInfo resolved (it rejects if in failsafe mode i.e. not auto-refresh)
+      setInterval(() => {
+        // if the socket is open and connected and the page is visible to the user
+        if (socket.readyState === 1 && !document.hidden) getInfo();
+      }, 1000);
     });
   });
-
-  setInterval(function () {
-    // if the socket is open and connected and the page is visible to the user
-    if (autoRefresh && socket.readyState === 1 && !document.hidden) getInfo();
-  }, 1000);
 }
 
 function durationStr(d) {
