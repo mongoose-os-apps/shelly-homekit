@@ -755,7 +755,10 @@ function connectWebSocket() {
   });
 }
 
-function sendMessageWebSocket(method, params = [], id = 0) {
+let requestID = 0;
+
+function sendMessageWebSocket(method, params = [], id = requestID) {
+  requestID += 1
   return new Promise(function (resolve, reject) {
     try {
       socket.send(JSON.stringify({"method": method, "id": id, "params": params}));
@@ -764,10 +767,15 @@ function sendMessageWebSocket(method, params = [], id = 0) {
       reject(e);
     }
 
-    socket.onmessage = function (event) {
-      console.log("[message] Data received: " + event.data);
-      resolve(JSON.parse(event.data));
-    }
+    socket.addEventListener("message", function (event) {
+      let data = JSON.parse(event.data);
+      if (data.id === id) {
+        console.log("[message] Data received: ", data);
+        resolve(data);
+        // clean up after ourselves, otherwise too many listeners!
+        socket.removeEventListener("message", arguments.callee);
+      }
+    });
 
     socket.onerror = function (error) {
       reject(error);
