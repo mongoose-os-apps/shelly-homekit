@@ -419,18 +419,18 @@ function updateComponent(cd) {
       var headText = "Switch " + cd.id;
       if (cd.name) headText += " (" + cd.name + ")";
       el(c, "head").innerText = headText;
-      el(c, "name").value = cd.name;
+      setValueIfNotModified(el(c, "name"), cd.name);
       el(c, "state").innerText = (cd.state ? "on" : "off");
       if (cd.apower !== undefined) {
         el(c, "power_stats").innerText = ", " + Math.round(cd.apower) + "W, " + cd.aenergy + "Wh";
       }
       el(c, "btn_label").innerText = "Turn " + (cd.state ? "Off" : "On");
-      el(c, "svc_type_" + cd.svc_type).selected = true;
-      el(c, "initial_" + cd.initial).selected = true;
+      selectIfNotModified(el(c, "svc_type"), cd.svc_type);
+      selectIfNotModified(el(c, "initial"), cd.initial);
       if (cd.in_mode >= 0) {
-        el(c, "in_mode_" + cd.in_mode).selected = true;
+        selectIfNotModified(el(c, "in_mode"), cd.in_mode);
         if (cd.in_mode != 3) {
-          el(c, "in_inverted").checked = cd.in_inverted;
+          checkIfNotModified(el(c, "in_inverted"), cd.in_inverted);
           el(c, "in_inverted_container").style.display = "block";
         }
       } else {
@@ -438,18 +438,18 @@ function updateComponent(cd) {
         el(c, "in_inverted_container").style.display = "none";
         if (el(c, "initial_3")) el(c, "initial_3").remove();
       }
-      el(c, "auto_off").checked = cd.auto_off;
+      checkIfNotModified(el(c, "auto_off"), cd.auto_off);
       el(c, "auto_off_delay").disabled = !cd.auto_off;
-      el(c, "auto_off_delay").value = secondsToDateString(cd.auto_off_delay);
+      setValueIfNotModified(el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
       var headText = "Input " + cd.id;
       if (cd.name) headText += " (" + cd.name + ")";
       el(c, "head").innerText = headText;
-      el(c, "name").value = cd.name;
-      el(c, "in_mode_" + cd.in_mode).selected = true;
-      el(c, "type_" + cd.type).selected = true;
-      el(c, "inverted").checked = cd.inverted;
+      setValueIfNotModified(el(c, "name"), cd.name);
+      selectIfNotModified(el(c, "in_mode"), cd.in_mode);
+      selectIfNotModified(el(c, "type"), cd.type);
+      checkIfNotModified(el(c, "inverted"), cd.inverted);
       var lastEvText = "n/a";
       if (cd.last_ev_age > 0) {
         var lastEv = cd.last_ev;
@@ -472,11 +472,11 @@ function updateComponent(cd) {
       break;
     case 4: // Window Covering
       el(c, "head").innerText = cd.name;
-      el(c, "name").value = cd.name;
+      setValueIfNotModified(el(c, "name"), cd.name);
       el(c, "state").innerText = cd.state_str;
-      el(c, "in_mode_" + cd.in_mode).selected = true;
-      el(c, "swap_inputs").checked = cd.swap_inputs;
-      el(c, "swap_outputs").checked = cd.swap_outputs;
+      selectIfNotModified(el(c, "in_mode"), cd.in_mode);
+      checkIfNotModified(el(c, "swap_inputs"), cd.swap_inputs);
+      checkIfNotModified(el(c, "swap_outputs"), cd.swap_outputs);
       if (cd.cal_done == 1) {
         if (cd.cur_pos != cd.tgt_pos) {
           el(c, "pos").innerText = cd.cur_pos + " -> " + cd.tgt_pos;
@@ -502,18 +502,18 @@ function updateComponent(cd) {
       break;
     case 5: // Garage Doot Opener
       el(c, "head").innerText = cd.name;
-      el(c, "name").value = cd.name;
+      setValueIfNotModified(el(c, "name"), cd.name);
       el(c, "state").innerText = cd.cur_state_str;
-      el(c, "close_sensor_mode_" + cd.close_sensor_mode).selected = true;
-      el(c, "move_time").value = cd.move_time;
-      el(c, "pulse_time_ms").value = cd.pulse_time_ms;
+      selectIfNotModified(el(c, "close_sensor_mode"), cd.close_sensor_mode);
+      setValueIfNotModified(el(c, "move_time"), cd.move_time);
+      setValueIfNotModified(el(c, "pulse_time_ms"), cd.pulse_time_ms);
       if (cd.open_sensor_mode >= 0) {
-        el(c, "open_sensor_mode_" + cd.open_sensor_mode).selected = true;
+        selectIfNotModified(el(c, "open_sensor_mode"), cd.open_sensor_mode);
       } else {
         el(c, "open_sensor_mode_container").style.display = "none";
       }
       if (cd.out_mode >= 0) {
-        el(c, "out_mode_" + cd.out_mode).selected = true;
+        selectIfNotModified(el(c, "out_mode"), cd.out_mode);
       } else {
         el(c, "out_mode_container").style.display = "none";
       }
@@ -521,7 +521,7 @@ function updateComponent(cd) {
     case 6: // Disabled Input
       var headText = "Input " + cd.id;
       el(c, "head").innerText = headText;
-      el(c, "type_" + cd.type).selected = true;
+      selectIfNotModified(el(c, "type"), cd.type);
       break;
     case 7: // Motion Sensor
     case 8: // Occupancy Sensor
@@ -529,11 +529,11 @@ function updateComponent(cd) {
       var headText = "Input " + cd.id;
       if (cd.name) headText += " (" + cd.name + ")";
       el(c, "head").innerText = headText;
-      el(c, "name").value = cd.name;
-      el(c, "type_" + cd.type).selected = true;
-      el(c, "inverted").checked = cd.inverted;
-      el(c, "in_mode_" + cd.in_mode).selected = true;
-      el(c, "idle_time").value = cd.idle_time;
+      setValueIfNotModified(el(c, "name"), cd.name);
+      selectIfNotModified(el(c, "type"), cd.type);
+      checkIfNotModified(el(c, "inverted"), cd.inverted);
+      selectIfNotModified(el(c, "in_mode"), cd.in_mode);
+      setValueIfNotModified(el(c, "idle_time"), cd.idle_time);
       el(c, "idle_time_container").style.display = (cd.in_mode == 0 ? "none" : "block");
       var what = (cd.type == 7 ? "motion" : "occupancy");
       var statusText = (cd.state ? what + " detected" : "no " + what + " detected");
@@ -559,17 +559,18 @@ function updateElement(key, value) {
       el(key).innerText = value;
       break;
     case "name":
-      el("device_name").innerText = el("sys_name").value = document.title = value;
+      el("device_name").innerText = document.title = value;
       el("device_name").style.visibility = "visible";
+      setValueIfNotModified(el("sys_name"), value);
       break;
     case "wifi_en":
-      wifiEn.checked = value;
+      checkIfNotModified(wifiEn, value);
       break;
     case "wifi_ssid":
-      wifiSSID.value = value;
+      setValueIfNotModified(wifiSSID, value);
       break;
     case "wifi_pass":
-      wifiPass.value = value;
+      setValueIfNotModified(wifiPass, value);
       break;
     case "wifi_rssi":
       if (value !== 0) {
@@ -608,26 +609,13 @@ function updateElement(key, value) {
       el("components").cn = value;
       break;
     case "components":
-      for (let i in value) {
-        let update = false;
-        if (lastInfo !== null) {
-          for (let comp_el in value[i]) {
-            if (lastInfo.components[i][comp_el] !== value[i][comp_el]) {
-              update = true;
-              break;
-            }
-          }
-        }
-        if (lastInfo === null || update) updateComponent(value[i]);
-      }
+      for (let i in value) updateComponent(value[i]);
       break;
     case "hap_running":
-      hapSetupCode.value = value ? "***-**-***" : "";
-      if (!value)
-        el("hap_ip_conns_max").innerText = "Server not running"
-      el("hap_ip_conns_pending").style.display
-        = el("hap_ip_conns_active").style.display
-        = "none";
+      setValueIfNotModified(hapSetupCode, value ? "***-**-***" : "");
+      if (!value) el("hap_ip_conns_max").innerText = "Server not running"
+      el("hap_ip_conns_pending").style.display = "none";
+      el("hap_ip_conns_active").style.display = "none";
       break;
     case "hap_ip_conns_pending":
     case "hap_ip_conns_active":
@@ -636,16 +624,19 @@ function updateElement(key, value) {
       el(key).innerText = value + " " + key.split("_").slice(-1)[0];
       break;
     case "debug_en":
-      el("debug_en").checked = value;
+      checkIfNotModified(el("debug_en"), value);
       el("debug_link").style.visibility = value ? "visible" : "hidden";
       break;
     case "rsh_avail":
+      if (value) el("sys_mode_container").style.display = "block";
+      else if (el("sys_mode_1")) el("sys_mode_1").remove();
+      break;
     case "gdo_avail":
-      if (!value) break;
-      if (key === "rsh_avail" && !value && el("sys_mode_1")) el("sys_mode_1").remove();
-      if (key === "gdo_avail" && !value && el("sys_mode_2")) el("sys_mode_2").remove();
-      (el("sys_mode_" + data.sys_mode) || {}).selected = true;
-      el("sys_mode_container").style.display = "block";
+      if (value) el("sys_mode_container").style.display = "block";
+      else if (el("sys_mode_2")) el("sys_mode_2").remove();
+      break;
+    case "sys_mode":
+      selectIfNotModified(el("sys_mode"), value);
       break;
     case "sys_temp":
       if (value !== undefined) {
@@ -677,8 +668,6 @@ function getInfo() {
         reject();
         return;
       }
-
-      data.failsafe_mode = true;
 
       if (data.failsafe_mode) {
         el("notify_failsafe").style.display = "inline";
@@ -812,6 +801,21 @@ function onLoad() {
     });
   });
 }
+
+function setValueIfNotModified(e, newValue) {
+  if (e.lastSetValue !== undefined && e.lastSetValue !== e.value) return;
+  e.value = e.lastSetValue = newValue;
+}
+
+function checkIfNotModified(e, newState) {
+  if (e.lastSetValue !== undefined && e.lastSetValue !== e.checked) return;
+  e.checked = e.lastSetValue = newState;
+}
+
+function selectIfNotModified(e, newSelection) {
+  setValueIfNotModified(e, newSelection);
+}
+
 
 function durationStr(d) {
   var days = parseInt(d / 86400);
