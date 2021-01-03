@@ -30,64 +30,64 @@ config_schema:
   - ["file_logger.buf_size", 1000]
   - ["wifi.sta_all_chan_scan", true]
 
-  - ["shelly.name", "s", "", {"title": "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {"System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
-  - ["shelly.cfg_version", "i", 0, {"Configuration version"}]
-  - ["shelly.legacy_hap_layout", "b", false, {"Use legacy accessory layout instead of a bridged accessory"}]
-  - ["shelly.overheat_on", "i", 100, {"Overheat protection mode kicks in at or above this temperature"}]
-  - ["shelly.overheat_off", "i", 90, {"Overheat protection mode turns off when the temperature is back below this threshold"}]
-  - ["bl0937.power_coeff", "d", 0, {"title": "BL0937 counts -> watts conversion coefficient"}]
+  - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
+  - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
+  - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
+  - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
+  - ["shelly.overheat_off", "i", 90, {title: "Overheat protection mode turns off when the temperature is back below this threshold"}]
+  - ["bl0937.power_coeff", "d", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
 
-  - ["sw", "o", {"Switch settings"}]
-  - ["sw.name", "s", "", {"Name of the switch"}]
-  - ["sw.enable", "b", true, {"Enable this switch in the accessory"}]
-  - ["sw.in_mode", "i", 1, {"-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
-  - ["sw.in_inverted", "b", false, {"Invert input, set to true for normally closed input"}]
-  - ["sw.state", "b", false, {"State of the switch"}]
-  - ["sw.svc_type", "i", 0, {"HAP service type, -1 = disable, 0 = switch, 1 = outlet, 2 = lock"}]
-  - ["sw.initial_state", "i", 3, {"Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
-  - ["sw.auto_off", "b", false, {"Whether the switch should automatically turn OFF after turning ON"}]
-  - ["sw.auto_off_delay", "d", 0, {"Delay for automatically turning OFF, in seconds"}]
+  - ["sw", "o", {title: "Switch settings2"}]
+  - ["sw.name", "s", "", {title: "Name of the switch"}]
+  - ["sw.enable", "b", true, {title: "Enable this switch in the accessory"}]
+  - ["sw.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
+  - ["sw.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
+  - ["sw.state", "b", false, {title: "State of the switch"}]
+  - ["sw.svc_type", "i", 0, {title: "HAP service type, -1 = disable, 0 = switch, 1 = outlet, 2 = lock"}]
+  - ["sw.initial_state", "i", 3, {title: "Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
+  - ["sw.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
+  - ["sw.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
 
-  - ["in", "o", {"Detached Input settings"}]
-  - ["in.type", "i", 3, {"HAP service type, 3 - Stateless switch, 7 - Motion sensor, 8 - Occupancy sensor, 6 - Disabled"}]
-  - ["in.inverted", "b", false, {"Invert input, set to true for normally closed input"}]
-  - ["in.ssw", "o", {"Stateless Switch settings"}]
-  - ["in.ssw.name", "s", "", {"Name of the switch"}]
-  - ["in.ssw.in_mode", "i", 0, {"0 - Momentary; 1 - Toggle, single press event on change; 2 - Toggle, on = single press, off = double press"}]
-  - ["in.sensor", "o", {"Motion Sensor settings"}]
-  - ["in.sensor.name", "s", "", {"Name of the sensor"}]
-  - ["in.sensor.in_mode", "i", 0, {"0 - Level, 1 - Pulse"}]
-  - ["in.sensor.idle_time", "i", 15, {"In pulse mode, go back to 'no motion' after no pulse received within this interval"}]
+  - ["in", "o", {title: "Detached Input settings"}]
+  - ["in.type", "i", 3, {title: "HAP service type, 3 - Stateless switch, 7 - Motion sensor, 8 - Occupancy sensor, 6 - Disabled"}]
+  - ["in.inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
+  - ["in.ssw", "o", {title: "Stateless Switch settings"}]
+  - ["in.ssw.name", "s", "", {title: "Name of the switch"}]
+  - ["in.ssw.in_mode", "i", 0, {title: "0 - Momentary; 1 - Toggle, single press event on change; 2 - Toggle, on = single press, off = double press"}]
+  - ["in.sensor", "o", {title: "Motion Sensor settings"}]
+  - ["in.sensor.name", "s", "", {title: "Name of the sensor"}]
+  - ["in.sensor.in_mode", "i", 0, {title: "0 - Level, 1 - Pulse"}]
+  - ["in.sensor.idle_time", "i", 15, {title: "In pulse mode, go back to 'no motion' after no pulse received within this interval"}]
 
-  - ["wc", "o", {"Roller shutter settings"}]
-  - ["wc.name", "s", "Shutter 1", {"title": "Accessory name"}]
-  - ["wc.in_mode", "i", 0, {"title": "Input mode: 0 - separate, momentary; 0 - separate, toggle; 2 - single, momentary; 3 - detached"}]
-  - ["wc.swap_inputs", "b", false, {"title": "Swap inputs (2 - open, 1 - close)"}]
-  - ["wc.swap_outputs", "b", false, {"title": "Swap outputs (2 - open, 1 - close)"}]
-  - ["wc.calibrated", "b", false, {"title": "Calibration done"}]
-  - ["wc.idle_power_thr", "d", 10.0, {"title": "Power consumption threshold for motor idle detection"}]
-  - ["wc.move_power", "d", 0.0, {"title": "Power consumption during movement, watts"}]
-  - ["wc.move_time_ms", "i", 0, {"title": "Move time, in millseconds"}]
-  - ["wc.current_pos", "d", 0.0, {"title": "Last position, percent: 0 - fully closed, 100 - fully open."}]
+  - ["wc", "o", {title: "Roller shutter settings"}]
+  - ["wc.name", "s", "Shutter 1", {title: "Accessory name"}]
+  - ["wc.in_mode", "i", 0, {title: "Input mode: 0 - separate, momentary; 0 - separate, toggle; 2 - single, momentary; 3 - detached"}]
+  - ["wc.swap_inputs", "b", false, {title: "Swap inputs (2 - open, 1 - close)"}]
+  - ["wc.swap_outputs", "b", false, {title: "Swap outputs (2 - open, 1 - close)"}]
+  - ["wc.calibrated", "b", false, {title: "Calibration done"}]
+  - ["wc.idle_power_thr", "d", 10.0, {title: "Power consumption threshold for motor idle detection"}]
+  - ["wc.move_power", "d", 0.0, {title: "Power consumption during movement, watts"}]
+  - ["wc.move_time_ms", "i", 0, {title: "Move time, in millseconds"}]
+  - ["wc.current_pos", "d", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
-  - ["gdo", "o", {"Garage door settings"}]
-  - ["gdo.name", "s", "Garage Door", {"title": "Accessory name"}]
-  - ["gdo.close_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally closed, 1 - normally open"}]
-  - ["gdo.open_sensor_mode", "i", 0, {"title": "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
-  - ["gdo.out_mode", "i", 0, {"title": "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close)"}]
-  - ["gdo.move_time_ms", "i", 30000, {"title": "Movement time, ms"}]
-  - ["gdo.pulse_time_ms", "i", 300, {"title": "Output active time, ms"}]
+  - ["gdo", "o", {title: "Garage door settings"}]
+  - ["gdo.name", "s", "Garage Door", {title: "Accessory name"}]
+  - ["gdo.close_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open"}]
+  - ["gdo.open_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
+  - ["gdo.out_mode", "i", 0, {title: "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close)"}]
+  - ["gdo.move_time_ms", "i", 30000, {title: "Movement time, ms"}]
+  - ["gdo.pulse_time_ms", "i", 300, {title: "Output active time, ms"}]
 
   # Preserved from stock.
   - ["k_apparent", "i", 1750000, {}]
   - ["max_power", "i", 1800, {}]
 
   # Deprecated settings, only kept to enable migration.
-  - ["sw.persist_state", "b", false, {"Deprecated"}]  # Since cfg v1
-  - ["ssw", "o", {"Deprecated"}]
-  - ["ssw.name", "s", "", {"title": "Deprecated"}]
-  - ["ssw.in_mode", "i", 0, {"title": "Deprecated"}]
+  - ["sw.persist_state", "b", false, {}]  # Since cfg v1
+  - ["ssw", "o", {}]
+  - ["ssw.name", "s", "", {}]
+  - ["ssw.in_mode", "i", 0, {}]
 
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
@@ -120,8 +120,6 @@ conds:
     apply:
       name: switch1 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -129,8 +127,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
-        # We don't need the cryptochip support. Saves approx 12K flash.
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-1"'
@@ -140,24 +136,22 @@ conds:
         - ["device.id", "shelly1-??????"]
         - ["shelly.name", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
-        - ["sw1", "sw", {"title": "SW1 settings"}]
+        - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
-        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
-        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
         # Only for backward compatibility (config <= v3).
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
 
   - when: build_vars.MODEL == "Shelly1L"
     apply:
       name: switch1l # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -165,8 +159,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
-        # We don't need the cryptochip support. Saves approx 12K flash.
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -180,18 +172,18 @@ conds:
         - ["device.id", "shelly1l-??????"]
         - ["shelly.name", "shelly1l-??????"]
         - ["wifi.ap.ssid", "shelly1l-??????"]
-        - ["sw1", "sw", {"title": "SW1 settings"}]
+        - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
-        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
-        - ["in2", "in", {"title": "Input 2 settings"}]
+        - ["in2", "in", {title: "Input 2 settings"}]
         - ["in2.ssw.name", "Shelly SSW2"]
         - ["in2.sensor.name", "Shelly S2"]
         # Only for backward compatibility (config <= v3).
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
-        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2", "ssw", {title: "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
 
 
@@ -199,8 +191,6 @@ conds:
     apply:
       name: switch1pm # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -208,8 +198,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
-        # We don't need the cryptochip support. Saves approx 12K flash.
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -223,25 +211,23 @@ conds:
         - ["device.id", "shelly1pm-??????"]
         - ["shelly.name", "shelly1pm-??????"]
         - ["wifi.ap.ssid", "shelly1pm-??????"]
-        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1", "sw", {title: "SW settings"}]
         - ["sw1.name", "Shelly SW"]
-        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
-        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
         - ["bl0937.power_coeff", 1.79942025]  # (16 + 1010 + 1935) / (8.53 + 561 + 1076)
         # Only for backward compatibility (config <= v3).
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
 
   - when: build_vars.MODEL == "Shelly2"
     apply:
       name: switch
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -249,7 +235,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-21"'
@@ -258,22 +243,22 @@ conds:
         - ["device.id", "shellyswitch21-??????"]
         - ["shelly.name", "shellyswitch21-??????"]
         - ["wifi.ap.ssid", "shellyswitch21-??????"]
-        - ["sw1", "sw", {"title": "SW1 settings"}]
+        - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW1"]
-        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
-        - ["sw2", "sw", {"title": "SW2 settings"}]
+        - ["sw2", "sw", {title: "SW2 settings"}]
         - ["sw2.name", "Shelly SW2"]
-        - ["in2", "in", {"title": "Input 2 settings"}]
+        - ["in2", "in", {title: "Input 2 settings"}]
         - ["in2.ssw.name", "Shelly SSW2"]
         - ["in2.sensor.name", "Shelly S2"]
-        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         # Only for backward compatibility (config <= v3).
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
-        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2", "ssw", {title: "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
 
   - when: build_vars.MODEL == "Shelly25"
@@ -284,8 +269,6 @@ conds:
       includes:
         - src/ADE7953
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
         - origin: https://github.com/mongoose-os-libs/ade7953
@@ -295,7 +278,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -310,24 +292,24 @@ conds:
         - ["shelly.name", "shellyswitch25-??????"]
         - ["wifi.ap.ssid", "shellyswitch25-??????"]
         - ["i2c.enable", true]
-        - ["sw1", "sw", {"title": "SW1 settings"}]
+        - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW1"]
-        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
-        - ["sw2", "sw", {"title": "SW2 settings"}]
+        - ["sw2", "sw", {title: "SW2 settings"}]
         - ["sw2.name", "Shelly SW2"]
-        - ["in2", "in", {"title": "Input 2 settings"}]
+        - ["in2", "in", {title: "Input 2 settings"}]
         - ["in2.ssw.name", "Shelly SSW2"]
         - ["in2.sensor.name", "Shelly S2"]
-        - ["wc1", "wc", {"title": "WC1 settings"}]
+        - ["wc1", "wc", {title: "WC1 settings"}]
         - ["wc1.name", "Window 1"]
-        - ["gdo1", "gdo", {"title": "GDO1 settings"}]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         # Only for backward compatibility (config <= v3).
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
-        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2", "ssw", {title: "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
 
   # Note this is also known as "ShellyPlug 2", as opposed to the original Plug
@@ -336,15 +318,12 @@ conds:
     apply:
       name: shelly-plug2 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         # Note: 4 MB flash chip
         FS_SIZE: 262144
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 13  # Green, 14 red, 16 blue.
         LED_ON: 0
@@ -357,7 +336,7 @@ conds:
         - ["device.id", "shellyplug-??????"]
         - ["shelly.name", "shellyplug-??????"]
         - ["wifi.ap.ssid", "shellyplug-??????"]
-        - ["sw1", "sw", {"title": "Plug settings"}]
+        - ["sw1", "sw", {title: "Plug settings"}]
         - ["sw1.name", "Shelly Plug"]
         - ["sw1.in_mode", -1]
         - ["sw1.svc_type", 1]  # Outlet
@@ -368,8 +347,6 @@ conds:
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -377,7 +354,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x7000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         LED_GPIO: 2  # Blue, 0 red.
         LED_ON: 0
@@ -390,7 +366,7 @@ conds:
         - ["device.id", "shellyplug-s-??????"]
         - ["shelly.name", "shellyplug-s-??????"]
         - ["wifi.ap.ssid", "shellyplug-s-??????"]
-        - ["sw1", "sw", {"title": "Plug settings"}]
+        - ["sw1", "sw", {title: "Plug settings"}]
         - ["sw1.name", "Shelly Plug S"]
         - ["sw1.in_mode", -1]
         - ["sw1.svc_type", 1]  # Outlet
@@ -414,8 +390,6 @@ conds:
     apply:
       name: ix3
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: esp8266-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -423,7 +397,6 @@ conds:
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
-        MGOS_MBEDTLS_ENABLE_ATCA: 0
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHIX3-1"'
@@ -436,21 +409,21 @@ conds:
       config_schema:
         - ["device.id", "shellyix3-????????????"]
         - ["wifi.ap.ssid", "shellyix3-????????????"]
-        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Input 1"]
         - ["in1.sensor.name", "Shelly S1"]
-        - ["in2", "in", {"title": "Input 2 settings"}]
+        - ["in2", "in", {title: "Input 2 settings"}]
         - ["in2.ssw.name", "Input 2"]
         - ["in2.sensor.name", "Shelly S2"]
-        - ["in3", "in", {"title": "Input 3 settings"}]
+        - ["in3", "in", {title: "Input 3 settings"}]
         - ["in3.ssw.name", "Input 3"]
         - ["in3.sensor.name", "Shelly S3"]
         # Only for backward compatibility (config <= v3).
-        - ["ssw1", "ssw", {"title": "SSW1 settings"}]
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
-        - ["ssw2", "ssw", {"title": "SSW2 settings"}]
+        - ["ssw2", "ssw", {title: "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
-        - ["ssw3", "ssw", {"title": "SSW3 settings"}]
+        - ["ssw3", "ssw", {title: "SSW3 settings"}]
         - ["ssw3.name", "Input 3"]
 
 
@@ -461,8 +434,6 @@ conds:
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
       libs:
-        - origin: https://github.com/mongoose-os-libs/mbedtls
-          variant: ubuntu-noatca
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       config_schema:
@@ -470,10 +441,10 @@ conds:
         - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
         - ["http.document_root", "."]
-        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1", "sw", {title: "SW settings"}]
         - ["sw1.name", "SW"]
         - ["sw1.in_mode", 3]
-        - ["in1", "in", {"title": "Input 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly MS1"]
 

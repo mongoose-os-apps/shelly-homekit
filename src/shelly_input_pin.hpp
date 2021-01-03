@@ -76,7 +76,7 @@ class InputPin : public Input {
 
   State state_ = State::kIdle;
   int timer_cnt_ = 0;
-  mgos::ScopedTimer timer_;
+  mgos::Timer timer_;
 
   InputPin(const InputPin &other) = delete;
 };

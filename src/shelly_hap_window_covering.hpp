@@ -119,7 +119,7 @@ class WindowCovering : public Component, public mgos::hap::Service {
 
   Input::HandlerID in_open_handler_ = Input::kInvalidHandlerID;
   Input::HandlerID in_close_handler_ = Input::kInvalidHandlerID;
-  mgos::ScopedTimer state_timer_;
+  mgos::Timer state_timer_;
 
   mgos::hap::Characteristic *cur_pos_char_ = nullptr;
   mgos::hap::Characteristic *tgt_pos_char_ = nullptr;

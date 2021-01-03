@@ -76,7 +76,7 @@ class GarageDoorOpener : public Component, public mgos::hap::Service {
   Output *out_close_, *out_open_;
   struct mgos_config_gdo *cfg_;
 
-  mgos::ScopedTimer state_timer_;
+  mgos::Timer state_timer_;
 
   mgos::hap::Characteristic *cur_state_char_ = nullptr;
   mgos::hap::Characteristic *tgt_state_char_ = nullptr;
