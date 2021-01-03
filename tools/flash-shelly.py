@@ -347,7 +347,7 @@ class StockDevice(Device):
 
 def parse_version(vs):
   # 1.9.2_1L
-  # 1.9.3-rc3 / 2.7.0-beta1
+  # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest
   pp = vs.split('_') if '_' in vs else vs.split('-')
   v = pp[0].split('.')
   variant = ""
@@ -361,7 +361,7 @@ def parse_version(vs):
       else:
         break
       i += 1
-    varSeq = int(pp[1][i]) or 0
+    varSeq = int(pp[1][i]) if len(pp[1]) > i else 0
   major, minor, patch = [int(e) for e in v]
   return (major, minor, patch, variant, varSeq)
 
