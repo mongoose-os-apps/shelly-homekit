@@ -171,9 +171,13 @@ class Device:
   def get_device_info(self):
     info = None
     if self.get_device_url():
-      fp = requests.get(self.device_url, timeout=3)
-      if fp.status_code == 200:
-        info = json.loads(fp.content)
+      try:
+        fp = requests.get(self.device_url, timeout=3)
+        if fp.status_code == 200:
+          info = json.loads(fp.content)
+      except requests.exceptions.RequestException as err:
+        logger.debug(f"Error: {err}")
+        logger.debug(fp.status_code)
     else:
       logger.debug(f"{RED}Could not get info from device: {self.host}\n{NC}")
     self.info = info
