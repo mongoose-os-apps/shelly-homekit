@@ -62,19 +62,13 @@ ShellyU: build-ShellyU
 	@true
 
 fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js
-ifeq "$(MINIFY_JS)" "1"
-	terser --mangle --comments --safari10 --output fs_src/script.min.js fs_src/script.js
-	sed -e '/<style>/ r fs_src/style.css' -e '/<script>/ r fs_src/script.min.js' fs_src/index.html 2>&1 | gzip -9 -c >| fs/index.html.gz
-	rm -f fs_src/script.min.js
-else
-	sed -e '/<style>/ r fs_src/style.css' -e '/<script>/ r fs_src/script.js' fs_src/index.html 2>&1 | gzip -9 -c >| fs/index.html.gz
-endif
+	sed -e '/<style>/ r fs_src/style.css' -e '/<script>/ r fs_src/script.js' fs_src/index.html 2>&1 | gzip -9 -c > fs/index.html.gz
 
 fs/style.css.gz:
-	echo "/* Empty file */" | gzip -9 -c >| fs/style.css.gz
+	echo "/* Empty file */" | gzip -9 -c > fs/style.css.gz
 
 fs/axios.min.js.gz:
-	echo "/* Empty file */" | gzip -9 -c >| fs/axios.min.js.gz
+	echo "/* Empty file */" | gzip -9 -c > fs/axios.min.js.gz
 
 build-%: fs/index.html.gz fs/style.css.gz
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
