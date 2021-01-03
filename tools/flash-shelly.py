@@ -21,10 +21,10 @@
 #  or any other firmware please follow instructions here:
 #  https://github.com/mongoose-os-apps/shelly-homekit/wiki
 #
+#  usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [-c HAP_SETUP_CODE] [--variant VARIANT] [-v {0,1}] [hosts ...]
+#
 #  Shelly HomeKit flashing script utility
-#  usage: flash_shelly.py [-h] [-m {homekit,keep,revert}] [-a] [-l] [-e [EXCLUDE [EXCLUDE ...]]] [-n] [-y] [-V VERSION]
-#                         [--variant VARIANT] [-v {0,1}]
-#                         [hosts [hosts ...]]
+#
 #  positional arguments:
 #    hosts
 #
@@ -33,15 +33,16 @@
 #    -m {homekit,keep,revert}, --mode {homekit,keep,revert}
 #                          Script mode.
 #    -a, --all             Run against all the devices on the network.
+#    -q, --quiet           Only include upgradeable shelly devices.
 #    -l, --list            List info of shelly device.
-#    -e [EXCLUDE [EXCLUDE ...]], --exclude [EXCLUDE [EXCLUDE ...]]
+#    -e [EXCLUDE ...], --exclude [EXCLUDE ...]
 #                          Exclude hosts from found devices.
 #    -n, --assume-no       Do a dummy run through.
 #    -y, --assume-yes      Do not ask any confirmation to perform the flash.
 #    -V VERSION, --version VERSION
 #                          Force a particular version.
-#    --hap_setup_code HOMEKIT_CODE
-#                          Configure HomeKit setup code.
+#    -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
+#                          Configure HomeKit setup code, after flashing.
 #    --variant VARIANT     Prerelease variant name.
 #    -v {0,1}, --verbose {0,1}
 #                          Enable verbose logging level.
