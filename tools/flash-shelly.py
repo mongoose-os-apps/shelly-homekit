@@ -113,11 +113,7 @@ class MyListener:
 
   def add_service(self, zeroconf, type, device):
     device = device.replace('._http._tcp.local.', '')
-    deviceinfo = Device(device)
-    deviceinfo.get_device_info()
-    if deviceinfo.fw_type is not None:
-      dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
-      self.queue.put(dict)
+    self.queue.put(Device(device))
 
   def remove_service(self, *args, **kwargs):
     pass
@@ -609,13 +605,16 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
     total_devices = 0
     while True:
       try:
-        device = listener.queue.get(timeout=20)
-        total_devices += 1
-        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
+        deviceinfo = listener.queue.get(timeout=20)
       except queue.Empty:
         logger.info(f"\n{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
         zc.close()
         break
+      deviceinfo.get_device_info()
+      if deviceinfo.fw_type is not None:
+        device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
+        total_devices += 1
+        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
