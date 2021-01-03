@@ -49,9 +49,7 @@ el("sys_save_btn").onclick = function () {
     el("sys_save_spinner").className = "";
   }).catch(function (err) {
     el("sys_save_spinner").className = "";
-    if (err.response) {
-      err = err.response.data.message;
-    }
+    if (err.response) err = err.response.data.message;
     alert(err);
   });
 };
@@ -609,6 +607,8 @@ function updateElement(key, value) {
       el("components").cn = value;
       break;
     case "components":
+      // the number of components has changed, delete them all and start afresh
+      if (lastInfo !== null && lastInfo.components.length !== value.length) el("components").innerHTML = "";
       for (let i in value) updateComponent(value[i]);
       break;
     case "hap_running":
@@ -650,7 +650,7 @@ function updateElement(key, value) {
       el("notify_overheat").style.display = (value ? "block" : "none");
       break;
     default:
-      console.log(key, value);
+      //console.log(key, value);
   }
 }
 
@@ -679,10 +679,11 @@ function getInfo() {
         return;
       }
 
+      // the system mode changed, clear out old UI components
+      if (lastInfo !== null && lastInfo.sys_mode !== data.sys_mode) el("components").innerHTML = "";
+
       for (let element in data) {
-        if (lastInfo == null || (lastInfo[element] !== data[element])) {
-          updateElement(element, data[element]);
-        }
+        updateElement(element, data[element]);
       }
 
       lastInfo = data;
