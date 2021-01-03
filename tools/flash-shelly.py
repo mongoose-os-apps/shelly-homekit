@@ -560,6 +560,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug(f"\n{WHITE}probe_device{NC}")
+  d_info = json.dumps(device, indent = 4)
+  logger.trace(f"Device Info: {d_info}")
+
   requires_upgrade = False
   if mode == 'keep':
     flashmode = device['fw_type']
@@ -597,8 +600,6 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
-        d_info = json.dumps(device, indent = 4)
-        logger.trace(f"Device Info: {d_info}")
         probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
   else:
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
@@ -609,9 +610,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
     while True:
       try:
         device = listener.queue.get(timeout=20)
-        d_info = json.dumps(device, indent = 4)
         total_devices += 1
-        logger.trace(f"Device Info: {d_info}")
         probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
       except queue.Empty:
         logger.info(f"\n{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
@@ -649,6 +648,7 @@ if __name__ == '__main__':
   logger.debug(f"manual_hosts: {args.hosts}")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
+  logger.debug(f"do_all: {args.do_all}")
   logger.debug(f"dry_run: {args.dry_run}")
   logger.debug(f"quiet_run: {args.quiet_run}")
   logger.debug(f"silent_run: {args.silent_run}")
