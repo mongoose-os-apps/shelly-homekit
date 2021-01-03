@@ -51,7 +51,7 @@ el("sys_save_btn").onclick = function () {
       el("sys_save_spinner").className = "";
       pauseAutoRefresh = false;
       refreshUI();
-    }, 2000);
+    }, 1300);
   }).catch(function (err) {
     el("sys_save_spinner").className = "";
     if (err.response) err = err.response.data.message;
@@ -148,7 +148,7 @@ function setComponentConfig(c, cfg, spinner) {
         if (spinner) spinner.className = "";
         pauseAutoRefresh = false;
         refreshUI();
-      }, 2000);
+      }, 1300);
     }).catch(function (err) {
     if (spinner) spinner.className = "";
     if (err.response) {
@@ -732,7 +732,7 @@ el("debug_en").onclick = function () {
     .then(() => setTimeout(() => {
       pauseAutoRefresh = false;
       refreshUI();
-    }, 2000))
+    }, 1300))
     .catch(function (err) {
       if (err.response) {
         err = err.response.data.message;
