@@ -253,8 +253,7 @@ class Device:
           re_search = i[0]
         if re.search(re_search, self.fw_version):
           self.flash_fw_version = i[1]['version']
-          if not self.version:
-            self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
+          self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
           break
     else:
       self.flash_label = "Manual:"
