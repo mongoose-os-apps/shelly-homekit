@@ -45,11 +45,17 @@ el("sys_save_btn").onclick = function () {
   };
   console.log("sysSetCfg:", data);
   el("sys_save_spinner").className = "spin";
+  pauseAutoRefresh = true;
   sendMessageWebSocket("Shelly.SetConfig", data).then(function () {
-    el("sys_save_spinner").className = "";
+    setTimeout(() => {
+      el("sys_save_spinner").className = "";
+      pauseAutoRefresh = false;
+      refreshUI();
+    }, 2000);
   }).catch(function (err) {
     el("sys_save_spinner").className = "";
     if (err.response) err = err.response.data.message;
+    pauseAutoRefresh = false;
     alert(err);
   });
 };
@@ -135,15 +141,21 @@ function setComponentConfig(c, cfg, spinner) {
     config: cfg,
   };
   console.log("SetConfig:", data);
+  pauseAutoRefresh = true;
   sendMessageWebSocket("Shelly.SetConfig", data)
     .then(function () {
-      if (spinner) spinner.className = "";
+      setTimeout(() => {
+        if (spinner) spinner.className = "";
+        pauseAutoRefresh = false;
+        refreshUI();
+      }, 2000);
     }).catch(function (err) {
     if (spinner) spinner.className = "";
     if (err.response) {
       err = err.response.data.message;
     }
     alert(err);
+    pauseAutoRefresh = false;
   });
 }
 
@@ -158,6 +170,7 @@ function setComponentState(c, state, spinner) {
   sendMessageWebSocket("Shelly.SetState", data)
     .then(function () {
       if (spinner) spinner.className = "";
+      refreshUI();
     }).catch(function (err) {
     if (spinner) spinner.className = "";
     if (err.response) {
@@ -714,12 +727,18 @@ function setCookie(key, value) {
 
 el("debug_en").onclick = function () {
   var debugEn = el("debug_en").checked;
+  pauseAutoRefresh = true;
   sendMessageWebSocket("Shelly.SetConfig", {config: {debug_en: debugEn}})
+    .then(() => setTimeout(() => {
+      pauseAutoRefresh = false;
+      refreshUI();
+    }, 2000))
     .catch(function (err) {
-    if (err.response) {
-      err = err.response.data.message;
-    }
-    alert(err);
+      if (err.response) {
+        err = err.response.data.message;
+      }
+      alert(err);
+      pauseAutoRefresh = false;
   });
 };
 
@@ -801,14 +820,25 @@ function onLoad() {
       }
 
       // auto-refresh if getInfo resolved (it rejects if in failsafe mode i.e. not auto-refresh)
-      setInterval(() => {
-        // if the socket is open and connected and the page is visible to the user
-        if (socket.readyState === 1 && !document.hidden) getInfo();
-      }, 1000);
+      setInterval(refreshUI, 1000);
+
     }).catch(() => {
       console.log("getInfo() rejected; failsafe mode?");
     });
   });
+}
+
+var pauseAutoRefresh = false;
+var pendingGetInfo = false;
+
+function refreshUI() {
+  // if the socket is open and connected and the page is visible to the user
+  if (socket.readyState === 1 && !document.hidden && !pauseAutoRefresh && !pendingGetInfo) {
+    pendingGetInfo = true;
+    getInfo()
+      .then(() => pendingGetInfo = false)
+      .catch(() => pendingGetInfo = false);
+  }
 }
 
 function setValueIfNotModified(e, newValue) {
