@@ -96,13 +96,23 @@ h1 {
   margin: 0.6em 0;
 }
 
-.form-control input:not([type="checkbox"]), .form-control button {
+.form-control input:not([type="checkbox"]), .form-control select, .form-control button {
   min-width: 10em;
+  max-width: 10em;
 }
 
 .form label {
-  min-width: 9.0em;
   display: inline-block;
+}
+
+.form table {
+  border-spacing: 0.5em 0.5em;
+}
+
+.form table tr td:first-child {
+  max-width: 9.0em;
+  text-align: end;
+  padding-right: 0.5em;
 }
 
 .form {
@@ -195,7 +205,7 @@ h1 {
   border-top-color: #fff;
   animation: spin 1s linear infinite;
   -webkit-animation: spin 1s linear infinite;
-  position: absolute;
+  margin-right: 0.5em;
   top: 0;
   left: 0;
 }
@@ -290,4 +300,20 @@ input:checked + .slider:before {
 
 .comma-list li:last-child::after {
   content: "";
+}
+
+/* support for small screens */
+@media screen and (max-width: 500px) {
+  .form-control input:not([type="checkbox"]), .form-control button {
+    min-width: 5em;
+  }
+
+  .form button label {
+    min-width: 4em;
+  }
+
+  .comma-list {
+    display: grid;
+    margin: 0;
+  }
 }

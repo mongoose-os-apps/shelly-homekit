@@ -35,26 +35,30 @@
      target="_blank">?</a>
   <h1 class="">General Settings</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="sys_name">
-      </div>
-      <div class="form-control" id="sys_mode_container" style="display: none">
-        <label>Mode:</label>
-        <select id="sys_mode">
-          <option id="sys_mode_0" value="0">Switch</option>
-          <option id="sys_mode_1" value="1">Roller Shutter</option>
-          <option id="sys_mode_2" value="2">Garage Door Opener</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="sys_save_btn">
-          <label><span id="sys_save_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
+    <table class="">
+      <tr class="form-control">
+        <td><label for="sys_name">Name:</label></td>
+        <td><input type="text" id="sys_name"></td>
+      </tr>
+      <tr class="form-control" id="sys_mode_container" style="display: none">
+        <td><label for="sys_mode">Mode:</label></td>
+        <td>
+          <select id="sys_mode">
+            <option id="sys_mode_0" value="0">Switch</option>
+            <option id="sys_mode_1" value="1">Roller Shutter</option>
+            <option id="sys_mode_2" value="2">Garage Door Opener</option>
+          </select>
+        </td>
+      </tr>
+      <tr class="form-control">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="sys_save_btn">
+            <label><span id="sys_save_spinner"></span>Save</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 <div id="components"></div>
@@ -63,33 +67,37 @@
      target="_blank">?</a>
   <h1 class="">HomeKit Settings</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>Paired:</label>
-        <span id="hap_paired"></span>
-      </div>
-      <div class="form-control">
-        <label>Connections:</label>
-        <ul id="hap_conn_stats" class="comma-list">
-          <li id="hap_ip_conns_pending"></li>
-          <li id="hap_ip_conns_active"></li>
-          <li id="hap_ip_conns_max"></li>
-        </ul>
-      </div>
-      <div class="form-control">
-        <label>Setup code:</label>
-        <input type="text" id="hap_setup_code" placeholder="111-22-333">
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="hap_save_btn">
-          <label><span id="hap_save_spinner"></span>Save</label>
-        </button>
-        <button class="btn" id="hap_reset_btn">
-          <label><span id="hap_reset_spinner"></span>Reset</label>
-        </button>
-      </div>
-    </div>
+    <table class="">
+      <tr class="form-control">
+        <td><label>Paired:</label></td>
+        <td><span id="hap_paired"></span></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Connections:</label></td>
+        <td>
+          <ul id="hap_conn_stats" class="comma-list">
+            <li id="hap_ip_conns_pending"></li>
+            <li id="hap_ip_conns_active"></li>
+            <li id="hap_ip_conns_max"></li>
+          </ul>
+        </td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="hap_setup_code">Setup code:</label></td>
+        <td><input type="text" id="hap_setup_code" placeholder="111-22-333"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="hap_save_btn">
+            <label><span id="hap_save_spinner"></span>Save</label>
+          </button>
+          <button class="btn" id="hap_reset_btn">
+            <label><span id="hap_reset_spinner"></span>Reset</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 <div class="container" id="wifi_container" style="display: none">
@@ -97,37 +105,43 @@
      target="_blank">?</a>
   <h1 class="">WiFi Settings</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>Enable:</label>
-        <label class="switch">
-          <input type="checkbox" id="wifi_en">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label>WiFi network:</label>
-        <input type="text" id="wifi_ssid">
-      </div>
-      <div class="form-control">
-        <label>WiFi password:</label>
-        <input type="password" id="wifi_pass">
-      </div>
-      <div class="form-control">
-        <label>Status:</label>
-        <ul class="comma-list" id="wifi_status">
-          <li id="wifi_rssi"></li>
-          <li id="host"></li>
-          <li id="wifi_ip"></li>
-        </ul>
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="wifi_save_btn">
-          <label><span id="wifi_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
+    <table class="">
+      <tr class="form-control">
+        <td><label>Enable:</label></td>
+        <td>
+          <label class="switch">
+            <input type="checkbox" id="wifi_en">
+            <span class="slider round"></span>
+          </label>
+        </td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="wifi_ssid">WiFi network:</label></td>
+        <td><input type="text" id="wifi_ssid"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="wifi_pass">WiFi password:</label></td>
+        <td><input type="password" id="wifi_pass"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Status:</label></td>
+        <td>
+          <ul class="comma-list" id="wifi_status">
+            <li id="wifi_rssi"></li>
+            <li id="host"></li>
+            <li id="wifi_ip"></li>
+          </ul>
+        </td>
+      </tr>
+      <tr class="form-control">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="wifi_save_btn">
+            <label><span id="wifi_spinner"></span>Save</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 
@@ -136,63 +150,72 @@
      target="_blank">?</a>
   <h1 class="">System</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>Device:</label>
-        Model: <span id="model"></span>,
-        ID: <span id="device_id"></span>
-      </div>
-      <div class="form-control">
-        <label>Version:</label>
-        <span id="version"></span>
-      </div>
-      <div class="form-control">
-        <label>Firmware:</label>
-        <span id="fw_build"></span>
-      </div>
-      <div class="form-control" id="update_container" style="display: none">
-        <label>Update: </label>
-        <button class="btn" id="update_btn">
-          <label>
-            <span id="update_btn_spinner"></span>
-            <span id="update_btn_text">Check</span>
-          </label>
-        </button>
-        <span id="update_status"></span>
-      </div>
-      <div class="form-control" id="revert_to_stock_container" style="display: none">
-        <label>Revert to stock:</label>
-        <button class="btn" id="revert_btn">
-          <label><span id="revert_btn_spinner"></span>Revert</label>
-        </button>
-        <span id="revert_status"></span>
-        <div id="revert_msg" style="margin-left: 9em; display: none">Please consider reporting missing features
-          <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">on GitHub</a>.
-        </div>
-      </div>
-      <div class="form-control">
-        <label>Update from file:</label>
-        <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data"
-              style="display: inline">
-          <input type="file" id="fw_select_file" name="file" accept=".zip"/>
-          <button class="btn" id="fw_upload_btn">
-            <label><span id="fw_spinner"></span>Upload</label>
+    <table class="">
+      <tr class="form-control">
+        <td><label>Device:</label></td>
+        <td>
+          <ul class="comma-list">
+            <li>Model: <span id="model"></span></li>
+            <li>ID: <span id="device_id"></span></li>
+          </ul>
+        </td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Version:</label></td>
+        <td><span id="version"></span></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Firmware:</label></td>
+        <td><span id="fw_build"></span></td>
+      </tr>
+      <tr class="form-control" id="update_container" style="display: none">
+        <td><label>Update: </label></td>
+        <td>
+          <button class="btn" id="update_btn">
+            <label>
+              <span id="update_btn_spinner"></span>
+              <span id="update_btn_text">Check</span>
+            </label>
           </button>
-        </form>
-      </div>
-      <div class="form-control" id="debug_log_container" style="display: none">
-        <label>Debug Log:</label>
-        <label class="switch">
+          <span id="update_status"></span></td>
+      </tr>
+      <tr class="form-control" id="revert_to_stock_container" style="display: none">
+        <td><label>Revert to stock:</label></td>
+        <td>
+          <button class="btn" id="revert_btn">
+            <label><span id="revert_btn_spinner"></span>Revert</label>
+          </button>
+          <span id="revert_status"></span>
+          <div id="revert_msg" style="margin-left: 9em; display: none">Please consider reporting missing features
+            <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">on GitHub</a>.
+          </div>
+        </td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Update from file:</label></td>
+        <td>
+          <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data"
+                style="display: inline">
+            <input type="file" id="fw_select_file" name="file" accept=".zip"/>
+            <button class="btn" id="fw_upload_btn">
+              <label><span id="fw_spinner"></span>Upload</label>
+            </button>
+          </form>
+        </td>
+      </tr>
+      <tr class="form-control" id="debug_log_container" style="display: none">
+        <td><label>Debug Log:</label></td>
+        <td><label class="switch">
           <input type="checkbox" id="debug_en">
           <span class="slider round"></span>
         </label>
-        <span id="debug_link"><a href="/debug/log?follow=1" style="margin-left: 1em">Log</a></span>
-      </div>
-      <div class="form-control" id="sys_temp_container" style="display: none">
-        <label>Temperature:</label>
-        <span id="sys_temp"></span>&deg;C
-      </div>
-    </div>
+          <span id="debug_link"><a href="/debug/log?follow=1" style="margin-left: 1em">Log</a></span></td>
+      </tr>
+      <tr class="form-control" id="sys_temp_container" style="display: none">
+        <td><label>Temperature:</label></td>
+        <td><span id="sys_temp"></span>&deg;C</td>
+      </tr>
+    </table>
   </div>
 </div>
 
@@ -219,78 +242,80 @@
      target="_blank">?</a>
   <h1 id="head">Switch</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="state">off</span>
-        <span id="power_stats"></span>
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="toggle_btn">
-          <label><span id="set_spinner"></span><span id="btn_label">Turn On</span></label>
-        </button>
-      </div>
-    </div>
-    <div class="">
-      <div class="form-control">
-        <label for="name">Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>HAP Type:</label>
-        <select id="svc_type">
+    <table class="">
+      <tr class="form-control">
+        <td><label>Status:</label></td>
+        <td><span id="state">off</span>
+          <span id="power_stats"></span></td>
+      </tr>
+      <tr class="form-control">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="toggle_btn">
+            <label><span id="set_spinner"></span><span id="btn_label">Turn On</span></label>
+          </button>
+        </td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="name">Name:</label></td>
+        <td><input type="text" id="name"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="svc_type">HAP Type:</label></td>
+        <td><select id="svc_type">
           <option id="svc_type_-1" value="-1">Disabled</option>
           <option id="svc_type_0" value="0">Switch</option>
           <option id="svc_type_1" value="1">Outlet</option>
           <option id="svc_type_2" value="2">Lock</option>
-        </select>
-      </div>
-      <div class="form-control" id="in_mode_container">
-        <label for="in_mode">Input Mode:</label>
-        <select id="in_mode">
+        </select></td>
+      </tr>
+      <tr class="form-control" id="in_mode_container">
+        <td><label for="in_mode">Input Mode:</label></td>
+        <td><select id="in_mode">
           <option id="in_mode_0" value="0">Momentary</option>
           <option id="in_mode_1" value="1">Toggle</option>
           <option id="in_mode_2" value="2">Edge</option>
           <option id="in_mode_3" value="3">Detached</option>
           <option id="in_mode_4" value="4">Activation</option>
-        </select>
-      </div>
-      <div class="form-control" id="in_inverted_container" style="display: none">
-        <label for="in_inverted">Inverted Input:</label>
-        <label class="switch">
+        </select></td>
+      </tr>
+      <tr class="form-control" id="in_inverted_container" style="display: none">
+        <td><label for="in_inverted">Inverted Input:</label></td>
+        <td><label class="switch">
           <input type="checkbox" id="in_inverted">
           <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label for="initial">Initial state:</label>
-        <select id="initial">
+        </label></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="initial">Initial state:</label></td>
+        <td><select id="initial">
           <option id="initial_0" value="0">Off</option>
           <option id="initial_1" value="1">On</option>
           <option id="initial_2" value="2">Last</option>
           <option id="initial_3" value="3">Input</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label for="auto_off">Auto off:</label>
-        <label class="switch">
+        </select></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="auto_off">Auto off:</label></td>
+        <td><label class="switch">
           <input type="checkbox" id="auto_off">
           <span class="slider round"></span>
-        </label>
-      </div>
-      <div>
-        <label for="auto_off_delay">Auto off delay:</label>
-        <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
-               pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
+        </label></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="auto_off_delay">Auto off delay:</label></td>
+        <td><input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
+                   pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="save_btn">
+            <label><span id="save_spinner"></span>Save</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 
@@ -300,47 +325,49 @@
      target="_blank">?</a>
   <h1 id="head">Input</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>HAP Type:</label>
-        <select id="type">
+    <table class="">
+      <tr class="form-control">
+        <td><label for="type">HAP Type:</label></td>
+        <td><select id="type">
           <option id="type_6" value="6">Disabled</option>
           <option id="type_3" value="3">Stateless Switch</option>
           <option id="type_7" value="7">Motion Sensor</option>
           <option id="type_8" value="8">Occupancy Sensor</option>
           <option id="type_9" value="9">Contact Sensor</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>Input Mode:</label>
-        <select id="in_mode">
+        </select></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Name:</label></td>
+        <td><input type="text" id="name"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Input Mode:</label></td>
+        <td><select id="in_mode">
           <option id="in_mode_0" value="0">Momentary</option>
           <option id="in_mode_1" value="1">Toggle, on = off = single press</option>
           <option id="in_mode_2" value="2">Toggle, on = single, off = double</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label for="inverted">Inverted Input:</label>
-        <label class="switch">
+        </select></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="inverted">Inverted Input:</label></td>
+        <td><label class="switch">
           <input type="checkbox" id="inverted">
           <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label>Last Event:</label>
-        <span id="last_event"></span>
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
+        </label></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Last Event:</label></td>
+        <td><span id="last_event"></span></td>
+      </tr>
+      <tr class="form-control">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="save_btn">
+            <label><span id="save_spinner"></span>Save</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 
@@ -349,24 +376,26 @@
      target="_blank">?</a>
   <h1 id="head">Disabled Input</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>HAP Type:</label>
-        <select id="type">
+    <table class="">
+      <tr class="form-control">
+        <td><label>HAP Type:</label></td>
+        <td><select id="type">
           <option id="type_6" value="6">Disabled</option>
           <option id="type_3" value="3">Stateless Switch</option>
           <option id="type_7" value="7">Motion Sensor</option>
           <option id="type_8" value="8">Occupancy Sensor</option>
           <option id="type_9" value="9">Contact Sensor</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
+        </select></td>
+      </tr>
+      <tr class="form-control">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="save_btn">
+            <label><span id="save_spinner"></span>Save</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 
@@ -376,50 +405,52 @@
      target="_blank">?</a>
   <h1 id="head">Sensor</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>HAP Type:</label>
-        <select id="type">
+    <table class="">
+      <tr class="form-control">
+        <td><label>HAP Type:</label></td>
+        <td><select id="type">
           <option id="type_6" value="6">Disabled</option>
           <option id="type_3" value="3">Stateless Switch</option>
           <option id="type_7" value="7">Motion Sensor</option>
           <option id="type_8" value="8">Occupancy Sensor</option>
           <option id="type_9" value="9">Contact Sensor</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label for="inverted">Inverted Input:</label>
-        <label class="switch">
+        </select></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Name:</label></td>
+        <td><input type="text" id="name"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="inverted">Inverted Input:</label></td>
+        <td><label class="switch">
           <input type="checkbox" id="inverted">
           <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label>Input Mode:</label>
-        <select id="in_mode">
+        </label></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Input Mode:</label></td>
+        <td><select id="in_mode">
           <option id="in_mode_0" value="0">Level</option>
           <option id="in_mode_1" value="1">Pulse</option>
-        </select>
-      </div>
-      <div class="form-control" id="idle_time_container">
-        <label>Idle Time:</label>
-        <input type="text" id="idle_time" style="width: 2em; min-width: 2em"> s
-      </div>
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="status"></span>
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
+        </select></td>
+      </tr>
+      <tr class="form-control" id="idle_time_container">
+        <td><label for="idle_time">Idle Time:</label></td>
+        <td><input type="text" id="idle_time" style="width: 2em; min-width: 2em"> s</td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Status:</label></td>
+        <td><span id="status"></span></td>
+      </tr>
+      <tr class="form-control">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="save_btn">
+            <label><span id="save_spinner"></span>Save</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 
@@ -428,62 +459,66 @@
      target="_blank">?</a>
   <h1 id="head">Window</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="state"></span> pos
-        <span id="pos"></span>
-      </div>
-      <div class="form-control" id="pos_ctl">
-        <label></label>
-        <button class="btn" id="open_btn">
-          <label><span id="open_spinner"></span>Open</label>
-        </button>
-        <button class="btn" id="close_btn">
-          <label><span id="close_spinner"></span>Close</label>
-        </button>
-      </div>
-      <div class="form-control">
-        <label>Calibration:</label>
-        <span id="cal"></span>
-      </div>
-      <div class="form-control">
-        <label>Input Mode:</label>
-        <select id="in_mode">
+    <table class="">
+      <tr class="form-control">
+        <td><label>Name:</label></td>
+        <td><input type="text" id="name"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Status:</label></td>
+        <td><span id="state"></span> pos
+          <span id="pos"></span></td>
+      </tr>
+      <tr class="form-control" id="pos_ctl">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="open_btn">
+            <label><span id="open_spinner"></span>Open</label>
+          </button>
+          <button class="btn" id="close_btn">
+            <label><span id="close_spinner"></span>Close</label>
+          </button>
+        </td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Calibration:</label></td>
+        <td><span id="cal"></span></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Input Mode:</label></td>
+        <td><select id="in_mode">
           <option id="in_mode_0" value="0">Separate - momentary</option>
           <option id="in_mode_1" value="1">Separate - toggle</option>
           <option id="in_mode_2" value="2">Single</option>
           <option id="in_mode_3" value="3">Detached</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label>Swap Inputs:</label>
-        <label class="switch">
+        </select></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Swap Inputs:</label></td>
+        <td><label class="switch">
           <input type="checkbox" id="swap_inputs">
           <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label>Swap Outputs:</label>
-        <label class="switch">
+        </label></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Swap Outputs:</label></td>
+        <td><label class="switch">
           <input type="checkbox" id="swap_outputs">
           <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control" id="btns">
-        <label></label>
-        <button class="btn" id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-        <button class="btn" id="cal_btn">
-          <label><span id="cal_spinner"></span>Calibrate</label>
-        </button>
-      </div>
-    </div>
+        </label></td>
+      </tr>
+      <tr class="form-control" id="btns">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="save_btn">
+            <label><span id="save_spinner"></span>Save</label>
+          </button>
+          <button class="btn" id="cal_btn">
+            <label><span id="cal_spinner"></span>Calibrate</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 
@@ -492,55 +527,57 @@
      target="_blank">?</a>
   <h1 id="head">Garage Door</h1>
   <div class="form">
-    <div class="">
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="state"></span>
-      </div>
-      <div class="form-control">
-        <label>Close Sensor:</label>
-        <select id="close_sensor_mode">
+    <table class="">
+      <tr class="form-control">
+        <td><label>Name:</label></td>
+        <td><input type="text" id="name"></td>
+      </tr>
+      <tr class="form-control">
+        <td><label>Status:</label></td>
+        <td><span id="state"></span></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="close_sensor_mode">Close Sensor:</label></td>
+        <td><select id="close_sensor_mode">
           <option id="close_sensor_mode_0" value="0">Normally Closed</option>
           <option id="close_sensor_mode_1" value="1">Normally Open</option>
-        </select>
-      </div>
-      <div class="form-control" id="open_sensor_mode_container">
-        <label>Open Sensor:</label>
-        <select id="open_sensor_mode">
+        </select></td>
+      </tr>
+      <tr class="form-control" id="open_sensor_mode_container">
+        <td><label for="open_sensor_mode">Open Sensor:</label></td>
+        <td><select id="open_sensor_mode">
           <option id="open_sensor_mode_0" value="0">Normally Closed</option>
           <option id="open_sensor_mode_1" value="1">Normally Open</option>
           <option id="open_sensor_mode_2" value="2">Disabled</option>
-        </select>
-      </div>
-      <div class="form-control" id="out_mode_container">
-        <label>Output Mode:</label>
-        <select id="out_mode">
+        </select></td>
+      </tr>
+      <tr class="form-control" id="out_mode_container">
+        <td><label for="out_mode">Output Mode:</label></td>
+        <td><select id="out_mode">
           <option id="out_mode_0" value="0">Single</option>
           <option id="out_mode_1" value="1">Dual</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label>Movement Time:</label>
-        <input type="text" id="move_time" style="width: 2em; min-width: 2em;"> seconds
-      </div>
-      <div class="form-control">
-        <label>Pulse Time:</label>
-        <input type="text" id="pulse_time_ms" style="width: 2em; min-width: 2em;"> ms
-      </div>
-      <div class="form-control" id="btns">
-        <label></label>
-        <button class="btn" id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-        <button class="btn" id="toggle_btn">
-          <label><span id="toggle_spinner"></span>Toggle</label>
-        </button>
-      </div>
-    </div>
+        </select></td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="move_time">Movement Time:</label></td>
+        <td><input type="text" id="move_time" style="width: 2em; min-width: 2em;"> seconds</td>
+      </tr>
+      <tr class="form-control">
+        <td><label for="pulse_time_ms">Pulse Time:</label></td>
+        <td><input type="text" id="pulse_time_ms" style="width: 2em; min-width: 2em;"> ms</td>
+      </tr>
+      <tr class="form-control" id="btns">
+        <td><label></label></td>
+        <td>
+          <button class="btn" id="save_btn">
+            <label><span id="save_spinner"></span>Save</label>
+          </button>
+          <button class="btn" id="toggle_btn">
+            <label><span id="toggle_spinner"></span>Toggle</label>
+          </button>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 <!-- script.js inserted below during build -->

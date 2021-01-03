@@ -442,7 +442,7 @@ function updateComponent(cd) {
         selectIfNotModified(el(c, "in_mode"), cd.in_mode);
         if (cd.in_mode != 3) {
           checkIfNotModified(el(c, "in_inverted"), cd.in_inverted);
-          el(c, "in_inverted_container").style.display = "block";
+          el(c, "in_inverted_container").style.display = "table-row";
         }
       } else {
         el(c, "in_mode_container").style.display = "none";
@@ -496,7 +496,7 @@ function updateComponent(cd) {
         }
         el(c, "cal").innerText = "movement time: " + cd.move_time_ms / 1000 + " s, " +
           "avg power: " + cd.move_power + "W";
-        el(c, "pos_ctl").style.display = "block";
+        el(c, "pos_ctl").style.display = "table-row";
       } else {
         el(c, "pos").innerText = "n/a";
         el(c, "cal").innerText = "not calibrated";
@@ -545,7 +545,7 @@ function updateComponent(cd) {
       checkIfNotModified(el(c, "inverted"), cd.inverted);
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       setValueIfNotModified(el(c, "idle_time"), cd.idle_time);
-      el(c, "idle_time_container").style.display = (cd.in_mode == 0 ? "none" : "block");
+      el(c, "idle_time_container").style.display = (cd.in_mode == 0 ? "none" : "table-row");
       var what = (cd.type == 7 ? "motion" : "occupancy");
       var statusText = (cd.state ? what + " detected" : "no " + what + " detected");
       if (cd.last_ev_age > 0) {
@@ -592,8 +592,8 @@ function updateElement(key, value) {
     case "wifi_ip":
       if (value !== undefined) {
         // These only make sense if we are connected to WiFi.
-        el("update_container").style.display = "block";
-        el("revert_to_stock_container").style.display = "block";
+        el("update_container").style.display = "table-row";
+        el("revert_to_stock_container").style.display = "table-row";
         // We set external image URL to prevent loading it when not on WiFi, as it slows things down.
         el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
         el("donate_form_submit").style.display = "inline";
@@ -641,11 +641,11 @@ function updateElement(key, value) {
       el("debug_link").style.visibility = value ? "visible" : "hidden";
       break;
     case "rsh_avail":
-      if (value) el("sys_mode_container").style.display = "block";
+      if (value) el("sys_mode_container").style.display = "table-row";
       else if (el("sys_mode_1")) el("sys_mode_1").remove();
       break;
     case "gdo_avail":
-      if (value) el("sys_mode_container").style.display = "block";
+      if (value) el("sys_mode_container").style.display = "table-row";
       else if (el("sys_mode_2")) el("sys_mode_2").remove();
       break;
     case "sys_mode":
@@ -654,7 +654,7 @@ function updateElement(key, value) {
     case "sys_temp":
       if (value !== undefined) {
         el("sys_temp").innerText = value;
-        el("sys_temp_container").style.display = "block";
+        el("sys_temp_container").style.display = "table-row";
       } else {
         el("sys_temp_container").style.display = "none";
       }
@@ -703,7 +703,7 @@ function getInfo() {
 
       el("homekit_container").style.display = "block";
       el("gs_container").style.display = "block";
-      el("debug_log_container").style.display = "block";
+      el("debug_log_container").style.display = "table-row";
     }).catch(function (err) {
       alert(err);
       console.log(err);
