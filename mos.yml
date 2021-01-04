@@ -38,7 +38,7 @@ config_schema:
   - ["shelly.overheat_off", "i", 90, {title: "Overheat protection mode turns off when the temperature is back below this threshold"}]
   - ["bl0937.power_coeff", "d", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
 
-  - ["sw", "o", {title: "Switch settings2"}]
+  - ["sw", "o", {title: "Switch settings", abstract: true}]
   - ["sw.name", "s", "", {title: "Name of the switch"}]
   - ["sw.enable", "b", true, {title: "Enable this switch in the accessory"}]
   - ["sw.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
@@ -49,7 +49,7 @@ config_schema:
   - ["sw.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
   - ["sw.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
 
-  - ["in", "o", {title: "Detached Input settings"}]
+  - ["in", "o", {title: "Detached Input settings", abstract: true}]
   - ["in.type", "i", 3, {title: "HAP service type, 3 - Stateless switch, 7 - Motion sensor, 8 - Occupancy sensor, 6 - Disabled"}]
   - ["in.inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
   - ["in.ssw", "o", {title: "Stateless Switch settings"}]
@@ -60,7 +60,7 @@ config_schema:
   - ["in.sensor.in_mode", "i", 0, {title: "0 - Level, 1 - Pulse"}]
   - ["in.sensor.idle_time", "i", 15, {title: "In pulse mode, go back to 'no motion' after no pulse received within this interval"}]
 
-  - ["wc", "o", {title: "Roller shutter settings"}]
+  - ["wc", "o", {title: "Roller shutter settings", abstract: true}]
   - ["wc.name", "s", "Shutter 1", {title: "Accessory name"}]
   - ["wc.in_mode", "i", 0, {title: "Input mode: 0 - separate, momentary; 0 - separate, toggle; 2 - single, momentary; 3 - detached"}]
   - ["wc.swap_inputs", "b", false, {title: "Swap inputs (2 - open, 1 - close)"}]
@@ -71,7 +71,7 @@ config_schema:
   - ["wc.move_time_ms", "i", 0, {title: "Move time, in millseconds"}]
   - ["wc.current_pos", "d", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
-  - ["gdo", "o", {title: "Garage door settings"}]
+  - ["gdo", "o", {title: "Garage door settings", abstract: true}]
   - ["gdo.name", "s", "Garage Door", {title: "Accessory name"}]
   - ["gdo.close_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open"}]
   - ["gdo.open_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
@@ -85,7 +85,7 @@ config_schema:
 
   # Deprecated settings, only kept to enable migration.
   - ["sw.persist_state", "b", false, {}]  # Since cfg v1
-  - ["ssw", "o", {}]
+  - ["ssw", "o", {abstract: true}]
   - ["ssw.name", "s", "", {}]
   - ["ssw.in_mode", "i", 0, {}]
 

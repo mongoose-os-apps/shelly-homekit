@@ -588,7 +588,7 @@ static bool shelly_cfg_migrate(void) {
     // dns_sd.host_name is kept in sync.
     mgos_sys_config_set_shelly_name(mgos_sys_config_get_device_id());
     mgos_sys_config_set_dns_sd_host_name(mgos_sys_config_get_device_id());
-    std::string s(mgos_config_defaults.device.id);
+    std::string s(mgos_sys_config_get_default_device_id());
     mgos_expand_mac_address_placeholders(const_cast<char *>(s.c_str()));
     mgos_sys_config_set_device_id(s.c_str());
     mgos_sys_config_set_shelly_cfg_version(3);
