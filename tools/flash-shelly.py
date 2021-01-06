@@ -273,7 +273,7 @@ class Device:
     else:
       self.flash_label = "Manual:"
       self.flash_fw_version = self.version
-      self.dlurl = f'http://archive.shelly-faq.de/version/v{self.version}/{self.stock_model}.zip'
+      self.dlurl = f'http://archive.shelly-tools.de/version/v{self.version}/{self.stock_model}.zip'
     if self.stock_model  == 'SHRGBW2':
       self.dlurl = self.dlurl.replace('.zip',f'-{self.colour_mode}.zip')
 
