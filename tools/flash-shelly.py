@@ -484,7 +484,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   else:
     latest_fw_label = flash_fw_version
 
-  if not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version))):
+  if (not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version)))) and requires_upgrade != 'Done':
     logger.info(f"\n{WHITE}Host: {NC}http://{host}")
     logger.info(f"{WHITE}Device Name: {NC}{device_name}")
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
@@ -496,7 +496,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
     logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
 
-  if dlurl and ((force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)) or requires_upgrade or (current_fw_type != mode) or (current_fw_type == mode and is_newer(flash_fw_version, current_fw_version))):
+  if dlurl and ((force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)) or requires_upgrade == True or (current_fw_type != mode) or (current_fw_type == mode and is_newer(flash_fw_version, current_fw_version))):
     global upgradeable_devices
     upgradeable_devices += 1
 
@@ -514,7 +514,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       elif force_version and parse_version(flash_fw_version) != parse_version(current_fw_version):
         perform_flash = True
         keyword = f"reflashed version {force_version}"
-      elif requires_upgrade:
+      elif requires_upgrade == True:
         perform_flash = True
         if mode == 'stock':
           keyword = f"upgraded to version {flash_fw_version}"
@@ -547,6 +547,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     if perform_flash == True and dry_run == False and silent_run == False:
       if requires_upgrade == True:
         flash_message = f"{message} {keyword}"
+      elif requires_upgrade == 'Done':
+        flash_message = f"Do you wish to contintue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
       else:
         flash_message = f"Do you wish to flash {friendly_host} to firmware version {flash_fw_version}"
       if input(f"{flash_message} (y/n) ? ") == 'y':
@@ -595,7 +597,7 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
     else:
       parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
       if requires_upgrade:
-        requires_upgrade = False
+        requires_upgrade = 'Done'
         deviceinfo.get_info()
         if not is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
           deviceinfo.update_to_homekit(homekit_release_info)
