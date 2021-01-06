@@ -462,7 +462,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"requires_upgrade: {requires_upgrade}")
   logger.debug(f"current_fw_version: {current_fw_version}")
   logger.debug(f"flash_fw_version: {flash_fw_version}")
-  logger.debug(f"force_version: {force_version}\n")
+  logger.debug(f"force_version: {force_version}")
+  logger.debug(f"dlurl: {dlurl}\n")
+
 
   if force_version:
     device_info.set_force_version(force_version)
@@ -470,6 +472,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
 
   if dlurl:
     durl_request = requests.head(dlurl)
+    logger.debug(f"dlurl: {durl_request}\n")
   if flash_fw_version == 'novariant':
     latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
     flash_fw_version = '0.0.0'
