@@ -177,7 +177,6 @@ class Device:
           info = json.loads(fp.content)
       except requests.exceptions.RequestException as err:
         logger.debug(f"Error: {err}")
-        logger.debug(fp.status_code)
     else:
       logger.debug(f"{RED}Could not get info from device: {self.host}\n{NC}")
     self.info = info
