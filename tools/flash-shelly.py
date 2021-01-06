@@ -594,6 +594,13 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
       logger.info(f"please update via the device webUI.\n")
     else:
       parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
+      if requires_upgrade:
+        requires_upgrade = False
+        deviceinfo.get_info()
+        if not is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
+          deviceinfo.update_to_homekit(homekit_release_info)
+          parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
+
 
 def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug(f"\n{WHITE}device_scan{NC}")
