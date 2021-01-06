@@ -148,7 +148,7 @@ class Device:
       logger.trace(f"Hostname: {host} is Online")
       return True
     except:
-      logger.warning(f"{RED}Could not resolve host: {host}{NC}")
+      logger.warning(f"\n{RED}Could not resolve host: {host}{NC}")
       return False
 
   def get_device_url(self):
@@ -463,7 +463,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"current_fw_version: {current_fw_version}")
   logger.debug(f"flash_fw_version: {flash_fw_version}")
   logger.debug(f"force_version: {force_version}")
-  logger.debug(f"dlurl: {dlurl}\n")
+  logger.debug(f"dlurl: {dlurl}")
 
 
   if force_version:
@@ -472,7 +472,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
 
   if dlurl:
     durl_request = requests.head(dlurl)
-    logger.debug(f"dlurl: {durl_request}\n")
+    logger.debug(f"durl_request: {durl_request}")
   if flash_fw_version == 'novariant':
     latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
     flash_fw_version = '0.0.0'
@@ -485,7 +485,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     latest_fw_label = flash_fw_version
 
   if (not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version)))) and requires_upgrade != 'Done':
-    logger.info(f"\n{WHITE}Host: {NC}http://{host}")
+    logger.info(f"{WHITE}Host: {NC}http://{host}")
     logger.info(f"{WHITE}Device Name: {NC}{device_name}")
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
     logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
@@ -494,7 +494,6 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
     col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
-    logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
 
   if dlurl and ((force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)) or requires_upgrade == True or (current_fw_type != mode) or (current_fw_type == mode and is_newer(flash_fw_version, current_fw_version))):
     global upgradeable_devices
@@ -605,9 +604,9 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
 
 
 def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
-  logger.debug(f"\n{WHITE}device_scan{NC}")
   if hosts:
     for host in hosts:
+      logger.debug(f"\n{WHITE}device_scan{NC}")
       deviceinfo = Device(host)
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
@@ -626,6 +625,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
         logger.info(f"\n{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
         zc.close()
         break
+      logger.debug(f"\n{WHITE}device_scan{NC}")
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
