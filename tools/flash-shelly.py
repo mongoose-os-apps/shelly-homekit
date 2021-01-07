@@ -428,7 +428,8 @@ def write_flash(device_info, hap_setup_code):
     logger.debug("Current: %s" % onlinecheck)
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
-  logger.debug(f"\n{WHITE}parse_info{NC}")
+  logger.info(f"")
+  logger.debug(f"{WHITE}parse_info{NC}")
   logger.trace(f"device_info: {device_info}")
 
   perform_flash = False
