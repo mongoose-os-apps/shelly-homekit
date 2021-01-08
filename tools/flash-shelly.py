@@ -658,8 +658,9 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
+  app_version = 2.1.0
 
-  logger.debug(f"{WHITE}app{NC}")
+  logger.debug(f"{WHITE}app_version: {app_version}{NC}")
   logger.debug(f"{PURPLE}OS: {arch}{NC}")
   logger.debug(f"manual_hosts: {args.hosts}")
   logger.debug(f"action: {action}")
