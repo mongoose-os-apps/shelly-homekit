@@ -65,23 +65,6 @@ logger.setLevel(logging.DEBUG)
 
 upgradeable_devices = 0
 arch = platform.system()
-# Windows does not support acsii colours
-if not arch.startswith('Win'):
-  WHITE = '\033[1m'
-  RED = '\033[1;91m'
-  GREEN = '\033[1;92m'
-  YELLOW = '\033[1;93m'
-  BLUE = '\033[1;94m'
-  PURPLE = '\033[1;95m'
-  NC = '\033[0m'
-else:
-  WHITE = ''
-  RED = ''
-  GREEN = ''
-  YELLOW = ''
-  BLUE = ''
-  PURPLE = ''
-  NC = ''
 
 def upgrade_pip():
   logger.info("Updating pip...")
@@ -386,7 +369,7 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
     logger.info(f"Done.")
 
 def write_flash(device_info, hap_setup_code):
-  logger.debug(f"write_flash")
+  logger.debug(f"{WHITE}write_flash{NC}")
   flashed = False
   device_info.flash_firmware()
   logger.info(f"waiting for {device_info.friendly_host} to reboot...")
@@ -425,7 +408,7 @@ def write_flash(device_info, hap_setup_code):
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
   logger.info(f"")
-  logger.debug(f"parse_info")
+  logger.debug(f"{WHITE}parse_info{NC}")
   logger.debug(f"device_info: {device_info}")
 
   perform_flash = False
@@ -562,7 +545,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       write_flash(device_info, hap_setup_code)
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
-  logger.debug(f"probe_device")
+  logger.debug(f"{WHITE}probe_device{NC}")
   d_info = json.dumps(device, indent = 4)
   logger.debug(f"Device Info: {d_info}")
 
@@ -606,14 +589,14 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
   if hosts:
     for host in hosts:
       logger.debug(f"")
-      logger.debug(f"device_scan: manual")
+      logger.debug(f"{WHITE}device_scan: manual{NC}")
       deviceinfo = Device(host)
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
         probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
   else:
-    logger.debug(f"device_scan: start automatic scan")
+    logger.debug(f"{WHITE}device_scan: start automatic scan{NC}")
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
     zc = zeroconf.Zeroconf()
     listener = MyListener()
@@ -625,6 +608,8 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
       except queue.Empty:
         logger.info(f"")
         logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
+        if args.log_filename:
+          logger.info(f"Log file created: debug.log")
         zc.close()
         break
       logger.debug(f"")
@@ -646,35 +631,54 @@ if __name__ == '__main__':
   parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=False, help="Do not ask any confirmation to perform the flash.")
   parser.add_argument('-V', '--version',type=str, action="store", dest="version", default=False, help="Force a particular version.")
   parser.add_argument('-c', '--hap-setup-code', action="store", dest="hap_setup_code", default=False, help="Configure HomeKit setup code, after flashing.")
+  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1'], default='0', help="Enable verbose logging 0=info / 1=debug.")
   parser.add_argument('--variant', action="store", dest="variant", default=False, help="Prerelease variant name.")
-  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1'], help="Enable verbose logging 0=screen / 1=file.")
+  parser.add_argument('--log-file', action="store", dest="log_filename", default=False, help="Create output log file with chosen filename.")
   parser.add_argument('hosts', type=str, nargs='*')
   args = parser.parse_args()
   action = 'list' if args.list else 'flash'
   args.mode = 'stock' if args.mode == 'revert' else args.mode
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
-  if args.verbose and '0' in args.verbose:
-    ch = logging.StreamHandler()
-    ch.setFormatter(logging.Formatter('%(message)s'))
-    ch.setLevel(logging.DEBUG)
-    logger.addHandler(ch)
-  elif (args.verbose and '1' in args.verbose) or not args.verbose:
-    ch = logging.StreamHandler()
-    ch.setFormatter(logging.Formatter('%(message)s'))
-    ch.setLevel(logging.INFO)
-    logger.addHandler(ch)
-    if args.verbose and '1' in args.verbose:
-      fh = logging.FileHandler('debug.log', mode='w', encoding='utf-8')
-      fh.setLevel(logging.DEBUG)
-      fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
-      logger.addHandler(fh)
+  sh = logging.StreamHandler()
+  sh.setFormatter(logging.Formatter('%(message)s'))
+  fh = logging.FileHandler(args.log_filename, mode='w', encoding='utf-8')
+  fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
+  if args.verbose == '0':
+    sh.setLevel(logging.INFO)
+    fh.setLevel(logging.INFO)
+  elif args.verbose == '1':
+    fh.setLevel(logging.DEBUG)
+  if args.log_filename:
+    logger.addHandler(sh)
+    logger.addHandler(fh)
+  else:
+    logger.addHandler(sh)
+
+  # Windows and log file do not support acsii colours
+  if not args.log_filename and not arch.startswith('Win'):
+    WHITE = '\033[1m'
+    RED = '\033[1;91m'
+    GREEN = '\033[1;92m'
+    YELLOW = '\033[1;93m'
+    BLUE = '\033[1;94m'
+    PURPLE = '\033[1;95m'
+    NC = '\033[0m'
+  else:
+    WHITE = ''
+    RED = ''
+    GREEN = ''
+    YELLOW = ''
+    BLUE = ''
+    PURPLE = ''
+    NC = ''
+
 
   homekit_release_info = None
   stock_release_info = None
   app_version = "2.1.0"
 
-  logger.debug(f"app_version: {app_version}")
-  logger.debug(f"OS: {arch}")
+  logger.debug(f"OS: {PURPLE}{arch}{NC}")
+  logger.debug(f"app_version: {WHITE}{app_version}{NC}")
   logger.debug(f"manual_hosts: {args.hosts}")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
@@ -687,6 +691,7 @@ if __name__ == '__main__':
   logger.debug(f"exclude: {args.exclude}")
   logger.debug(f"variant: {args.variant}")
   logger.debug(f"verbose: {args.verbose}")
+  logger.debug(f"log_filename: {args.log_filename}")
 
   if not args.hosts and not args.do_all:
     logger.info(f"{WHITE}Requires a hostname or -a | --all{NC}")
