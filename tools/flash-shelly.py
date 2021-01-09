@@ -45,7 +45,7 @@
 #                          Configure HomeKit setup code, after flashing.
 #    --variant VARIANT     Prerelease variant name.
 #    -v {0,1}, --verbose {0,1}
-#                          Enable verbose logging level.
+#                          Enable verbose logging 0=screen / 1=file.
 
 
 import argparse
