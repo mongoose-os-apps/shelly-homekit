@@ -607,7 +607,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
         logger.info(f"")
         logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
         if args.log_filename:
-          logger.info(f"Log file created: {log_filename}")
+          logger.info(f"Log file created: {args.log_filename}")
         zc.close()
         break
       logger.debug(f"")
