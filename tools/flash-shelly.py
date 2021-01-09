@@ -639,14 +639,15 @@ if __name__ == '__main__':
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
   sh = logging.StreamHandler()
   sh.setFormatter(logging.Formatter('%(message)s'))
-  fh = logging.FileHandler(args.log_filename, mode='w', encoding='utf-8')
-  fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
   if args.verbose == '0':
     sh.setLevel(logging.INFO)
-    fh.setLevel(logging.INFO)
-  elif args.verbose == '1':
-    fh.setLevel(logging.DEBUG)
   if args.log_filename:
+    fh = logging.FileHandler(args.log_filename, mode='w', encoding='utf-8')
+    fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
+    if args.verbose == '0':
+      fh.setLevel(logging.INFO)
+    elif args.verbose == '1':
+      fh.setLevel(logging.DEBUG)
     logger.addHandler(sh)
     logger.addHandler(fh)
   else:
