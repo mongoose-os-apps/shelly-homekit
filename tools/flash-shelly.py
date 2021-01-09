@@ -21,10 +21,10 @@
 #  or any other firmware please follow instructions here:
 #  https://github.com/mongoose-os-apps/shelly-homekit/wiki
 #
+#  usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [-c HAP_SETUP_CODE] [--variant VARIANT] [-v {0,1}] [hosts ...]
+#
 #  Shelly HomeKit flashing script utility
-#  usage: flash_shelly.py [-h] [-m {homekit,keep,revert}] [-a] [-l] [-e [EXCLUDE [EXCLUDE ...]]] [-n] [-y] [-V VERSION]
-#                         [--variant VARIANT] [-v {0,1}]
-#                         [hosts [hosts ...]]
+#
 #  positional arguments:
 #    hosts
 #
@@ -33,15 +33,16 @@
 #    -m {homekit,keep,revert}, --mode {homekit,keep,revert}
 #                          Script mode.
 #    -a, --all             Run against all the devices on the network.
+#    -q, --quiet           Only include upgradeable shelly devices.
 #    -l, --list            List info of shelly device.
-#    -e [EXCLUDE [EXCLUDE ...]], --exclude [EXCLUDE [EXCLUDE ...]]
+#    -e [EXCLUDE ...], --exclude [EXCLUDE ...]
 #                          Exclude hosts from found devices.
 #    -n, --assume-no       Do a dummy run through.
 #    -y, --assume-yes      Do not ask any confirmation to perform the flash.
 #    -V VERSION, --version VERSION
 #                          Force a particular version.
-#    --hap_setup_code HOMEKIT_CODE
-#                          Configure HomeKit setup code.
+#    -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
+#                          Configure HomeKit setup code, after flashing.
 #    --variant VARIANT     Prerelease variant name.
 #    -v {0,1}, --verbose {0,1}
 #                          Enable verbose logging level.
@@ -112,11 +113,7 @@ class MyListener:
 
   def add_service(self, zeroconf, type, device):
     device = device.replace('._http._tcp.local.', '')
-    deviceinfo = Device(device)
-    deviceinfo.get_device_info()
-    if deviceinfo.fw_type is not None:
-      dict = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
-      self.queue.put(dict)
+    self.queue.put(Device(device))
 
   def remove_service(self, *args, **kwargs):
     pass
@@ -151,7 +148,7 @@ class Device:
       logger.trace(f"Hostname: {host} is Online")
       return True
     except:
-      logger.warning(f"{RED}Could not resolve host: {host}{NC}")
+      logger.warning(f"\n{RED}Could not resolve host: {host}{NC}")
       return False
 
   def get_device_url(self):
@@ -174,9 +171,12 @@ class Device:
   def get_device_info(self):
     info = None
     if self.get_device_url():
-      fp = requests.get(self.device_url, timeout=3)
-      if fp.status_code == 200:
-        info = json.loads(fp.content)
+      try:
+        fp = requests.get(self.device_url, timeout=3)
+        if fp.status_code == 200:
+          info = json.loads(fp.content)
+      except requests.exceptions.RequestException as err:
+        logger.debug(f"Error: {err}")
     else:
       logger.debug(f"{RED}Could not get info from device: {self.host}\n{NC}")
     self.info = info
@@ -252,8 +252,7 @@ class Device:
           re_search = i[0]
         if re.search(re_search, self.fw_version):
           self.flash_fw_version = i[1]['version']
-          if not self.version:
-            self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
+          self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
           break
     else:
       self.flash_label = "Manual:"
@@ -274,7 +273,7 @@ class Device:
     else:
       self.flash_label = "Manual:"
       self.flash_fw_version = self.version
-      self.dlurl = f'http://archive.shelly-faq.de/version/v{self.version}/{self.stock_model}.zip'
+      self.dlurl = f'http://archive.shelly-tools.de/version/v{self.version}/{self.stock_model}.zip'
     if self.stock_model  == 'SHRGBW2':
       self.dlurl = self.dlurl.replace('.zip',f'-{self.colour_mode}.zip')
 
@@ -347,7 +346,7 @@ class StockDevice(Device):
 
 def parse_version(vs):
   # 1.9.2_1L
-  # 1.9.3-rc3 / 2.7.0-beta1
+  # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest
   pp = vs.split('_') if '_' in vs else vs.split('-')
   v = pp[0].split('.')
   variant = ""
@@ -361,7 +360,7 @@ def parse_version(vs):
       else:
         break
       i += 1
-    varSeq = int(pp[1][i]) or 0
+    varSeq = int(pp[1][i]) if len(pp[1]) >= i else 0
   major, minor, patch = [int(e) for e in v]
   return (major, minor, patch, variant, varSeq)
 
@@ -429,7 +428,8 @@ def write_flash(device_info, hap_setup_code):
     logger.debug("Current: %s" % onlinecheck)
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
-  logger.debug(f"\n{WHITE}parse_info{NC}")
+  logger.info(f"")
+  logger.debug(f"{WHITE}parse_info{NC}")
   logger.trace(f"device_info: {device_info}")
 
   perform_flash = False
@@ -450,6 +450,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   colour_mode = device_info.colour_mode
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
+  sys_temp = device_info.info['sys_temp'] if 'sys_temp' in device_info.info else '0'
 
   logger.debug(f"host: {host}")
   logger.debug(f"device_name: {device_name}")
@@ -462,7 +463,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"requires_upgrade: {requires_upgrade}")
   logger.debug(f"current_fw_version: {current_fw_version}")
   logger.debug(f"flash_fw_version: {flash_fw_version}")
-  logger.debug(f"force_version: {force_version}\n")
+  logger.debug(f"force_version: {force_version}")
+  logger.debug(f"dlurl: {dlurl}")
+
 
   if force_version:
     device_info.set_force_version(force_version)
@@ -470,6 +473,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
 
   if dlurl:
     durl_request = requests.head(dlurl)
+    logger.debug(f"durl_request: {durl_request}")
   if flash_fw_version == 'novariant':
     latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
     flash_fw_version = '0.0.0'
@@ -481,18 +485,18 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   else:
     latest_fw_label = flash_fw_version
 
-  if not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version))):
-    logger.info(f"\n{WHITE}Host: {NC}http://{host}")
+  if (not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version)))) and requires_upgrade != 'Done':
+    logger.info(f"{WHITE}Host: {NC}http://{host}")
     logger.info(f"{WHITE}Device Name: {NC}{device_name}")
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
     logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
     logger.info(f"{WHITE}Model: {NC}{model}")
+    logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
     logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
     col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
-    logger.debug(f"{WHITE}D_URL: {NC}{dlurl}")
 
-  if dlurl and ((force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)) or requires_upgrade or (current_fw_type != mode) or (current_fw_type == mode and is_newer(flash_fw_version, current_fw_version))):
+  if dlurl and ((force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)) or requires_upgrade == True or (current_fw_type != mode) or (current_fw_type == mode and is_newer(flash_fw_version, current_fw_version))):
     global upgradeable_devices
     upgradeable_devices += 1
 
@@ -510,7 +514,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       elif force_version and parse_version(flash_fw_version) != parse_version(current_fw_version):
         perform_flash = True
         keyword = f"reflashed version {force_version}"
-      elif requires_upgrade:
+      elif requires_upgrade == True:
         perform_flash = True
         if mode == 'stock':
           keyword = f"upgraded to version {flash_fw_version}"
@@ -543,6 +547,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     if perform_flash == True and dry_run == False and silent_run == False:
       if requires_upgrade == True:
         flash_message = f"{message} {keyword}"
+      elif requires_upgrade == 'Done':
+        flash_message = f"Do you wish to contintue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
       else:
         flash_message = f"Do you wish to flash {friendly_host} to firmware version {flash_fw_version}"
       if input(f"{flash_message} (y/n) ? ") == 'y':
@@ -559,6 +565,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug(f"\n{WHITE}probe_device{NC}")
+  d_info = json.dumps(device, indent = 4)
+  logger.trace(f"Device Info: {d_info}")
+
   requires_upgrade = False
   if mode == 'keep':
     flashmode = device['fw_type']
@@ -587,17 +596,22 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
       logger.info(f"please update via the device webUI.\n")
     else:
       parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
+      if requires_upgrade:
+        requires_upgrade = 'Done'
+        deviceinfo.get_info()
+        if not is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
+          deviceinfo.update_to_homekit(homekit_release_info)
+          parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
+
 
 def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
-  logger.debug(f"\n{WHITE}device_scan{NC}")
   if hosts:
     for host in hosts:
+      logger.debug(f"\n{WHITE}device_scan{NC}")
       deviceinfo = Device(host)
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
-        d_info = json.dumps(device, indent = 4)
-        logger.trace(f"Device Info: {d_info}")
         probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
   else:
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
@@ -607,15 +621,17 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
     total_devices = 0
     while True:
       try:
-        device = listener.queue.get(timeout=20)
-        d_info = json.dumps(device, indent = 4)
-        total_devices += 1
-        logger.trace(f"Device Info: {d_info}")
-        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
+        deviceinfo = listener.queue.get(timeout=20)
       except queue.Empty:
         logger.info(f"\n{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
         zc.close()
         break
+      logger.debug(f"\n{WHITE}device_scan{NC}")
+      deviceinfo.get_device_info()
+      if deviceinfo.fw_type is not None:
+        device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
+        total_devices += 1
+        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
@@ -642,12 +658,14 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
+  app_version = "2.1.0"
 
-  logger.debug(f"{WHITE}app{NC}")
+  logger.debug(f"{WHITE}app_version: {app_version}{NC}")
   logger.debug(f"{PURPLE}OS: {arch}{NC}")
   logger.debug(f"manual_hosts: {args.hosts}")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
+  logger.debug(f"do_all: {args.do_all}")
   logger.debug(f"dry_run: {args.dry_run}")
   logger.debug(f"quiet_run: {args.quiet_run}")
   logger.debug(f"silent_run: {args.silent_run}")
