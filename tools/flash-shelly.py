@@ -205,14 +205,12 @@ class Device:
                'SHGS-1' : 'ShellyGas',
                'SHEM' : 'ShellyEM',
                'SHEM-3' : 'Shelly3EM',
+               'SHSEN-1' : 'ShellySensor1',
                'switch1' : 'Shelly1',
                'switch1pm' : 'Shelly1PM',
                'switch2' : 'Shelly2',
                'switch25' : 'Shelly25',
                'shelly-plug-s' : 'ShellyPlugS',
-               'dimmer1' : 'ShellyDimmer1',
-               'dimmer2' : 'ShellyDimmer2',
-               'rgbw2' : 'ShellyRGBW2',
     }
     return options.get(type, type)
 
