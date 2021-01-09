@@ -703,18 +703,19 @@ if __name__ == '__main__':
 
   try:
     fp = requests.get("https://api.shelly.cloud/files/firmware", timeout=3)
+    logger.debug(f"stock_release_info status code: {fp.status_code}")
     if fp.status_code == 200:
       stock_release_info = json.loads(fp.content)
   except requests.exceptions.RequestException as err:
-    logger.debug(fp.status_code)
+    logger.debug(err)
+  logger.debug(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
   try:
     fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
+    logger.debug(f"homekit_release_info status code: {fp.status_code}")
     if fp.status_code == 200:
       homekit_release_info = json.loads(fp.content)
   except requests.exceptions.RequestException as err:
     logger.debug(err)
-
-  logger.debug(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
   logger.debug(f"homekit_release_info: {json.dumps(homekit_release_info, indent = 4)}")
 
   if not stock_release_info or not homekit_release_info:
