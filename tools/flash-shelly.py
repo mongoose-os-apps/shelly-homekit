@@ -60,13 +60,8 @@ import subprocess
 import sys
 import time
 
-logging.TRACE = 5
-logging.addLevelName(logging.TRACE, 'TRACE')
-logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE)
-logging.trace = functools.partial(logging.log, logging.TRACE)
-logging.basicConfig(format='%(message)s')
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger('info')
+logger.setLevel(logging.DEBUG)
 
 upgradeable_devices = 0
 arch = platform.system()
@@ -139,16 +134,17 @@ class Device:
         result = False
     allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
     result = all(allowed.match(x) for x in hostname.split("."))
-    logger.trace(f"Valid Hostname: {hostname} {result}")
+    logger.debug(f"Valid Hostname: {hostname} {result}")
     return result
 
   def is_host_online(self, host):
     try:
       self.wifi_ip = socket.gethostbyname(host)
-      logger.trace(f"Hostname: {host} is Online")
+      logger.debug(f"Hostname: {host} is Online")
       return True
     except:
       logger.warning(f"\n{RED}Could not resolve host: {host}{NC}")
+      logger.warning(f"Could not resolve host: {host}")
       return False
 
   def get_device_url(self):
@@ -165,7 +161,7 @@ class Device:
           self.device_url = f'http://{self.wifi_ip}/settings'
       except:
         pass
-    logger.trace(f"Device URL: {self.device_url}")
+    logger.debug(f"Device URL: {self.device_url}")
     return self.device_url
 
   def get_device_info(self):
@@ -178,7 +174,7 @@ class Device:
       except requests.exceptions.RequestException as err:
         logger.debug(f"Error: {err}")
     else:
-      logger.debug(f"{RED}Could not get info from device: {self.host}\n{NC}")
+      logger.debug(f"Could not get info from device: {self.host}")
     self.info = info
     return info
 
@@ -390,7 +386,7 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
     logger.info(f"Done.")
 
 def write_flash(device_info, hap_setup_code):
-  logger.debug(f"\n{WHITE}write_flash{NC}")
+  logger.debug(f"write_flash")
   flashed = False
   device_info.flash_firmware()
   logger.info(f"waiting for {device_info.friendly_host} to reboot...")
@@ -429,8 +425,8 @@ def write_flash(device_info, hap_setup_code):
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
   logger.info(f"")
-  logger.debug(f"{WHITE}parse_info{NC}")
-  logger.trace(f"device_info: {device_info}")
+  logger.debug(f"parse_info")
+  logger.debug(f"device_info: {device_info}")
 
   perform_flash = False
   flash = False
@@ -455,14 +451,16 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"host: {host}")
   logger.debug(f"device_name: {device_name}")
   logger.debug(f"device_id: {device_id}")
+  logger.debug(f"wifi_ip: {wifi_ip}")
   logger.debug(f"model: {model}")
   logger.debug(f"stock_model: {stock_model}")
   logger.debug(f"colour_mode: {colour_mode}")
+  logger.debug(f"sys_temp: {sys_temp}˚c")
   logger.debug(f"action: {action}")
   logger.debug(f"flash mode: {mode}")
   logger.debug(f"requires_upgrade: {requires_upgrade}")
-  logger.debug(f"current_fw_version: {current_fw_version}")
-  logger.debug(f"flash_fw_version: {flash_fw_version}")
+  logger.debug(f"current_fw_version: {current_fw_type_str} {current_fw_version}")
+  logger.debug(f"flash_fw_version: {flash_fw_type_str} {flash_fw_version}")
   logger.debug(f"force_version: {force_version}")
   logger.debug(f"dlurl: {dlurl}")
 
@@ -543,7 +541,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         logger.info("Does not need flashing...")
       return 0
 
-    logger.debug(f"\nperform_flash: {perform_flash}\n")
+    logger.debug(f"perform_flash: {perform_flash}")
     if perform_flash == True and dry_run == False and silent_run == False:
       if requires_upgrade == True:
         flash_message = f"{message} {keyword}"
@@ -564,9 +562,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       write_flash(device_info, hap_setup_code)
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
-  logger.debug(f"\n{WHITE}probe_device{NC}")
+  logger.debug(f"probe_device")
   d_info = json.dumps(device, indent = 4)
-  logger.trace(f"Device Info: {d_info}")
+  logger.debug(f"Device Info: {d_info}")
 
   requires_upgrade = False
   if mode == 'keep':
@@ -607,13 +605,15 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
 def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   if hosts:
     for host in hosts:
-      logger.debug(f"\n{WHITE}device_scan{NC}")
+      logger.debug(f"")
+      logger.debug(f"device_scan: manual")
       deviceinfo = Device(host)
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
         probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
   else:
+    logger.debug(f"device_scan: start automatic scan")
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
     zc = zeroconf.Zeroconf()
     listener = MyListener()
@@ -623,10 +623,12 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
       try:
         deviceinfo = listener.queue.get(timeout=20)
       except queue.Empty:
-        logger.info(f"\n{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
+        logger.info(f"")
+        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
         zc.close()
         break
-      logger.debug(f"\n{WHITE}device_scan{NC}")
+      logger.debug(f"")
+      logger.debug(f"device_scan: action queue entry")
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
@@ -645,23 +647,34 @@ if __name__ == '__main__':
   parser.add_argument('-V', '--version',type=str, action="store", dest="version", default=False, help="Force a particular version.")
   parser.add_argument('-c', '--hap-setup-code', action="store", dest="hap_setup_code", default=False, help="Configure HomeKit setup code, after flashing.")
   parser.add_argument('--variant', action="store", dest="variant", default=False, help="Prerelease variant name.")
-  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1'], help="Enable verbose logging level.")
+  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1'], help="Enable verbose logging 0=screen / 1=file.")
   parser.add_argument('hosts', type=str, nargs='*')
   args = parser.parse_args()
   action = 'list' if args.list else 'flash'
   args.mode = 'stock' if args.mode == 'revert' else args.mode
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
   if args.verbose and '0' in args.verbose:
-    logger.setLevel(logging.DEBUG)
-  elif args.verbose and '1' in args.verbose:
-    logger.setLevel(logging.TRACE)
+    ch = logging.StreamHandler()
+    ch.setFormatter(logging.Formatter('%(message)s'))
+    ch.setLevel(logging.DEBUG)
+    logger.addHandler(ch)
+  elif (args.verbose and '1' in args.verbose) or not args.verbose:
+    ch = logging.StreamHandler()
+    ch.setFormatter(logging.Formatter('%(message)s'))
+    ch.setLevel(logging.INFO)
+    logger.addHandler(ch)
+    if args.verbose and '1' in args.verbose:
+      fh = logging.FileHandler('debug.log', mode='w', encoding='utf-8')
+      fh.setLevel(logging.DEBUG)
+      fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
+      logger.addHandler(fh)
 
   homekit_release_info = None
   stock_release_info = None
   app_version = "2.1.0"
 
-  logger.debug(f"{WHITE}app_version: {app_version}{NC}")
-  logger.debug(f"{PURPLE}OS: {arch}{NC}")
+  logger.debug(f"app_version: {app_version}")
+  logger.debug(f"OS: {arch}")
   logger.debug(f"manual_hosts: {args.hosts}")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
@@ -701,8 +714,8 @@ if __name__ == '__main__':
   except requests.exceptions.RequestException as err:
     logger.debug(err)
 
-  logger.trace(f"\n{WHITE}stock_release_info:{NC}{stock_release_info}")
-  logger.trace(f"\n{WHITE}homekit_release_info:{NC}{homekit_release_info}")
+  logger.debug(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
+  logger.debug(f"homekit_release_info: {json.dumps(homekit_release_info, indent = 4)}")
 
   if not stock_release_info or not homekit_release_info:
     logger.warning(f"{RED}Failed to lookup online version information{NC}")
