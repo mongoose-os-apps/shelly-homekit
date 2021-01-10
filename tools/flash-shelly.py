@@ -69,6 +69,15 @@ logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE
 logging.trace = functools.partial(logging.log, logging.TRACE)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.TRACE)
+def log_level(level):
+  options = {'0' : logging.CRITICAL,
+             '1' : logging.ERROR,
+             '2' : logging.WARNING,
+             '3' : logging.INFO,
+             '4' : logging.DEBUG,
+             '5' : logging.TRACE,
+   }
+  return options.get(level, level)
 
 upgradeable_devices = 0
 flashed_devices = 0
@@ -475,6 +484,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     latest_fw_label = flash_fw_version
 
   if (not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version)))) and requires_upgrade != 'Done':
+    logger.info(f"")
     logger.info(f"{WHITE}Host: {NC}http://{host}")
     logger.info(f"{WHITE}Device Name: {NC}{device_name}")
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
@@ -650,27 +660,11 @@ if __name__ == '__main__':
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
   sh = logging.StreamHandler()
   sh.setFormatter(logging.Formatter('%(message)s'))
-  if args.verbose == '0':
-    sh.setLevel(logging.CRITICAL)
-  if args.verbose == '1':
-    sh.setLevel(logging.ERROR)
-  elif args.verbose == '2':
-    sh.setLevel(logging.WARNING)
-  elif args.verbose == '3':
-    sh.setLevel(logging.INFO)
-  elif args.verbose == '4':
-    sh.setLevel(logging.DEBUG)
-  elif args.verbose == '5':
-    sh.setLevel(logging.TRACE)
+  sh.setLevel(log_level(args.verbose))
   if args.log_filename:
     fh = logging.FileHandler(args.log_filename, mode='w', encoding='utf-8')
     fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
-    if args.verbose in ('1', '2', '3'):
-      fh.setLevel(logging.INFO)
-    elif args.verbose == '4':
-      fh.setLevel(logging.DEBUG)
-    elif args.verbose == '5':
-      fh.setLevel(logging.TRACE)
+    fh.setLevel(log_level(args.verbose))
     logger.addHandler(fh)
   logger.addHandler(sh)
 
