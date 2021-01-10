@@ -158,9 +158,9 @@ class Device:
         if fp.status_code == 200:
           info = json.loads(fp.content)
       except requests.exceptions.RequestException as err:
-        logger.critical(f"Error: {err}")
+        logger.debug(f"Error: {err}")
     else:
-      logger.warning(f"Could not get info from device: {self.host}")
+      logger.debug(f"Could not get info from device: {self.host}")
     self.info = info
     return info
 
