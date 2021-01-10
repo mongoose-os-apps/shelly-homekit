@@ -104,7 +104,7 @@ class MyListener:
     self.queue = queue.Queue()
 
   def add_service(self, zeroconf, type, device):
-    logger.trace(f"Scanner: found device: {device}")
+    logger.trace(f"[Device Scan] found device: {device}")
     device = device.replace('._http._tcp.local.', '')
     self.queue.put(Device(device))
 
@@ -381,7 +381,7 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
     logger.info(f"Done.")
 
 def write_flash(device_info, hap_setup_code):
-  logger.debug(f"{PURPLE}Write Flash:{NC}")
+  logger.debug(f"{PURPLE}[Write Flash]{NC}")
   flashed = False
   device_info.flash_firmware()
   logger.info(f"waiting for {device_info.friendly_host} to reboot...")
@@ -422,7 +422,7 @@ def write_flash(device_info, hap_setup_code):
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
   logger.debug(f"")
-  logger.debug(f"{PURPLE}Parse Info:{NC}")
+  logger.debug(f"{PURPLE}[Parse Info]{NC}")
   logger.trace(f"device_info: {device_info}")
 
   perform_flash = False
@@ -561,7 +561,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug("")
-  logger.debug(f"{PURPLE}Probe Device:{NC}")
+  logger.debug(f"{PURPLE}[Probe Device]{NC}")
   d_info = json.dumps(device, indent = 4)
   logger.trace(f"device_info: {d_info}")
 
@@ -605,14 +605,14 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
   if hosts:
     for host in hosts:
       logger.debug(f"")
-      logger.debug(f"{PURPLE}Device Scan: manual{NC}")
+      logger.debug(f"{PURPLE}[Device Scan] manual{NC}")
       deviceinfo = Device(host)
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
         probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
   else:
-    logger.debug(f"{PURPLE}Device Scan: automatic scan{NC}")
+    logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
     zc = zeroconf.Zeroconf()
     listener = MyListener()
@@ -629,7 +629,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
         zc.close()
         break
       logger.debug(f"")
-      logger.debug(f"{PURPLE}Device Scan: action queue entry{NC}")
+      logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
