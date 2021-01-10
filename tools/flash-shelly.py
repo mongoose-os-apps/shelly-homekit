@@ -43,9 +43,11 @@
 #                          Force a particular version.
 #    -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
 #                          Configure HomeKit setup code, after flashing.
-#    --variant VARIANT     Prerelease variant name.
 #    -v {0,1,2,3,4,5}, --verbose {0,1,2,3,4,5}
 #                          Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
+#    --variant VARIANT     Prerelease variant name.
+#    --log-file LOG_FILENAME
+#                          Create output log file with chosen filename.
 
 
 import argparse
