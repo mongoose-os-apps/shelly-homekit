@@ -21,7 +21,8 @@
 #  or any other firmware please follow instructions here:
 #  https://github.com/mongoose-os-apps/shelly-homekit/wiki
 #
-#  usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [-c HAP_SETUP_CODE] [--variant VARIANT] [-v {0,1}] [hosts ...]
+#  usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [-c HAP_SETUP_CODE] [-v {0,1,2,3,4,5}] [--variant VARIANT] [--log-file LOG_FILENAME]
+#                         [hosts ...]
 #
 #  Shelly HomeKit flashing script utility
 #
