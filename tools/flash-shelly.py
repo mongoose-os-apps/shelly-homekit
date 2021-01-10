@@ -44,8 +44,8 @@
 #    -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
 #                          Configure HomeKit setup code, after flashing.
 #    --variant VARIANT     Prerelease variant name.
-#    -v {0,1}, --verbose {0,1}
-#                          Enable verbose logging 0=screen / 1=file.
+#    -v {0,1,2,3,4,5}, --verbose {0,1,2,3,4,5}
+#                          Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
 
 
 import argparse
@@ -60,8 +60,12 @@ import subprocess
 import sys
 import time
 
-logger = logging.getLogger('info')
-logger.setLevel(logging.DEBUG)
+logging.TRACE = 5
+logging.addLevelName(logging.TRACE, 'TRACE')
+logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE)
+logging.trace = functools.partial(logging.log, logging.TRACE)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.TRACE)
 
 upgradeable_devices = 0
 arch = platform.system()
@@ -126,8 +130,7 @@ class Device:
       logger.debug(f"Hostname: {host} is Online")
       return True
     except:
-      logger.warning(f"\n{RED}Could not resolve host: {host}{NC}")
-      logger.warning(f"Could not resolve host: {host}")
+      logger.error(f"\n{RED}Could not resolve host: {host}{NC}")
       return False
 
   def get_device_url(self):
@@ -144,7 +147,7 @@ class Device:
           self.device_url = f'http://{self.wifi_ip}/settings'
       except:
         pass
-    logger.debug(f"Device URL: {self.device_url}")
+    logger.trace(f"Device URL: {self.device_url}")
     return self.device_url
 
   def get_device_info(self):
@@ -155,9 +158,9 @@ class Device:
         if fp.status_code == 200:
           info = json.loads(fp.content)
       except requests.exceptions.RequestException as err:
-        logger.debug(f"Error: {err}")
+        logger.critical(f"Error: {err}")
     else:
-      logger.debug(f"Could not get info from device: {self.host}")
+      logger.warning(f"Could not get info from device: {self.host}")
     self.info = info
     return info
 
@@ -318,7 +321,7 @@ class StockDevice(Device):
     dlurl = self.dlurl.replace('https', 'http')
     logger.debug(f"curl -qsS http://{self.wifi_ip}/ota?url={dlurl}")
     response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
-    logger.debug(response.text)
+    logger.trace(response.text)
 
 
 def parse_version(vs):
@@ -362,7 +365,7 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
   value={'code': hap_setup_code}
   logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/HAP.Setup', json={value}")
   response = requests.post(url=f'http://{wifi_ip}/rpc/HAP.Setup', json={'code': hap_setup_code})
-  logger.debug(response.text)
+  logger.trace(response.text)
   if response.text.startswith('null'):
     logger.info(f"Done.")
 
@@ -407,7 +410,7 @@ def write_flash(device_info, hap_setup_code):
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
   logger.info(f"")
   logger.debug(f"{WHITE}parse_info{NC}")
-  logger.debug(f"device_info: {device_info}")
+  logger.trace(f"device_info: {device_info}")
 
   perform_flash = False
   flash = False
@@ -545,7 +548,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
   logger.debug(f"{WHITE}probe_device{NC}")
   d_info = json.dumps(device, indent = 4)
-  logger.debug(f"Device Info: {d_info}")
+  logger.trace(f"Device Info: {d_info}")
 
   requires_upgrade = False
   if mode == 'keep':
@@ -570,9 +573,9 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
     elif flashmode == 'stock':
       deviceinfo.update_to_stock(stock_release_info)
     if deviceinfo.fw_type == "homekit" and float(f"{parse_version(deviceinfo.info['version'])[0]}.{parse_version(deviceinfo.info['version'])[1]}") < 2.1:
-      logger.info(f"{WHITE}Host: {NC}{deviceinfo.host}")
-      logger.info(f"Version {deviceinfo.info['version']} is to old for this script,")
-      logger.info(f"please update via the device webUI.\n")
+      logger.error(f"{WHITE}Host: {NC}{deviceinfo.host}")
+      logger.error(f"Version {deviceinfo.info['version']} is to old for this script,")
+      logger.error(f"please update via the device webUI.\n")
     else:
       parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
       if requires_upgrade:
@@ -629,7 +632,7 @@ if __name__ == '__main__':
   parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=False, help="Do not ask any confirmation to perform the flash.")
   parser.add_argument('-V', '--version',type=str, action="store", dest="version", default=False, help="Force a particular version.")
   parser.add_argument('-c', '--hap-setup-code', action="store", dest="hap_setup_code", default=False, help="Configure HomeKit setup code, after flashing.")
-  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1'], default='0', help="Enable verbose logging 0=info / 1=debug.")
+  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1', '2', '3', '4', '5'], default='3', help="Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.")
   parser.add_argument('--variant', action="store", dest="variant", default=False, help="Prerelease variant name.")
   parser.add_argument('--log-file', action="store", dest="log_filename", default=False, help="Create output log file with chosen filename.")
   parser.add_argument('hosts', type=str, nargs='*')
@@ -640,18 +643,28 @@ if __name__ == '__main__':
   sh = logging.StreamHandler()
   sh.setFormatter(logging.Formatter('%(message)s'))
   if args.verbose == '0':
+    sh.setLevel(logging.CRITICAL)
+  if args.verbose == '1':
+    sh.setLevel(logging.ERROR)
+  elif args.verbose == '2':
+    sh.setLevel(logging.WARNING)
+  elif args.verbose == '3':
     sh.setLevel(logging.INFO)
+  elif args.verbose == '4':
+    sh.setLevel(logging.DEBUG)
+  elif args.verbose == '5':
+    sh.setLevel(logging.TRACE)
   if args.log_filename:
     fh = logging.FileHandler(args.log_filename, mode='w', encoding='utf-8')
     fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
-    if args.verbose == '0':
+    if args.verbose in ('1', '2', '3'):
       fh.setLevel(logging.INFO)
-    elif args.verbose == '1':
+    elif args.verbose == '4':
       fh.setLevel(logging.DEBUG)
-    logger.addHandler(sh)
+    elif args.verbose == '5':
+      fh.setLevel(logging.TRACE)
     logger.addHandler(fh)
-  else:
-    logger.addHandler(sh)
+  logger.addHandler(sh)
 
   # Windows and log file do not support acsii colours
   if not args.log_filename and not arch.startswith('Win'):
@@ -711,20 +724,20 @@ if __name__ == '__main__':
     if fp.status_code == 200:
       stock_release_info = json.loads(fp.content)
   except requests.exceptions.RequestException as err:
-    logger.debug(err)
-  logger.debug(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
+    logger.critical(f"{RED}CRITICAL:{NC} {err}")
+  logger.trace(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
   try:
     fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
     logger.debug(f"homekit_release_info status code: {fp.status_code}")
     if fp.status_code == 200:
       homekit_release_info = json.loads(fp.content)
   except requests.exceptions.RequestException as err:
-    logger.debug(err)
-  logger.debug(f"homekit_release_info: {json.dumps(homekit_release_info, indent = 4)}")
+    logger.critical(f"{RED}CRITICAL:{NC} {err}")
+  logger.trace(f"homekit_release_info: {json.dumps(homekit_release_info, indent = 4)}")
 
   if not stock_release_info or not homekit_release_info:
-    logger.warning(f"{RED}Failed to lookup online version information{NC}")
-    logger.warning("For more information please point your web browser to:")
-    logger.warning("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
+    logger.error(f"{RED}Failed to lookup online version information{NC}")
+    logger.error("For more information please point your web browser to:")
+    logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
   else:
     device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.exclude, args.version, args.variant, args.hap_setup_code)
