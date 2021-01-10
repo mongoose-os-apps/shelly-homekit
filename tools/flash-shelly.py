@@ -388,7 +388,7 @@ def write_flash(device_info, hap_setup_code):
       break
     time.sleep(2)
   if onlinecheck == device_info.flash_fw_version:
-    logger.info(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
+    logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     if hap_setup_code:
       write_hap_setup_code(device_info.wifi_ip, hap_setup_code)
   else:
