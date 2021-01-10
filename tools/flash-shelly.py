@@ -68,6 +68,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.TRACE)
 
 upgradeable_devices = 0
+flashed_devices = 0
 arch = platform.system()
 
 def upgrade_pip():
@@ -389,6 +390,8 @@ def write_flash(device_info, hap_setup_code):
       break
     time.sleep(2)
   if onlinecheck == device_info.flash_fw_version:
+    global flashed_devices
+    flashed_devices +=1
     logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     if hap_setup_code:
       write_hap_setup_code(device_info.wifi_ip, hap_setup_code)
@@ -409,7 +412,7 @@ def write_flash(device_info, hap_setup_code):
     logger.debug("Current: %s" % onlinecheck)
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
-  logger.info(f"")
+  logger.debug(f"")
   logger.debug(f"{PURPLE}Parse Info:{NC}")
   logger.trace(f"device_info: {device_info}")
 
@@ -440,7 +443,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"model: {model}")
   logger.debug(f"stock_model: {stock_model}")
   logger.debug(f"colour_mode: {colour_mode}")
-  logger.debug(f"sys_temp: {sys_temp}˚c")
+  logger.debug(f"sys_temp: {sys_temp}")
   logger.debug(f"action: {action}")
   logger.debug(f"flash mode: {mode}")
   logger.debug(f"requires_upgrade: {requires_upgrade}")
@@ -610,7 +613,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
         deviceinfo = listener.queue.get(timeout=20)
       except queue.Empty:
         logger.info(f"")
-        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
+        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices}{NC}")
         if args.log_filename:
           logger.info(f"Log file created: {args.log_filename}")
         zc.close()
