@@ -69,15 +69,12 @@ logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE
 logging.trace = functools.partial(logging.log, logging.TRACE)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.TRACE)
-def log_level(level):
-  options = {'0' : logging.CRITICAL,
+log_level = {'0' : logging.CRITICAL,
              '1' : logging.ERROR,
              '2' : logging.WARNING,
              '3' : logging.INFO,
              '4' : logging.DEBUG,
-             '5' : logging.TRACE,
-   }
-  return options.get(level, level)
+             '5' : logging.TRACE}
 
 upgradeable_devices = 0
 flashed_devices = 0
@@ -658,13 +655,14 @@ if __name__ == '__main__':
   action = 'list' if args.list else 'flash'
   args.mode = 'stock' if args.mode == 'revert' else args.mode
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
+
   sh = logging.StreamHandler()
   sh.setFormatter(logging.Formatter('%(message)s'))
-  sh.setLevel(log_level(args.verbose))
+  sh.setLevel(log_level[args.verbose])
   if args.log_filename:
     fh = logging.FileHandler(args.log_filename, mode='w', encoding='utf-8')
     fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
-    fh.setLevel(log_level(args.verbose))
+    fh.setLevel(log_level[args.verbose])
     logger.addHandler(fh)
   logger.addHandler(sh)
 
