@@ -547,7 +547,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       write_flash(device_info, hap_setup_code)
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
-  logger.debug(f"\n{PURPLE}Probe Device:{NC}")
+  logger.debug("")
+  logger.debug(f"{PURPLE}Probe Device:{NC}")
   d_info = json.dumps(device, indent = 4)
   logger.trace(f"device_info: {d_info}")
 
