@@ -23,11 +23,6 @@
     <div class="badge" id="notify_failsafe" style="display: none">Failsafe mode</div>
   </div>
   <h1 class="" id="device_name" style="visibility: hidden"></h1>
-  <br>
-  <button disabled class="btndis" id="uptime_label">
-    Uptime: <span id="uptime"></span>
-  </button>
-  <br><br>
 </div>
 <div class="container" id="gs_container" style="display: none">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/General-Settings"
@@ -138,16 +133,11 @@
     <div class="">
       <div class="form-control">
         <label>Device:</label>
-        Model: <span id="model"></span>,
-        ID: <span id="device_id"></span>
-      </div>
-      <div class="form-control">
-        <label>Version:</label>
-        <span id="version"></span>
+        Model: <span id="model"></span>, ID: <span id="device_id"></span>, Uptime: <span id="uptime"></span>
       </div>
       <div class="form-control">
         <label>Firmware:</label>
-        <span id="fw_build"></span>
+        Version: <span id="version"></span> (build <span id="fw_build"></span>)
       </div>
       <div class="form-control" id="update_container" style="display: none">
         <label>Update: </label>

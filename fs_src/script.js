@@ -567,7 +567,6 @@ function updateElement(key, value) {
   switch (key) {
     case "uptime":
       el("uptime").innerText = durationStr(value);
-      el("uptime_label").style.visibility = "visible";
       break;
     case "model":
     case "device_id":
@@ -690,7 +689,6 @@ function getInfo() {
 
       if (data.failsafe_mode) {
         el("notify_failsafe").style.display = "inline";
-        el("uptime_label").style.display = "none";
         // only show this limited set of infos
         ["model", "device_id", "version", "fw_build"]
           .forEach(element => updateElement(element, data[element]));
