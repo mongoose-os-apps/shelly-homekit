@@ -760,9 +760,22 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
   return (stat(buf, &st) != 0);
 }
 
+bool WipeDevice() {
+  static const char *s_wipe_files[] = {
+      "conf2.json",  // Used for HAP pairing info
+      CONF_USER_FILE,
+      KVS_FILE_NAME,
+  };
+  bool wiped = false;
+  for (const char *wipe_fn : s_wipe_files) {
+    if (remove(wipe_fn) == 0) wiped = true;
+  }
+  return wiped;
+}
+
 void InitApp() {
   if (s_failsafe_mode) {
-    if (remove(CONF_USER_FILE) == 0 || remove(KVS_FILE_NAME) == 0) {
+    if (WipeDevice()) {
       LOG(LL_INFO, ("== Wiped config, rebooting"));
 #if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
       mgos_vfs_gc("/");

@@ -342,6 +342,12 @@ el("reboot_btn").onclick = function () {
   });
 }
 
+el("reset_btn").onclick = function () {
+  sendMessageWebSocket("Shelly.WipeDevice", {}).then(function () {
+    alert("Device configuration has been reset, it will reboot in AP mode.");
+  });
+}
+
 function findOrAddContainer(cd) {
   var elId = "c" + cd.type + "-" + cd.id;
   var c = el(elId);

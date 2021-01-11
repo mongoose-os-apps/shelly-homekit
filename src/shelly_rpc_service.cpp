@@ -309,6 +309,19 @@ static void GetDebugInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) fi;
 }
 
+static void WipeDeviceHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                              struct mg_rpc_frame_info *fi,
+                              struct mg_str args) {
+  bool wiped = WipeDevice();
+  mg_rpc_send_responsef(ri, "{wiped: %B}", wiped);
+  if (wiped) {
+    mgos_system_restart_after(500);
+  }
+  (void) cb_arg;
+  (void) args;
+  (void) fi;
+}
+
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm) {
@@ -332,6 +345,8 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
   }
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
                      GetDebugInfoHandler, nullptr);
+  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.WipeDevice", "",
+                     WipeDeviceHandler, nullptr);
   return true;
 }
 

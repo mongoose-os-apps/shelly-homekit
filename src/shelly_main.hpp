@@ -50,6 +50,8 @@ void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
 
 void RestartService();
 
+bool WipeDevice();
+
 StatusOr<int> GetSystemTemperature();
 
 #define SHELLY_SERVICE_FLAG_UPDATE (1 << 0)

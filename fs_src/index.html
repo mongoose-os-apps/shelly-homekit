@@ -24,7 +24,6 @@
   </div>
   <h1 class="" id="device_name" style="visibility: hidden"></h1>
   <br>
-  <button class="btn" id="reboot_btn">Reboot</button>
   <button disabled class="btndis" id="uptime_label">
     Uptime: <span id="uptime"></span>
   </button>
@@ -191,6 +190,15 @@
       <div class="form-control" id="sys_temp_container" style="display: none">
         <label>Temperature:</label>
         <span id="sys_temp"></span>&deg;C
+      </div>
+      <div class="form-control">
+        <label></label>
+        <button class="btn" id="reboot_btn">
+          <label>Reboot</label>
+        </button>
+        <button class="btn" id="reset_btn">
+          <label>Reset</label>
+        </button>
       </div>
     </div>
   </div>
