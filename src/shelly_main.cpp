@@ -744,6 +744,7 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "passwd",
       "relaydata",
       "index.html",
+      "conf9_backup.json",
       // Obsolete files from previopus versions.
       "style.css",
       "axios.min.js.gz",
@@ -762,14 +763,19 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
 
 bool WipeDevice() {
   static const char *s_wipe_files[] = {
-      "conf2.json",  // Used for HAP pairing info
-      CONF_USER_FILE,
+      "conf2.json",
+      "conf9.json",
       KVS_FILE_NAME,
   };
   bool wiped = false;
   for (const char *wipe_fn : s_wipe_files) {
     if (remove(wipe_fn) == 0) wiped = true;
   }
+#if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
+  if (wiped) {
+    mgos_vfs_gc("/");
+  }
+#endif
   return wiped;
 }
 
@@ -777,9 +783,6 @@ void InitApp() {
   if (s_failsafe_mode) {
     if (WipeDevice()) {
       LOG(LL_INFO, ("== Wiped config, rebooting"));
-#if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
-      mgos_vfs_gc("/");
-#endif
       mgos_system_restart_after(100);
       return;
     } else {
