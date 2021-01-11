@@ -735,6 +735,31 @@ static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
+extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
+                                                   const char *new_fs_path,
+                                                   const char *file_name) {
+  static const char *s_skip_files[] = {
+      // Some files from stock that we don't need.
+      "cert.pem",
+      "passwd",
+      "relaydata",
+      "index.html",
+      // Obsolete files from previopus versions.
+      "style.css",
+      "axios.min.js.gz",
+      "style.css.gz",
+  };
+  for (const char *skip_fn : s_skip_files) {
+    if (strcmp(file_name, skip_fn) == 0) return false;
+  }
+  struct stat st;
+  char buf[100] = {};
+  snprintf(buf, sizeof(buf) - 1, "%s/%s", new_fs_path, file_name);
+  (void) old_fs_path;
+  /* Copy if the file is not found on the new fs. */
+  return (stat(buf, &st) != 0);
+}
+
 void InitApp() {
   if (s_failsafe_mode) {
     if (remove(CONF_USER_FILE) == 0 || remove(KVS_FILE_NAME) == 0) {
@@ -749,17 +774,6 @@ void InitApp() {
       shelly_rpc_service_init(nullptr, nullptr, nullptr);
     }
     return;
-  }
-
-  if (mgos_ota_is_first_boot()) {
-    LOG(LL_INFO, ("Performing cleanup"));
-    // In case we're uograding from stock fw, remove its files
-    // with the exception of hwinfo_struct.json.
-    remove("cert.pem");
-    remove("passwd");
-    remove("relaydata");
-    remove("index.html");
-    remove("style.css");
   }
 
   // Key-value store.
