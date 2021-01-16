@@ -456,7 +456,7 @@ function updateComponent(cd) {
         if (el(c, "initial_3")) el(c, "initial_3").remove();
       }
       checkIfNotModified(el(c, "auto_off"), cd.auto_off);
-      el(c, "auto_off_delay").disabled = !cd.auto_off;
+      el(c, "auto_off_delay").disabled = !el(c, "auto_off").checked;
       setValueIfNotModified(el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
