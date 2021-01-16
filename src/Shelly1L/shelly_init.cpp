@@ -35,8 +35,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   inputs->emplace_back(in1);
   auto *in2 = new NoisyInputPin(2, 14, 1, MGOS_GPIO_PULL_NONE, false);
   in2->Init();
-#if 0
   inputs->emplace_back(in2);
+#if 0 // 1L uses BL0937 in current-only mode. This is not yet supported.
   std::unique_ptr<PowerMeter> pm(new BL0937PowerMeter(1, -1, 4, -1));
   if (pm->Init().ok()) {
     pms->emplace_back(std::move(pm));
