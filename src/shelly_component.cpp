@@ -29,4 +29,8 @@ int Component::id() const {
   return id_;
 }
 
+bool Component::IsIdle() {
+  return true;
+}
+
 }  // namespace shelly

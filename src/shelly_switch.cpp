@@ -149,6 +149,10 @@ Status ShellySwitch::SetState(const std::string &state_json) {
   return Status::OK();
 }
 
+bool ShellySwitch::IsIdle() {
+  return !auto_off_timer_.IsValid();
+}
+
 Status ShellySwitch::Init() {
   if (!cfg_->enable) {
     LOG(LL_INFO, ("'%s' is disabled", cfg_->name));

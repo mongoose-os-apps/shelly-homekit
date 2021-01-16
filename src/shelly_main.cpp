@@ -481,6 +481,13 @@ uint8_t GetServiceFlags() {
   return s_service_flags;
 }
 
+static bool AllComponentsIdle() {
+  for (const auto &c : g_comps) {
+    if (!c->IsIdle()) return false;
+  }
+  return true;
+}
+
 static void StatusTimerCB(void *arg) {
   static uint8_t s_cnt = 0;
   auto sys_temp = GetSystemTemperature();
@@ -703,6 +710,11 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_begin_arg *arg = (struct mgos_ota_begin_arg *) ev_data;
   // Some other callback objected.
   if (arg->result != MGOS_UPD_OK) return;
+  // If there is some ongoing activity, wait for it to finish.
+  if (!AllComponentsIdle()) {
+    arg->result = MGOS_UPD_WAIT;
+    return;
+  }
   // Check app name.
   if (mg_vcmp(&arg->mi.name, MGOS_APP) != 0) {
     LOG(LL_ERROR,

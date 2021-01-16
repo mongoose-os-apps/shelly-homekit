@@ -264,6 +264,10 @@ Status WindowCovering::SetState(const std::string &state_json) {
   return Status::OK();
 }
 
+bool WindowCovering::IsIdle() {
+  return (state_ == State::kIdle);
+}
+
 // static
 const char *WindowCovering::StateStr(State state) {
   switch (state) {

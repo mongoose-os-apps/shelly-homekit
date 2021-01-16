@@ -184,6 +184,10 @@ Status GarageDoorOpener::SetState(const std::string &state_json) {
   return Status::OK();
 }
 
+bool GarageDoorOpener::IsIdle() {
+  return (cur_state_ != State::kOpening && cur_state_ != State::kClosing);
+}
+
 // static
 const char *GarageDoorOpener::StateStr(State state) {
   switch (state) {

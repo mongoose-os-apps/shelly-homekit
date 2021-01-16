@@ -46,6 +46,7 @@ class Component {
   virtual Status Init() = 0;
   virtual Type type() const = 0;
   virtual std::string name() const = 0;
+
   // Short status snippet string.
   virtual StatusOr<std::string> GetInfo() const = 0;
   // Full JSON status for UI.
@@ -55,6 +56,13 @@ class Component {
                            bool *restart_required) = 0;
   // Set state from UI.
   virtual Status SetState(const std::string &state_json) = 0;
+
+  // Is there any activity going on?
+  // If true is returned, it means it's ok to destroy the component.
+  // False should be returned if there is any user-visible activity,
+  // like curtain moving.
+  // Default implementation always returns true.
+  virtual bool IsIdle();
 
  private:
   const int id_;
