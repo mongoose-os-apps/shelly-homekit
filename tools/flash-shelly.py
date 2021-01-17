@@ -443,7 +443,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   colour_mode = device_info.colour_mode
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
-  sys_temp = device_info.info['sys_temp'] if 'sys_temp' in device_info.info else '0'
+  sys_temp = device_info.info['sys_temp'] if 'sys_temp' in device_info.info else None
 
   logger.debug(f"host: {host}")
   logger.debug(f"device_name: {device_name}")
@@ -487,7 +487,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
     logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
     logger.info(f"{WHITE}Model: {NC}{model}")
-    logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
+    if sys_temp:
+      logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
     logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
     col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
