@@ -389,9 +389,11 @@ def write_flash(device_info, hap_setup_code):
   n = 1
   waittextshown = False
   info = None
-  while n < 20:
-    if n == 10:
+  while n < 40:
+    if n == 15:
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
+    elif n == 30:
+      logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
     onlinecheck = device_info.get_current_version()
     time.sleep(1)
     n += 1
