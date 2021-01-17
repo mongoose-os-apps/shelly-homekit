@@ -78,6 +78,7 @@ log_level = {'0' : logging.CRITICAL,
 
 upgradeable_devices = 0
 flashed_devices = 0
+failed_flashed_devices = 0
 arch = platform.system()
 
 def upgrade_pip():
@@ -419,6 +420,8 @@ def write_flash(device_info, hap_setup_code):
     elif onlinecheck == '0.0.0':
       logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
     else:
+      global failed_flashed_devices
+      failed_flashed_devices +=1
       logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     logger.debug("Current: %s" % onlinecheck)
 
@@ -626,7 +629,10 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
         deviceinfo = listener.queue.get(timeout=20)
       except queue.Empty:
         logger.info(f"")
-        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices}{NC}")
+        if action == 'flash':
+          logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
+        else:
+          logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
         if args.log_filename:
           logger.info(f"Log file created: {args.log_filename}")
         zc.close()
