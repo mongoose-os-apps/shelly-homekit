@@ -25,12 +25,18 @@
 #include "mgos_http_server.h"
 #include "mgos_ota.h"
 #include "mgos_rpc.h"
+#ifdef MGOS_HAVE_WIFI
+#include "mgos_wifi.h"
+#endif
 
 #include "mongoose.h"
 
 #if CS_PLATFORM == CS_P_ESP8266
 #include "esp_coredump.h"
 #include "esp_rboot.h"
+extern "C" {
+#include "user_interface.h"
+}
 #endif
 
 #include "HAP.h"
@@ -543,6 +549,26 @@ static void StatusTimerCB(void *arg) {
                   (sys_temp.ok() ? sys_temp.ValueOrDie() : 0), status.c_str()));
     s_cnt = 0;
   }
+#ifdef MGOS_HAVE_WIFI
+  if (mgos_sys_config_get_wifi_sta_enable() &&
+      mgos_sys_config_get_shelly_wifi_connect_reboot_timeout() > 0) {
+    static int64_t s_last_connected = 0;
+    int64_t now = mgos_uptime_micros();
+    struct mgos_net_ip_info ip_info;
+    if (mgos_net_get_ip_info(MGOS_NET_IF_TYPE_WIFI, MGOS_NET_IF_WIFI_STA,
+                             &ip_info)) {
+      s_last_connected = now;
+    } else if (AllComponentsIdle()) {  // Only reboot if all components are
+                                       // idle.
+      int64_t timeout_micros =
+          mgos_sys_config_get_shelly_wifi_connect_reboot_timeout() * 1000000;
+      if (now - s_last_connected > timeout_micros) {
+        LOG(LL_ERROR, ("Not connected for too long, rebooting"));
+        mgos_system_restart_after(500);
+      }
+    }
+  }
+#endif  // MGOS_HAVE_WIFI
   (void) arg;
 }
 
@@ -789,6 +815,15 @@ bool WipeDevice() {
   }
 #endif
   return wiped;
+}
+
+bool IsSoftReboot() {
+#if CS_PLATFORM == CS_P_ESP8266
+  const struct rst_info *ri = system_get_rst_info();
+  return (ri->reason == REASON_SOFT_RESTART);
+#else
+  return false;
+#endif
 }
 
 void InitApp() {

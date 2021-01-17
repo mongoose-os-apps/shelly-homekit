@@ -21,6 +21,8 @@
 #include "mgos_hap_accessory.hpp"
 #include "mgos_hap_chars.hpp"
 
+#include "shelly_main.hpp"
+
 namespace shelly {
 
 ShellySwitch::ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
@@ -163,24 +165,28 @@ Status ShellySwitch::Init() {
         std::bind(&ShellySwitch::InputEventHandler, this, _1, _2));
     in_->SetInvert(cfg_->in_inverted);
   }
-  switch (static_cast<InitialState>(cfg_->initial_state)) {
-    case InitialState::kOff:
-      SetOutputState(false, "init");
-      break;
-    case InitialState::kOn:
-      SetOutputState(true, "init");
-      break;
-    case InitialState::kLast:
-      SetOutputState(cfg_->state, "init");
-      break;
-    case InitialState::kInput:
-      if (in_ != nullptr &&
-          cfg_->in_mode == static_cast<int>(InMode::kToggle)) {
-        SetOutputState(in_->GetState(), "init");
-      }
-      break;
-    case InitialState::kMax:
-      break;
+  bool should_restore = (cfg_->initial_state == (int) InitialState::kLast);
+  if (IsSoftReboot()) should_restore = true;
+  if (should_restore) {
+    SetOutputState(cfg_->state, "init");
+  } else {
+    switch (static_cast<InitialState>(cfg_->initial_state)) {
+      case InitialState::kOff:
+        SetOutputState(false, "init");
+        break;
+      case InitialState::kOn:
+        SetOutputState(true, "init");
+        break;
+      case InitialState::kInput:
+        if (in_ != nullptr &&
+            cfg_->in_mode == static_cast<int>(InMode::kToggle)) {
+          SetOutputState(in_->GetState(), "init");
+        }
+        break;
+      case InitialState::kLast:
+      case InitialState::kMax:
+        break;
+    }
   }
   LOG(LL_INFO, ("Exporting '%s': type %d, state: %d", cfg_->name,
                 cfg_->svc_type, out_->GetState()));

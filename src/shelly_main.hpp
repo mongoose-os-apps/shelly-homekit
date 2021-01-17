@@ -52,6 +52,8 @@ void RestartService();
 
 bool WipeDevice();
 
+bool IsSoftReboot();
+
 StatusOr<int> GetSystemTemperature();
 
 #define SHELLY_SERVICE_FLAG_UPDATE (1 << 0)

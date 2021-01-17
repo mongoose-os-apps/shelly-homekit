@@ -382,6 +382,10 @@ conds:
         - ["wifi.ap.gw", ""]
         - ["wifi.ap.dhcp_start", "192.168.33.2"]
         - ["wifi.ap.dhcp_end", "192.168.33.100"]
+        - ["wifi.sta_connect_timeout", 15]
+        # This is a mitigation for devices dropping of wifi and never coming back.
+        # While this is being investigated, the workaround is to reboot if not connected for 5 minutes when supposed to be.
+        - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
         - origin: https://github.com/mongoose-os-libs/adc
         - origin: https://github.com/mongoose-os-libs/wifi
