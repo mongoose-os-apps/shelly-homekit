@@ -220,6 +220,7 @@ function swSetConfig(c) {
   var initialState = el(c, "initial").value;
   var autoOff = el(c, "auto_off").checked;
   var autoOffDelay = el(c, "auto_off_delay").value;
+  var powerStateLed = el(c, "power_state_led").checked;
   var spinner = el(c, "save_spinner");
 
   if (name == "") {
@@ -237,6 +238,7 @@ function swSetConfig(c) {
     svc_type: parseInt(el(c, "svc_type").value),
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
+    power_state_led: powerStateLed,
     in_inverted: el(c, "in_inverted").checked,
   };
   if (autoOff) {
@@ -458,6 +460,7 @@ function updateComponent(cd) {
       checkIfNotModified(el(c, "auto_off"), cd.auto_off);
       el(c, "auto_off_delay").disabled = !el(c, "auto_off").checked;
       setValueIfNotModified(el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
+      checkIfNotModified(el(c, "power_state_led"), cd.power_state_led);
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
       var headText = "Input " + cd.id;

@@ -63,10 +63,10 @@ StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, svc_type: %d, in_mode: %d, "
       "in_inverted: %B, initial: %d, state: %B, auto_off: %B, "
-      "auto_off_delay: %.3f",
+      "auto_off_delay: %.3f, power_state_led: %B",
       id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type,
       cfg_->in_mode, cfg_->in_inverted, cfg_->initial_state, out_->GetState(),
-      cfg_->auto_off, cfg_->auto_off_delay);
+      cfg_->auto_off, cfg_->auto_off_delay, cfg_->power_state_led);
   if (out_pm_ != nullptr) {
     auto power = out_pm_->GetPowerW();
     if (power.ok()) {
@@ -90,9 +90,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, svc_type: %d, in_mode: %d, in_inverted: %B, "
              "initial_state: %d, "
-             "auto_off: %B, auto_off_delay: %lf}",
+             "auto_off: %B, auto_off_delay: %lf, power_state_led: %B}",
              &cfg.name, &cfg.svc_type, &cfg.in_mode, &in_inverted,
-             &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay);
+             &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay,
+             &cfg.power_state_led);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -112,6 +113,7 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
   }
   cfg.auto_off = (cfg.auto_off != 0);
+  cfg.power_state_led = (cfg.power_state_led != 0);
   if (cfg.initial_state < 0 || cfg.initial_state > (int) InitialState::kMax) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
   }
@@ -138,6 +140,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   cfg_->initial_state = cfg.initial_state;
   cfg_->auto_off = cfg.auto_off;
   cfg_->auto_off_delay = cfg.auto_off_delay;
+  if (cfg_->power_state_led != cfg.power_state_led) {
+    cfg_->power_state_led = cfg.power_state_led;
+    *restart_required = true;
+  }
   return Status::OK();
 }
 
@@ -201,7 +207,7 @@ void ShellySwitch::SetOutputState(bool new_state, const char *source) {
   bool cur_state = out_->GetState();
   out_->SetState(new_state, source);
   if (led_out_ != nullptr) {
-    led_out_->SetState(new_state, source);
+    led_out_->SetState((cfg_->power_state_led && new_state), source);
   }
   if (cfg_->state != new_state) {
     cfg_->state = new_state;
