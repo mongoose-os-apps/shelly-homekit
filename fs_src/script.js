@@ -849,8 +849,8 @@ function setValueIfNotModified(e, newValue) {
   // do not update the value of the input field if
   if (e.selected ||                    // the user has selected / highlighted the input field OR
     e.lastSetValue === e.value ||      // the value has not been changed by the user OR
-    e.lastSetValue !== undefined       // a value has previously been set AND
-    && e.lastSetValue !== e.value)     // it is not currently the same as the visible value
+    (e.lastSetValue !== undefined &&   // a value has previously been set AND
+      e.lastSetValue !== e.value))     // it is not currently the same as the visible value
     return;
   e.value = e.lastSetValue = newValue;
 }
@@ -858,8 +858,8 @@ function setValueIfNotModified(e, newValue) {
 function checkIfNotModified(e, newState) {
   // do not update the checked value if
   if (e.lastSetValue === e.checked ||  // the value has not changed (unnecessary) OR
-    e.lastSetValue !== undefined &&    // a value has previously been set AND
-    e.lastSetValue !== e.checked)      // it is not currently the same as the visible value
+    (e.lastSetValue !== undefined &&   // a value has previously been set AND
+      e.lastSetValue !== e.checked))   // it is not currently the same as the visible value
     return;
   e.checked = e.lastSetValue = newState;
 }
