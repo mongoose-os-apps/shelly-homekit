@@ -48,7 +48,7 @@ config_schema:
   - ["sw.initial_state", "i", 3, {title: "Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
   - ["sw.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
   - ["sw.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
-  - ["sw.power_state_led", "b", true, {title: "Power state LED enabled"}]
+  - ["sw.power_state_led", "i", -1, {title: "Power state LED enabled"}]
 
   - ["in", "o", {title: "Detached Input settings", abstract: true}]
   - ["in.type", "i", 3, {title: "HAP service type, 3 - Stateless switch, 7 - Motion sensor, 8 - Occupancy sensor, 6 - Disabled"}]
@@ -412,7 +412,7 @@ conds:
         - ["sw1.in_mode", -1]
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
-        - ["sw1.power_state_led", true]
+        - ["sw1.power_state_led", 1]
         - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
 
   - when: mos.platform != "ubuntu"
