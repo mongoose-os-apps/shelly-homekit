@@ -4,4 +4,5 @@ build_*/
 deps/
 releases/
 .DS_Store
+fs/index.html.gz
 *.zip
