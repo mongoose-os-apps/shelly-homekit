@@ -92,7 +92,7 @@ HAPError Valve::HandleActiveWrite(
 HAPError Valve::HandleValveTypeRead(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
-  *value = 0;
+  *value = cfg_->char_type;
   (void) server;
   (void) request;
   return kHAPError_None;
