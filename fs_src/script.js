@@ -596,7 +596,6 @@ function updateElement(key, value) {
       break;
     case "name":
       el("device_name").innerText = document.title = value;
-      el("device_name").style.visibility = "visible";
       setValueIfNotModified(el("sys_name"), value);
       break;
     case "wifi_en":
@@ -706,6 +705,9 @@ function getInfo() {
         reject();
         return;
       }
+
+      // always show system information if data is loaded
+      el("sys_container").style.display = "block";
 
       if (data.failsafe_mode) {
         el("notify_failsafe").style.display = "inline";
