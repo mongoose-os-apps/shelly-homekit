@@ -52,6 +52,7 @@ extern "C" {
 #include "shelly_hap_lock.hpp"
 #include "shelly_hap_outlet.hpp"
 #include "shelly_hap_switch.hpp"
+#include "shelly_hap_valve.hpp"
 #include "shelly_input.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_noisy_input_pin.hpp"
@@ -249,6 +250,11 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
       cat = kHAPAccessoryCategory_Locks;
       aid = SHELLY_HAP_AID_BASE_LOCK + id;
       sw.reset(new hap::Lock(id, in, out, pm, led_out, cfg));
+      break;
+    case 3:
+      cat = kHAPAccessoryCategory_Faucets;
+      aid = SHELLY_HAP_AID_BASE_VALVE + id;
+      sw.reset(new hap::Valve(id, in, out, pm, led_out, cfg));
       break;
     default:
       sw.reset(new ShellySwitch(id, in, out, pm, led_out, cfg));
