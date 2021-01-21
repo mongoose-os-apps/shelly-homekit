@@ -352,7 +352,7 @@ def parse_version(vs):
       else:
         break
       i += 1
-    varSeq = int(pp[1][i]) if len(pp[1]) >= i else 0
+    varSeq = int(pp[1][i]) if len(pp[1]) > i else 0
   major, minor, patch = [int(e) for e in v]
   return (major, minor, patch, variant, varSeq)
 
