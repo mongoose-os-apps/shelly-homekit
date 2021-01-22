@@ -448,7 +448,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   colour_mode = device_info.colour_mode
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
-  sys_temp = device_info.info['sys_temp'] if 'sys_temp' in device_info.info else None
+  sys_temp = device_info.info.get('sys_temp', None)
 
   logger.debug(f"host: {host}")
   logger.debug(f"device_name: {device_name}")
@@ -478,7 +478,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
-  elif not dlurl or durl_request.status_code != 200 or ('Content-Type' in durl_request.headers and durl_request.headers['Content-Type'] != 'application/zip'):
+  elif not dlurl or durl_request.status_code != 200 or (durl_request.headers.get('Content-Type', '') != 'application/zip'):
     latest_fw_label = f"{RED}Not available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
@@ -492,7 +492,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
     logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
     logger.info(f"{WHITE}Model: {NC}{model}")
-    if sys_temp:
+    if sys_temp is not None:
       logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
     logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
     col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
