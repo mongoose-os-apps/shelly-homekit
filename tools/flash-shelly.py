@@ -478,7 +478,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
-  elif not dlurl or durl_request.status_code != 200:
+  elif not dlurl or durl_request.status_code != 200 or ('Content-Type' in durl_request.headers and durl_request.headers['Content-Type'] != 'application/zip'):
     latest_fw_label = f"{RED}Not available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
