@@ -78,6 +78,7 @@ log_level = {'0' : logging.CRITICAL,
 
 upgradeable_devices = 0
 flashed_devices = 0
+failed_flashed_devices = 0
 arch = platform.system()
 
 def upgrade_pip():
@@ -351,7 +352,7 @@ def parse_version(vs):
       else:
         break
       i += 1
-    varSeq = int(pp[1][i]) if len(pp[1]) >= i else 0
+    varSeq = int(pp[1][i]) if len(pp[1]) > i else 0
   major, minor, patch = [int(e) for e in v]
   return (major, minor, patch, variant, varSeq)
 
@@ -389,9 +390,11 @@ def write_flash(device_info, hap_setup_code):
   n = 1
   waittextshown = False
   info = None
-  while n < 20:
-    if n == 10:
+  while n < 40:
+    if n == 15:
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
+    elif n == 30:
+      logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
     onlinecheck = device_info.get_current_version()
     time.sleep(1)
     n += 1
@@ -417,6 +420,8 @@ def write_flash(device_info, hap_setup_code):
     elif onlinecheck == '0.0.0':
       logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
     else:
+      global failed_flashed_devices
+      failed_flashed_devices +=1
       logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     logger.debug("Current: %s" % onlinecheck)
 
@@ -443,7 +448,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   colour_mode = device_info.colour_mode
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
-  sys_temp = device_info.info['sys_temp'] if 'sys_temp' in device_info.info else '0'
+  sys_temp = device_info.info.get('sys_temp', None)
 
   logger.debug(f"host: {host}")
   logger.debug(f"device_name: {device_name}")
@@ -473,7 +478,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
-  elif not dlurl or durl_request.status_code != 200:
+  elif not dlurl or durl_request.status_code != 200 or (durl_request.headers.get('Content-Type', '') != 'application/zip'):
     latest_fw_label = f"{RED}Not available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
@@ -487,7 +492,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
     logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
     logger.info(f"{WHITE}Model: {NC}{model}")
-    logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
+    if sys_temp is not None:
+      logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
     logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
     col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
@@ -623,7 +629,10 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
         deviceinfo = listener.queue.get(timeout=20)
       except queue.Empty:
         logger.info(f"")
-        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices}{NC}")
+        if action == 'flash':
+          logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
+        else:
+          logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
         if args.log_filename:
           logger.info(f"Log file created: {args.log_filename}")
         zc.close()
@@ -687,7 +696,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.1.0"
+  app_version = "2.1.5"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
