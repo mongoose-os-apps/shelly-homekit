@@ -61,7 +61,7 @@ extern "C" {
 #include "shelly_temp_sensor.hpp"
 
 #define KVS_FILE_NAME "kvs.json"
-#define NUM_SESSIONS 9
+#define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
 
 #ifndef LED_ON

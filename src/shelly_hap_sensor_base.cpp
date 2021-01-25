@@ -49,12 +49,12 @@ Status SensorBase::Init() {
 
   AddNameChar(svc_.iid + 1, cfg_->name);
 
-  handler_id_ =
-      in_->AddHandler(std::bind(&SensorBase::InputEventHandler, this, _1, _2));
-
   if (cfg_->in_mode == (int) InMode::kLevel) {
     SetInternalState(in_->GetState());
   }
+
+  handler_id_ =
+      in_->AddHandler(std::bind(&SensorBase::InputEventHandler, this, _1, _2));
 
   return Status::OK();
 }
@@ -150,7 +150,10 @@ void SensorBase::SetInternalState(bool state) {
       last_ev_ts_ = mgos_uptime();
     }
     state_ = state;
-    chars_[1]->RaiseEvent();
+    // May happen during init, we don't want to raise events until initialized.
+    if (handler_id_ != Input::kInvalidHandlerID) {
+      chars_[1]->RaiseEvent();
+    }
   }
   if (state && cfg_->in_mode == (int) InMode::kPulse) {
     auto_off_timer_.Reset(cfg_->idle_time * 1000, 0);
