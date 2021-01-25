@@ -242,8 +242,8 @@ function swSetConfig(c) {
   if (autoOff) {
     cfg.auto_off_delay = dateStringToSeconds(autoOffDelay);
   }
-  if (c.data.power_state_led >= 0) {
-    cfg.power_state_led = el(c, "power_state_led").checked ? 1 : 0;
+  if (c.data.state_led_en >= 0) {
+    cfg.state_led_en = el(c, "state_led_en").checked ? 1 : 0;
   }
   if (c.data.in_mode >= 0) {
     cfg.in_mode = parseInt(el(c, "in_mode").value);
@@ -461,11 +461,11 @@ function updateComponent(cd) {
       checkIfNotModified(el(c, "auto_off"), cd.auto_off);
       el(c, "auto_off_delay").disabled = !el(c, "auto_off").checked;
       setValueIfNotModified(el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
-      if (cd.power_state_led == -1) {
-        el(c, "power_state_led_container").style.display = "none";
+      if (cd.state_led_en == -1) {
+        el(c, "state_led_en_container").style.display = "none";
       } else {
-        el(c, "power_state_led_container").style.display = "block";
-        checkIfNotModified(el(c, "power_state_led"), cd.power_state_led == 1);
+        el(c, "state_led_en_container").style.display = "block";
+        checkIfNotModified(el(c, "state_led_en"), cd.state_led_en == 1);
       }
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
