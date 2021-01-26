@@ -116,6 +116,11 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   if (cfg.initial_state < 0 || cfg.initial_state > (int) InitialState::kMax) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "initial_state");
   }
+  if ((cfg_->state_led_en == -1 && cfg.state_led_en != -1) ||
+      (cfg_->state_led_en != -1 && cfg.state_led_en != 0 &&
+       cfg.state_led_en != 1)) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "state_led_en");
+  }
   // Now copy over.
   if (cfg_->name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
