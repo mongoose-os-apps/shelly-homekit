@@ -83,6 +83,8 @@ el("hap_save_btn").onclick = function () {
 };
 
 el("hap_reset_btn").onclick = function () {
+  if(!confirm("Should this device perform a hap reset?")) return;
+
   hapResetSpinner.className = "spin";
   sendMessageWebSocket("HAP.Reset", {"reset_server": true, "reset_code": true})
     .catch(function (err) {
@@ -340,12 +342,16 @@ function gdoSetConfig(c, cfg, spinner) {
 }
 
 el("reboot_btn").onclick = function () {
+  if(!confirm("Should this device perform a reboot?")) return;
+
   sendMessageWebSocket("Sys.Reboot", {delay_ms: 500}).then(function () {
     alert("System is rebooting and will reconnect when ready.");
   });
 }
 
 el("reset_btn").onclick = function () {
+  if(!confirm("Should this device perform a reset?")) return;
+
   sendMessageWebSocket("Shelly.WipeDevice", {}).then(function () {
     alert("Device configuration has been reset, it will reboot in AP mode.");
   });
@@ -1040,6 +1046,8 @@ el("update_btn").onclick = function () {
   checkUpdate();
 };
 el("revert_btn").onclick = function () {
+  if(!confirm("Should this device perform a firmware reset?")) return;
+
   el("revert_msg").style.display = "block";
   var stockURL = "https://rojer.me/files/shelly/stock/" + lastInfo.stock_model + ".zip";
   downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
