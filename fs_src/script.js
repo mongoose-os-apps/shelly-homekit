@@ -23,12 +23,7 @@ function el(container, id) {
 }
 
 function checkName(name) {
-  var ok = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-";
-  if (name.length === 0 || name.length > 63) return false;
-  for (var i in name) {
-    if (ok.indexOf(name[i]) < 0) return false;
-  }
-  return true;
+  return !!name.match(/^[a-z0-9\-]{1,63}$/i)
 }
 
 el("sys_save_btn").onclick = function () {
@@ -61,15 +56,12 @@ el("sys_save_btn").onclick = function () {
 };
 
 el("hap_save_btn").onclick = function () {
-  var code = hapSetupCode.value;
-  if (!code.match(/^\d\d\d-\d\d-\d\d\d$/)) {
-    if (code.match(/^\d\d\d\d\d\d\d\d$/)) {
-      code = code.substr(0, 3) + "-" + code.substr(3, 2) + "-" + code.substr(5, 3);
-    } else {
-      alert("Invalid code '" + code + "', must be xxxyyzzz or xxx-yy-zzz.");
-      return;
-    }
+  var codeMatch = hapSetupCode.value.match(/^(\d{3})\-?(\d{2})\-?(\d{3})$/);
+  if (!codeMatch) {
+    alert("Invalid code '" + hapSetupCode.value + "', must be xxxyyzzz or xxx-yy-zzz.");
+    return;
   }
+  var code = codeMatch.slice(1, 3).join('-');
   hapSaveSpinner.className = "spin";
   sendMessageWebSocket("HAP.Setup", {"code": code})
     .catch(function (err) {
@@ -181,20 +173,24 @@ function setComponentState(c, state, spinner) {
 }
 
 function autoOffDelayValid(value) {
-  return (dateStringToSeconds(value) >= 0.010) &&
-    (dateStringToSeconds(value) <= 2147483.647);
+  parsedValue = dateStringToSeconds(value);
+  return (parsedValue >= 0.010) && (parsedValue <= 2147483.647);
 }
 
 function dateStringToSeconds(dateString) {
   if (dateString == "") return 0;
-  var dateStringParts = dateString.split(':');
-  var secondsPart = dateStringParts[3].split('.')[0];
-  var fractionPart = dateStringParts[3].split('.')[1];
-  var seconds = parseInt(dateStringParts[0]) * 24 * 3600 +
-    parseInt(dateStringParts[1]) * 3600 +
-    parseInt(dateStringParts[2]) * 60 +
-    parseInt(secondsPart) +
-    parseFloat(fractionPart / 1000);
+
+  var {
+    days, hours, minutes, seconds, minutes
+  } = dateString.match(
+    /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\:(?<milliseconds>\d{3})/
+  ).groups
+
+  var seconds = parseInt(days) * 24 * 3600 +
+    parseInt(hours) * 3600 +
+    parseInt(minutes) * 60 +
+    parseInt(seconds) +
+    parseFloat(milliseconds / 1000);
   return seconds;
 }
 
