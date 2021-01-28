@@ -5,3 +5,4 @@ deps/
 releases/
 .DS_Store
 *.zip
+.vscode/

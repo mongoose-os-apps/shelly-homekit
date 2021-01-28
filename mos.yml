@@ -66,9 +66,11 @@ config_schema:
   - ["wc.swap_inputs", "b", false, {title: "Swap inputs (2 - open, 1 - close)"}]
   - ["wc.swap_outputs", "b", false, {title: "Swap outputs (2 - open, 1 - close)"}]
   - ["wc.calibrated", "b", false, {title: "Calibration done"}]
+  - ["wc.man_cal", "b", false, {title: "Manual Calibration active"}]
   - ["wc.idle_power_thr", "d", 10.0, {title: "Power consumption threshold for motor idle detection"}]
   - ["wc.move_power", "d", 0.0, {title: "Power consumption during movement, watts"}]
   - ["wc.move_time_ms", "i", 0, {title: "Move time, in millseconds"}]
+  - ["wc.move_time_limit_pos_ms", "i", 0, {title: "Move time to limit position, in milliseconds"}]
   - ["wc.current_pos", "d", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
   - ["gdo", "o", {title: "Garage door settings", abstract: true}]

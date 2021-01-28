@@ -138,6 +138,7 @@ class WindowCovering : public Component, public mgos::hap::Service {
   int64_t begin_ = 0;
   float move_start_pos_ = 0;
   float move_ms_per_pct_ = 0;
+  float move_limit_ms_per_pct_ = 0;
   bool obstruction_detected_ = false;
   int64_t last_hap_set_tgt_pos_ = 0;
   Direction moving_dir_ = Direction::kNone;
