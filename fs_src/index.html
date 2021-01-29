@@ -12,18 +12,19 @@
 </head>
 <body onLoad="onLoad()">
 
-<div class="container">
+<div class="container" id="header_container">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/" target="_blank">?</a>
-  <div class="logodiv"><img class="img" src="logo.png" alt=""></div>
-  <div class="apl_thin">
-    Shelly-<b>HomeKit</b>
-    <div class="badge" id="notify_disconnected" style="display: none">Disconnected</div>
-    <div class="badge" id="notify_update" style="display: none">Update</div>
-    <div class="badge" id="notify_overheat" style="display: none">Overheating</div>
-    <div class="badge" id="notify_failsafe" style="display: none">Failsafe mode</div>
+  <img id="logo" src="logo.png" alt="">
+  <h1 class="title">Shelly-<b>HomeKit</b></h1>
+  <div id="badges_container">
+    <a class="badge" id="notify_disconnected" style="display: none">Disconnected</a>
+    <a class="badge" id="notify_update" style="display: none" href="#update_container">Update</a>
+    <a class="badge" id="notify_overheat" style="display: none">Overheating</a>
+    <a class="badge" id="notify_failsafe" style="display: none">Failsafe mode</a>
   </div>
   <h1 class="" id="device_name" style="visibility: hidden"></h1>
 </div>
+
 <div class="container" id="gs_container" style="display: none">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/General-Settings"
      target="_blank">?</a>

@@ -133,8 +133,19 @@ h1 {
   padding: 4px 3px 0 5px;
   text-align: center;
   min-width: 8px;
-  display: inline;
-  position: absolute;
+}
+
+/* make sure that badge text is white
+   otherwise it will be blue if it is linked */
+a.badge {
+  color: #ffffff;
+}
+
+#badges_container {
+  margin: 8px 0;
+  padding-top: 0;
+  /* height for single row of badges */
+  min-height: 21px;
 }
 
 .helpbadge {
@@ -154,13 +165,15 @@ h1 {
   float: right;
 }
 
-.apl_thin {
-  margin-left: 80px;
-  height: 75px;
-  padding-top: 0.25em;
-  padding-left: 10px;
+#header_container {
+  padding: 10px;
+}
+
+.title {
   color: #454955;
-  font: 36px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light;
+  font: 36px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light, sans-serif;
+  font-weight: lighter;
+  text-align: left;
 }
 
 .icon {
@@ -170,17 +183,10 @@ h1 {
   padding-top: 0.28em;
 }
 
-.logodiv {
-  float: left;
-  width: 80px;
-  height: 80px;
-  padding-left: 10px;
-}
-
-.img {
+#logo {
   display: block;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 8px;
+  float: left;
   width: 80px;
   height: 80px;
 }
