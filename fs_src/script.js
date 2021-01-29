@@ -670,7 +670,7 @@ function updateElement(key, value) {
       }
       break;
     case "overheat_on":
-      el("notify_overheat").style.display = (value ? "block" : "none");
+      el("notify_overheat").style.display = (value ? "inline" : "none");
       break;
     default:
       //console.log(key, value);
@@ -825,7 +825,7 @@ function onLoad() {
         if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
           checkUpdate();
         }
-        el("notify_update").style.display = (getCookie("update_available") ? "block" : "none");
+        el("notify_update").style.display = (getCookie("update_available") ? "inline" : "none");
       }
 
       // auto-refresh if getInfo resolved (it rejects if in failsafe mode i.e. not auto-refresh)
@@ -1009,7 +1009,7 @@ async function checkUpdate() {
         return;
       }
       var updateAvailable = isNewer(latestVersion, curVersion);
-      el("notify_update").style.display = (updateAvailable ? "block" : "none");
+      el("notify_update").style.display = (updateAvailable ? "inline" : "none");
 
       setCookie("update_available", updateAvailable);
       if (!updateAvailable) {
