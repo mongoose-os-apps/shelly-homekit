@@ -164,7 +164,10 @@ void StatelessSwitch::RaiseEvent(uint8_t ev) {
   last_ev_ = ev;
   last_ev_ts_ = mgos_uptime();
   LOG(LL_INFO, ("Input %d: HAP event (mode %d): %d", id(), cfg_->in_mode, ev));
-  chars_[1]->RaiseEvent();
+  // May happen during init, we don't want to raise events until initialized.
+  if (handler_id_ != Input::kInvalidHandlerID) {
+    chars_[1]->RaiseEvent();
+  }
 }
 
 }  // namespace hap

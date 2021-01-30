@@ -62,7 +62,7 @@ extern "C" {
 #include "shelly_temp_sensor.hpp"
 
 #define KVS_FILE_NAME "kvs.json"
-#define NUM_SESSIONS 9
+#define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
 
 #ifndef LED_ON
@@ -793,6 +793,7 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "style.css",
       "axios.min.js.gz",
       "style.css.gz",
+      "logo.png",
   };
   for (const char *skip_fn : s_skip_files) {
     if (strcmp(file_name, skip_fn) == 0) return false;

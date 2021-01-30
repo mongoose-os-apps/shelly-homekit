@@ -61,8 +61,11 @@ ShellyU: MOS_BUILD_FLAGS=--build-var=ASAN=1 --build-var=UBSAN=1
 ShellyU: build-ShellyU
 	@true
 
-fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js
-	sed -e '/<style>/ r fs_src/style.css' -e '/<script>/ r fs_src/script.js' fs_src/index.html 2>&1 | gzip -9 -c > fs/index.html.gz
+fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js fs_src/logo.svg
+	sed -e '/<style>/ r fs_src/style.css' \
+		-e '/<script>/ r fs_src/script.js' \
+		-e '/<!-- logo.svg .* -->/ r fs_src/logo.svg' \
+		fs_src/index.html 2>&1 | gzip -9 -c > fs/index.html.gz
 
 build-%: fs/index.html.gz
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
