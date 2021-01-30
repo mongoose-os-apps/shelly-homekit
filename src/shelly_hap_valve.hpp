@@ -29,7 +29,7 @@ class Valve : public ShellySwitch {
        struct mgos_config_sw *cfg);
   virtual ~Valve();
 
-  Status Init();
+  Status Init() override;
 
  private:
   HAPError HandleActiveRead(
