@@ -61,7 +61,7 @@ el("hap_save_btn").onclick = function () {
     alert("Invalid code '" + hapSetupCode.value + "', must be xxxyyzzz or xxx-yy-zzz.");
     return;
   }
-  var code = codeMatch.slice(1, 3).join('-');
+  var code = codeMatch.slice(1).join('-');
   hapSaveSpinner.className = "spin";
   sendMessageWebSocket("HAP.Setup", {"code": code})
     .catch(function (err) {
