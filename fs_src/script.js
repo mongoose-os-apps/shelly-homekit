@@ -213,6 +213,7 @@ function nDigitString(num, digits) {
 function swSetConfig(c) {
   var name = el(c, "name").value;
   var svcType = el(c, "svc_type").value;
+  var charType = el(c, "valve_type").value;
   var initialState = el(c, "initial").value;
   var autoOff = el(c, "auto_off").checked;
   var autoOffDelay = el(c, "auto_off_delay").value;
@@ -244,6 +245,7 @@ function swSetConfig(c) {
   if (c.data.in_mode >= 0) {
     cfg.in_mode = parseInt(el(c, "in_mode").value);
   }
+  cfg.valve_type = (svcType == 3) ? parseInt(el(c, "valve_type").value) : -1;
   setComponentConfig(c, cfg, spinner);
 }
 
@@ -442,6 +444,13 @@ function updateComponent(cd) {
       }
       el(c, "btn_label").innerText = "Turn " + (cd.state ? "Off" : "On");
       selectIfNotModified(el(c, "svc_type"), cd.svc_type);
+      if (cd.svc_type == 3) {
+        selectIfNotModified(el(c, "valve_type"), cd.valve_type);
+        el(c, "valve_type_container").style.display = "block";
+        el(c, "valve_type_label").innerText = "Valve Type:";
+      } else {
+        el(c, "valve_type_container").style.display = "none";
+      }
       selectIfNotModified(el(c, "initial"), cd.initial);
       if (cd.in_mode >= 0) {
         selectIfNotModified(el(c, "in_mode"), cd.in_mode);
