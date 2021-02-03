@@ -23,12 +23,7 @@ function el(container, id) {
 }
 
 function checkName(name) {
-  var ok = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-";
-  if (name.length === 0 || name.length > 63) return false;
-  for (var i in name) {
-    if (ok.indexOf(name[i]) < 0) return false;
-  }
-  return true;
+  return !!name.match(/^[a-z0-9\-]{1,63}$/i)
 }
 
 el("sys_save_btn").onclick = function () {
@@ -61,15 +56,12 @@ el("sys_save_btn").onclick = function () {
 };
 
 el("hap_save_btn").onclick = function () {
-  var code = hapSetupCode.value;
-  if (!code.match(/^\d\d\d-\d\d-\d\d\d$/)) {
-    if (code.match(/^\d\d\d\d\d\d\d\d$/)) {
-      code = code.substr(0, 3) + "-" + code.substr(3, 2) + "-" + code.substr(5, 3);
-    } else {
-      alert("Invalid code '" + code + "', must be xxxyyzzz or xxx-yy-zzz.");
-      return;
-    }
+  var codeMatch = hapSetupCode.value.match(/^(\d{3})\-?(\d{2})\-?(\d{3})$/);
+  if (!codeMatch) {
+    alert("Invalid code '" + hapSetupCode.value + "', must be xxxyyzzz or xxx-yy-zzz.");
+    return;
   }
+  var code = codeMatch.slice(1, 3).join('-');
   hapSaveSpinner.className = "spin";
   sendMessageWebSocket("HAP.Setup", {"code": code})
     .catch(function (err) {
@@ -183,20 +175,24 @@ function setComponentState(c, state, spinner) {
 }
 
 function autoOffDelayValid(value) {
-  return (dateStringToSeconds(value) >= 0.010) &&
-    (dateStringToSeconds(value) <= 2147483.647);
+  parsedValue = dateStringToSeconds(value);
+  return (parsedValue >= 0.010) && (parsedValue <= 2147483.647);
 }
 
 function dateStringToSeconds(dateString) {
   if (dateString == "") return 0;
-  var dateStringParts = dateString.split(':');
-  var secondsPart = dateStringParts[3].split('.')[0];
-  var fractionPart = dateStringParts[3].split('.')[1];
-  var seconds = parseInt(dateStringParts[0]) * 24 * 3600 +
-    parseInt(dateStringParts[1]) * 3600 +
-    parseInt(dateStringParts[2]) * 60 +
-    parseInt(secondsPart) +
-    parseFloat(fractionPart / 1000);
+
+  var {
+    days, hours, minutes, seconds, minutes
+  } = dateString.match(
+    /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\:(?<milliseconds>\d{3})/
+  ).groups
+
+  var seconds = parseInt(days) * 24 * 3600 +
+    parseInt(hours) * 3600 +
+    parseInt(minutes) * 60 +
+    parseInt(seconds) +
+    parseFloat(milliseconds / 1000);
   return seconds;
 }
 
@@ -219,6 +215,7 @@ function nDigitString(num, digits) {
 function swSetConfig(c) {
   var name = el(c, "name").value;
   var svcType = el(c, "svc_type").value;
+  var charType = el(c, "valve_type").value;
   var initialState = el(c, "initial").value;
   var autoOff = el(c, "auto_off").checked;
   var autoOffDelay = el(c, "auto_off_delay").value;
@@ -250,6 +247,7 @@ function swSetConfig(c) {
   if (c.data.in_mode >= 0) {
     cfg.in_mode = parseInt(el(c, "in_mode").value);
   }
+  cfg.valve_type = (svcType == 3) ? parseInt(el(c, "valve_type").value) : -1;
   setComponentConfig(c, cfg, spinner);
 }
 
@@ -452,6 +450,13 @@ function updateComponent(cd) {
       }
       el(c, "btn_label").innerText = "Turn " + (cd.state ? "Off" : "On");
       selectIfNotModified(el(c, "svc_type"), cd.svc_type);
+      if (cd.svc_type == 3) {
+        selectIfNotModified(el(c, "valve_type"), cd.valve_type);
+        el(c, "valve_type_container").style.display = "block";
+        el(c, "valve_type_label").innerText = "Valve Type:";
+      } else {
+        el(c, "valve_type_container").style.display = "none";
+      }
       selectIfNotModified(el(c, "initial"), cd.initial);
       if (cd.in_mode >= 0) {
         selectIfNotModified(el(c, "in_mode"), cd.in_mode);
@@ -680,7 +685,7 @@ function updateElement(key, value) {
       }
       break;
     case "overheat_on":
-      el("notify_overheat").style.display = (value ? "block" : "none");
+      el("notify_overheat").style.display = (value ? "inline" : "none");
       break;
     default:
       //console.log(key, value);
@@ -835,7 +840,7 @@ function onLoad() {
         if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
           checkUpdate();
         }
-        el("notify_update").style.display = (getCookie("update_available") ? "block" : "none");
+        el("notify_update").style.display = (getCookie("update_available") ? "inline" : "none");
       }
 
       // auto-refresh if getInfo resolved (it rejects if in failsafe mode i.e. not auto-refresh)
@@ -1019,7 +1024,7 @@ async function checkUpdate() {
         return;
       }
       var updateAvailable = isNewer(latestVersion, curVersion);
-      el("notify_update").style.display = (updateAvailable ? "block" : "none");
+      el("notify_update").style.display = (updateAvailable ? "inline" : "none");
 
       setCookie("update_available", updateAvailable);
       if (!updateAvailable) {
