@@ -208,7 +208,6 @@ bool ShellySwitch::GetOutputState() const {
 }
 
 void ShellySwitch::SetOutputState(bool new_state, const char *source) {
-  bool cur_state = out_->GetState();
   out_->SetState(new_state, source);
   if (led_out_ != nullptr) {
     led_out_->SetState((cfg_->state_led_en == 1 && new_state), source);
