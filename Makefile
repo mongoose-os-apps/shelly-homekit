@@ -61,15 +61,14 @@ ShellyU: MOS_BUILD_FLAGS=--build-var=ASAN=1 --build-var=UBSAN=1
 ShellyU: build-ShellyU
 	@true
 
-fs/index.html.gz:
-	rm -f fs/index.html.gz && \
+fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js fs_src/logo.svg
 	cat fs_src/index.html | \
-	sed "s/.*<link.*rel=\"stylesheet\".*/<style>\n\n<\/style>/g" 2>&1 | \
-	sed -e '/<style>/ r fs_src/style.css'  2>&1 | \
-	sed "s/.*<script.*src=\"script.js\".*/<script>\n\n<\/script>/g"  2>&1 | \
-	sed -e '/<script>/ r fs_src/script.js' 2>&1 | \
-	sed "s/.*<img.*src=\"logo.svg\".*/<!-- svg -->/g"  2>&1 | \
-	sed -e '/<!-- svg -->/ r fs_src/script.js' 2>&1 | \
+	sed "s/.*<link.*rel=\"stylesheet\".*/<style>\n\n<\/style>/g" | \
+	sed -e '/<style>/ r fs_src/style.css'  | \
+	sed "s/.*<script.*src=\"script.js\".*/<script>\n\n<\/script>/g"  | \
+	sed -e '/<script>/ r fs_src/script.js' | \
+	sed 's/.*<img.*src="logo.svg".*/<!-- svg -->/g'  | \
+	sed -e '/<!-- svg -->/ r fs_src/script.js' | \
 	gzip -9 -c > fs/index.html.gz
 
 build-%: fs/index.html.gz
