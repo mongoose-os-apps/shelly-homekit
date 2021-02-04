@@ -57,7 +57,7 @@ Status Outlet::Init() {
       kHAPCharacteristicDebugDescription_On);
   state_notify_chars_.push_back(on_char);
   AddChar(on_char);
-  // In Use
+  // Outlet In Use
   AddChar(new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_OutletInUse,
       [](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,

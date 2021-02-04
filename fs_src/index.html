@@ -235,12 +235,22 @@
         <input type="text" id="name">
       </div>
       <div class="form-control">
-        <label>HAP Type:</label>
+        <label>HAP Service Type:</label>
         <select id="svc_type">
           <option id="svc_type_-1" value="-1">Disabled</option>
           <option id="svc_type_0" value="0">Switch</option>
           <option id="svc_type_1" value="1">Outlet</option>
           <option id="svc_type_2" value="2">Lock</option>
+          <option id="svc_type_3" value="3">Valve</option>
+        </select>
+      </div>
+      <div class="form-control" id="valve_type_container" style="display: none">
+        <label id="valve_type_label"></label>
+        <select id="valve_type">
+          <option id="valve_type_0" value="0">Generic Valve</option>
+          <option id="valve_type_1" value="1">Irrigation</option>
+          <option id="valve_type_2" value="2">Shower Head</option>
+          <option id="valve_type_3" value="3">Water Faucet</option>
         </select>
       </div>
       <div class="form-control" id="in_mode_container">
