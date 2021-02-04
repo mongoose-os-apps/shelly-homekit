@@ -11,20 +11,20 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 Summary of supported devices and features:
  * [Shelly 1](https://shelly.cloud/products/shelly-1-smart-home-automation-relay/), [Shelly 1PM](https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/)
-   * Switch/lock/outlet
+   * Switch/lock/outlet/valve
    * Stateless input
    * Garage door opener mode
  * [Shelly 1L](https://shelly.cloud/products/shelly-1l-single-wire-smart-home-automation-relay/)
-   * Switch/lock/outlet
+   * Switch/lock/outlet/valve
    * Stateless input
  * [Shelly Plug](https://shelly.cloud/products/shelly-plug-smart-home-automation-device/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/)
    * Switch/lock/outlet
  * Shelly 2
-   * Switch/lock/outlet
+   * Switch/lock/outlet/valve
    * Stateless input
    * Garage door opener mode
  * [Shelly 2.5](https://shelly.cloud/products/shelly-25-smart-home-automation-relay/)
-   * Switch/lock/outlet
+   * Switch/lock/outlet/valve
    * Stateless input
    * Garage door opener mode
    * Roller shutter mode

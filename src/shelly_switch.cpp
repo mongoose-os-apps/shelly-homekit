@@ -61,10 +61,10 @@ StatusOr<std::string> ShellySwitch::GetInfo() const {
 
 StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
-      "{id: %d, type: %d, name: %Q, svc_type: %d, in_mode: %d, "
+      "{id: %d, type: %d, name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, "
       "in_inverted: %B, initial: %d, state: %B, auto_off: %B, "
       "auto_off_delay: %.3f, state_led_en: %d",
-      id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type,
+      id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type, cfg_->valve_type,
       cfg_->in_mode, cfg_->in_inverted, cfg_->initial_state, out_->GetState(),
       cfg_->auto_off, cfg_->auto_off_delay, cfg_->state_led_en);
   if (out_pm_ != nullptr) {
@@ -88,10 +88,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   cfg.name = nullptr;
   cfg.in_mode = -2;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, svc_type: %d, in_mode: %d, in_inverted: %B, "
+             "{name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, in_inverted: %B, "
              "initial_state: %d, "
              "auto_off: %B, auto_off_delay: %lf, state_led_en: %d}",
-             &cfg.name, &cfg.svc_type, &cfg.in_mode, &in_inverted,
+             &cfg.name, &cfg.svc_type, &cfg.valve_type, &cfg.in_mode, &in_inverted,
              &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay,
              &cfg.state_led_en);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
@@ -100,8 +100,13 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
   }
-  if (cfg.svc_type < -1 || cfg.svc_type > 2) {
+  if (cfg.svc_type < -1 || cfg.svc_type > 3) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "svc_type");
+  }
+  if ((cfg.svc_type != 3 && cfg.valve_type != -1) ||
+      (cfg.svc_type == 3 && cfg.valve_type < 0) ||
+      (cfg.svc_type == 3 && cfg.valve_type > 3)) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "valve_type");
   }
   if (cfg.in_mode != -2 &&
       (cfg.in_mode < 0 || cfg.in_mode >= (int) InMode::kMax)) {
@@ -128,6 +133,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   }
   if (cfg_->svc_type != cfg.svc_type) {
     cfg_->svc_type = cfg.svc_type;
+    *restart_required = true;
+  }
+  if (cfg_->valve_type != cfg.valve_type) {
+    cfg_->valve_type = cfg.valve_type;
     *restart_required = true;
   }
   if (cfg.in_mode != -2 && cfg_->in_mode != cfg.in_mode) {
