@@ -16,11 +16,11 @@ jobs:
           fetch-depth: 0
       - name: Build project
         run: make release RELEASE_SUFFIX=$(.github/version.py --suffix)
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/master'
-    steps:
-      - name: Deploy release artifacts
-        run: echo Not implemented yet
-        shell: bash
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: releases
+          path: |
+            releases/*
+            !releases/**/elf
+          if-no-files-found: error
