@@ -1,0 +1,26 @@
+name: build-shelly-homekit
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install mos build tool
+        run: |
+          sudo add-apt-repository ppa:mongoose-os/mos -y
+          sudo apt -q install mos -y
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build project
+        run: make release RELEASE_SUFFIX=$(.github/version.py --suffix)
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: releases
+          path: |
+            releases/*
+            !releases/**/elf
+          if-no-files-found: error
