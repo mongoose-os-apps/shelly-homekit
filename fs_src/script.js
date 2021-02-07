@@ -620,7 +620,9 @@ function updateElement(key, value) {
         el("update_container").style.display = "block";
         el("revert_to_stock_container").style.display = "block";
         // We set external image URL to prevent loading it when not on WiFi, as it slows things down.
-        el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
+        if (el("donate_form_submit").src == "") {
+          el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
+        }
         el("donate_form_submit").style.display = "inline";
 
         el("wifi_ip").innerText = "IP: " + value;
