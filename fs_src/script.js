@@ -731,12 +731,10 @@ function getInfo() {
 }
 
 function getCookie(key) {
-  var parts1 = document.cookie.split(";");
-  for (var i in parts1) {
-    var parts2 = parts1[i].split("=");
-    if (parts2[0].trim() == key) return JSON.parse(parts2[1].trim());
-  }
-  return null;
+  cookie = (document.cookie.match('(^|;)\\s*' + key + '\\s*=\\s*([^;]+)') || []).pop()
+  if (cookie === undefined) return;
+  
+  return JSON.parse(cookie);
 }
 
 function setCookie(key, value) {
@@ -946,29 +944,14 @@ async function uploadFW(blob, spinner, status) {
 }
 
 // major.minor.patch-variantN
-function parseVersion(vs) {
-  var pp = vs.split("-");
-  var v = pp[0].split(".");
-  var variant = "", varSeq = 0;
-  if (pp[1]) {
-    var i = 0;
-    for (i in pp[1]) {
-      var c = pp[1][i];
-      if (isNaN(parseInt(c))) {
-        variant += c;
-      } else {
-        break;
-      }
-    }
-    varSeq = parseInt(pp[1].substring(i)) || 0;
-  }
-  return {
-    major: parseInt(v[0]),
-    minor: parseInt(v[1]),
-    patch: parseInt(v[2]),
-    variant: variant,
-    varSeq: varSeq,
-  }
+function parseVersion(versionString) {
+  version = versionString.match(/^(?<major>\d+).(?<minor>\d+).(?<patch>\d+)-?(?<variant>[a-z]*)(?<varSeq>\d*)$/).groups
+  version.major = parseInt(version.major);
+  version.minor = parseInt(version.minor);
+  version.patch = parseInt(version.patch);
+  version.varSeq = parseInt(version.varSeq) || 0;
+
+  return version;
 }
 
 function isNewer(v1, v2) {
