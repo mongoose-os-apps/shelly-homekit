@@ -99,6 +99,7 @@ cdefs:
   PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
   BTN_GPIO: -1
+  BTN_NOISY: 0
   HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
@@ -165,6 +166,7 @@ conds:
         LED_ON: 0
         BTN_GPIO: 13
         BTN_DOWN: 0
+        BTN_NOISY: 1
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-L"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
@@ -204,6 +206,7 @@ conds:
         LED_ON: 0
         BTN_GPIO: 2
         BTN_DOWN: 0
+        BTN_NOISY: 1
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-PM"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
