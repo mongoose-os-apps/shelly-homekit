@@ -5,3 +5,4 @@ deps/
 releases/
 .DS_Store
 *.zip
+core-*-esp8266-*-*.*
