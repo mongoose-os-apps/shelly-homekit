@@ -761,10 +761,18 @@ el("debug_en").onclick = function () {
 };
 
 var connectionTries = 0;
+var host = (new URLSearchParams(location.search)).get("host") || location.host;
 
 function connectWebSocket() {
+  if (!host) {
+    host = prompt("Please enter the host of your shelly.");
+    if (host !== null) {
+      location.href = location.host + "?host=" + host;
+    }
+  }
+
   return new Promise(function (resolve, reject) {
-    socket = new WebSocket("ws://" + location.host + "/rpc");
+    socket = new WebSocket("ws://" + host + "/rpc");
     connectionTries += 1;
 
     socket.onclose = function (event) {
