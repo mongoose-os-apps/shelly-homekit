@@ -18,7 +18,7 @@ Summary of supported devices and features:
    * Switch/lock/outlet/valve
    * Stateless input
  * [Shelly Plug](https://shelly.cloud/products/shelly-plug-smart-home-automation-device/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/)
-   * Switch/lock/outlet
+   * Switch/lock/outlet/valve
  * Shelly 2
    * Switch/lock/outlet/valve
    * Stateless input
