@@ -720,7 +720,7 @@ static void ButtonHandler(Input::Event ev, bool cur_state) {
 static void SetupButton(int pin, bool on_value) {
   if (pin < 0) return;
   s_btn =
-#if CS_PLATFORM == CS_P_ESP8266
+#if BTN_NOISY
       new NoisyInputPin(
 #else
       new InputPin(
