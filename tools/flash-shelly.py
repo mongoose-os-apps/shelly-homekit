@@ -691,7 +691,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclu
       if deviceinfo.fw_type is not None and (deviceinfo.fw_type in type or type == 'all'):
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
         total_devices += 1
-        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
+        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
