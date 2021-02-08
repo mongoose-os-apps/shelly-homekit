@@ -640,7 +640,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
       deviceinfo.get_device_info()
-      if deviceinfo.fw_type is not None:
+      if deviceinfo.fw_type is not None and (deviceinfo.fw_type in type or type == 'all'):
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
         total_devices += 1
         probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
@@ -648,6 +648,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
   parser.add_argument('-m', '--mode', action="store", choices=['homekit', 'keep', 'revert'], default="homekit", help="Script mode.")
+  parser.add_argument('-t', '--type', action="store", choices=['homekit', 'stock', 'all'], default="all", help="Limit scan to current firmware type.")
   parser.add_argument('-a', '--all', action="store_true", dest='do_all', default=False, help="Run against all the devices on the network.")
   parser.add_argument('-q', '--quiet', action="store_true", dest='quiet_run', default=False, help="Only include upgradeable shelly devices.")
   parser.add_argument('-l', '--list', action="store_true", default=False, help="List info of shelly device.")
@@ -703,6 +704,7 @@ if __name__ == '__main__':
   logger.debug(f"manual_hosts: {args.hosts}")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
+  logger.debug(f"type: {args.type}")
   logger.debug(f"do_all: {args.do_all}")
   logger.debug(f"dry_run: {args.dry_run}")
   logger.debug(f"quiet_run: {args.quiet_run}")
@@ -749,4 +751,4 @@ if __name__ == '__main__':
     logger.error("For more information please point your web browser to:")
     logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
   else:
-    device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.exclude, args.version, args.variant, args.hap_setup_code)
+    device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.type, args.exclude, args.version, args.variant, args.hap_setup_code)
