@@ -4,5 +4,6 @@ build_*/
 deps/
 releases/
 .DS_Store
-*.zip
 core-*
+*.gz
+*.zip
