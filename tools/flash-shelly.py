@@ -348,21 +348,13 @@ class StockDevice(Device):
 def parse_version(vs):
   # 1.9.2_1L
   # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest
-  pp = vs.split('_') if '_' in vs else vs.split('-')
-  v = pp[0].split('.')
-  variant = ""
-  varSeq = 0
-  if len(pp) > 1:
-    i = 0
-    for x in pp[1]:
-      c = pp[1][i]
-      if not c.isnumeric():
-        variant += c
-      else:
-        break
-      i += 1
-    varSeq = int(pp[1][i]) if len(pp[1]) > i else 0
-  major, minor, patch = [int(e) for e in v]
+  v = re.search("^(?P<major>\d+).(?P<minor>\d+).(?P<patch>\d+)(?:_(?P<model>[a-zA-Z0-9]*))?(?:-(?P<prerelease>[a-zA-Z]*)(?P<prerelease_seq>\d*))?$", vs)
+  logger.debug(f'group:{v.groupdict()}')
+  major = int(v.group('major'))
+  minor = int(v.group('minor'))
+  patch = int(v.group('patch'))
+  variant = v.group('model') if v.group('model') else v.group('prerelease')
+  varSeq = int(v.group('prerelease_seq')) if v.group('prerelease_seq') and v.group('prerelease_seq').isdigit() else 0
   return (major, minor, patch, variant, varSeq)
 
 def is_newer(v1, v2):
