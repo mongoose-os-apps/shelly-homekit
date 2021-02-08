@@ -64,9 +64,10 @@ StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
       "{id: %d, type: %d, name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, "
       "in_inverted: %B, initial: %d, state: %B, auto_off: %B, "
       "auto_off_delay: %.3f, state_led_en: %d",
-      id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type, cfg_->valve_type,
-      cfg_->in_mode, cfg_->in_inverted, cfg_->initial_state, out_->GetState(),
-      cfg_->auto_off, cfg_->auto_off_delay, cfg_->state_led_en);
+      id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type,
+      cfg_->valve_type, cfg_->in_mode, cfg_->in_inverted, cfg_->initial_state,
+      out_->GetState(), cfg_->auto_off, cfg_->auto_off_delay,
+      cfg_->state_led_en);
   if (out_pm_ != nullptr) {
     auto power = out_pm_->GetPowerW();
     if (power.ok()) {
@@ -87,13 +88,14 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   int8_t in_inverted = -1;
   cfg.name = nullptr;
   cfg.in_mode = -2;
-  json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, in_inverted: %B, "
-             "initial_state: %d, "
-             "auto_off: %B, auto_off_delay: %lf, state_led_en: %d}",
-             &cfg.name, &cfg.svc_type, &cfg.valve_type, &cfg.in_mode, &in_inverted,
-             &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay,
-             &cfg.state_led_en);
+  json_scanf(
+      config_json.c_str(), config_json.size(),
+      "{name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, in_inverted: %B, "
+      "initial_state: %d, "
+      "auto_off: %B, auto_off_delay: %lf, state_led_en: %d}",
+      &cfg.name, &cfg.svc_type, &cfg.valve_type, &cfg.in_mode, &in_inverted,
+      &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay,
+      &cfg.state_led_en);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {

@@ -57,7 +57,6 @@ ShellyPlugS: build-ShellyPlugS
 	@true
 
 ShellyU: PLATFORM=ubuntu
-ShellyU: MOS_BUILD_FLAGS=--build-var=ASAN=1 --build-var=UBSAN=1
 ShellyU: build-ShellyU
 	@true
 
