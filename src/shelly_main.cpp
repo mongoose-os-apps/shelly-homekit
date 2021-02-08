@@ -398,15 +398,14 @@ static void CheckLED(int pin, bool led_act) {
   }
 #ifdef MGOS_HAVE_WIFI
   // Are we connecting to wifi right now?
-  switch (mgos_wifi_get_status()) {
-    case MGOS_WIFI_CONNECTING:
-    case MGOS_WIFI_CONNECTED:
-      LOG(LL_DEBUG, ("LED: WiFi"));
-      on_ms = 200;
-      off_ms = 200;
-      goto out;
-    default:
-      break;
+  if ((mgos_sys_config_get_wifi_sta_enable() ||
+       mgos_sys_config_get_wifi_sta1_enable() ||
+       mgos_sys_config_get_wifi_sta2_enable()) &&
+      mgos_wifi_get_status() != MGOS_WIFI_IP_ACQUIRED) {
+    LOG(LL_DEBUG, ("LED: WiFi"));
+    on_ms = 200;
+    off_ms = 200;
+    goto out;
   }
 #endif
   if (mgos_ota_is_in_progress()) {
