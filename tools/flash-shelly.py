@@ -422,7 +422,7 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
   if response.text.startswith('null'):
     logger.info(f"Done.")
 
-def write_flash(device_info, hap_setup_code):
+def write_flash(device_info):
   logger.debug(f"{PURPLE}[Write Flash]{NC}")
   flashed = False
   device_info.flash_firmware()
@@ -446,8 +446,6 @@ def write_flash(device_info, hap_setup_code):
     global flashed_devices
     flashed_devices +=1
     logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
-    if hap_setup_code:
-      write_hap_setup_code(device_info.wifi_ip, hap_setup_code)
   else:
     if device_info.stock_model == 'SHRGBW2':
       logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
@@ -604,7 +602,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     elif perform_flash == True and dry_run == True:
       logger.info(f"{message} {keyword}...")
     if flash == True:
-      write_flash(device_info, hap_setup_code)
+      write_flash(device_info)
+    if device_info.fw_type == 'homekit' and hap_setup_code:
+      write_hap_setup_code(device_info.wifi_ip, hap_setup_code)
     if network_type:
       if network_type == 'static':
         message = f"Do you wish to set your IP address to {ipv4_ip}"
