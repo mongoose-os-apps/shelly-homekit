@@ -381,32 +381,37 @@ def is_newer(v1, v2):
   else:
     return False
 
-def write_static_ip(device_info, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
+def write_network_type(device_info, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
   wifi_ip = device_info.wifi_ip
   if device_info.fw_type == 'homekit':
     if network_type == 'static':
       message = f"Configuring static IP to {ipv4_ip}..."
-      value={'config': {'wifi': {'sta': {'netmask': ipv4_mask, 'nameserver': ipv4_dns, 'gw': ipv4_gw, 'ip': ipv4_ip}}}}
+      value={'config': {'wifi': {'sta': {'ip': ipv4_ip, 'netmask': ipv4_mask, 'gw': ipv4_gw, 'nameserver': ipv4_dns}}}}
     else:
       message = f"Configuring IP to use DHCP..."
       value={'config': {'wifi': {'sta': {'ip': ''}}}}
-  # else:
-  #   if network_type == 'static':
-  #     message = f"Configuring static IP to {ipv4_ip}..."
-  #     value={'config': {'wifi': {'sta': {'netmask': ipv4_mask, 'nameserver': ipv4_dns, 'gw': ipv4_gw, 'ip': ipv4_ip}}}}
-  #   else:
-  #     message = f"Configuring IP to use DHCP..."
-  #     value={'config': {'wifi': {'sta': {'ip': ''}}}}
-
-  logger.info(message)
-  logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={value}")
-  response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=value)
-  logger.trace(response.text)
-  if response.text.find('"saved": true') > 0:
-    logger.info(f"Saved, Rebooting...")
-    logger.debug(f"requests.get(url='http://{wifi_ip}/rpc/Sys.Reboot'")
-    response = requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot')
+    config_set_url = f'http://{wifi_ip}/rpc/Config.Set'
+    logger.info(message)
+    logger.debug(f"requests.post(url={config_set_url}, json={value}")
+    response = requests.post(url=config_set_url, json=value)
     logger.trace(response.text)
+    if response.text.find('"saved": true') > 0:
+      logger.info(f"Saved, Rebooting...")
+      logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}")
+      response = requests.get(url=reboot_url)
+      logger.trace(response.text)
+  else:
+    if network_type == 'static':
+      message = f"Configuring static IP to {ipv4_ip}..."
+      config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=static&ip={ipv4_ip}&netmask={ipv4_mask}&gateway={ipv4_gw}&dns={ipv4_dns}'
+    else:
+      message = f"Configuring IP to use DHCP..."
+      config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=dhcp'
+    logger.info(message)
+    logger.debug(f"requests.post(url={config_set_url}")
+    response = requests.post(url=config_set_url)
+    logger.trace(response.text)
+    logger.info(f"Saved...")
 
 def write_hap_setup_code(wifi_ip, hap_setup_code):
   logger.info("Configuring HomeKit setup code...")
@@ -610,7 +615,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       else:
         set_ip = False
       if set_ip or silent_run:
-        write_static_ip(device_info, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
+        write_network_type(device_info, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
 
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
