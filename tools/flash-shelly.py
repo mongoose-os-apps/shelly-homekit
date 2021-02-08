@@ -372,6 +372,47 @@ def is_newer(v1, v2):
   else:
     return False
 
+def write_static_ip(device_info, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
+  wifi_ip = device_info.wifi_ip
+  if device_info.fw_type == 'homekit':
+    if network_type == 'static':
+      message = f"Configuring static IP to {ipv4_ip}..."
+      mask_value={'config': {'wifi': {'sta': {'netmask': ipv4_mask}}}}
+      dns_value={'config': {'wifi': {'sta': {'nameserver': ipv4_dns}}}}
+      gw_value={'config': {'wifi': {'sta': {'gw': ipv4_gw}}}}
+      ip_value={'config': {'wifi': {'sta': {'ip': ipv4_ip}}}}
+    else:
+      message = f"Configuring IP to use DHCP..."
+      ip_value={'config': {'wifi': {'sta': {'ip': ''}}}}
+  # else:
+  #   if network_type == 'static':
+  #     mask_value={'config': {'wifi_sta': {'mask': ipv4_mask}}}
+  #     dns_value={'config': {'wifi_sta': {'dns': ipv4_dns}}}
+  #     gw_value={'config': {'wifi_sta': {'gw': ipv4_gw}}}
+  #     ip_value={'config': {'wifi_sta': {'ip': ipv4_ip}}}
+  #   else:
+  #     ip_value={'config': {'wifi_sta': {'ip': ''}}}
+
+  logger.info(message)
+  if network_type == 'static':
+    logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={mask_value}")
+    response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=mask_value)
+    logger.trace(response.text)
+    logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={dns_value}")
+    response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=dns_value)
+    logger.trace(response.text)
+    logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={gw_value}")
+    response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=gw_value)
+    logger.trace(response.text)
+  logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={ip_value}")
+  response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=ip_value)
+  logger.trace(response.text)
+  if response.text.find('"saved": true') > 0:
+    logger.info(f"Saved, Rebooting...")
+    logger.debug(f"requests.get(url='http://{wifi_ip}/rpc/Sys.Reboot'")
+    response = requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot')
+    logger.trace(response.text)
+
 def write_hap_setup_code(wifi_ip, hap_setup_code):
   logger.info("Configuring HomeKit setup code...")
   value={'code': hap_setup_code}
@@ -425,7 +466,7 @@ def write_flash(device_info, hap_setup_code):
       logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     logger.debug("Current: %s" % onlinecheck)
 
-def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade):
+def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
   logger.debug(f"")
   logger.debug(f"{PURPLE}[Parse Info]{NC}")
   logger.trace(f"device_info: {device_info}")
@@ -564,8 +605,20 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       logger.info(f"{message} {keyword}...")
     if flash == True:
       write_flash(device_info, hap_setup_code)
+    if network_type:
+      if network_type == 'static':
+        message = f"Do you wish to set your IP address to {ipv4_ip}"
+      else:
+        message = f"Do you wish to set your IP address to use DHCP"
+      if input(f"{message} (y/n) ? ") == 'y':
+        set_ip = True
+      else:
+        set_ip = False
+      if set_ip or silent_run:
+        write_static_ip(device_info, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
 
-def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
+
+def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
   logger.debug("")
   logger.debug(f"{PURPLE}[Probe Device]{NC}")
   d_info = json.dumps(device, indent = 4)
@@ -598,16 +651,16 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
       logger.error(f"Version {deviceinfo.info['version']} is to old for this script,")
       logger.error(f"please update via the device webUI.\n")
     else:
-      parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
+      parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
       if requires_upgrade:
         requires_upgrade = 'Done'
         deviceinfo.get_info()
         if not is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
           deviceinfo.update_to_homekit(homekit_release_info)
-          parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade)
+          parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
 
 
-def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code):
+def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclude, version, variant, hap_setup_code, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
   if hosts:
     for host in hosts:
       logger.debug(f"")
@@ -616,7 +669,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, exclude, ve
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
-        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code)
+        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
   else:
     logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
@@ -656,9 +709,14 @@ if __name__ == '__main__':
   parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', default=False, help="Do a dummy run through.")
   parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=False, help="Do not ask any confirmation to perform the flash.")
   parser.add_argument('-V', '--version',type=str, action="store", dest="version", default=False, help="Force a particular version.")
-  parser.add_argument('-c', '--hap-setup-code', action="store", dest="hap_setup_code", default=False, help="Configure HomeKit setup code, after flashing.")
-  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1', '2', '3', '4', '5'], default='3', help="Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.")
   parser.add_argument('--variant', action="store", dest="variant", default=False, help="Prerelease variant name.")
+  parser.add_argument('-c', '--hap-setup-code', action="store", dest="hap_setup_code", default=False, help="Configure HomeKit setup code, after flashing.")
+  parser.add_argument('--ip-type', action="store", choices=['dhcp', 'static'], dest="network_type", default=False, help="Configure static IP")
+  parser.add_argument('--ip', action="store", dest="ipv4_ip", default=False, help="set IP address")
+  parser.add_argument('--gw', action="store", dest="ipv4_gw", default=False, help="set Gateway IP address")
+  parser.add_argument('--mask', action="store", dest="ipv4_mask", default=False, help="set Subnet mask address")
+  parser.add_argument('--dns', action="store", dest="ipv4_dns", default=False, help="set DNS IP address")
+  parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1', '2', '3', '4', '5'], default='3', help="Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.")
   parser.add_argument('--log-file', action="store", dest="log_filename", default=False, help="Create output log file with chosen filename.")
   parser.add_argument('hosts', type=str, nargs='*')
   args = parser.parse_args()
@@ -694,14 +752,13 @@ if __name__ == '__main__':
     PURPLE = ''
     NC = ''
 
-
   homekit_release_info = None
   stock_release_info = None
   app_version = "2.1.5"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
-  logger.debug(f"manual_hosts: {args.hosts}")
+  logger.debug(f"manual_hosts: {args.hosts} ({len(args.hosts)})")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
   logger.debug(f"type: {args.type}")
@@ -709,23 +766,45 @@ if __name__ == '__main__':
   logger.debug(f"dry_run: {args.dry_run}")
   logger.debug(f"quiet_run: {args.quiet_run}")
   logger.debug(f"silent_run: {args.silent_run}")
-  logger.debug(f"hap_setup_code: {args.hap_setup_code}")
   logger.debug(f"version: {args.version}")
   logger.debug(f"exclude: {args.exclude}")
   logger.debug(f"variant: {args.variant}")
   logger.debug(f"verbose: {args.verbose}")
+  logger.debug(f"hap_setup_code: {args.hap_setup_code}")
+  logger.debug(f"network_type: {args.network_type}")
+  logger.debug(f"ipv4_ip: {args.ipv4_ip}")
+  logger.debug(f"ipv4_mask: {args.ipv4_mask}")
+  logger.debug(f"ipv4_gw: {args.ipv4_gw}")
+  logger.debug(f"ipv4_dns: {args.ipv4_dns}")
   logger.debug(f"log_filename: {args.log_filename}")
 
+  message = None
   if not args.hosts and not args.do_all:
-    logger.info(f"{WHITE}Requires a hostname or -a | --all{NC}")
-    parser.print_help()
-    sys.exit(1)
+    message = f"{WHITE}Requires a hostname or -a | --all{NC}"
   elif args.hosts and args.do_all:
-    logger.info(f"{WHITE}Invalid option hostname or -a | --all not both.{NC}")
-    parser.print_help()
-    sys.exit(1)
-  if args.version and len(args.version.split('.')) < 3:
-    logger.info(f"{WHITE}Incorect version formatting i.e '1.9.0'{NC}")
+    message = f"{WHITE}Invalid option hostname or -a | --all not both.{NC}"
+  elif args.network_type:
+    if args.do_all:
+      message = f"{WHITE}Invalid option -a | --all can not be used with --ip-type.{NC}"
+    elif len(args.hosts) > 1:
+      message = f"{WHITE}Invalid option only 1 host can be used with --ip-type.{NC}"
+    elif args.network_type == 'static' and (not args.ipv4_ip or not args.ipv4_mask or not args.ipv4_gw or not args.ipv4_dns):
+      if not args.ipv4_dns:
+        message = f"{WHITE}Invalid option --dns can not be empty.{NC}"
+        logger.info(message)
+      if not args.ipv4_gw:
+        message = f"{WHITE}Invalid option --gw can not be empty.{NC}"
+        logger.info(message)
+      if not args.ipv4_mask:
+        message = f"{WHITE}Invalid option --mask can not be empty.{NC}"
+        logger.info(message)
+      if not args.ipv4_ip:
+        message = f"{WHITE}Invalid option --ip can not be empty.{NC}"
+  elif args.version and len(args.version.split('.')) < 3:
+    message = f"{WHITE}Incorect version formatting i.e '1.9.0'{NC}"
+
+  if message:
+    logger.info(message)
     parser.print_help()
     sys.exit(1)
 
@@ -751,4 +830,4 @@ if __name__ == '__main__':
     logger.error("For more information please point your web browser to:")
     logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
   else:
-    device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.type, args.exclude, args.version, args.variant, args.hap_setup_code)
+    device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.type, args.exclude, args.version, args.variant, args.hap_setup_code, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
