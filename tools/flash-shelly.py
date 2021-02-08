@@ -398,7 +398,7 @@ def write_network_type(device_info, network_type, ipv4_ip='', ipv4_mask='', ipv4
     if response.text.find('"saved": true') > 0:
       logger.info(f"Saved, Rebooting...")
       logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}")
-      response = requests.get(url=reboot_url)
+      response = requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot')
       logger.trace(response.text)
   else:
     if network_type == 'static':
