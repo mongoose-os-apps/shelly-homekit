@@ -21,7 +21,8 @@
 #  or any other firmware please follow instructions here:
 #  https://github.com/mongoose-os-apps/shelly-homekit/wiki
 #
-#  usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [-c HAP_SETUP_CODE] [-v {0,1,2,3,4,5}] [--variant VARIANT] [--log-file LOG_FILENAME]
+#  usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-t {homekit,stock,all}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [--variant VARIANT] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}]
+#                         [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--log-file LOG_FILENAME]
 #                         [hosts ...]
 #
 #  Shelly HomeKit flashing script utility
@@ -33,6 +34,8 @@
 #    -h, --help            show this help message and exit
 #    -m {homekit,keep,revert}, --mode {homekit,keep,revert}
 #                          Script mode.
+#    -t {homekit,stock,all}, --type {homekit,stock,all}
+#                          Limit scan to current firmware type.
 #    -a, --all             Run against all the devices on the network.
 #    -q, --quiet           Only include upgradeable shelly devices.
 #    -l, --list            List info of shelly device.
@@ -42,11 +45,17 @@
 #    -y, --assume-yes      Do not ask any confirmation to perform the flash.
 #    -V VERSION, --version VERSION
 #                          Force a particular version.
+#    --variant VARIANT     Prerelease variant name.
 #    -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
 #                          Configure HomeKit setup code, after flashing.
+#    --ip-type {dhcp,static}
+#                          Configure network IP type (Static or DHCP)
+#    --ip IPV4_IP          IP address
+#    --gw IPV4_GW          Gateway IP address
+#    --mask IPV4_MASK      Subnet mask address
+#    --dns IPV4_DNS        DNS IP address
 #    -v {0,1,2,3,4,5}, --verbose {0,1,2,3,4,5}
 #                          Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
-#    --variant VARIANT     Prerelease variant name.
 #    --log-file LOG_FILENAME
 #                          Create output log file with chosen filename.
 
