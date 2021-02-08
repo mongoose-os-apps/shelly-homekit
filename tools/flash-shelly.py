@@ -386,35 +386,21 @@ def write_static_ip(device_info, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw
   if device_info.fw_type == 'homekit':
     if network_type == 'static':
       message = f"Configuring static IP to {ipv4_ip}..."
-      mask_value={'config': {'wifi': {'sta': {'netmask': ipv4_mask}}}}
-      dns_value={'config': {'wifi': {'sta': {'nameserver': ipv4_dns}}}}
-      gw_value={'config': {'wifi': {'sta': {'gw': ipv4_gw}}}}
-      ip_value={'config': {'wifi': {'sta': {'ip': ipv4_ip}}}}
+      value={'config': {'wifi': {'sta': {'netmask': ipv4_mask, 'nameserver': ipv4_dns, 'gw': ipv4_gw, 'ip': ipv4_ip}}}}
     else:
       message = f"Configuring IP to use DHCP..."
-      ip_value={'config': {'wifi': {'sta': {'ip': ''}}}}
+      value={'config': {'wifi': {'sta': {'ip': ''}}}}
   # else:
   #   if network_type == 'static':
-  #     mask_value={'config': {'wifi_sta': {'mask': ipv4_mask}}}
-  #     dns_value={'config': {'wifi_sta': {'dns': ipv4_dns}}}
-  #     gw_value={'config': {'wifi_sta': {'gw': ipv4_gw}}}
-  #     ip_value={'config': {'wifi_sta': {'ip': ipv4_ip}}}
+  #     message = f"Configuring static IP to {ipv4_ip}..."
+  #     value={'config': {'wifi': {'sta': {'netmask': ipv4_mask, 'nameserver': ipv4_dns, 'gw': ipv4_gw, 'ip': ipv4_ip}}}}
   #   else:
-  #     ip_value={'config': {'wifi_sta': {'ip': ''}}}
+  #     message = f"Configuring IP to use DHCP..."
+  #     value={'config': {'wifi': {'sta': {'ip': ''}}}}
 
   logger.info(message)
-  if network_type == 'static':
-    logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={mask_value}")
-    response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=mask_value)
-    logger.trace(response.text)
-    logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={dns_value}")
-    response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=dns_value)
-    logger.trace(response.text)
-    logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={gw_value}")
-    response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=gw_value)
-    logger.trace(response.text)
-  logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={ip_value}")
-  response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=ip_value)
+  logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/Config.Set', json={value}")
+  response = requests.post(url=f'http://{wifi_ip}/rpc/Config.Set', json=value)
   logger.trace(response.text)
   if response.text.find('"saved": true') > 0:
     logger.info(f"Saved, Rebooting...")
