@@ -38,7 +38,6 @@ el("sys_save_btn").onclick = function () {
       sys_mode: parseInt(el("sys_mode").value),
     },
   };
-  console.log("sysSetCfg:", data);
   el("sys_save_spinner").className = "spin";
   pauseAutoRefresh = true;
   sendMessageWebSocket("Shelly.SetConfig", data).then(function () {
@@ -134,7 +133,6 @@ function setComponentConfig(c, cfg, spinner) {
     type: c.data.type,
     config: cfg,
   };
-  console.log("SetConfig:", data);
   pauseAutoRefresh = true;
   sendMessageWebSocket("Shelly.SetConfig", data)
     .then(function () {
@@ -160,7 +158,6 @@ function setComponentState(c, state, spinner) {
     type: c.data.type,
     state: state,
   };
-  console.log("SetState:", data);
   sendMessageWebSocket("Shelly.SetState", data)
     .then(function () {
       if (spinner) spinner.className = "";
@@ -815,8 +812,9 @@ function sendMessageWebSocket(method, params = [], id = requestID) {
   requestID += 1
   return new Promise(function (resolve, reject) {
     try {
+      console.log("[send] " + method + " " + id + ":", params);
       socket.send(JSON.stringify({"method": method, "id": id, "params": params}));
-      console.log("[send] Data sent: " + JSON.stringify({"method": method, "id": id, "params": params}));
+      console.log("[sent] " + method + " " + id);
     } catch (e) {
       reject(e);
     }
@@ -824,7 +822,7 @@ function sendMessageWebSocket(method, params = [], id = requestID) {
     socket.addEventListener("message", function (event) {
       let data = JSON.parse(event.data);
       if (data.id === id) {
-        console.log("[message] Data received: ", data);
+        console.log("[received] " + method + " " + id + ":", data);
         resolve(data);
         // clean up after ourselves, otherwise too many listeners!
         socket.removeEventListener("message", arguments.callee);
