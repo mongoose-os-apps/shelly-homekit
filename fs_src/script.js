@@ -19,7 +19,7 @@ function el(container, id) {
     id = container;
     container = document;
   }
-  return container.querySelector("#" + id);
+  return container.querySelector(`#${id}`);
 }
 
 function checkName(name) {
@@ -28,8 +28,8 @@ function checkName(name) {
 
 el("sys_save_btn").onclick = function () {
   if (!checkName(el("sys_name").value)) {
-    alert("Name must be between 1 and 63 characters " +
-      "and consist of letters, numbers or dashes ('-')");
+    alert(`Name must be between 1 and 63 characters 
+           and consist of letters, numbers or dashes ('-')`);
     return;
   }
   var data = {
@@ -57,7 +57,7 @@ el("sys_save_btn").onclick = function () {
 el("hap_save_btn").onclick = function () {
   var codeMatch = hapSetupCode.value.match(/^(\d{3})\-?(\d{2})\-?(\d{3})$/);
   if (!codeMatch) {
-    alert("Invalid code '" + hapSetupCode.value + "', must be xxxyyzzz or xxx-yy-zzz.");
+    alert(`Invalid code ${hapSetupCode.value}, must be xxxyyzzz or xxx-yy-zzz.`);
     return;
   }
   var code = codeMatch.slice(1).join('-');
@@ -108,14 +108,18 @@ el("wifi_save_btn").onclick = function () {
   if (wifiPass.value != "***") data.config.wifi.sta.pass = wifiPass.value;
   sendMessageWebSocket("Config.Set", data).then(function () {
     var dn = el("device_name").innerText;
-    document.body.innerHTML =
-      "<div class='container'><h1>Rebooting...</h1>" +
-      "<p>Device is rebooting and connecting to <i>" + wifiSSID.value + "</i>." +
-      "<p>Connect to the same network and visit " +
-      "<a href='http://" + dn + ".local/'>http://" + dn + ".local/</a>." +
-      "<p>If device cannot be contacted, see " +
-      "<a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options." +
-      "</div>.";
+    document.body.innerHTML = `
+      <div class='container'><h1>Rebooting...</h1>
+        <p>Device is rebooting and connecting to <i>${wifiSSID.value}</i>.</p>
+        <p>
+          Connect to the same network and visit 
+          <a href='http://${dn}.local/'>http://${dn}.local/</a>.
+        </p>
+        <p>
+          If device cannot be contacted, see 
+          <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
+        </p>
+      </div>."`;
   }).catch(function (err) {
     if (err.response) {
       err = err.response.data.message;
@@ -312,12 +316,12 @@ function gdoSetConfig(c, cfg, spinner) {
     }
     var moveTime = parseInt(el(c, "move_time").value);
     if (isNaN(moveTime) || moveTime < 10) {
-      alert("Invalid movement time " + moveTime);
+      alert(`Invalid movement time ${moveTime}`);
       return;
     }
     var pulseTimeMs = parseInt(el(c, "pulse_time_ms").value);
     if (isNaN(pulseTimeMs) || pulseTimeMs < 20) {
-      alert("Invalid pulse time " + pulseTimeMs);
+      alert(`Invalid pulse time ${pulseTimeMs}`);
       return;
     }
     cfg = {
@@ -353,7 +357,7 @@ el("reset_btn").onclick = function () {
 }
 
 function findOrAddContainer(cd) {
-  var elId = "c" + cd.type + "-" + cd.id;
+  var elId = `c${cd.type}-${cd.id}`;
   var c = el(elId);
   if (c) return c;
   switch (cd.type) {
@@ -437,15 +441,15 @@ function updateComponent(cd) {
     case 0: // Switch
     case 1: // Outlet
     case 2: // Lock
-      var headText = "Switch " + cd.id;
-      if (cd.name) headText += " (" + cd.name + ")";
+      var headText = `Switch ${cd.id}`;
+      if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
       setValueIfNotModified(el(c, "name"), cd.name);
       el(c, "state").innerText = (cd.state ? "on" : "off");
       if (cd.apower !== undefined) {
-        el(c, "power_stats").innerText = ", " + Math.round(cd.apower) + "W, " + cd.aenergy + "Wh";
+        el(c, "power_stats").innerText = `, ${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
       }
-      el(c, "btn_label").innerText = "Turn " + (cd.state ? "Off" : "On");
+      el(c, "btn_label").innerText = `Turn ${cd.state ? "Off" : "On"}`;
       selectIfNotModified(el(c, "svc_type"), cd.svc_type);
       if (cd.svc_type == 3) {
         selectIfNotModified(el(c, "valve_type"), cd.valve_type);
@@ -477,8 +481,8 @@ function updateComponent(cd) {
       }
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
-      var headText = "Input " + cd.id;
-      if (cd.name) headText += " (" + cd.name + ")";
+      var headText = `Input ${cd.id}`;
+      if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
       setValueIfNotModified(el(c, "name"), cd.name);
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
@@ -500,7 +504,7 @@ function updateComponent(cd) {
           default:
             lastEv = cd.last_ev;
         }
-        lastEvText = lastEv + " (" + secondsToDateString(cd.last_ev_age) + " ago)";
+        lastEvText = `${lastEv} (${secondsToDateString(cd.last_ev_age)} ago)`;
       }
       el(c, "last_event").innerText = lastEvText;
       break;
@@ -513,12 +517,13 @@ function updateComponent(cd) {
       checkIfNotModified(el(c, "swap_outputs"), cd.swap_outputs);
       if (cd.cal_done == 1) {
         if (cd.cur_pos != cd.tgt_pos) {
-          el(c, "pos").innerText = cd.cur_pos + " -> " + cd.tgt_pos;
+          el(c, "pos").innerText = `${cd.cur_pos} -> ${cd.tgt_pos}`;
         } else {
           el(c, "pos").innerText = cd.cur_pos;
         }
-        el(c, "cal").innerText = "movement time: " + cd.move_time_ms / 1000 + " s, " +
-          "avg power: " + cd.move_power + "W";
+        el(c, "cal").innerText = `
+          movement time: ${cd.move_time_ms / 1000} s, 
+          avg power: ${cd.move_power} W`;
         el(c, "pos_ctl").style.display = "block";
       } else {
         el(c, "pos").innerText = "n/a";
@@ -553,15 +558,15 @@ function updateComponent(cd) {
       }
       break;
     case 6: // Disabled Input
-      var headText = "Input " + cd.id;
+      var headText = `Input ${cd.id}`;
       el(c, "head").innerText = headText;
       selectIfNotModified(el(c, "type"), cd.type);
       break;
     case 7: // Motion Sensor
     case 8: // Occupancy Sensor
     case 9: // Contact Sensor
-      var headText = "Input " + cd.id;
-      if (cd.name) headText += " (" + cd.name + ")";
+      var headText = `Input ${cd.id}`;
+      if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
       setValueIfNotModified(el(c, "name"), cd.name);
       selectIfNotModified(el(c, "type"), cd.type);
@@ -570,9 +575,9 @@ function updateComponent(cd) {
       setValueIfNotModified(el(c, "idle_time"), cd.idle_time);
       el(c, "idle_time_container").style.display = (cd.in_mode == 0 ? "none" : "block");
       var what = (cd.type == 7 ? "motion" : "occupancy");
-      var statusText = (cd.state ? what + " detected" : "no " + what + " detected");
+      var statusText = (cd.state ? `${what} detected` : `no ${what} detected`);
       if (cd.last_ev_age > 0) {
-        statusText += "; last " + secondsToDateString(cd.last_ev_age) + " ago";
+        statusText += `; last ${secondsToDateString(cd.last_ev_age)} ago`;
       }
       el(c, "status").innerText = statusText;
       break;
@@ -606,7 +611,7 @@ function updateElement(key, value) {
       break;
     case "wifi_rssi":
       if (value !== 0) {
-        el("wifi_rssi").innerText = "RSSI: " + value;
+        el("wifi_rssi").innerText = `RSSI: ${value}`;
         el("wifi_rssi").style.display = "inline";
       } else el("wifi_rssi").style.display = "none";
       break;
@@ -621,7 +626,7 @@ function updateElement(key, value) {
         }
         el("donate_form_submit").style.display = "inline";
 
-        el("wifi_ip").innerText = "IP: " + value;
+        el("wifi_ip").innerText = `IP: ${value}`;
         el("wifi_container").style.display = "block";
       } else {
         el("wifi_ip").innerText = "Not connected";
@@ -629,7 +634,7 @@ function updateElement(key, value) {
       break;
     case "host":
       if (value !== "") {
-        el("host").innerText = "Host: " + value;
+        el("host").innerText = `Host: ${value}`;
         el("host").style.display = "inline";
       } else el("host").style.display = "none";
       break;
@@ -657,7 +662,7 @@ function updateElement(key, value) {
     case "hap_ip_conns_active":
     case "hap_ip_conns_max":
       el(key).style.display = "inline";
-      el(key).innerText = value + " " + key.split("_").slice(-1)[0];
+      el(key).innerText = `${value} ${key.split("_").slice(-1)[0]}`;
       break;
     case "debug_en":
       checkIfNotModified(el("debug_en"), value);
@@ -738,14 +743,14 @@ function getInfo() {
 }
 
 function getCookie(key) {
-  cookie = (document.cookie.match('(^|;)\\s*' + key + '\\s*=\\s*([^;]+)') || []).pop()
+  cookie = (document.cookie.match(`(^|;)\\s*${key}\\s*=\\s*([^;]+)`) || []).pop()
   if (cookie === undefined) return;
   
   return JSON.parse(cookie);
 }
 
 function setCookie(key, value) {
-  document.cookie = (key + "=" + JSON.stringify(value));
+  document.cookie = `${key}=${JSON.stringify(value)}`;
 }
 
 el("debug_en").onclick = function () {
@@ -772,16 +777,16 @@ function connectWebSocket() {
   if (!host) {
     host = prompt("Please enter the host of your shelly.");
     if (host !== null) {
-      location.href = location.host + "?host=" + host;
+      location.href = `${location.host}?host=${host}`;
     }
   }
 
   return new Promise(function (resolve, reject) {
-    socket = new WebSocket("ws://" + host + "/rpc");
+    socket = new WebSocket(`ws://${host}/rpc`);
     connectionTries += 1;
 
     socket.onclose = function (event) {
-      console.log("[close] Connection died (code " + event.code + ")");
+      console.log(`[close] Connection died (code ${event.code})`);
       el("notify_disconnected").style.display = "inline"
       // attempt to reconnect
       setTimeout(function () {
@@ -812,9 +817,9 @@ function sendMessageWebSocket(method, params = [], id = requestID) {
   requestID += 1
   return new Promise(function (resolve, reject) {
     try {
-      console.log("[send] " + method + " " + id + ":", params);
+      console.log(`[send] ${method} ${id}:`, params);
       socket.send(JSON.stringify({"method": method, "id": id, "params": params}));
-      console.log("[sent] " + method + " " + id);
+      console.log(`[sent] ${method} ${id}`);
     } catch (e) {
       reject(e);
     }
@@ -822,7 +827,7 @@ function sendMessageWebSocket(method, params = [], id = requestID) {
     socket.addEventListener("message", function (event) {
       let data = JSON.parse(event.data);
       if (data.id === id) {
-        console.log("[received] " + method + " " + id + ":", data);
+        console.log(`[received] ${method} ${id}:`, data);
         resolve(data);
         // clean up after ourselves, otherwise too many listeners!
         socket.removeEventListener("message", arguments.callee);
@@ -925,13 +930,13 @@ async function downloadUpdate(fwURL, spinner, status) {
       return uploadFW(blob, spinner, status);
     }).catch((error) => {
     spinner.className = "";
-    status.innerText = "Error downloading: " + error;
+    status.innerText = `Error downloading: ${error}`;
   });
 }
 
 async function uploadFW(blob, spinner, status) {
   spinner.className = "spin";
-  status.innerText = "Uploading " + blob.size + " bytes...";
+  status.innerText = `Uploading ${blob.size} bytes...`;
   var fd = new FormData();
   fd.append("file", blob);
   fetch("/update", {
@@ -947,7 +952,7 @@ async function uploadFW(blob, spinner, status) {
       setCookie("update_available", false);
     }).catch((error) => {
     spinner.className = "";
-    status.innerText = "Error uploading: " + error;
+    status.innerText = `Error uploading: ${error}`;
   });
 }
 
@@ -1026,8 +1031,9 @@ async function checkUpdate() {
         return;
       }
       se.className = "";
-      e.innerHTML = "Version " + latestVersion + " is available. " +
-        'See <a href="' + relNotesURL + '" target="_blank">release notes</a>.';
+      e.innerHTML = `
+        Version ${latestVersion} is available. 
+        See <a href="${relNotesURL}" target="_blank">release notes</a>.`
       el("update_btn_text").innerText = "Install";
       el("update_btn").onclick = function () {
         return downloadUpdate(updateURL, el("update_btn_spinner"), el("update_status"));
@@ -1047,7 +1053,7 @@ el("revert_btn").onclick = function () {
   if(!confirm("Revert to stock firmware?")) return;
 
   el("revert_msg").style.display = "block";
-  var stockURL = "https://rojer.me/files/shelly/stock/" + lastInfo.stock_model + ".zip";
+  var stockURL = `https://rojer.me/files/shelly/stock/${lastInfo.stock_model}.zip`;
   downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
 };
 
