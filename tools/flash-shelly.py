@@ -480,6 +480,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
   sys_temp = device_info.info.get('sys_temp', None)
+  uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0))
 
   logger.debug(f"host: {host}")
   logger.debug(f"device_name: {device_name}")
@@ -489,6 +490,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"stock_model: {stock_model}")
   logger.debug(f"colour_mode: {colour_mode}")
   logger.debug(f"sys_temp: {sys_temp}")
+  logger.debug(f"uptime: {uptime}")
   logger.debug(f"action: {action}")
   logger.debug(f"flash mode: {mode}")
   logger.debug(f"requires_upgrade: {requires_upgrade}")
@@ -525,6 +527,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     logger.info(f"{WHITE}Model: {NC}{model}")
     if sys_temp is not None:
       logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
+    if str(uptime) != '0:00:00':
+      logger.info(f"{WHITE}Up Time: {NC}{uptime}{NC}")
     logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
     col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
