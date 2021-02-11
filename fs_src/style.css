@@ -87,7 +87,9 @@ h1 {
   border-radius: 12px;
   box-shadow: 1px 1px 1px #282828;
   color: #ffffff;
-  font: bold 12px/9px Helvetica, Verdana, Tahoma;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 9px;
   height: 12px;
   padding: 4px 3px 0 5px;
   text-align: center;
@@ -113,7 +115,9 @@ a.badge {
   border-radius: 12px;
   box-shadow: 1px 1px 0.5px #c1c1c1;
   color: #0071e3 !important;
-  font: bold 14px/10px HelveticaNeueLight, Helvetica, Verdana;
+  font-weight: bold;
+  font: 14px;
+  line-height: 10px;
   height: 13px;
   padding: 6px 6px 1px 6px;
   text-align: center;
@@ -130,9 +134,10 @@ a.badge {
 
 .title {
   color: #454955;
-  font: 36px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light, sans-serif;
+  font-size: 36px;
   font-weight: lighter;
   text-align: left;
+  line-height: normal;
 }
 
 #logo {
