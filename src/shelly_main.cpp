@@ -52,6 +52,7 @@ extern "C" {
 #include "shelly_hap_lock.hpp"
 #include "shelly_hap_outlet.hpp"
 #include "shelly_hap_switch.hpp"
+#include "shelly_hap_valve.hpp"
 #include "shelly_input.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_noisy_input_pin.hpp"
@@ -250,6 +251,11 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
       aid = SHELLY_HAP_AID_BASE_LOCK + id;
       sw.reset(new hap::Lock(id, in, out, pm, led_out, cfg));
       break;
+    case 3:
+      cat = kHAPAccessoryCategory_Faucets;
+      aid = SHELLY_HAP_AID_BASE_VALVE + id;
+      sw.reset(new hap::Valve(id, in, out, pm, led_out, cfg));
+      break;
     default:
       sw.reset(new ShellySwitch(id, in, out, pm, led_out, cfg));
       sw_hidden = true;
@@ -392,15 +398,14 @@ static void CheckLED(int pin, bool led_act) {
   }
 #ifdef MGOS_HAVE_WIFI
   // Are we connecting to wifi right now?
-  switch (mgos_wifi_get_status()) {
-    case MGOS_WIFI_CONNECTING:
-    case MGOS_WIFI_CONNECTED:
-      LOG(LL_DEBUG, ("LED: WiFi"));
-      on_ms = 200;
-      off_ms = 200;
-      goto out;
-    default:
-      break;
+  if ((mgos_sys_config_get_wifi_sta_enable() ||
+       mgos_sys_config_get_wifi_sta1_enable() ||
+       mgos_sys_config_get_wifi_sta2_enable()) &&
+      mgos_wifi_get_status() != MGOS_WIFI_IP_ACQUIRED) {
+    LOG(LL_DEBUG, ("LED: WiFi"));
+    on_ms = 200;
+    off_ms = 200;
+    goto out;
   }
 #endif
   if (mgos_ota_is_in_progress()) {
@@ -714,7 +719,7 @@ static void ButtonHandler(Input::Event ev, bool cur_state) {
 static void SetupButton(int pin, bool on_value) {
   if (pin < 0) return;
   s_btn =
-#if CS_PLATFORM == CS_P_ESP8266
+#if BTN_NOISY
       new NoisyInputPin(
 #else
       new InputPin(
@@ -787,6 +792,7 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "style.css",
       "axios.min.js.gz",
       "style.css.gz",
+      "logo.png",
   };
   for (const char *skip_fn : s_skip_files) {
     if (strcmp(file_name, skip_fn) == 0) return false;

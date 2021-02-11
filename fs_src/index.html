@@ -4,26 +4,25 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-
-  <!-- style.css inserted below during build -->
-  <style>
-
-  </style>
+  <!--  style.css inserted below during build -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body onLoad="onLoad()">
 
-<div class="container">
+<div class="container" id="header_container">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/" target="_blank">?</a>
-  <div class="logodiv"><img class="img" src="logo.png" alt=""></div>
-  <div class="apl_thin">
-    Shelly-<b>HomeKit</b>
-    <div class="badge" id="notify_disconnected" style="display: none">Disconnected</div>
-    <div class="badge" id="notify_update" style="display: none">Update</div>
-    <div class="badge" id="notify_overheat" style="display: none">Overheating</div>
-    <div class="badge" id="notify_failsafe" style="display: none">Failsafe mode</div>
+  <!-- logo.svg inserted below during build -->
+  <img id="logo" src="./logo.svg">
+  <h1 class="title">Shelly-<b>HomeKit</b></h1>
+  <div id="badges_container">
+    <a class="badge" id="notify_disconnected" style="display: none">Disconnected</a>
+    <a class="badge" id="notify_update" style="display: none" href="#update_container">Update</a>
+    <a class="badge" id="notify_overheat" style="display: none">Overheating</a>
+    <a class="badge" id="notify_failsafe" style="display: none">Failsafe mode</a>
   </div>
-  <h1 class="" id="device_name" style="visibility: hidden"></h1>
+  <h1 class="" id="device_name">Loading ...</h1>
 </div>
+
 <div class="container" id="gs_container" style="display: none">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/General-Settings"
      target="_blank">?</a>
@@ -125,7 +124,7 @@
   </div>
 </div>
 
-<div class="container" id="sys_container">
+<div class="container" id="sys_container" style="display: none">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/System-Settings"
      target="_blank">?</a>
   <h1 class="">System</h1>
@@ -204,7 +203,7 @@
     <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
       <input type="hidden" name="cmd" value="_s-xclick"/>
       <input type="hidden" name="hosted_button_id" value="6KPSKWJDHVLB4"/>
-      <input type="image" id="donate_form_submit" src="" border="0" name="submit" title="Donate via PayPal"
+      <input type="image" id="donate_form_submit" border="0" name="submit" title="Donate via PayPal"
              alt="Donate via PayPal" style="display: none"/>
     </form>
   </div>
@@ -236,12 +235,22 @@
         <input type="text" id="name">
       </div>
       <div class="form-control">
-        <label>HAP Type:</label>
+        <label>HAP Service Type:</label>
         <select id="svc_type">
           <option id="svc_type_-1" value="-1">Disabled</option>
           <option id="svc_type_0" value="0">Switch</option>
           <option id="svc_type_1" value="1">Outlet</option>
           <option id="svc_type_2" value="2">Lock</option>
+          <option id="svc_type_3" value="3">Valve</option>
+        </select>
+      </div>
+      <div class="form-control" id="valve_type_container" style="display: none">
+        <label id="valve_type_label"></label>
+        <select id="valve_type">
+          <option id="valve_type_0" value="0">Generic Valve</option>
+          <option id="valve_type_1" value="1">Irrigation</option>
+          <option id="valve_type_2" value="2">Shower Head</option>
+          <option id="valve_type_3" value="3">Water Faucet</option>
         </select>
       </div>
       <div class="form-control" id="in_mode_container">
@@ -570,9 +579,7 @@
   </div>
 </div>
 <!-- script.js inserted below during build -->
-<script>
-
-</script>
+<script src="script.js"></script>
 <script src="https://unpkg.com/ionicons@5.0.0/dist/ionicons.js"></script>
 </body>
 </html>

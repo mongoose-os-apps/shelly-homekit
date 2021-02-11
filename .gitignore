@@ -4,5 +4,7 @@ build_*/
 deps/
 releases/
 .DS_Store
+core-*
+*.gz
 *.zip
 .vscode/

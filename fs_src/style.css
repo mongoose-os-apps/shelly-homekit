@@ -3,18 +3,15 @@ html, body {
   padding: 0;
   margin: 5;
   background-color: #f2f1f6;
+  color: #454955;
+  font: 14px/1.5 '-apple-system', 'HelveticaNeue', Helvetica, Segoe UI;
 }
 
 * {
   outline: none !important;
 }
 
-body {
-  color: #454955;
-  font: 14px/1.5 '-apple-system', 'HelveticaNeue', Helvetica, Segoe UI;
-}
-
-h1, h2, h3, h4, h5, h6, b, th, strong, .nav-link {
+h1, h2, h3, h4, h5, h6, b, th, strong {
   color: #454955;
 }
 
@@ -30,27 +27,12 @@ button {
   cursor: pointer;
 }
 
-a {
-  text-decoration: none;
-  color: #0071e3;
-}
-
-a:link, a:visited {
+a, a:link, a:visited {
   color: #0071e3;
   text-decoration: none;
 }
 
-input[type=password] {
-  width: 160px;
-  padding: 0.2em 0.7em;
-  position: relative;
-  border: 1px solid #cdcdcd;
-  border-color: rgba(0, 0, 0, .15);
-  background-color: #ffffff;
-  font-size: 14px;
-}
-
-input[type=text] {
+input[type=password], input[type=text] {
   width: 160px;
   padding: 0.2em 0.7em;
   position: relative;
@@ -66,24 +48,6 @@ h1 {
   text-align: center;
 }
 
-.header {
-  padding: 0 1em;
-  margin: 1em auto;
-  max-width: 640px;
-  background: #f2f1f6;
-  border-radius: 15px;
-}
-
-.footer {
-  padding: 0 1em;
-  margin: 1em auto;
-  max-width: 640px;
-  background: #f2f1f6;
-  border-radius: 15px;
-  font: 11px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light;
-  color: #aaaaae;
-}
-
 .container {
   padding: 0 1em;
   margin: 1em auto;
@@ -96,7 +60,7 @@ h1 {
   margin: 0.6em 0;
 }
 
-.form-control input:not([type="checkbox"]), .form-control button {
+.form-control input:not([type=checkbox]), .form-control button {
   min-width: 10em;
 }
 
@@ -117,24 +81,32 @@ h1 {
   position: relative;
 }
 
-.btndis {
-  background: #f2f1f6;
-  color: #25282A;
-}
-
 .badge {
   background-color: #ff0800;
   border: 2px solid #ff0800;
   border-radius: 12px;
   box-shadow: 1px 1px 1px #282828;
   color: #ffffff;
-  font: bold 12px/9px Helvetica, Verdana, Tahoma;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 9px;
   height: 12px;
   padding: 4px 3px 0 5px;
   text-align: center;
   min-width: 8px;
-  display: inline;
-  position: absolute;
+}
+
+/* make sure that badge text is white
+   otherwise it will be blue if it is linked */
+a.badge {
+  color: #ffffff;
+}
+
+#badges_container {
+  margin: 8px 0;
+  padding-top: 0;
+  /* height for single row of badges */
+  min-height: 21px;
 }
 
 .helpbadge {
@@ -143,7 +115,9 @@ h1 {
   border-radius: 12px;
   box-shadow: 1px 1px 0.5px #c1c1c1;
   color: #0071e3 !important;
-  font: bold 14px/10px HelveticaNeueLight, Helvetica, Verdana;
+  font-weight: bold;
+  font: 14px;
+  line-height: 10px;
   height: 13px;
   padding: 6px 6px 1px 6px;
   text-align: center;
@@ -154,33 +128,22 @@ h1 {
   float: right;
 }
 
-.apl_thin {
-  margin-left: 80px;
-  height: 75px;
-  padding-top: 0.25em;
-  padding-left: 10px;
+#header_container {
+  padding: 10px;
+}
+
+.title {
   color: #454955;
-  font: 36px '-apple-system', 'HelveticaNeueLight', Helvetica Light, Segoe UI Light;
+  font-size: 36px;
+  font-weight: lighter;
+  text-align: left;
+  line-height: normal;
 }
 
-.icon {
-  width: 25px;
-  height: 25px;
-  vertical-align: top;
-  padding-top: 0.28em;
-}
-
-.logodiv {
-  float: left;
-  width: 80px;
-  height: 80px;
-  padding-left: 10px;
-}
-
-.img {
+#logo {
   display: block;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 8px;
+  float: left;
   width: 80px;
   height: 80px;
 }
@@ -194,7 +157,6 @@ h1 {
   border-radius: 50%;
   border-top-color: #fff;
   animation: spin 1s linear infinite;
-  -webkit-animation: spin 1s linear infinite;
   position: absolute;
   top: 0;
   left: 0;
@@ -203,12 +165,6 @@ h1 {
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@-webkit-keyframes spin {
-  to {
-    -webkit-transform: rotate(360deg);
   }
 }
 
@@ -235,7 +191,6 @@ h1 {
   right: 0;
   bottom: 0;
   background-color: #ccc;
-  -webkit-transition: .4s;
   transition: .4s;
 }
 
@@ -247,7 +202,6 @@ h1 {
   left: 4px;
   bottom: 4px;
   background-color: white;
-  -webkit-transition: .4s;
   transition: .4s;
 }
 
@@ -260,8 +214,6 @@ input:focus + .slider {
 }
 
 input:checked + .slider:before {
-  -webkit-transform: translateX(24px);
-  -ms-transform: translateX(24px);
   transform: translateX(24px);
 }
 
@@ -288,6 +240,6 @@ input:checked + .slider:before {
   content: ", ";
 }
 
-.comma-list li:last-child::after {
+.comma-list li:last-child:after {
   content: "";
 }
