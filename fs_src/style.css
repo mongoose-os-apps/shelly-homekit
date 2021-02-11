@@ -60,7 +60,7 @@ h1 {
   margin: 0.6em 0;
 }
 
-.form-control input:not([type="checkbox"]), .form-control button {
+.form-control input:not([type=checkbox]), .form-control button {
   min-width: 10em;
 }
 
@@ -240,6 +240,6 @@ input:checked + .slider:before {
   content: ", ";
 }
 
-.comma-list li:last-child::after {
+.comma-list li:last-child:after {
   content: "";
 }
