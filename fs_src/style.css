@@ -200,7 +200,6 @@ a.badge {
   border-radius: 50%;
   border-top-color: #fff;
   animation: spin 1s linear infinite;
-  -webkit-animation: spin 1s linear infinite;
   position: absolute;
   top: 0;
   left: 0;
@@ -209,12 +208,6 @@ a.badge {
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@-webkit-keyframes spin {
-  to {
-    -webkit-transform: rotate(360deg);
   }
 }
 
@@ -241,7 +234,6 @@ a.badge {
   right: 0;
   bottom: 0;
   background-color: #ccc;
-  -webkit-transition: .4s;
   transition: .4s;
 }
 
@@ -253,7 +245,6 @@ a.badge {
   left: 4px;
   bottom: 4px;
   background-color: white;
-  -webkit-transition: .4s;
   transition: .4s;
 }
 
@@ -266,8 +257,6 @@ input:focus + .slider {
 }
 
 input:checked + .slider:before {
-  -webkit-transform: translateX(24px);
-  -ms-transform: translateX(24px);
   transform: translateX(24px);
 }
 
