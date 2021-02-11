@@ -3,15 +3,12 @@ html, body {
   padding: 0;
   margin: 5;
   background-color: #f2f1f6;
+  color: #454955;
+  font: 14px/1.5 '-apple-system', 'HelveticaNeue', Helvetica, Segoe UI;
 }
 
 * {
   outline: none !important;
-}
-
-body {
-  color: #454955;
-  font: 14px/1.5 '-apple-system', 'HelveticaNeue', Helvetica, Segoe UI;
 }
 
 h1, h2, h3, h4, h5, h6, b, th, strong {
@@ -30,27 +27,12 @@ button {
   cursor: pointer;
 }
 
-a {
-  text-decoration: none;
-  color: #0071e3;
-}
-
-a:link, a:visited {
+a, a:link, a:visited {
   color: #0071e3;
   text-decoration: none;
 }
 
-input[type=password] {
-  width: 160px;
-  padding: 0.2em 0.7em;
-  position: relative;
-  border: 1px solid #cdcdcd;
-  border-color: rgba(0, 0, 0, .15);
-  background-color: #ffffff;
-  font-size: 14px;
-}
-
-input[type=text] {
+input[type=password], input[type=text] {
   width: 160px;
   padding: 0.2em 0.7em;
   position: relative;
