@@ -12,7 +12,7 @@ function checkName(name) {
 
 el("sys_save_btn").onclick = function () {
   if (!checkName(el("sys_name").value)) {
-    alert(`Name must be between 1 and 63 characters 
+    alert(`Name must be between 1 and 63 characters
            and consist of letters, numbers or dashes ('-')`);
     return;
   }
@@ -96,11 +96,11 @@ el("wifi_save_btn").onclick = function () {
       <div class='container'><h1>Rebooting...</h1>
         <p>Device is rebooting and connecting to <i>${el("wifi_ssid").value}</i>.</p>
         <p>
-          Connect to the same network and visit 
+          Connect to the same network and visit
           <a href='http://${dn}.local/'>http://${dn}.local/</a>.
         </p>
         <p>
-          If device cannot be contacted, see 
+          If device cannot be contacted, see
           <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
         </p>
       </div>."`;
@@ -506,7 +506,7 @@ function updateComponent(cd) {
           el(c, "pos").innerText = cd.cur_pos;
         }
         el(c, "cal").innerText = `
-          movement time: ${cd.move_time_ms / 1000} s, 
+          movement time: ${cd.move_time_ms / 1000} s,
           avg power: ${cd.move_power} W`;
         el(c, "pos_ctl").style.display = "block";
       } else {
@@ -731,7 +731,7 @@ function getInfo() {
 function getCookie(key) {
   cookie = (document.cookie.match(`(^|;)\\s*${key}\\s*=\\s*([^;]+)`) || []).pop()
   if (cookie === undefined) return;
-  
+
   return JSON.parse(cookie);
 }
 
@@ -1019,7 +1019,7 @@ async function checkUpdate() {
       }
       se.className = "";
       e.innerHTML = `
-        Version ${latestVersion} is available. 
+        Version ${latestVersion} is available.
         See <a href="${relNotesURL}" target="_blank">release notes</a>.`
       el("update_btn_text").innerText = "Install";
       el("update_btn").onclick = function () {
@@ -1043,4 +1043,3 @@ el("revert_btn").onclick = function () {
   var stockURL = `https://rojer.me/files/shelly/stock/${lastInfo.stock_model}.zip`;
   downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
 };
-
