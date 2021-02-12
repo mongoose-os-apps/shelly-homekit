@@ -357,7 +357,7 @@ function findOrAddContainer(cd) {
         swSetConfig(c);
       };
       el(c, "auto_off").onchange = function () {
-        el(c, "auto_off_delay").disabled = !this.checked;
+        el(c, "auto_off_delay_container").style.display = this.checked ? "block" : "none";
       };
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
@@ -455,7 +455,7 @@ function updateComponent(cd) {
         if (el(c, "initial_3")) el(c, "initial_3").remove();
       }
       checkIfNotModified(el(c, "auto_off"), cd.auto_off);
-      el(c, "auto_off_delay").disabled = !el(c, "auto_off").checked;
+      el(c, "auto_off_delay_container").style.display = el(c, "auto_off").checked ? "block" : "none";
       setValueIfNotModified(el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
       if (cd.state_led_en == -1) {
         el(c, "state_led_en_container").style.display = "none";
