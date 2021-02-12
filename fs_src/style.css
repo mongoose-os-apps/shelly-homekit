@@ -25,6 +25,12 @@ button {
   border-radius: 18px;
   border: none;
   cursor: pointer;
+  background: #0071e3;
+}
+
+button label {
+  position: relative;
+  cursor: pointer;
 }
 
 a, a:link, a:visited {
@@ -71,14 +77,6 @@ h1 {
 
 .form {
   padding: 1em 0;
-}
-
-.btn {
-  background: #0071e3;
-}
-
-.btn label {
-  position: relative;
 }
 
 .badge {
