@@ -42,6 +42,10 @@ input[type=password], input[type=text] {
   font-size: 14px;
 }
 
+input[type=file] {
+  width: 200px;
+}
+
 h1 {
   margin: 0;
   padding-top: 0.5em;
@@ -54,6 +58,20 @@ h1 {
   max-width: 640px;
   background: #fefefe;
   border-radius: 10px;
+  position: relative;
+}
+
+.container:first-child {
+  display: flex;
+  flex-flow: column;
+}
+
+.container:first-child > h1 {
+  order: 1;
+}
+
+.container:first-child h1 {
+  padding: 0;
 }
 
 .form-control {
@@ -122,10 +140,10 @@ a.badge {
   padding: 6px 6px 1px 6px;
   text-align: center;
   min-width: 8px;
-  position: relative;
+  position: absolute;
   margin-top: 4px;
   margin-right: -10px;
-  float: right;
+  right: 1em;
 }
 
 #header_container {
@@ -142,10 +160,20 @@ a.badge {
 
 #logo {
   display: block;
-  margin: 8px;
+  margin: 0 8px;
   float: left;
   width: 80px;
   height: 80px;
+}
+
+.spinner_container {
+  display: inline-block;
+  position: relative;
+}
+
+.spinner_container .spin {
+  border: 0.15em solid rgba(0, 0, 0, .2);
+  border-top-color: #777;
 }
 
 .spin {
