@@ -11,9 +11,6 @@ var hapSetupCode = el("hap_setup_code");
 var hapSaveSpinner = el("hap_save_spinner");
 var hapResetSpinner = el("hap_reset_spinner");
 
-var sw1 = el("sw1_container");
-var sw2 = el("sw2_container");
-
 function el(container, id) {
   if (id === undefined) {
     id = container;
