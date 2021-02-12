@@ -421,12 +421,15 @@ function findOrAddContainer(cd) {
     case 7: // Motion Sensor.
     case 8: // Occupancy Sensor.
     case 9: // Contact Sensor.
+    case 10: // Doorbell
       c = el("sensor_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function () {
         mosSetConfig(c);
       };
       break;
+    default:
+      console.log("Unhandled component type: " + cd.type);
   }
   if (c) {
     c.style.display = "block";
@@ -566,6 +569,7 @@ function updateComponent(cd) {
     case 7: // Motion Sensor
     case 8: // Occupancy Sensor
     case 9: // Contact Sensor
+    case 10: // Doorbell
       var headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
@@ -582,6 +586,8 @@ function updateComponent(cd) {
       }
       el(c, "status").innerText = statusText;
       break;
+    default:
+      console.log("Unhandled component type: " + cd.type);
   }
   c.data = cd;
 }

@@ -15,25 +15,20 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_stateless_switch.hpp"
+#pragma once
+#include "shelly_hap_stateless_switch_base.hpp"
 
 namespace shelly {
 namespace hap {
 
-StatelessSwitch::StatelessSwitch(int id, Input *in,
-                                 struct mgos_config_in_ssw *cfg)
-    : StatelessSwitchBase(
-          id, in, cfg, SHELLY_HAP_IID_BASE_STATELESS_SWITCH,
-          &kHAPServiceType_StatelessProgrammableSwitch,
-          kHAPServiceDebugDescription_StatelessProgrammableSwitch) {
-}
+class Doorbell : public StatelessSwitchBase {
+ public:
+  Doorbell(int id, Input *in, struct mgos_config_in_ssw *cfg);
+  virtual ~Doorbell();
 
-StatelessSwitch::~StatelessSwitch() {
-}
-
-Component::Type StatelessSwitch::type() const {
-  return Type::kStatelessSwitch;
-}
+  // Component interface impl.
+  Type type() const override;
+};
 
 }  // namespace hap
 }  // namespace shelly
