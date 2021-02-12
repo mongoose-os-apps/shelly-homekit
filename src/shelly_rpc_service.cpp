@@ -74,7 +74,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u, sys_mode: %d, rsh_avail: %B, gdo_avail: %B, "
+      "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
       "debug_en: %B",
       mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
       MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
@@ -89,7 +89,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
-#ifdef MGOS_SYS_CONFIG_HAVE_WC1  // rsh_avail
+#ifdef MGOS_SYS_CONFIG_HAVE_WC1  // wc_avail
       true,
 #else
       false,

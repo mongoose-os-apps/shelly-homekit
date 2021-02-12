@@ -106,13 +106,17 @@
         <label>WiFi password:</label>
         <input type="password" id="wifi_pass">
       </div>
-      <div class="form-control">
-        <label>Status:</label>
-        <ul class="comma-list" id="wifi_status">
-          <li id="wifi_rssi"></li>
-          <li id="host"></li>
-          <li id="wifi_ip"></li>
-        </ul>
+      <div class="form-control" id="wifi_rssi_container">
+        <label>RSSI:</label>
+        <span id="wifi_rssi"></span>
+      </div>
+      <div class="form-control" id="host_container">
+        <label>Host:</label>
+        <span id="host"></span>
+      </div>
+      <div class="form-control" id="wifi_ip_container">
+        <label>IP:</label>
+        <span id="wifi_ip"></span>
       </div>
       <div class="form-control">
         <label></label>
@@ -131,12 +135,59 @@
   <div class="form">
     <div class="">
       <div class="form-control">
-        <label>Device:</label>
-        Model: <span id="model"></span>, ID: <span id="device_id"></span>, Uptime: <span id="uptime"></span>
+        <label>Model:</label>
+        <span id="model"></span>
       </div>
       <div class="form-control">
-        <label>Firmware:</label>
-        Version: <span id="version"></span> (build <span id="fw_build"></span>)
+        <label>Device Id:</label>
+        <span id="device_id"></span>
+      </div>
+      <div class="form-control">
+        <label>Uptime:</label>
+        <span id="uptime"></span>
+      </div>
+      <div class="form-control" id="sys_temp_container" style="display: none">
+        <label>Temperature:</label>
+        <span id="sys_temp"></span>&deg;C
+      </div>
+      <div class="form-control" id="debug_log_container" style="display: none">
+        <label>Debug Log:</label>
+        <label class="switch">
+          <input type="checkbox" id="debug_en">
+          <span class="slider round"></span>
+        </label>
+        <span id="debug_link"><a href="/debug/log?follow=1" style="margin-left: 1em">Log</a></span>
+      </div>
+      <div class="form-control">
+        <label></label>
+        <button class="btn" id="reboot_btn">
+          <label>Reboot</label>
+        </button>
+        <button class="btn" id="reset_btn">
+          <label>Reset</label>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="firmware_container" style="display: none">
+  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Firmware"
+     target="_blank">?</a>
+  <h1 class="">Firmware</h1>
+  <div class="form">
+    <div class="">
+      <div class="form-control">
+        <label>Version:</label>
+        <span id="version"></span>
+      </div>
+      <div class="form-control">
+        <label>Build:</label>
+        <span id="fw_build1"></span>
+      </div>
+      <div class="form-control">
+        <label></label>
+        <span id="fw_build2"></span>
       </div>
       <div class="form-control" id="update_container" style="display: none">
         <label>Update: </label>
@@ -158,37 +209,18 @@
           <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">on GitHub</a>.
         </div>
       </div>
-      <div class="form-control">
-        <label>Update from file:</label>
-        <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data"
-              style="display: inline">
-          <input type="file" id="fw_select_file" name="file" accept=".zip"/>
+      <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data" style="display: inline">
+        <div class="form-control">
+          <label>Update from file:</label>
+          <input type="file" id="fw_select_file" name="file" accept=".zip" style="width: 200px;">
+        </div>
+        <div class="form-control">
+          <label></label>
           <button id="fw_upload_btn">
             <label><span id="fw_spinner"></span>Upload</label>
           </button>
-        </form>
-      </div>
-      <div class="form-control" id="debug_log_container" style="display: none">
-        <label>Debug Log:</label>
-        <label class="switch">
-          <input type="checkbox" id="debug_en">
-          <span class="slider round"></span>
-        </label>
-        <span id="debug_link"><a href="/debug/log?follow=1" style="margin-left: 1em">Log</a></span>
-      </div>
-      <div class="form-control" id="sys_temp_container" style="display: none">
-        <label>Temperature:</label>
-        <span id="sys_temp"></span>&deg;C
-      </div>
-      <div class="form-control">
-        <label></label>
-        <button id="reboot_btn">
-          <label>Reboot</label>
-        </button>
-        <button id="reset_btn">
-          <label>Reset</label>
-        </button>
-      </div>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -217,18 +249,17 @@
   <h1 id="head">Switch</h1>
   <div class="form">
     <div class="">
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="state">off</span>
+      <div class="form-control" id="state_container">
+        <label for="state">Status:</label>
+        <label class="switch">
+          <input type="checkbox" id="state">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="form-control" id="power_stats_container" style="display: none;">
+        <label for="power_stats">Power:</label>
         <span id="power_stats"></span>
       </div>
-      <div class="form-control">
-        <label></label>
-        <button id="toggle_btn">
-          <label><span id="set_spinner"></span><span id="btn_label">Turn On</span></label>
-        </button>
-      </div>
-    </div>
     <div class="">
       <div class="form-control">
         <label for="name">Name:</label>
@@ -286,7 +317,7 @@
           <span class="slider round"></span>
         </label>
       </div>
-      <div>
+      <div class="form-control" id="auto_off_delay_container">
         <label for="auto_off_delay">Auto off delay:</label>
         <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
                pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
