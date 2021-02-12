@@ -168,9 +168,9 @@ function dateStringToSeconds(dateString) {
   if (dateString == "") return 0;
 
   var {
-    days, hours, minutes, seconds, minutes
+    days, hours, minutes, seconds, minutes, milliseconds
   } = dateString.match(
-    /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\:(?<milliseconds>\d{3})/
+    /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\.(?<milliseconds>\d{3})/
   ).groups
 
   var seconds = parseInt(days) * 24 * 3600 +
