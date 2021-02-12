@@ -445,7 +445,7 @@ function updateComponent(cd) {
       if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
       setValueIfNotModified(el(c, "name"), cd.name);
-      checkIfNotModified(el(c, "state"), cd.state);
+      el(c, "state").checked = cd.state;
       if (cd.apower !== undefined) {
         el(c, "power_stats").innerText = `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
       }
