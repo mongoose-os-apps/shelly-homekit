@@ -2,15 +2,6 @@ var lastInfo = null;
 
 var socket = null;
 
-var wifiEn = el("wifi_en");
-var wifiSSID = el("wifi_ssid");
-var wifiPass = el("wifi_pass");
-var wifiSpinner = el("wifi_spinner");
-
-var hapSetupCode = el("hap_setup_code");
-var hapSaveSpinner = el("hap_save_spinner");
-var hapResetSpinner = el("hap_reset_spinner");
-
 function el(container, id) {
   if (id === undefined) {
     id = container;
@@ -52,13 +43,13 @@ el("sys_save_btn").onclick = function () {
 };
 
 el("hap_save_btn").onclick = function () {
-  var codeMatch = hapSetupCode.value.match(/^(\d{3})\-?(\d{2})\-?(\d{3})$/);
+  var codeMatch = el("hap_setup_code").value.match(/^(\d{3})\-?(\d{2})\-?(\d{3})$/);
   if (!codeMatch) {
-    alert(`Invalid code ${hapSetupCode.value}, must be xxxyyzzz or xxx-yy-zzz.`);
+    alert(`Invalid code ${el("hap_setup_code").value}, must be xxxyyzzz or xxx-yy-zzz.`);
     return;
   }
   var code = codeMatch.slice(1).join('-');
-  hapSaveSpinner.className = "spin";
+  el("hap_save_spinner").className = "spin";
   sendMessageWebSocket("HAP.Setup", {"code": code})
     .catch(function (err) {
       if (err.response) {
@@ -66,14 +57,14 @@ el("hap_save_btn").onclick = function () {
       }
       alert(err);
     }).then(function () {
-    hapSaveSpinner.className = "";
+    el("hap_save_spinner").className = "";
   });
 };
 
 el("hap_reset_btn").onclick = function () {
   if(!confirm("HAP reset will erase all pairings and clear setup code. Are you sure?")) return;
 
-  hapResetSpinner.className = "spin";
+  el("hap_reset_spinner").className = "spin";
   sendMessageWebSocket("HAP.Reset", {"reset_server": true, "reset_code": true})
     .catch(function (err) {
       if (err.response) {
@@ -81,7 +72,7 @@ el("hap_reset_btn").onclick = function () {
       }
       alert(err);
     }).then(function () {
-    hapResetSpinner.className = "";
+    el("hap_reset_spinner").className = "";
   });
 };
 
@@ -92,22 +83,22 @@ el("fw_upload_btn").onclick = function () {
 };
 
 el("wifi_save_btn").onclick = function () {
-  wifiSpinner.className = "spin";
+  el("wifi_spinner").className = "spin";
   var data = {
     config: {
       wifi: {
-        sta: {enable: wifiEn.checked, ssid: wifiSSID.value},
-        ap: {enable: !wifiEn.checked},
+        sta: {enable: el("wifi_en").checked, ssid: el("wifi_ssid").value},
+        ap: {enable: !el("wifi_en").checked},
       },
     },
     reboot: true,
   };
-  if (wifiPass.value != "***") data.config.wifi.sta.pass = wifiPass.value;
+  if (el("wifi_pass").value != "***") data.config.wifi.sta.pass = el("wifi_pass").value;
   sendMessageWebSocket("Config.Set", data).then(function () {
     var dn = el("device_name").innerText;
     document.body.innerHTML = `
       <div class='container'><h1>Rebooting...</h1>
-        <p>Device is rebooting and connecting to <i>${wifiSSID.value}</i>.</p>
+        <p>Device is rebooting and connecting to <i>${el("wifi_ssid").value}</i>.</p>
         <p>
           Connect to the same network and visit 
           <a href='http://${dn}.local/'>http://${dn}.local/</a>.
@@ -123,7 +114,7 @@ el("wifi_save_btn").onclick = function () {
     }
     alert(err);
   }).then(function () {
-    wifiSpinner.className = "";
+    el("wifi_spinner").className = "";
   });
 };
 
@@ -598,13 +589,13 @@ function updateElement(key, value) {
       setValueIfNotModified(el("sys_name"), value);
       break;
     case "wifi_en":
-      checkIfNotModified(wifiEn, value);
+      checkIfNotModified(el("wifi_en"), value);
       break;
     case "wifi_ssid":
-      setValueIfNotModified(wifiSSID, value);
+      setValueIfNotModified(el("wifi_ssid"), value);
       break;
     case "wifi_pass":
-      setValueIfNotModified(wifiPass, value);
+      setValueIfNotModified(el("wifi_pass"), value);
       break;
     case "wifi_rssi":
       if (value !== 0) {
@@ -650,7 +641,7 @@ function updateElement(key, value) {
       for (let i in value) updateComponent(value[i]);
       break;
     case "hap_running":
-      setValueIfNotModified(hapSetupCode, value ? "***-**-***" : "");
+      setValueIfNotModified(el("hap_setup_code"), value ? "***-**-***" : "");
       if (!value) el("hap_ip_conns_max").innerText = "Server not running"
       el("hap_ip_conns_pending").style.display = "none";
       el("hap_ip_conns_active").style.display = "none";
