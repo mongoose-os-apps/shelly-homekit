@@ -1,7 +1,3 @@
-var lastInfo = null;
-
-var socket = null;
-
 function el(container, id) {
   if (id === undefined) {
     id = container;
@@ -683,6 +679,8 @@ function updateElement(key, value) {
   }
 }
 
+var lastInfo = null;
+
 function getInfo() {
   return new Promise(function (resolve, reject) {
     if (socket.readyState !== 1) {
@@ -758,8 +756,9 @@ el("debug_en").onclick = function () {
   });
 };
 
-var connectionTries = 0;
 var host = (new URLSearchParams(location.search)).get("host") || location.host;
+var socket = null;
+var connectionTries = 0;
 
 function connectWebSocket() {
   if (!host) {
