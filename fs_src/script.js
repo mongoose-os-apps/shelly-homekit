@@ -663,7 +663,7 @@ function updateElement(key, value) {
       checkIfNotModified(el("debug_en"), value);
       el("debug_link").style.visibility = value ? "visible" : "hidden";
       break;
-    case "rsh_avail":
+    case "wc_avail":
       if (value) el("sys_mode_container").style.display = "block";
       else if (el("sys_mode_1")) el("sys_mode_1").remove();
       break;
