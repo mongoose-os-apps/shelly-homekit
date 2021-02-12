@@ -21,8 +21,8 @@
 #  or any other firmware please follow instructions here:
 #  https://github.com/mongoose-os-apps/shelly-homekit/wiki
 #
-#  usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-t {homekit,stock,all}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [--variant VARIANT] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}]
-#                         [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--log-file LOG_FILENAME]
+#  usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-t {homekit,stock,all}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE]
+#                         [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--log-file LOG_FILENAME]
 #                         [hosts ...]
 #
 #  Shelly HomeKit flashing script utility
@@ -46,32 +46,38 @@
 #    -V VERSION, --version VERSION
 #                          Force a particular version.
 #    --variant VARIANT     Prerelease variant name.
+#    --local-file LOCAL_FILE
+#                          Use local file to flash.
 #    -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
 #                          Configure HomeKit setup code, after flashing.
 #    --ip-type {dhcp,static}
 #                          Configure network IP type (Static or DHCP)
-#    --ip IPV4_IP          IP address
-#    --gw IPV4_GW          Gateway IP address
-#    --mask IPV4_MASK      Subnet mask address
-#    --dns IPV4_DNS        DNS IP address
+#    --ip IPV4_IP          set IP address
+#    --gw IPV4_GW          set Gateway IP address
+#    --mask IPV4_MASK      set Subnet mask address
+#    --dns IPV4_DNS        set DNS IP address
 #    -v {0,1,2,3,4,5}, --verbose {0,1,2,3,4,5}
 #                          Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
 #    --log-file LOG_FILENAME
 #                          Create output log file with chosen filename.
 
-
 import argparse
 import datetime
 import functools
+import http.server
+import ipaddress
 import json
 import logging
+import os
 import platform
 import queue
 import re
 import socket
 import subprocess
 import sys
+import threading
 import time
+import zipfile
 
 logging.TRACE = 5
 logging.addLevelName(logging.TRACE, 'TRACE')
@@ -86,6 +92,8 @@ log_level = {'0' : logging.CRITICAL,
              '4' : logging.DEBUG,
              '5' : logging.TRACE}
 
+webserver_port = 8381
+total_devices = 0
 upgradeable_devices = 0
 flashed_devices = 0
 failed_flashed_devices = 0
@@ -110,6 +118,21 @@ except ImportError:
   pipe = subprocess.check_output([sys.executable, '-m', 'pip', 'install', 'requests'])
   import requests
 
+
+class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def log_request(self, code):
+        pass
+
+class StoppableHTTPServer(http.server.HTTPServer):
+  def run(self):
+    try:
+      self.serve_forever()
+    except KeyboardInterrupt:
+      pass
+    finally:
+      self.server_close()
+
+
 class MyListener:
   def __init__(self):
     self.queue = queue.Queue()
@@ -128,36 +151,44 @@ class MyListener:
 
 class Device:
   def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
-    self.host = f'{host}.local' if '.local' not in host and not host[0:3].isdigit() else host
+    self.host = host
     self.friendly_host = host.replace('.local','')
     self.fw_type = fw_type
     self.device_url = device_url
+    self.local_file = None
     self.info = info
     self.variant = variant
     self.version = version
     self.wifi_ip = wifi_ip
     self.flash_label = "Latest:"
+    self.force_flash = False
 
-  def is_valid_hostname(self, hostname):
-    if len(hostname) > 255:
-        result = False
-    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    result = all(allowed.match(x) for x in hostname.split("."))
-    logger.debug(f"Valid Hostname: {hostname} {result}")
-    return result
-
-  def is_host_online(self, host):
+  def is_host_reachable(self, host):
+    # check if host is reachable
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(3)
     try:
-      self.wifi_ip = socket.gethostbyname(host)
+      # use supplied IP supplied
+      ipaddress.IPv4Address(host)
+      test_host = host
+    except ipaddress.AddressValueError as err:
+      # resolve IP from hostname
+      self.host = f'{host}.local' if '.local' not in host else host
+      test_host = self.host
+    try:
+      sock.connect((test_host, 80))
+      self.wifi_ip = socket.gethostbyname(test_host) if not self.wifi_ip else host
       logger.debug(f"Hostname: {host} is Online")
       return True
-    except:
-      logger.error(f"\n{RED}Could not resolve host: {host}{NC}")
+    except socket.error:
+      logger.error(f"")
+      logger.error(f"{RED}Could not resolve host: {test_host}{NC}")
       return False
+    sock.close()
 
   def get_device_url(self):
     self.device_url = None
-    if self.is_valid_hostname(self.host) and self.is_host_online(self.host):
+    if self.is_host_reachable(self.host):
       try:
         homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
         stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings', timeout=3)
@@ -194,6 +225,13 @@ class Device:
       parsed_version = '0.0.0'
     return parsed_version
 
+  def set_local_file(self, local_file):
+    self.local_file = local_file
+
+  def set_force_version(self, version):
+    self.flash_fw_version = version
+    self.force_flash = True
+
   def get_current_version(self): # used when flashing between formware versions.
     info = self.get_device_info()
     if not info:
@@ -205,44 +243,91 @@ class Device:
     return version
 
   def shelly_model(self, type):
-    options = {'SHSW-1' : 'Shelly1',
-               'SHSW-L' : 'Shelly1L',
-               'SHSW-PM' : 'Shelly1PM',
-               'SHSW-21' : 'Shelly2',
-               'SHSW-25' : 'Shelly25',
-               'SHPLG-1' : 'ShellyPlug',
-               'SHPLG2-1' : 'ShellyPlug',
-               'SHPLG-S' : 'ShellyPlugS',
-               'SHPLG-U1' : 'ShellyPlugUS',
-               'SHIX3-1' : 'ShellyI3',
-               'SHBTN-1' : 'ShellyButton1',
-               'SHBLB-1' : 'ShellyBulb',
-               'SHVIN-1' : 'ShellyVintage',
-               'SHBDUO-1' : 'ShellyDuo',
-               'SHDM-1' : 'ShellyDimmer1',
-               'SHDM-2' : 'ShellyDimmer2',
-               'SHRGBW2' : 'ShellyRGBW2',
-               'SHDW-1' : 'ShellyDoorWindow1',
-               'SHDW-2' : 'ShellyDoorWindow2',
-               'SHHT-1' : 'ShellyHT',
-               'SHSM-01' : 'ShellySmoke',
-               'SHWT-1' : 'ShellyFlood',
-               'SHGS-1' : 'ShellyGas',
-               'SHEM' : 'ShellyEM',
-               'SHEM-3' : 'Shelly3EM',
-               'SHSEN-1' : 'ShellySensor1',
-               'switch1' : 'Shelly1',
-               'switch1pm' : 'Shelly1PM',
-               'switch2' : 'Shelly2',
-               'switch25' : 'Shelly25',
-               'shelly-plug-s' : 'ShellyPlugS',
+    options = {'SHPLG-1' : ['ShellyPlug', 'shelly-plug'],
+               'SHPLG-S' : ['ShellyPlugS', 'shelly-plug-s'],
+               'SHPLG-U1' : ['ShellyPlugUS', 'shelly-plug-u1'],
+               'SHPLG2-1' : ['ShellyPlug', 'shelly-plug2'],
+               'SHSW-1' : ['Shelly1', 'switch1'],
+               'SHSW-PM' : ['Shelly1PM', 'switch1pm'],
+               'SHSW-L' : ['Shelly1L', 'switch1l'],
+               'SHSW-21' : ['Shelly2', 'switch'],
+               'SHSW-25' : ['Shelly25', 'switch25'],
+               'SHAIR-1' : ['ShellyAir', 'air'],
+               'SHSW-44' : ['Shelly4Pro', 'dinrelay4'],
+               'SHUNI-1' : ['ShellyUni', 'uni'],
+               'SHEM' : ['ShellyEM', 'shellyem'],
+               'SHEM-3' : ['Shelly3EM','shellyem3'],
+               'SHSEN-1' : ['ShellySensor', 'smart-sensor'],
+               'SHGS-1' : ['ShellyGas', 'gas-sensor'],
+               'SHSM-01' : ['ShellySmoke', 'smoke-sensor'],
+               'SHHT-1' : ['ShellyHT', 'ht-sensor'],
+               'SHWT-1' : ['ShellyFlood', 'water-sensor'],
+               'SHDW-1' : ['ShellyDoorWindow', 'doorwindow-sensor'],
+               'SHDW-2' : ['ShellyDoorWindow2', 'doorwindow-sensor2'],
+               'SHSPOT-1' : ['ShellySpot', 'spot'],
+               'SHCL-255' : ['ShellyColor', 'color'],
+               'SHBLB-1' : ['ShellyBulb', 'bulb'],
+               'SHCB-1' : ['ShellyColorBulb', 'color-bulb'],
+               'SHRGBW2' : ['ShellyRGBW2', 'rgbw2'],
+               'SHRGBWW-01' : ['ShellyRGBW2', 'rgbww'],
+               'SH2LED-1' : ['ShellyLED','led1'],
+               'SHDM-1' : ['ShellyDimmer', 'dimmer'],
+               'SHDM-2' : ['ShellyDimmer2', 'dimmer-l51'],
+               'SHDIMW-1' : ['ShellyDimmerW','dimmerw1'],
+               'SHVIN-1' : ['ShellyVintage', 'bulb6w'],
+               'SHBDUO-1' : ['ShellyDuo', 'bulbduo'],
+               'SHBTN-1' : ['ShellyButton1', 'wifi-button'],
+               'SHBTN-2' : ['ShellyButton2', 'wifi-button2'],
+               'SHIX3-1' : ['ShellyI3', 'ix3'],
     }
     return options.get(type, type)
+
+  def parse_local_file(self):
+    self.flash_label = "Local:"
+    if os.path.exists(self.local_file):
+      local_host = socket.gethostname()
+      s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+      s.connect((self.wifi_ip, 80))
+      local_ip = s.getsockname()[0]
+      logger.debug(f"Host IP: {local_ip}")
+      s.close()
+      with zipfile.ZipFile(self.local_file, "r") as zfile:
+        for name in zfile.namelist():
+          if re.search(r'\.json$', name) is not None:
+            logger.debug(f"zipfile: {name}")
+            mfile = zfile.read(name)
+            manifest_file = json.loads(mfile)
+            logger.debug(f"manifest: {json.dumps(manifest_file, indent = 4)}")
+      manifest_version = manifest_file['version']
+      manifest_name = manifest_file['name']
+      if manifest_version == '1.0':
+        self.set_force_version(self.parse_stock_version(manifest_file['build_id']))
+        self.flash_fw_type_str = "Stock"
+      else:
+        self.set_force_version(manifest_version)
+        self.flash_fw_type_str = "HomeKit"
+      if self.fw_type == 'homekit':
+        self.dlurl = 'local'
+      else:
+        self.dlurl = f'http://{local_ip}:{webserver_port}/{self.local_file}'
+      if self.fw_type == 'stock' and self.stock_model == 'SHRGBW2' and self.colour_mode is not None:
+        m_model = f"{self.app}-{self.colour_mode}"
+      else:
+        m_model = self.app
+      if m_model != manifest_name:
+        self.flash_fw_version = '0.0.0'
+        self.dlurl = None
+    else:
+      logger.debug(f"File does not exist")
+      self.flash_fw_version = '0.0.0'
+      self.dlurl = None
 
   def update_homekit(self, release_info=None):
     self.flash_fw_type_str = 'HomeKit'
     self.flash_fw_type = 'homekit'
-    if not self.version:
+    if self.local_file:
+      self.parse_local_file()
+    elif not self.version:
       for i in release_info:
         if self.variant and self.variant not in i[1]['version']:
           self.flash_fw_version = 'novariant'
@@ -265,7 +350,9 @@ class Device:
     self.flash_fw_type_str = 'Stock'
     self.flash_fw_type = 'stock'
     stock_model_info = release_info['data'][self.stock_model]
-    if not self.version:
+    if self.local_file:
+      self.parse_local_file()
+    elif not self.version:
       if self.variant == 'beta':
         self.flash_fw_version = self.parse_stock_version(stock_model_info['beta_ver']) if 'beta_ver' in stock_model_info else self.parse_stock_version(stock_model_info['version'])
         self.dlurl = stock_model_info['beta_url'] if 'beta_ver' in stock_model_info else stock_model_info['url']
@@ -277,7 +364,8 @@ class Device:
       self.flash_fw_version = self.version
       self.dlurl = f'http://archive.shelly-tools.de/version/v{self.version}/{self.stock_model}.zip'
     if self.stock_model  == 'SHRGBW2':
-      self.dlurl = self.dlurl.replace('.zip',f'-{self.colour_mode}.zip')
+      if self.dlurl and not self.version and self.colour_mode and not self.local_file:
+        self.dlurl = self.dlurl.replace('.zip',f'-{self.colour_mode}.zip')
 
 class HomeKitDevice(Device):
   def get_info(self):
@@ -285,8 +373,9 @@ class HomeKitDevice(Device):
       return False
     self.fw_type_str = 'HomeKit'
     self.fw_version = self.info['version']
-    self.model = self.info['model'] if 'model' in self.info else self.shelly_model(self.info['app'])
+    self.model = self.info['model'] if 'model' in self.info else self.shelly_model(self.info['app'])[0]
     self.stock_model = self.info['stock_model'] if 'stock_model' in self.info else None
+    self.app = self.info['app'] if 'app' in self.info else self.shelly_model(self.stock_model)[1]
     self.device_id = self.info['device_id'] if 'device_id' in self.info else None
     self.device_name = self.info['name'] if 'name' in self.info else None
     self.colour_mode = self.info['colour_mode'] if 'colour_mode' in self.info else None
@@ -300,17 +389,21 @@ class HomeKitDevice(Device):
     logger.debug('Mode: HomeKit To Stock')
     self.update_stock(release_info)
 
-  def set_force_version(self, version):
-    self.flash_fw_version = version
-
   def flash_firmware(self):
-    logger.info("Downloading Firmware...")
-    logger.debug(f"DURL: {self.dlurl}")
-    myfile = requests.get(self.dlurl)
-    logger.info("Now Flashing...")
-    files = {'file': ('shelly-flash.zip', myfile.content)}
-    logger.debug(f"requests.post(f'http://{self.wifi_ip}/update' , files=files")
-    response = requests.post(f'http://{self.wifi_ip}/update' , files=files)
+    if self.local_file:
+      logger.debug(f"Local file: {self.local_file}")
+      myfile = open(self.local_file,'rb')
+      logger.info("Now Flashing...")
+      files = {'file': ('shelly-flash.zip', myfile)}
+    else:
+      logger.info("Downloading Firmware...")
+      logger.debug(f"DURL: {self.dlurl}")
+      myfile = requests.get(self.dlurl)
+       # print('file:', myfile.content)
+      logger.info("Now Flashing...")
+      files = {'file': ('shelly-flash.zip', myfile.content)}
+    logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
+    response = requests.post(f'http://{self.wifi_ip}/update', files=files)
     logger.debug(response.text)
 
 
@@ -320,8 +413,9 @@ class StockDevice(Device):
       return False
     self.fw_type_str = 'Stock'
     self.fw_version = self.parse_stock_version(self.info['fw'])  # current firmware version
-    self.model = self.shelly_model(self.info['device']['type'])
+    self.model = self.shelly_model(self.info['device']['type'])[0]
     self.stock_model = self.info['device']['type']
+    self.app = self.shelly_model(self.stock_model)[1]
     self.device_id = self.info['mqtt']['id'] if 'id' in self.info['mqtt'] else self.friendly_host
     self.device_name = self.info['name'] if 'name' in self.info else None
     self.colour_mode = self.info['mode'] if 'mode' in self.info else None
@@ -335,14 +429,22 @@ class StockDevice(Device):
     logger.debug('Mode: Stock To Stock')
     self.update_stock(release_info)
 
-  def set_force_version(self, version):
-    self.flash_fw_version = version
-
   def flash_firmware(self):
     logger.info("Now Flashing...")
+    if self.local_file:
+      logger.debug(f"Local file: {self.local_file}")
+    else:
+      logger.debug(f"Remote file: {dlurl}")
     dlurl = self.dlurl.replace('https', 'http')
-    logger.debug(f"curl -qsS http://{self.wifi_ip}/ota?url={dlurl}")
-    response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
+    logger.debug(f"http://{self.wifi_ip}/ota?url={dlurl}")
+    if self.fw_version == '0.0.0':
+      response = requests.get(f'http://{self.wifi_ip}/ota?update')
+    else:
+      try:
+        response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
+      except:
+        logging.info(f"flash failed")
+
     logger.trace(response.text)
 
 
@@ -350,7 +452,7 @@ def parse_version(vs):
   # 1.9.2_1L
   # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest
   v = re.search("^(?P<major>\d+).(?P<minor>\d+).(?P<patch>\d+)(?:_(?P<model>[a-zA-Z0-9]*))?(?:-(?P<prerelease>[a-zA-Z]*)(?P<prerelease_seq>\d*))?$", vs)
-  logger.debug(f'group:{v.groupdict()}')
+  logger.trace(f"group:{v.groupdict()}")
   major = int(v.group('major'))
   minor = int(v.group('minor'))
   patch = int(v.group('patch'))
@@ -441,7 +543,8 @@ def write_flash(device_info):
     logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
   else:
     if device_info.stock_model == 'SHRGBW2':
-      logger.info("\nTo finalise flash process you will need to switch 'Modes' in the device WebUI,")
+      logger.info("")
+      logger.info("To finalise flash process you will need to switch 'Modes' in the device WebUI,")
       logger.info(f"{WHITE}WARNING!!{NC} If you are using this device in conjunction with Homebridge")
       logger.info(f"{WHITE}STOP!!{NC} homebridge before performing next steps.")
       logger.info(f"Goto http://{device_info.host} in your web browser")
@@ -462,8 +565,12 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"{PURPLE}[Parse Info]{NC}")
   logger.trace(f"device_info: {device_info}")
 
+  global total_devices
+  total_devices += 1
+
   perform_flash = False
   flash = False
+  durl_request = False
   host = device_info.host
   friendly_host = device_info.friendly_host
   device_id = device_info.device_id
@@ -475,6 +582,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   flash_fw_version = device_info.flash_fw_version
   flash_fw_type_str = device_info.flash_fw_type_str
   force_version = device_info.version
+  force_flash = device_info.force_flash
   model = device_info.model
   stock_model = device_info.stock_model
   colour_mode = device_info.colour_mode
@@ -497,6 +605,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"requires_upgrade: {requires_upgrade}")
   logger.debug(f"current_fw_version: {current_fw_type_str} {current_fw_version}")
   logger.debug(f"flash_fw_version: {flash_fw_type_str} {flash_fw_version}")
+  logger.debug(f"force_flash: {force_flash}")
   logger.debug(f"force_version: {force_version}")
   logger.debug(f"dlurl: {dlurl}")
 
@@ -505,21 +614,25 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     device_info.set_force_version(force_version)
     flash_fw_version = force_version
 
-  if dlurl:
+  if dlurl and dlurl != 'local':
     durl_request = requests.head(dlurl)
     logger.debug(f"durl_request: {durl_request}")
   if flash_fw_version == 'novariant':
     latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
-  elif not dlurl or durl_request.status_code != 200 or (durl_request.headers.get('Content-Type', '') != 'application/zip'):
+  elif not dlurl and device_info.local_file:
+    latest_fw_label = f"{RED}Invailid file{NC}"
+    flash_fw_version = '0.0.0'
+    dlurl = None
+  elif not dlurl or (durl_request is not False and (durl_request.status_code != 200 or durl_request.headers.get('Content-Type', '') != 'application/zip')):
     latest_fw_label = f"{RED}Not available{NC}"
     flash_fw_version = '0.0.0'
     dlurl = None
   else:
     latest_fw_label = flash_fw_version
 
-  if (not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version)))) and requires_upgrade != 'Done':
+  if (not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_flash or (force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version))))) and requires_upgrade != 'Done':
     logger.info(f"")
     logger.info(f"{WHITE}Host: {NC}http://{host}")
     logger.info(f"{WHITE}Device Name: {NC}{device_name}")
@@ -534,7 +647,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
 
-  if dlurl and ((force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)) or requires_upgrade == True or (current_fw_type != mode) or (current_fw_type == mode and is_newer(flash_fw_version, current_fw_version))):
+  if dlurl and ((force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)) or force_flash or requires_upgrade == True or (current_fw_type != mode) or (current_fw_type == mode and is_newer(flash_fw_version, current_fw_version))):
     global upgradeable_devices
     upgradeable_devices += 1
 
@@ -547,8 +660,12 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       keyword = f"{friendly_host} to firmware version {flash_fw_version}"
     if dlurl:
       if exclude and friendly_host in exclude:
-        logger.info("Skipping as device has been excluded...\n")
+        logger.info("Skipping as device has been excluded...")
+        logger.info("")
         return 0
+      elif force_flash:
+        perform_flash = True
+        keyword = f"flashed to version {flash_fw_version}"
       elif force_version and parse_version(flash_fw_version) != parse_version(current_fw_version):
         perform_flash = True
         keyword = f"reflashed version {force_version}"
@@ -571,6 +688,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     elif not dlurl:
       if force_version:
         keyword = f"Version {force_version} is not available..."
+      elif device_info.local_file:
+        keyword = "Incorrect Zip File for device..."
       else:
         keyword = "Is not supported yet..."
       if not quiet_run:
@@ -615,12 +734,13 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         write_network_type(device_info, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
 
 
-def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
+def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
   logger.debug("")
   logger.debug(f"{PURPLE}[Probe Device]{NC}")
   d_info = json.dumps(device, indent = 4)
   logger.trace(f"device_info: {d_info}")
 
+  http_server_started = False
   requires_upgrade = False
   if mode == 'keep':
     flashmode = device['fw_type']
@@ -631,9 +751,30 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
   elif device['fw_type'] == 'stock':
     deviceinfo = StockDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], variant, version)
   if not deviceinfo.get_info():
+    logger.warning("")
     logger.warning(f"{RED}Failed to lookup local information of {device['host']}{NC}")
   else:
-    if flashmode == 'homekit' and deviceinfo.fw_type == 'stock':
+    if local_file:
+      deviceinfo.set_local_file(local_file)
+    if deviceinfo.fw_type == 'stock' and local_file:
+      http_server_started = False
+      loop = 1
+      global webserver_port
+      while not http_server_started:
+        try:
+          logger.info(f"{WHITE}Starting local webserver on port {webserver_port}{NC}")
+          server = StoppableHTTPServer(("", webserver_port), HTTPRequestHandler)
+          http_server_started = True
+        except OSError as err:
+          logger.critical(f"{WHITE}Failed to start server {err} port {webserver_port}{NC}")
+          webserver_port += 1
+          loop += 1
+          if loop == 10:
+            sys.exit(1)
+      thread = threading.Thread(None, server.run)
+      thread.start()
+      http_server_started = True
+    if flashmode == 'homekit' and deviceinfo.fw_type == 'stock' and not local_file:
       deviceinfo.update_to_stock(stock_release_info)
       if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
         requires_upgrade = True
@@ -646,7 +787,8 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
     if deviceinfo.fw_type == "homekit" and float(f"{parse_version(deviceinfo.info['version'])[0]}.{parse_version(deviceinfo.info['version'])[1]}") < 2.1:
       logger.error(f"{WHITE}Host: {NC}{deviceinfo.host}")
       logger.error(f"Version {deviceinfo.info['version']} is to old for this script,")
-      logger.error(f"please update via the device webUI.\n")
+      logger.error(f"please update via the device webUI.")
+      logger.error("")
     else:
       parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
       if requires_upgrade:
@@ -655,9 +797,13 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
         if not is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
           deviceinfo.update_to_homekit(homekit_release_info)
           parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
+    if http_server_started:
+      server.shutdown()
+      thread.join()
 
 
-def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclude, version, variant, hap_setup_code, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
+def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
+  global total_devices
   if hosts:
     for host in hosts:
       logger.debug(f"")
@@ -666,7 +812,15 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclu
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None:
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
-        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
+        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
+    logger.info(f"")
+    if action == 'flash':
+      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
+    else:
+      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
+    if args.log_filename:
+      logger.info(f"Log file created: {args.log_filename}")
+
   else:
     logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
     logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
@@ -692,8 +846,7 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclu
       deviceinfo.get_device_info()
       if deviceinfo.fw_type is not None and (deviceinfo.fw_type in type or type == 'all'):
         device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
-        total_devices += 1
-        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
+        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
@@ -707,8 +860,9 @@ if __name__ == '__main__':
   parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=False, help="Do not ask any confirmation to perform the flash.")
   parser.add_argument('-V', '--version',type=str, action="store", dest="version", default=False, help="Force a particular version.")
   parser.add_argument('--variant', action="store", dest="variant", default=False, help="Prerelease variant name.")
+  parser.add_argument('--local-file', action="store", dest="local_file", default=False, help="Use local file to flash.")
   parser.add_argument('-c', '--hap-setup-code', action="store", dest="hap_setup_code", default=False, help="Configure HomeKit setup code, after flashing.")
-  parser.add_argument('--ip-type', action="store", choices=['dhcp', 'static'], dest="network_type", default=False, help="Configure static IP")
+  parser.add_argument('--ip-type', action="store", choices=['dhcp', 'static'], dest="network_type", default=False, help="Configure network IP type (Static or DHCP)")
   parser.add_argument('--ip', action="store", dest="ipv4_ip", default=False, help="set IP address")
   parser.add_argument('--gw', action="store", dest="ipv4_gw", default=False, help="set Gateway IP address")
   parser.add_argument('--mask', action="store", dest="ipv4_mask", default=False, help="set Subnet mask address")
@@ -751,7 +905,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.2.2"
+  app_version = "2.3.0"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
@@ -765,6 +919,7 @@ if __name__ == '__main__':
   logger.debug(f"silent_run: {args.silent_run}")
   logger.debug(f"version: {args.version}")
   logger.debug(f"exclude: {args.exclude}")
+  logger.debug(f"local_file: {args.local_file}")
   logger.debug(f"variant: {args.variant}")
   logger.debug(f"verbose: {args.verbose}")
   logger.debug(f"hap_setup_code: {args.hap_setup_code}")
@@ -828,4 +983,4 @@ if __name__ == '__main__':
     logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
   else:
     device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.type, args.exclude, args.version,
-                args.variant, args.hap_setup_code, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
+                args.variant, args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
