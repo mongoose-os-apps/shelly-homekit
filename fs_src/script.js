@@ -593,8 +593,11 @@ function updateElement(key, value) {
     case "model":
     case "device_id":
     case "version":
+      el(key).innerHTML = value;
+      break;
     case "fw_build":
-      el(key).innerText = value;
+      el("fw_build1").innerHTML = value.split('/')[0];
+      el("fw_build2").innerHTML = value.split('/')[1];
       break;
     case "name":
       el("device_name").innerText = document.title = value;
@@ -610,10 +613,9 @@ function updateElement(key, value) {
       setValueIfNotModified(wifiPass, value);
       break;
     case "wifi_rssi":
-      if (value !== 0) {
-        el("wifi_rssi").innerText = `RSSI: ${value}`;
-        el("wifi_rssi").style.display = "inline";
-      } else el("wifi_rssi").style.display = "none";
+    case "host":
+      el(key).innerText = value;
+      el(`${key}_container`).style.display = (value !== 0) ? "block" : "none";
       break;
     case "wifi_ip":
       if (value !== undefined) {
@@ -631,12 +633,6 @@ function updateElement(key, value) {
       } else {
         el("wifi_ip").innerText = "Not connected";
       }
-      break;
-    case "host":
-      if (value !== "") {
-        el("host").innerText = `Host: ${value}`;
-        el("host").style.display = "inline";
-      } else el("host").style.display = "none";
       break;
     case "hap_paired":
       el(key).innerText = (value ? "yes" : "no");
@@ -712,6 +708,7 @@ function getInfo() {
 
       // always show system information if data is loaded
       el("sys_container").style.display = "block";
+      el("firmware_container").style.display = "block";
 
       if (data.failsafe_mode) {
         el("notify_failsafe").style.display = "inline";

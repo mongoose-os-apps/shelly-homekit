@@ -60,7 +60,7 @@ h1 {
   margin: 0.6em 0;
 }
 
-.form-control input:not([type=checkbox]), .form-control button {
+.form-control input:not([type=checkbox]) {
   min-width: 10em;
 }
 
@@ -79,6 +79,7 @@ h1 {
 
 .btn label {
   position: relative;
+  min-width: 4em;
 }
 
 .badge {
