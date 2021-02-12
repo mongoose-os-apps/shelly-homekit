@@ -448,6 +448,7 @@ function updateComponent(cd) {
       el(c, "state").checked = cd.state;
       if (cd.apower !== undefined) {
         el(c, "power_stats").innerText = `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
+        el(c, "power_stats_container").style.display = "block";
       }
       selectIfNotModified(el(c, "svc_type"), cd.svc_type);
       if (cd.svc_type == 3) {
