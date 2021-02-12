@@ -217,18 +217,18 @@
   <h1 id="head">Switch</h1>
   <div class="form">
     <div class="">
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="state">off</span>
+      <div class="form-control" id="state_container">
+        <label for="state">Status:</label>
+        <label class="switch">
+          <input type="checkbox" id="state">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="form-control" id="power_stats_container" style="display: none;">
+        <label for="power_stats">Power:</label>
         <span id="power_stats"></span>
+        </label>
       </div>
-      <div class="form-control">
-        <label></label>
-        <button class="btn" id="toggle_btn">
-          <label><span id="set_spinner"></span><span id="btn_label">Turn On</span></label>
-        </button>
-      </div>
-    </div>
     <div class="">
       <div class="form-control">
         <label for="name">Name:</label>

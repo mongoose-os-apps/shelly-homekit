@@ -350,7 +350,7 @@ function findOrAddContainer(cd) {
     case 2: // Lock
       c = el("sw_template").cloneNode(true);
       c.id = elId;
-      el(c, "toggle_btn").onclick = function () {
+      el(c, "state").onchange = function () {
         setComponentState(c, {state: !c.data.state}, el(c, "set_spinner"));
       };
       el(c, "save_btn").onclick = function () {
@@ -429,11 +429,11 @@ function updateComponent(cd) {
       if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
       setValueIfNotModified(el(c, "name"), cd.name);
-      el(c, "state").innerText = (cd.state ? "on" : "off");
+      el(c, "state").checked = cd.state;
       if (cd.apower !== undefined) {
-        el(c, "power_stats").innerText = `, ${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
+        el(c, "power_stats").innerText = `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
+        el(c, "power_stats_container").style.display = "block";
       }
-      el(c, "btn_label").innerText = `Turn ${cd.state ? "Off" : "On"}`;
       selectIfNotModified(el(c, "svc_type"), cd.svc_type);
       if (cd.svc_type == 3) {
         selectIfNotModified(el(c, "valve_type"), cd.valve_type);
