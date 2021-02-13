@@ -877,6 +877,7 @@ void InitApp() {
                          nullptr /* msg */);
   }
 
+  LOG(LL_INFO, ("=== Creating peripherals"));
   CreatePeripherals(&s_inputs, &s_outputs, &s_pms, &s_sys_temp_sensor);
 
   StartService(false /* quiet */);

@@ -17,7 +17,6 @@
 
 #include <cmath>
 
-#include "mgos_rpc.h"
 #include "mgos_sys_config.h"
 
 #include "shelly_input_pin.hpp"
@@ -31,24 +30,29 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  Input *in = new InputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true);
-  in->Init();
-  inputs->emplace_back(in);
+  std::unique_ptr<Input> in1(new InputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true));
+  in1->Init();
+  inputs->emplace_back(std::move(in1));
+  std::unique_ptr<Input> in2(new InputPin(2, 13, 1, MGOS_GPIO_PULL_NONE, true));
+  in2->Init();
+  inputs->emplace_back(std::move(in2));
 
   outputs->emplace_back(new OutputPin(1, 34, 1));
+  outputs->emplace_back(new OutputPin(2, 35, 1));
+
+  std::unique_ptr<MockPowerMeter> pm1(new MockPowerMeter(1));
+  pm1->Init();
+  g_mock_pms.push_back(pm1.get());
+  pms->emplace_back(std::move(pm1));
+  std::unique_ptr<MockPowerMeter> pm2(new MockPowerMeter(2));
+  pm2->Init();
+  g_mock_pms.push_back(pm2.get());
+  pms->emplace_back(std::move(pm2));
 
   g_mock_sys_temp_sensor = new MockTempSensor(33);
   sys_temp->reset(g_mock_sys_temp_sensor);
 
   MockRPCInit();
-  (void) pms;
-}
-
-void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
-                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
-                      HAPAccessoryServerRef *svr) {
-  CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
-                  comps, accs, svr, false /* to_pri_acc */);
 }
 
 }  // namespace shelly
