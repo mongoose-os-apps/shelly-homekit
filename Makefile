@@ -60,17 +60,14 @@ ShellyU: PLATFORM=ubuntu
 ShellyU: build-ShellyU
 	@true
 
-fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js fs_src/logo.svg
+fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js fs_src/logo.svg Makefile
 	cat fs_src/index.html | \
-	sed "s/.*<link.*rel=\"stylesheet\".*/<style>\n\n<\/style>/g" | \
-	sed -e '/<style>/ r fs_src/style.css'  | \
-	sed "s/.*<script.*src=\"script.js\".*/<script>\n\n<\/script>/g"  | \
-	sed -e '/<script>/ r fs_src/script.js' | \
-	sed 's/.*<img.*src="logo.svg".*/<!-- svg -->/g'  | \
-	sed -e '/<!-- svg -->/ r fs_src/logo.svg' | \
+	sed "s/.*<link.*rel=\"stylesheet\".*/<style>\n\n<\/style>/g" | sed -e '/<style>/ r fs_src/style.css' | \
+	sed "s/.*<script.*src=\"script.js\".*/<script>\n\n<\/script>/g" | sed -e '/<script>/ r fs_src/script.js' | \
+	sed -e '/.*<img.*src=".\/logo.svg".*/ {' -e 'r fs_src/logo.svg' -e 'd' -e '}' | \
 	gzip -9 -c > fs/index.html.gz
 
-build-%: fs/index.html.gz
+build-%: fs/index.html.gz Makefile
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
 	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL)
 ifeq "$(RELEASE)" "1"
