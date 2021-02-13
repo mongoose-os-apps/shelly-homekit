@@ -293,11 +293,12 @@ class Device:
       s.close()
       with zipfile.ZipFile(self.local_file, "r") as zfile:
         for name in zfile.namelist():
-          if re.search(r'\.json$', name) is not None:
+          if re.search(r'manifest.json$', name) is not None:
             logger.debug(f"zipfile: {name}")
             mfile = zfile.read(name)
             manifest_file = json.loads(mfile)
             logger.debug(f"manifest: {json.dumps(manifest_file, indent = 4)}")
+            break
       manifest_version = manifest_file['version']
       manifest_name = manifest_file['name']
       if manifest_version == '1.0':
