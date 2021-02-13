@@ -451,8 +451,8 @@ class StockDevice(Device):
 
 def parse_version(vs):
   # 1.9.2_1L
-  # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest
-  v = re.search("^(?P<major>\d+).(?P<minor>\d+).(?P<patch>\d+)(?:_(?P<model>[a-zA-Z0-9]*))?(?:-(?P<prerelease>[a-zA-Z]*)(?P<prerelease_seq>\d*))?$", vs)
+  # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2_autocheck
+  v = re.search("^(?P<major>\d+).(?P<minor>\d+).(?P<patch>\d+)(?:_(?P<model>[a-zA-Z0-9]*))?(?:-(?P<prerelease>[a-zA-Z0-9_]*)?(?P<prerelease_seq>\d*))?$", vs)
   logger.trace(f"group:{v.groupdict()}")
   major = int(v.group('major'))
   minor = int(v.group('minor'))
