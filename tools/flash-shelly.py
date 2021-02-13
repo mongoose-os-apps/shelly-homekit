@@ -738,8 +738,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
   logger.debug("")
   logger.debug(f"{PURPLE}[Probe Device]{NC}")
-  d_info = json.dumps(device, indent = 4)
-  logger.trace(f"device_info: {d_info}")
+  logger.trace(f"device_info: {json.dumps(device, indent = 4)}")
 
   http_server_started = False
   requires_upgrade = False
