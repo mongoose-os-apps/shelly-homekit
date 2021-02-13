@@ -293,7 +293,7 @@ class Device:
       s.close()
       with zipfile.ZipFile(self.local_file, "r") as zfile:
         for name in zfile.namelist():
-          if re.search(r'manifest.json$', name) is not None:
+          if name.endswith('manifest.json'):
             logger.debug(f"zipfile: {name}")
             mfile = zfile.read(name)
             manifest_file = json.loads(mfile)
