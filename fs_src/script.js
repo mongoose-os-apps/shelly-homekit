@@ -849,9 +849,14 @@ function onLoad() {
       // check for update only once when loading the page (not each time in getInfo)
       if (lastInfo.wifi_rssi !== 0) {
         var last_update_check = parseInt(getCookie("last_update_check"));
+        var cached_curVersion = getCookie("cached_curVersion");
+        var curVersion = lastInfo.version
         var now = new Date();
         console.log("Last update check:", last_update_check, new Date(last_update_check));
         if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
+          checkUpdate();
+        }
+        if (curVersion > cached_curVersion) {
           checkUpdate();
         }
         el("notify_update").style.display = (getCookie("update_available") ? "inline" : "none");
@@ -1016,6 +1021,7 @@ async function checkUpdate() {
         if (cfg.urls) updateURL = cfg.urls[model];
       }
       console.log("Version:", latestVersion, "URL:", updateURL);
+      setCookie("cached_curVersion", curVersion);
       if (!latestVersion || !updateURL) {
         console.log("Update section not found:", model, curVersion, cfg);
         e.innerHTML = errMsg;
