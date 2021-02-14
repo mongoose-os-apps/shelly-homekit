@@ -359,8 +359,12 @@ class Device:
         self.flash_fw_version = self.parse_stock_version(stock_model_info['beta_ver']) if 'beta_ver' in stock_model_info else self.parse_stock_version(stock_model_info['version'])
         self.dlurl = stock_model_info['beta_url'] if 'beta_ver' in stock_model_info else stock_model_info['url']
       else:
-        self.flash_fw_version = self.parse_stock_version(stock_model_info['version'])
-        self.dlurl = stock_model_info['url']
+        try:
+          self.flash_fw_version = self.parse_stock_version(stock_model_info['version']) if 'version' in stock_model_info else self.parse_stock_version(stock_model_info['beta_url'])
+          self.dlurl = stock_model_info['url']
+        except:
+          self.flash_fw_version = '0.0.0'
+          self.dlurl = None
     else:
       self.flash_label = "Manual:"
       self.flash_fw_version = self.version
