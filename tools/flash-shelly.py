@@ -139,8 +139,11 @@ class MyListener:
 
   def add_service(self, zeroconf, type, device):
     logger.trace(f"[Device Scan] found device: {device}")
+    info = zeroconf.get_service_info(type, device)
     device = device.replace('._http._tcp.local.', '')
-    self.queue.put(Device(device))
+    if info:
+      logger.trace(f"Device {device} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
+      self.queue.put(Device(device, socket.inet_ntoa(info.addresses[0])))
 
   def remove_service(self, *args, **kwargs):
     pass
@@ -167,25 +170,30 @@ class Device:
     # check if host is reachable
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
-    try:
-      # use supplied IP supplied
-      ipaddress.IPv4Address(host)
-      test_host = host
-    except ipaddress.AddressValueError as err:
-      # resolve IP from hostname
-      self.host = f'{host}.local' if '.local' not in host else host
-      test_host = self.host
+    if not self.wifi_ip:
+      try:
+        # use manual IP supplied
+        ipaddress.IPv4Address(host)
+        test_host = host
+      except ipaddress.AddressValueError as err:
+        # resolve IP from manual hostname
+        self.host = f'{host}.local' if '.local' not in host else host
+        test_host = self.host
+    else:
+      test_host = self.wifi_ip
     try:
       sock.connect((test_host, 80))
-      self.wifi_ip = socket.gethostbyname(test_host) if not self.wifi_ip else host
       logger.debug(f"Hostname: {host} is Online")
-      return True
+      host_is_reachable = True
     except socket.error:
       if not is_flashing:
         logger.error(f"")
         logger.error(f"{RED}Could not resolve host: {test_host}{NC}")
-      return False
+      host_is_reachable = False
     sock.close()
+    if host_is_reachable and not self.wifi_ip:
+        self.wifi_ip = socket.gethostbyname(test_host)
+    return host_is_reachable
 
   def get_device_url(self, is_flashing=False):
     self.device_url = None
@@ -359,8 +367,12 @@ class Device:
         self.flash_fw_version = self.parse_stock_version(stock_model_info['beta_ver']) if 'beta_ver' in stock_model_info else self.parse_stock_version(stock_model_info['version'])
         self.dlurl = stock_model_info['beta_url'] if 'beta_ver' in stock_model_info else stock_model_info['url']
       else:
-        self.flash_fw_version = self.parse_stock_version(stock_model_info['version'])
-        self.dlurl = stock_model_info['url']
+        try:
+          self.flash_fw_version = self.parse_stock_version(stock_model_info['version']) if 'version' in stock_model_info else self.parse_stock_version(stock_model_info['beta_url'])
+          self.dlurl = stock_model_info['url']
+        except:
+          self.flash_fw_version = '0.0.0'
+          self.dlurl = None
     else:
       self.flash_label = "Manual:"
       self.flash_fw_version = self.version
@@ -906,7 +918,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.3.1"
+  app_version = "2.3.3"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
