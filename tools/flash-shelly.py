@@ -397,11 +397,11 @@ class HomeKitDevice(Device):
     return True
 
   def update_to_homekit(self, release_info=None):
-    logger.debug('Mode: HomeKit To HomeKit')
+    logger.debug("Mode: HomeKit To HomeKit")
     self.update_homekit(release_info)
 
   def update_to_stock(self, release_info=None):
-    logger.debug('Mode: HomeKit To Stock')
+    logger.debug("Mode: HomeKit To Stock")
     self.update_stock(release_info)
 
   def flash_firmware(self):
@@ -437,11 +437,11 @@ class StockDevice(Device):
     return True
 
   def update_to_homekit(self, release_info=None):
-    logger.debug('Mode: Stock To HomeKit')
+    logger.debug("Mode: Stock To HomeKit")
     self.update_homekit(release_info)
 
   def update_to_stock(self, release_info=None):
-    logger.debug('Mode: Stock To Stock')
+    logger.debug("Mode: Stock To Stock")
     self.update_stock(release_info)
 
   def flash_firmware(self):
