@@ -429,7 +429,7 @@ function findOrAddContainer(cd) {
       };
       break;
     default:
-      console.log("Unhandled component type: " + cd.type);
+      console.log(`Unhandled component type: ${cd.type}`);
   }
   if (c) {
     c.style.display = "block";
@@ -587,7 +587,7 @@ function updateComponent(cd) {
       el(c, "status").innerText = statusText;
       break;
     default:
-      console.log("Unhandled component type: " + cd.type);
+      console.log(`Unhandled component type: ${cd.type}`);
   }
   c.data = cd;
 }
