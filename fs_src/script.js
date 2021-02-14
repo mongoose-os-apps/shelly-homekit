@@ -603,8 +603,7 @@ function updateElement(key, value) {
       el(key).innerHTML = value;
       break;
     case "fw_build":
-      el("fw_build1").innerHTML = value.split('/')[0];
-      el("fw_build2").innerHTML = value.split('/')[1];
+      el("fw_build").innerHTML = value;
       break;
     case "name":
       el("device_name").innerText = document.title = value;
