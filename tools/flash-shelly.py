@@ -100,6 +100,8 @@ failed_flashed_devices = 0
 arch = platform.system()
 stock_release_info = None
 homekit_release_info = None
+tried_to_get_remote_homekit = False
+tried_to_get_remote_stock = False
 
 def upgrade_pip():
   logger.info("Updating pip...")
@@ -462,9 +464,8 @@ class StockDevice(Device):
 
     logger.trace(response.text)
 
-
-def get_remote_info():
-  logger.debug(f"{PURPLE}[Get Remote Info]{NC}")
+def get_stock_release_info():
+  stock_release_info = False
   try:
     fp = requests.get("https://api.shelly.cloud/files/firmware", timeout=3)
     logger.debug(f"stock_release_info status code: {fp.status_code}")
@@ -473,6 +474,15 @@ def get_remote_info():
   except requests.exceptions.RequestException as err:
     logger.critical(f"{RED}CRITICAL:{NC} {err}")
   logger.trace(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
+  if not stock_release_info:
+    logger.error("")
+    logger.error(f"{RED}Failed to lookup online stock firmware information{NC}")
+    logger.error("For more information please point your web browser to:")
+    logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
+  return stock_release_info
+
+def get_homekit_release_info():
+  homekit_release_info = False
   try:
     fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
     logger.debug(f"homekit_release_info status code: {fp.status_code}")
@@ -481,14 +491,12 @@ def get_remote_info():
   except requests.exceptions.RequestException as err:
     logger.critical(f"{RED}CRITICAL:{NC} {err}")
   logger.trace(f"homekit_release_info: {json.dumps(homekit_release_info, indent = 4)}")
-
-  if not stock_release_info or not homekit_release_info:
-    logger.error(f"{RED}Failed to lookup online version information{NC}")
+  if not homekit_release_info:
+    logger.error("")
+    logger.error(f"{RED}Failed to lookup online homekit firmware information{NC}")
     logger.error("For more information please point your web browser to:")
     logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
-    return False
-  else:
-    return(stock_release_info, homekit_release_info)
+  return homekit_release_info
 
 def parse_version(vs):
   # 1.9.2_1L
@@ -782,12 +790,17 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
   logger.debug(f"{PURPLE}[Probe Device]{NC}")
   logger.trace(f"device_info: {json.dumps(device, indent = 4)}")
 
-  global stock_release_info, homekit_release_info
-  if not stock_release_info or not homekit_release_info:
-    (stock_release_info, homekit_release_info) = get_remote_info()
+  global stock_release_info, homekit_release_info, tried_to_get_remote_homekit, tried_to_get_remote_stock
+  if not stock_release_info and not tried_to_get_remote_stock:
+    stock_release_info = get_stock_release_info()
+    tried_to_get_remote_stock = True
+  if not homekit_release_info and not tried_to_get_remote_homekit:
+    homekit_release_info = get_homekit_release_info()
+    tried_to_get_remote_homekit = True
 
   http_server_started = False
   requires_upgrade = False
+  got_remote_info = False
   if mode == 'keep':
     flashmode = device['fw_type']
   else:
@@ -820,22 +833,27 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
       thread = threading.Thread(None, server.run)
       thread.start()
       http_server_started = True
-    if flashmode == 'homekit' and deviceinfo.fw_type == 'stock' and not local_file:
-      deviceinfo.update_to_stock(stock_release_info)
-      if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
-        requires_upgrade = True
-      else:
-        deviceinfo.update_to_homekit(homekit_release_info)
-    elif flashmode == 'homekit':
+    if deviceinfo.fw_type == 'stock' and flashmode == 'homekit' and not local_file:
+      if stock_release_info and homekit_release_info:
+        deviceinfo.update_to_stock(stock_release_info)
+        if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
+          requires_upgrade = True
+          got_remote_info = True
+        else:
+          deviceinfo.update_to_homekit(homekit_release_info)
+          got_remote_info = True
+    elif homekit_release_info and flashmode == 'homekit':
       deviceinfo.update_to_homekit(homekit_release_info)
-    elif flashmode == 'stock':
+      got_remote_info = True
+    elif stock_release_info and flashmode == 'stock':
       deviceinfo.update_to_stock(stock_release_info)
-    if deviceinfo.fw_type == "homekit" and float(f"{parse_version(deviceinfo.info['version'])[0]}.{parse_version(deviceinfo.info['version'])[1]}") < 2.1:
+      got_remote_info = True
+    if got_remote_info and deviceinfo.fw_type == "homekit" and float(f"{parse_version(deviceinfo.info['version'])[0]}.{parse_version(deviceinfo.info['version'])[1]}") < 2.1:
       logger.error(f"{WHITE}Host: {NC}{deviceinfo.host}")
       logger.error(f"Version {deviceinfo.info['version']} is to old for this script,")
       logger.error(f"please update via the device webUI.")
       logger.error("")
-    else:
+    elif got_remote_info:
       parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
       if requires_upgrade:
         requires_upgrade = 'Done'
