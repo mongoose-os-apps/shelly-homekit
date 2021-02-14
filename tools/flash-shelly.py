@@ -163,7 +163,7 @@ class Device:
     self.flash_label = "Latest:"
     self.force_flash = False
 
-  def is_host_reachable(self, host):
+  def is_host_reachable(self, host, is_flashing=False):
     # check if host is reachable
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
@@ -181,14 +181,15 @@ class Device:
       logger.debug(f"Hostname: {host} is Online")
       return True
     except socket.error:
-      logger.error(f"")
-      logger.error(f"{RED}Could not resolve host: {test_host}{NC}")
+      if not is_flashing:
+        logger.error(f"")
+        logger.error(f"{RED}Could not resolve host: {test_host}{NC}")
       return False
     sock.close()
 
-  def get_device_url(self):
+  def get_device_url(self, is_flashing=False):
     self.device_url = None
-    if self.is_host_reachable(self.host):
+    if self.is_host_reachable(self.host, is_flashing):
       try:
         homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
         stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings', timeout=3)
@@ -203,9 +204,9 @@ class Device:
     logger.trace(f"Device URL: {self.device_url}")
     return self.device_url
 
-  def get_device_info(self):
+  def get_device_info(self, is_flashing=False):
     info = None
-    if self.get_device_url():
+    if self.get_device_url(is_flashing):
       try:
         fp = requests.get(self.device_url, timeout=3)
         if fp.status_code == 200:
@@ -232,8 +233,8 @@ class Device:
     self.flash_fw_version = version
     self.force_flash = True
 
-  def get_current_version(self): # used when flashing between formware versions.
-    info = self.get_device_info()
+  def get_current_version(self, is_flashing=False): # used when flashing between formware versions.
+    info = self.get_device_info(is_flashing)
     if not info:
       return None
     if self.fw_type == 'homekit':
@@ -532,7 +533,7 @@ def write_flash(device_info):
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
     elif n == 30:
       logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
-    onlinecheck = device_info.get_current_version()
+    onlinecheck = device_info.get_current_version(is_flashing=True)
     time.sleep(1)
     n += 1
     if onlinecheck == device_info.flash_fw_version:
@@ -905,7 +906,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.3.0"
+  app_version = "2.3.1"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
