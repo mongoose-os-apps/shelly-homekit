@@ -139,8 +139,10 @@ class MyListener:
 
   def add_service(self, zeroconf, type, device):
     logger.trace(f"[Device Scan] found device: {device}")
+    info = zeroconf.get_service_info(type, device)
     device = device.replace('._http._tcp.local.', '')
-    self.queue.put(Device(device))
+    if info:
+      self.queue.put(Device(device, socket.inet_ntoa(info.addresses[0])))
 
   def remove_service(self, *args, **kwargs):
     pass
