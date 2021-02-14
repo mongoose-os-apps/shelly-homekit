@@ -16,59 +16,18 @@
  */
 
 #pragma once
-
-#include <memory>
-#include <vector>
-
-#include "mgos_hap.hpp"
-#include "mgos_sys_config.h"
-#include "mgos_timers.h"
-
-#include "shelly_common.hpp"
-#include "shelly_component.hpp"
-#include "shelly_input.hpp"
-#include "shelly_output.hpp"
-#include "shelly_pm.hpp"
+#include "shelly_hap_stateless_switch_base.hpp"
 
 namespace shelly {
 namespace hap {
 
-// Common base for Switch, Outlet and Lock services.
-class StatelessSwitch : public Component, public mgos::hap::Service {
+class StatelessSwitch : public StatelessSwitchBase {
  public:
-  enum class InMode {
-    kMomentary = 0,
-    kToggleShort = 1,
-    kToggleShortLong = 2,
-  };
-
   StatelessSwitch(int id, Input *in, struct mgos_config_in_ssw *cfg);
   virtual ~StatelessSwitch();
 
   // Component interface impl.
-  Status Init() override;
   Type type() const override;
-  std::string name() const override;
-  StatusOr<std::string> GetInfo() const override;
-  StatusOr<std::string> GetInfoJSON() const override;
-  Status SetConfig(const std::string &config_json,
-                   bool *restart_required) override;
-  Status SetState(const std::string &state_json) override;
-
- private:
-  void InputEventHandler(Input::Event ev, bool state);
-
-  void RaiseEvent(uint8_t ev);
-
-  Input *const in_;
-  struct mgos_config_in_ssw *cfg_;
-
-  Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
-
-  uint8_t last_ev_ = 0;
-  double last_ev_ts_ = 0;
-
-  StatelessSwitch(const StatelessSwitch &other) = delete;
 };
 
 }  // namespace hap

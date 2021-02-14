@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_stateless_switch.hpp"
+#include "shelly_hap_doorbell.hpp"
+
+#include "HAPUUID.h"
 
 namespace shelly {
 namespace hap {
 
-StatelessSwitch::StatelessSwitch(int id, Input *in,
-                                 struct mgos_config_in_ssw *cfg)
-    : StatelessSwitchBase(
-          id, in, cfg, SHELLY_HAP_IID_BASE_STATELESS_SWITCH,
-          &kHAPServiceType_StatelessProgrammableSwitch,
-          kHAPServiceDebugDescription_StatelessProgrammableSwitch) {
+const HAPUUID kHAPServiceType_Doorbell = HAPUUIDCreateAppleDefined(0x121);
+
+Doorbell::Doorbell(int id, Input *in, struct mgos_config_in_ssw *cfg)
+    : StatelessSwitchBase(id, in, cfg, SHELLY_HAP_IID_BASE_DOORBELL,
+                          &kHAPServiceType_Doorbell, "service.doorbell") {
 }
 
-StatelessSwitch::~StatelessSwitch() {
+Doorbell::~Doorbell() {
 }
 
-Component::Type StatelessSwitch::type() const {
-  return Type::kStatelessSwitch;
+Component::Type Doorbell::type() const {
+  return Type::kDoorbell;
 }
 
 }  // namespace hap

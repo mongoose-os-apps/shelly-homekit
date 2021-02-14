@@ -34,6 +34,7 @@ class Component {
     kMotionSensor = 7,
     kOccupancySensor = 8,
     kContactSensor = 9,
+    kDoorbell = 10,
     kMax,
   };
 
