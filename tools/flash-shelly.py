@@ -142,6 +142,7 @@ class MyListener:
     info = zeroconf.get_service_info(type, device)
     device = device.replace('._http._tcp.local.', '')
     if info:
+      logger.trace(f"Device {device} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
       self.queue.put(Device(device, socket.inet_ntoa(info.addresses[0])))
 
   def remove_service(self, *args, **kwargs):
@@ -169,16 +170,17 @@ class Device:
     # check if host is reachable
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
-    try:
-      # use manual IP supplied
-      ipaddress.IPv4Address(host)
-      test_host = host
-      if not self.wifi_ip:
-        self.wifi_ip = test_host
-    except ipaddress.AddressValueError as err:
-      # resolve IP from manual hostname
-      self.host = f'{host}.local' if '.local' not in host else host
-      test_host = self.host
+    if not self.wifi_ip:
+      try:
+        # use manual IP supplied
+        ipaddress.IPv4Address(host)
+        test_host = host
+      except ipaddress.AddressValueError as err:
+        # resolve IP from manual hostname
+        self.host = f'{host}.local' if '.local' not in host else host
+        test_host = self.host
+    else:
+      test_host = self.wifi_ip
     try:
       sock.connect((test_host, 80))
       logger.debug(f"Hostname: {host} is Online")
