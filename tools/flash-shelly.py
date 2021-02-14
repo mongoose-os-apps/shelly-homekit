@@ -98,6 +98,8 @@ upgradeable_devices = 0
 flashed_devices = 0
 failed_flashed_devices = 0
 arch = platform.system()
+stock_release_info = None
+homekit_release_info = None
 
 def upgrade_pip():
   logger.info("Updating pip...")
@@ -138,11 +140,10 @@ class MyListener:
     self.queue = queue.Queue()
 
   def add_service(self, zeroconf, type, device):
-    logger.trace(f"[Device Scan] found device: {device}")
     info = zeroconf.get_service_info(type, device)
     device = device.replace('._http._tcp.local.', '')
     if info:
-      logger.trace(f"Device {device} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
+      logger.trace(f"[Device Scan] found device: {device} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
       self.queue.put(Device(device, socket.inet_ntoa(info.addresses[0])))
 
   def remove_service(self, *args, **kwargs):
@@ -462,6 +463,33 @@ class StockDevice(Device):
     logger.trace(response.text)
 
 
+def get_remote_info():
+  logger.debug(f"{PURPLE}[Get Remote Info]{NC}")
+  try:
+    fp = requests.get("https://api.shelly.cloud/files/firmware", timeout=3)
+    logger.debug(f"stock_release_info status code: {fp.status_code}")
+    if fp.status_code == 200:
+      stock_release_info = json.loads(fp.content)
+  except requests.exceptions.RequestException as err:
+    logger.critical(f"{RED}CRITICAL:{NC} {err}")
+  logger.trace(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
+  try:
+    fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
+    logger.debug(f"homekit_release_info status code: {fp.status_code}")
+    if fp.status_code == 200:
+      homekit_release_info = json.loads(fp.content)
+  except requests.exceptions.RequestException as err:
+    logger.critical(f"{RED}CRITICAL:{NC} {err}")
+  logger.trace(f"homekit_release_info: {json.dumps(homekit_release_info, indent = 4)}")
+
+  if not stock_release_info or not homekit_release_info:
+    logger.error(f"{RED}Failed to lookup online version information{NC}")
+    logger.error("For more information please point your web browser to:")
+    logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
+    return False
+  else:
+    return(stock_release_info, homekit_release_info)
+
 def parse_version(vs):
   # 1.9.2_1L
   # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2_autocheck
@@ -491,6 +519,7 @@ def is_newer(v1, v2):
     return False
 
 def write_network_type(device_info, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
+  logger.debug(f"{PURPLE}[Write Network Type]{NC}")
   wifi_ip = device_info.wifi_ip
   if device_info.fw_type == 'homekit':
     if network_type == 'static':
@@ -753,6 +782,10 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
   logger.debug(f"{PURPLE}[Probe Device]{NC}")
   logger.trace(f"device_info: {json.dumps(device, indent = 4)}")
 
+  global stock_release_info, homekit_release_info
+  if not stock_release_info or not homekit_release_info:
+    (stock_release_info, homekit_release_info) = get_remote_info()
+
   http_server_started = False
   requires_upgrade = False
   if mode == 'keep':
@@ -918,7 +951,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.3.3"
+  app_version = "2.3.4"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
@@ -973,27 +1006,5 @@ if __name__ == '__main__':
     parser.print_help()
     sys.exit(1)
 
-  try:
-    fp = requests.get("https://api.shelly.cloud/files/firmware", timeout=3)
-    logger.debug(f"stock_release_info status code: {fp.status_code}")
-    if fp.status_code == 200:
-      stock_release_info = json.loads(fp.content)
-  except requests.exceptions.RequestException as err:
-    logger.critical(f"{RED}CRITICAL:{NC} {err}")
-  logger.trace(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
-  try:
-    fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
-    logger.debug(f"homekit_release_info status code: {fp.status_code}")
-    if fp.status_code == 200:
-      homekit_release_info = json.loads(fp.content)
-  except requests.exceptions.RequestException as err:
-    logger.critical(f"{RED}CRITICAL:{NC} {err}")
-  logger.trace(f"homekit_release_info: {json.dumps(homekit_release_info, indent = 4)}")
-
-  if not stock_release_info or not homekit_release_info:
-    logger.error(f"{RED}Failed to lookup online version information{NC}")
-    logger.error("For more information please point your web browser to:")
-    logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
-  else:
-    device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.type, args.exclude, args.version,
-                args.variant, args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
+  device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.type, args.exclude, args.version, args.variant,
+              args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
