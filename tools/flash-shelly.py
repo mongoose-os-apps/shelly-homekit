@@ -168,24 +168,28 @@ class Device:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
     try:
-      # use supplied IP supplied
+      # use manual IP supplied
       ipaddress.IPv4Address(host)
       test_host = host
+      if not self.wifi_ip:
+        self.wifi_ip = test_host
     except ipaddress.AddressValueError as err:
-      # resolve IP from hostname
+      # resolve IP from manual hostname
       self.host = f'{host}.local' if '.local' not in host else host
       test_host = self.host
     try:
       sock.connect((test_host, 80))
-      self.wifi_ip = socket.gethostbyname(test_host) if not self.wifi_ip else host
       logger.debug(f"Hostname: {host} is Online")
-      return True
+      host_is_reachable = True
     except socket.error:
       if not is_flashing:
         logger.error(f"")
         logger.error(f"{RED}Could not resolve host: {test_host}{NC}")
-      return False
+      host_is_reachable = False
     sock.close()
+    if host_is_reachable and not self.wifi_ip:
+        self.wifi_ip = socket.gethostbyname(test_host)
+    return host_is_reachable
 
   def get_device_url(self, is_flashing=False):
     self.device_url = None
