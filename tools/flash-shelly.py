@@ -363,7 +363,7 @@ class Device:
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
     self.flash_fw_type = 'stock'
-    stock_model_info = release_info['data'][self.stock_model]
+    stock_model_info = release_info['data'][self.stock_model] if self.stock_model in release_info['data'] else None
     if self.local_file:
       self.parse_local_file()
     elif not self.version:
