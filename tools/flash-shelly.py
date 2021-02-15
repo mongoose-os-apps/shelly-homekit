@@ -181,21 +181,21 @@ class Device:
         test_host = host
         self.host = host
       except ipaddress.AddressValueError as err:
-        # resolve IP from manual hostname
         test_host = self.host
     else:
       test_host = self.wifi_ip
     try:
       sock.connect((test_host, 80))
-      logger.debug(f"Hostname: {host} is Online")
+      logger.debug(f"Device: {test_host} is Online")
       host_is_reachable = True
     except socket.error:
       if not is_flashing:
         logger.error(f"")
-        logger.error(f"{RED}Could not resolve host: {self.host}{NC}")
+        logger.error(f"{RED}Could not connect to host: {test_host}{NC}")
       host_is_reachable = False
     sock.close()
     if host_is_reachable and not self.wifi_ip:
+      # resolve IP from manual hostname
         self.wifi_ip = socket.gethostbyname(test_host)
     return host_is_reachable
 
