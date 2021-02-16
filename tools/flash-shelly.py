@@ -196,7 +196,7 @@ class Device:
     sock.close()
     if host_is_reachable and not self.wifi_ip:
       # resolve IP from manual hostname
-        self.wifi_ip = socket.gethostbyname(test_host)
+      self.wifi_ip = socket.gethostbyname(test_host)
     return host_is_reachable
 
   def get_device_url(self, is_flashing=False):
