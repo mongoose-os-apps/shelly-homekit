@@ -28,6 +28,10 @@ button {
   background: #0071e3;
 }
 
+.button-container{
+  text-align: center;
+}
+
 button label {
   position: relative;
   cursor: pointer;
@@ -58,13 +62,19 @@ h1 {
 .container {
   padding: 0 1em;
   margin: 1em auto;
-  max-width: 640px;
+  max-width: 440px;
   background: #fefefe;
   border-radius: 10px;
 }
 
 .form-control {
-  margin: 0.6em 0;
+  margin: 0.4em 0;
+}
+
+.form-wrap-control {
+  margin: 0.4em 0;
+  display: inline-flex;
+  flex-wrap: inherit;
 }
 
 .form-control input:not([type=checkbox]) {
@@ -72,7 +82,7 @@ h1 {
 }
 
 .form label {
-  min-width: 9.0em;
+  min-width: 9.5em;
   display: inline-block;
 }
 
@@ -127,7 +137,7 @@ a.badge {
 }
 
 #header_container {
-  padding: 10px;
+  padding: 0px 16px 10px 16px;
 }
 
 .title {
