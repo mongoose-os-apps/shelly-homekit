@@ -232,10 +232,11 @@ class Device:
 
   def parse_stock_version(self, version):
     # stock version is '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
-    if '/v' in version:
-      parsed_version = version.split('/v')[1].split('@')[0]
-    else:
-      parsed_version = '0.0.0'
+    v = re.search("/v(?P<ver>.*)@(?P<build>.*)", version)
+    debug_info = v.groupdict()  if v is not None else v
+    logger.trace(f"stock version group:{debug_info}")
+    parsed_version = v.group('ver') if v is not None else '0.0.0'
+    parsed_build = v.group('build') if v is not None else '0'
     return parsed_version
 
   def set_local_file(self, local_file):
