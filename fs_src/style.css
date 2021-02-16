@@ -62,7 +62,7 @@ h1 {
 .container {
   padding: 0 1em;
   margin: 1em auto;
-  max-width: 420px;
+  max-width: 440px;
   background: #fefefe;
   border-radius: 10px;
 }
@@ -76,7 +76,7 @@ h1 {
 }
 
 .form label {
-  min-width: 9.0em;
+  min-width: 9.5em;
   display: inline-block;
 }
 
