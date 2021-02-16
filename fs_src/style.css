@@ -142,7 +142,7 @@ a.badge {
 
 .title {
   color: #454955;
-  font-size: 36px;
+  font-size: 34px;
   font-weight: lighter;
   text-align: left;
   line-height: normal;
@@ -150,7 +150,7 @@ a.badge {
 
 #logo {
   display: block;
-  margin: 8px;
+  margin: 8px 0px;
   float: left;
   width: 80px;
   height: 80px;
