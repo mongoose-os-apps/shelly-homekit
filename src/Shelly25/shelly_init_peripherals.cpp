@@ -28,13 +28,17 @@ namespace shelly {
 static struct mgos_ade7953 *s_ade7953 = NULL;
 
 static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
-  const struct mgos_ade7953_config ade7953_cfg = {
+  const struct mgos_config_ade7953 ade7953_cfg = {
       .voltage_scale = .0000382602,
       .voltage_offset = -0.068,
-      .current_scale = {0.00000949523, 0.00000949523},
-      .current_offset = {-0.017, -0.017},
-      .apower_scale = {(1 / 164.0), (1 / 164.0)},
-      .aenergy_scale = {(1 / 25240.0), (1 / 25240.0)},
+      .current_scale_0 = 0.00000949523,
+      .current_scale_1 = 0.00000949523,
+      .current_offset_0 = -0.017,
+      .current_offset_1 = -0.017,
+      .apower_scale_0 = (1 / 164.0),
+      .apower_scale_1 = (1 / 164.0),
+      .aenergy_scale_0 = (1 / 25240.0),
+      .aenergy_scale_1 = (1 / 25240.0),
   };
 
   s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
