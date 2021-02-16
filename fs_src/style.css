@@ -31,7 +31,7 @@ button {
 button label {
   position: relative;
   cursor: pointer;
-  min-width: 4em !important;
+  min-width: 10em;
 }
 
 a, a:link, a:visited {
