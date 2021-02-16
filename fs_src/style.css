@@ -35,7 +35,7 @@ button {
 button label {
   position: relative;
   cursor: pointer;
-  min-width: 10em;
+  min-width: 9em !important;
 }
 
 a, a:link, a:visited {
@@ -82,7 +82,7 @@ h1 {
 }
 
 .form label {
-  min-width: 9.5em;
+  min-width: 9.0em;
   display: inline-block;
 }
 
