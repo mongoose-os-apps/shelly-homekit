@@ -181,22 +181,22 @@ class Device:
         test_host = host
         self.host = host
       except ipaddress.AddressValueError as err:
-        # resolve IP from manual hostname
         test_host = self.host
     else:
       test_host = self.wifi_ip
     try:
       sock.connect((test_host, 80))
-      logger.debug(f"Hostname: {host} is Online")
+      logger.debug(f"Device: {test_host} is Online")
       host_is_reachable = True
     except socket.error:
       if not is_flashing:
         logger.error(f"")
-        logger.error(f"{RED}Could not resolve host: {self.host}{NC}")
+        logger.error(f"{RED}Could not connect to host: {test_host}{NC}")
       host_is_reachable = False
     sock.close()
     if host_is_reachable and not self.wifi_ip:
-        self.wifi_ip = socket.gethostbyname(test_host)
+      # resolve IP from manual hostname
+      self.wifi_ip = socket.gethostbyname(test_host)
     return host_is_reachable
 
   def get_device_url(self, is_flashing=False):
@@ -232,10 +232,11 @@ class Device:
 
   def parse_stock_version(self, version):
     # stock version is '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
-    if '/v' in version:
-      parsed_version = version.split('/v')[1].split('@')[0]
-    else:
-      parsed_version = '0.0.0'
+    v = re.search("/v(?P<ver>.*)@(?P<build>.*)", version)
+    debug_info = v.groupdict()  if v is not None else v
+    logger.trace(f"stock version group:{debug_info}")
+    parsed_version = v.group('ver') if v is not None else '0.0.0'
+    parsed_build = v.group('build') if v is not None else '0'
     return parsed_version
 
   def set_local_file(self, local_file):
@@ -363,7 +364,7 @@ class Device:
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
     self.flash_fw_type = 'stock'
-    stock_model_info = release_info['data'][self.stock_model]
+    stock_model_info = release_info['data'][self.stock_model] if self.stock_model in release_info['data'] else None
     if self.local_file:
       self.parse_local_file()
     elif not self.version:
@@ -970,7 +971,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.3.5"
+  app_version = "2.3.6"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
