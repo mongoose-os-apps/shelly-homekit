@@ -28,6 +28,10 @@ button {
   background: #0071e3;
 }
 
+#button-container{
+    text-align: center;
+}
+
 button label {
   position: relative;
   cursor: pointer;
