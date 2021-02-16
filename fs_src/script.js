@@ -106,28 +106,47 @@ el("wifi_save_btn").onclick = function () {
     },
     reboot: true,
   };
-  if (el("wifi_pass").value != "***") data.config.wifi.sta.pass = el("wifi_pass").value;
+  if (el("wifi_pass").value && el("wifi_pass").value.length >= 8) {
+    data.config.wifi.sta.pass = el("wifi_pass").value;
+  }
+  var oldPauseAutoRefresh = pauseAutoRefresh;
+  pauseAutoRefresh = true;
   sendMessageWebSocket("Config.Set", data).then(function () {
     var dn = el("device_name").innerText;
-    document.body.innerHTML = `
-      <div class='container'><h1>Rebooting...</h1>
-        <p>Device is rebooting and connecting to <i>${el("wifi_ssid").value}</i>.</p>
-        <p>
-          Connect to the same network and visit
-          <a href='http://${dn}.local/'>http://${dn}.local/</a>.
-        </p>
-        <p>
-          If device cannot be contacted, see
-          <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
-        </p>
-      </div>."`;
+    if (data.config.wifi.sta.enable) {
+      document.body.innerHTML = `
+        <div class='container'><h1>Rebooting...</h1>
+          <p>Device is rebooting and connecting to <b>${el("wifi_ssid").value}</b>.</p>
+          <p>
+            Connect to the same network and visit
+            <a href='http://${dn}.local/'>http://${dn}.local/</a>.
+          </p>
+          <p>
+            If device cannot be contacted, see
+            <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
+          </p>
+        </div>."`;
+    } else {
+      document.body.innerHTML = `
+        <div class='container'><h1>Rebooting...</h1>
+          <p>Device is rebooting into AP mode.</p>
+          <p>
+            It can be reached by connecting to <b>${lastInfo.wifi_ap_ssid}</b>
+            and navigating to <a href='http://${lastInfo.wifi_ap_ip}/'>http://${lastInfo.wifi_ap_ip}/</a>.
+          </p>
+          <p>
+            If device cannot be contacted, see
+            <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
+          </p>
+        </div>."`;
+    }
   }).catch(function (err) {
+    el("wifi_spinner").className = "";
+    pauseAutoRefresh = oldPauseAutoRefresh;
     if (err.response) {
       err = err.response.data.message;
     }
     alert(err);
-  }).then(function () {
-    el("wifi_spinner").className = "";
   });
 };
 
@@ -616,7 +635,7 @@ function updateElement(key, value) {
       setValueIfNotModified(el("wifi_ssid"), value);
       break;
     case "wifi_pass":
-      setValueIfNotModified(el("wifi_pass"), value);
+      el("wifi_pass").placeholder = (value ? "(hidden)" : "(empty)");
       break;
     case "wifi_rssi":
     case "host":
@@ -655,7 +674,7 @@ function updateElement(key, value) {
       for (let i in value) updateComponent(value[i]);
       break;
     case "hap_running":
-      setValueIfNotModified(el("hap_setup_code"), value ? "***-**-***" : "");
+      el("hap_setup_code").placeholder = (value ? "(hidden)" : "e.g. 111-22-333");
       if (!value) el("hap_ip_conns_max").innerText = "Server not running"
       el("hap_ip_conns_pending").style.display = "none";
       el("hap_ip_conns_active").style.display = "none";

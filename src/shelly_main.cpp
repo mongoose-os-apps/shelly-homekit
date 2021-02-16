@@ -545,6 +545,7 @@ static void StatusTimerCB(void *arg) {
         status.append(sts.status().error_message());
       }
     }
+    if (status.empty()) status = "disabled";
     LOG(LL_INFO, ("Up %.2lf, HAP %u/%u/%u ns %d, RAM: %lu/%lu; st %d; %s",
                   mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
                   (unsigned) tcpm_stats.numActiveTCPStreams,

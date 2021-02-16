@@ -64,13 +64,15 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                            &ip_info)) {
     mgos_net_ip_to_str(&ip_info.ip, wifi_ip);
   }
+  const char *wifi_ap_ssid = mgos_sys_config_get_wifi_ap_ssid();
+  const char *wifi_ap_ip = mgos_sys_config_get_wifi_ap_ip();
 #endif
   std::string res = mgos::JSONPrintStringf(
       "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_model: %Q, "
       "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
-      "wifi_rssi: %d, wifi_ip: %Q,"
+      "wifi_rssi: %d, wifi_ip: %Q, wifi_ap_ssid: %Q, wifi_ap_ip: %Q, "
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
@@ -84,6 +86,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (wifi_ssid ? wifi_ssid : ""),
       (mgos_sys_config_get_wifi_sta_pass() ? "***" : ""), wifi_rssi, wifi_ip,
+      (wifi_ap_ssid ? wifi_ap_ssid : ""), (wifi_ap_ip ? wifi_ap_ip : ""),
 #endif
       hap_cn, hap_running, hap_paired,
       (unsigned) tcpm_stats.numPendingTCPStreams,
