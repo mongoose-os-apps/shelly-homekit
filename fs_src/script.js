@@ -634,7 +634,7 @@ function updateElement(key, value) {
         }
         el("donate_form_submit").style.display = "inline";
 
-        el("wifi_ip").innerText = `IP: ${value}`;
+        el("wifi_ip").innerText = value;
         el("wifi_container").style.display = "block";
       } else {
         el("wifi_ip").innerText = "Not connected";
