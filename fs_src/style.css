@@ -29,7 +29,7 @@ button {
 }
 
 .button-container{
-    text-align: center;
+  text-align: center;
 }
 
 button label {
@@ -68,7 +68,13 @@ h1 {
 }
 
 .form-control {
-  margin: 0.6em 0;
+  margin: 0.4em 0;
+}
+
+.form-wrap-control {
+  margin: 0.4em 0;
+  display: inline-flex;
+  flex-wrap: inherit;
 }
 
 .form-control input:not([type=checkbox]) {
@@ -76,7 +82,7 @@ h1 {
 }
 
 .form label {
-  min-width: 9.65em;
+  min-width: 9.5em;
   display: inline-block;
 }
 
