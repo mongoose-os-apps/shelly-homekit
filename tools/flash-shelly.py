@@ -223,6 +223,10 @@ class Device:
         fp = requests.get(self.device_url, timeout=3)
         if fp.status_code == 200:
           info = json.loads(fp.content)
+          if 'settings' in self.device_url:
+            fp2 = requests.get(self.device_url.replace('settings', 'status'), timeout=3)
+            status = json.loads(fp2.content)
+            info['status'] = status
       except requests.exceptions.RequestException as err:
         logger.debug(f"Error: {err}")
     else:
@@ -630,6 +634,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   device_id = device_info.device_id
   device_name = device_info.device_name
   wifi_ip = device_info.wifi_ip
+  wifi_ssid = device_info.info.get('wifi_ssid', None) if device_info.fw_type_str == 'HomeKit' else device_info.info['status']['wifi_sta'].get('ssid',None)
+  wifi_rssi = device_info.info.get('wifi_rssi', None) if device_info.fw_type_str == 'HomeKit' else device_info.info['status']['wifi_sta'].get('rssi',None)
   current_fw_version = device_info.fw_version
   current_fw_type = device_info.fw_type
   current_fw_type_str = device_info.fw_type_str
@@ -643,12 +649,14 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
   sys_temp = device_info.info.get('sys_temp', None)
-  uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0))
+  uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if current_fw_type_str == 'HomeKit' else datetime.timedelta(seconds=device_info.info['status'].get('uptime',0))
 
   logger.debug(f"host: {host}")
   logger.debug(f"device_name: {device_name}")
   logger.debug(f"device_id: {device_id}")
   logger.debug(f"wifi_ip: {wifi_ip}")
+  logger.debug(f"wifi_ssid: {wifi_ssid}")
+  logger.debug(f"wifi_rssi: {wifi_rssi}")
   logger.debug(f"model: {model}")
   logger.debug(f"stock_model: {stock_model}")
   logger.debug(f"colour_mode: {colour_mode}")
@@ -691,8 +699,10 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     logger.info(f"{WHITE}Host: {NC}http://{host}")
     logger.info(f"{WHITE}Device Name: {NC}{device_name}")
     logger.info(f"{WHITE}Device ID: {NC}{device_id}")
-    logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
     logger.info(f"{WHITE}Model: {NC}{model}")
+    logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
+    logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
+    logger.info(f"{WHITE}RSSI: {NC}{wifi_rssi}")
     if sys_temp is not None:
       logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
     if str(uptime) != '0:00:00':
