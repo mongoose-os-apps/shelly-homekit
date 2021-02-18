@@ -716,23 +716,16 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     upgradeable_devices += 1
 
   if action != 'list':
-    if dry_run == True:
-      message = "Would have been"
-      keyword = ""
-    else:
-      message = f"Do you wish to flash"
-      keyword = f"{friendly_host} to firmware version {flash_fw_version}"
+    message = "Would have been"
+    keyword = ""
     if dlurl:
       if exclude and friendly_host in exclude:
         logger.info("Skipping as device has been excluded...")
         logger.info("")
         return 0
-      elif force_flash:
+      elif force_flash or (force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)):
         perform_flash = True
-        keyword = f"flashed to version {flash_fw_version}"
-      elif force_version and parse_version(flash_fw_version) != parse_version(current_fw_version):
-        perform_flash = True
-        keyword = f"reflashed version {force_version}"
+        keyword = f"flashed to {flash_fw_type_str} version {flash_fw_version}"
       elif requires_upgrade == True:
         perform_flash = True
         if mode == 'stock':
@@ -742,10 +735,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
           keyword = "upgraded to latest stock firmware version, before you can flash to HomeKit"
       elif current_fw_type != mode:
         perform_flash = True
-        if mode == 'stock':
-          keyword = "converted to Official firmware"
-        elif mode == 'homekit':
-          keyword = "converted to HomeKit firmware"
+        keyword = f"converted to {flash_fw_type_str} firmware"
       elif current_fw_type == mode and is_newer(flash_fw_version, current_fw_version):
         perform_flash = True
         keyword = f"upgraded from {current_fw_version} to version {flash_fw_version}"
@@ -755,13 +745,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       elif device_info.local_file:
         keyword = "Incorrect Zip File for device..."
       else:
-        keyword = "Is not supported yet..."
+        keyword = f"{flash_fw_type_str} firmware is not supported yet..."
       if not quiet_run:
         logger.info(f"{keyword}")
-      return 0
-    else:
-      if not quiet_run:
-        logger.info("Does not need flashing...")
       return 0
 
     logger.debug(f"perform_flash: {perform_flash}")
