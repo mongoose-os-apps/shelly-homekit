@@ -302,7 +302,7 @@ class Device:
 
   def parse_local_file(self):
     self.flash_label = "Local:"
-    if os.path.exists(self.local_file):
+    if os.path.exists(self.local_file) and self.local_file.endswith('.zip'):
       local_host = socket.gethostname()
       s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
       s.connect((self.wifi_ip, 80))
@@ -336,17 +336,17 @@ class Device:
       if m_model != manifest_name:
         self.flash_fw_version = '0.0.0'
         self.dlurl = None
+      return True
     else:
       logger.debug(f"File does not exist")
       self.flash_fw_version = '0.0.0'
       self.dlurl = None
+      return False
 
   def update_homekit(self, release_info=None):
     self.flash_fw_type_str = 'HomeKit'
     self.flash_fw_type = 'homekit'
-    if self.local_file:
-      self.parse_local_file()
-    elif not self.version:
+    if not self.version:
       for i in release_info:
         if self.variant and self.variant not in i[1]['version']:
           self.flash_fw_version = 'novariant'
@@ -368,10 +368,8 @@ class Device:
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
     self.flash_fw_type = 'stock'
-    stock_model_info = release_info['data'][self.stock_model] if self.stock_model in release_info['data'] else None
-    if self.local_file:
-      self.parse_local_file()
-    elif not self.version:
+    if not self.version:
+      stock_model_info = release_info['data'][self.stock_model] if self.stock_model in release_info['data'] else None
       if self.variant == 'beta':
         self.flash_fw_version = self.parse_stock_version(stock_model_info['beta_ver']) if 'beta_ver' in stock_model_info else self.parse_stock_version(stock_model_info['version'])
         self.dlurl = stock_model_info['beta_url'] if 'beta_ver' in stock_model_info else stock_model_info['url']
@@ -422,7 +420,6 @@ class HomeKitDevice(Device):
       logger.info("Downloading Firmware...")
       logger.debug(f"Remote URL: {self.dlurl}")
       myfile = requests.get(self.dlurl)
-       # print('file:', myfile.content)
       logger.info("Now Flashing...")
       files = {'file': ('shelly-flash.zip', myfile.content)}
     logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
@@ -723,9 +720,6 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         logger.info("Skipping as device has been excluded...")
         logger.info("")
         return 0
-      elif force_flash or (force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)):
-        perform_flash = True
-        keyword = f"flashed to {flash_fw_type_str} version {flash_fw_version}"
       elif requires_upgrade == True:
         perform_flash = True
         if mode == 'stock':
@@ -733,6 +727,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         elif mode == 'homekit':
           message = "This device needs to be"
           keyword = "upgraded to latest stock firmware version, before you can flash to HomeKit"
+      elif force_flash or (force_version and parse_version(flash_fw_version) != parse_version(current_fw_version)):
+        perform_flash = True
+        keyword = f"flashed to {flash_fw_type_str} version {flash_fw_version}"
       elif current_fw_type != mode:
         perform_flash = True
         keyword = f"converted to {flash_fw_type_str} firmware"
@@ -793,13 +790,14 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
   if not stock_release_info and not tried_to_get_remote_stock:
     stock_release_info = get_stock_release_info()
     tried_to_get_remote_stock = True
-  if not homekit_release_info and not tried_to_get_remote_homekit:
+  if not homekit_release_info and not tried_to_get_remote_homekit and not local_file:
     homekit_release_info = get_homekit_release_info()
     tried_to_get_remote_homekit = True
 
   http_server_started = False
   requires_upgrade = False
-  got_remote_info = False
+  got_info = False
+
   if mode == 'keep':
     flashmode = device['fw_type']
   else:
@@ -832,33 +830,52 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
       thread = threading.Thread(None, server.run)
       thread.start()
       http_server_started = True
-    if deviceinfo.fw_type == 'stock' and flashmode == 'homekit' and not local_file:
-      if stock_release_info and homekit_release_info:
+    if local_file and deviceinfo.parse_local_file():
+      if deviceinfo.fw_type == 'stock':
+        if deviceinfo.flash_fw_type_str == 'HomeKit' and not stock_release_info and not tried_to_get_remote_stock:
+          stock_release_info = get_stock_release_info()
+          tried_to_get_remote_stock = True
+          if stock_release_info:
+            deviceinfo.update_to_stock(stock_release_info)
+            if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
+              requires_upgrade = True
+              got_info = True
+        elif deviceinfo.flash_fw_type_str == 'Stock':
+          got_info = True
+      else:
+        print('PP')
+        got_info = True
+    else:
+      if deviceinfo.fw_type == 'stock' and flashmode == 'homekit':
+        if stock_release_info and homekit_release_info:
+          deviceinfo.update_to_stock(stock_release_info)
+          if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
+            requires_upgrade = True
+            got_info = True
+          else:
+            deviceinfo.update_to_homekit(homekit_release_info)
+            got_info = True
+      elif homekit_release_info and flashmode == 'homekit':
+        deviceinfo.update_to_homekit(homekit_release_info)
+        got_info = True
+      elif stock_release_info and flashmode == 'stock':
         deviceinfo.update_to_stock(stock_release_info)
-        if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
-          requires_upgrade = True
-          got_remote_info = True
-        else:
-          deviceinfo.update_to_homekit(homekit_release_info)
-          got_remote_info = True
-    elif homekit_release_info and flashmode == 'homekit':
-      deviceinfo.update_to_homekit(homekit_release_info)
-      got_remote_info = True
-    elif stock_release_info and flashmode == 'stock':
-      deviceinfo.update_to_stock(stock_release_info)
-      got_remote_info = True
-    if got_remote_info and deviceinfo.fw_type == "homekit" and float(f"{parse_version(deviceinfo.info['version'])[0]}.{parse_version(deviceinfo.info['version'])[1]}") < 2.1:
+        got_info = True
+    if got_info and deviceinfo.fw_type == "homekit" and float(f"{parse_version(deviceinfo.info['version'])[0]}.{parse_version(deviceinfo.info['version'])[1]}") < 2.1:
       logger.error(f"{WHITE}Host: {NC}{deviceinfo.host}")
       logger.error(f"Version {deviceinfo.info['version']} is to old for this script,")
       logger.error(f"please update via the device webUI.")
       logger.error("")
-    elif got_remote_info:
+    elif got_info:
       parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
       if requires_upgrade:
         requires_upgrade = 'Done'
         deviceinfo.get_info()
         if not is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
-          deviceinfo.update_to_homekit(homekit_release_info)
+          if local_file:
+            deviceinfo.parse_local_file()
+          else:
+            deviceinfo.update_to_homekit(homekit_release_info)
           parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
     if http_server_started:
       server.shutdown()
