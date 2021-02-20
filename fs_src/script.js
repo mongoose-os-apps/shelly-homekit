@@ -64,14 +64,16 @@ el("hap_save_btn").onclick = function () {
   var code = codeMatch.slice(1).join('-');
   el("hap_save_spinner").className = "spin";
   sendMessageWebSocket("HAP.Setup", {"code": code})
-    .catch(function (err) {
+    .then(function () {
+      el("hap_save_spinner").className = "";
+      el("hap_setup_code").value = "";
+      getInfo();
+    }).catch(function (err) {
       if (err.response) {
         err = err.response.data.message;
       }
       alert(err);
-    }).then(function () {
-    el("hap_save_spinner").className = "";
-  });
+    });
 };
 
 el("hap_reset_btn").onclick = function () {
@@ -79,14 +81,16 @@ el("hap_reset_btn").onclick = function () {
 
   el("hap_reset_spinner").className = "spin";
   sendMessageWebSocket("HAP.Reset", {"reset_server": true, "reset_code": true})
+    .then(function () {
+      el("hap_reset_spinner").className = "";
+      getInfo();
+    })
     .catch(function (err) {
       if (err.response) {
         err = err.response.data.message;
       }
       alert(err);
-    }).then(function () {
-    el("hap_reset_spinner").className = "";
-  });
+    });
 };
 
 el("fw_upload_btn").onclick = function () {
@@ -611,7 +615,7 @@ function updateComponent(cd) {
   c.data = cd;
 }
 
-function updateElement(key, value) {
+function updateElement(key, value, info) {
   switch (key) {
     case "uptime":
       el("uptime").innerText = durationStr(value);
@@ -675,15 +679,17 @@ function updateElement(key, value) {
       break;
     case "hap_running":
       el("hap_setup_code").placeholder = (value ? "(hidden)" : "e.g. 111-22-333");
-      if (!value) el("hap_ip_conns_max").innerText = "Server not running"
+      if (!value) el("hap_ip_conns_max").innerText = "server not running"
       el("hap_ip_conns_pending").style.display = "none";
       el("hap_ip_conns_active").style.display = "none";
       break;
     case "hap_ip_conns_pending":
     case "hap_ip_conns_active":
     case "hap_ip_conns_max":
-      el(key).style.display = "inline";
-      el(key).innerText = `${value} ${key.split("_").slice(-1)[0]}`;
+      if (info.hap_running) {
+        el(key).style.display = "inline";
+        el(key).innerText = `${value} ${key.split("_").slice(-1)[0]}`;
+      }
       break;
     case "debug_en":
       checkIfNotModified(el("debug_en"), value);
@@ -726,9 +732,9 @@ function getInfo() {
     }
 
     sendMessageWebSocket("Shelly.GetInfo").then(function (res) {
-      var data = res.result;
+      var info = res.result;
 
-      if (data == null) {
+      if (info == null) {
         reject();
         return;
       }
@@ -737,23 +743,23 @@ function getInfo() {
       el("sys_container").style.display = "block";
       el("firmware_container").style.display = "block";
 
-      if (data.failsafe_mode) {
+      if (info.failsafe_mode) {
         el("notify_failsafe").style.display = "inline";
         // only show this limited set of infos
         ["model", "device_id", "version", "fw_build"]
-          .forEach(element => updateElement(element, data[element]));
+          .forEach(element => updateElement(element, info[element], info));
         reject();
         return;
       }
 
       // the system mode changed, clear out old UI components
-      if (lastInfo !== null && lastInfo.sys_mode !== data.sys_mode) el("components").innerHTML = "";
+      if (lastInfo !== null && lastInfo.sys_mode !== info.sys_mode) el("components").innerHTML = "";
 
-      for (let element in data) {
-        updateElement(element, data[element]);
+      for (let element in info) {
+        updateElement(element, info[element], info);
       }
 
-      lastInfo = data;
+      lastInfo = info;
 
       el("homekit_container").style.display = "block";
       el("gs_container").style.display = "block";
