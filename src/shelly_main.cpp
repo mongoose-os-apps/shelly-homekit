@@ -277,6 +277,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     sw2->set_primary(true);
     pri_acc->SetCategory(cat);
     pri_acc->AddService(sw2);
+    pri_acc->SetName(sw2->name());
     return;
   }
   if (!sw_hidden) {

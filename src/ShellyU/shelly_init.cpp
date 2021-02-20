@@ -48,7 +48,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
-                  comps, accs, svr, false /* to_pri_acc */);
+                  comps, accs, svr, true /* to_pri_acc */, nullptr /* led_out */);
 }
 
 }  // namespace shelly
