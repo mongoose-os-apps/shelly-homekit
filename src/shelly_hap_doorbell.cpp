@@ -15,17 +15,26 @@
  * limitations under the License.
  */
 
-#include <string>
+#include "shelly_hap_doorbell.hpp"
 
-#include "HAP.h"
+#include "HAPUUID.h"
 
 namespace shelly {
+namespace hap {
 
-void GetDebugInfo(std::string *out);
+const HAPUUID kHAPServiceType_Doorbell = HAPUUIDCreateAppleDefined(0x121);
 
-void SetDebugEnable(bool debug_en);
+Doorbell::Doorbell(int id, Input *in, struct mgos_config_in_ssw *cfg)
+    : StatelessSwitchBase(id, in, cfg, SHELLY_HAP_IID_BASE_DOORBELL,
+                          &kHAPServiceType_Doorbell, "service.doorbell") {
+}
 
-bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
-               HAPPlatformTCPStreamManagerRef tcpm);
+Doorbell::~Doorbell() {
+}
 
+Component::Type Doorbell::type() const {
+  return Type::kDoorbell;
+}
+
+}  // namespace hap
 }  // namespace shelly

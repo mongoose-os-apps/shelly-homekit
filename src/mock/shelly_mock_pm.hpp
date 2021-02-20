@@ -15,17 +15,33 @@
  * limitations under the License.
  */
 
-#include <string>
+#pragma once
 
-#include "HAP.h"
+#include "shelly_pm.hpp"
+
+#include "mgos_timers.hpp"
 
 namespace shelly {
 
-void GetDebugInfo(std::string *out);
+class MockPowerMeter : public PowerMeter {
+ public:
+  explicit MockPowerMeter(int id);
+  virtual ~MockPowerMeter();
 
-void SetDebugEnable(bool debug_en);
+  // PowerMeter interface impl.
+  Status Init() override;
+  StatusOr<float> GetPowerW() override;
+  StatusOr<float> GetEnergyWH() override;
 
-bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
-               HAPPlatformTCPStreamManagerRef tcpm);
+  void SetPowerW(float w);
+  void SetEnergyWH(float wh);
+
+ private:
+  void MeasureTimerCB();
+
+  float apa_ = 0;
+  float aea_ = 0;
+  mgos::Timer meas_timer_;
+};
 
 }  // namespace shelly

@@ -20,11 +20,10 @@
 #include <memory>
 #include <vector>
 
+#include "mgos_hap.hpp"
 #include "mgos_sys_config.h"
-#include "mgos_timers.hpp"
+#include "mgos_timers.h"
 
-#include "mgos_hap_chars.hpp"
-#include "mgos_hap_service.hpp"
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
 #include "shelly_input.hpp"
@@ -32,66 +31,47 @@
 #include "shelly_pm.hpp"
 
 namespace shelly {
+namespace hap {
 
 // Common base for Switch, Outlet and Lock services.
-class ShellySwitch : public Component, public mgos::hap::Service {
+class StatelessSwitchBase : public Component, public mgos::hap::Service {
  public:
   enum class InMode {
-    kAbsent = -1,
     kMomentary = 0,
-    kToggle = 1,
-    kEdge = 2,
-    kDetached = 3,
-    kActivation = 4,
-    kMax,
+    kToggleShort = 1,
+    kToggleShortLong = 2,
   };
 
-  enum class InitialState {
-    kOff = 0,
-    kOn = 1,
-    kLast = 2,
-    kInput = 3,
-    kMax,
-  };
-
-  ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
-               Output *led_out, struct mgos_config_sw *cfg);
-  virtual ~ShellySwitch();
+  StatelessSwitchBase(int id, Input *in, struct mgos_config_in_ssw *cfg,
+                      uint16_t iid_base, const HAPUUID *type,
+                      const char *debug_description);
+  virtual ~StatelessSwitchBase();
 
   // Component interface impl.
+  Status Init() override;
   Type type() const override;
   std::string name() const override;
-  virtual Status Init() override;
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
   Status SetState(const std::string &state_json) override;
-  bool IsIdle() override;
 
-  bool GetOutputState() const;
-  void SetOutputState(bool new_state, const char *source);
-
- protected:
+ private:
   void InputEventHandler(Input::Event ev, bool state);
 
-  void AutoOffTimerCB();
-
-  void SaveState();
+  void RaiseEvent(uint8_t ev);
 
   Input *const in_;
-  Output *const out_;
-  Output *const led_out_;
-  PowerMeter *const out_pm_;
-  struct mgos_config_sw *cfg_;
+  struct mgos_config_in_ssw *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
-  std::vector<mgos::hap::Characteristic *> state_notify_chars_;
 
-  mgos::Timer auto_off_timer_;
-  bool dirty_ = false;
+  uint8_t last_ev_ = 0;
+  double last_ev_ts_ = 0;
 
-  ShellySwitch(const ShellySwitch &other) = delete;
+  StatelessSwitchBase(const StatelessSwitchBase &other) = delete;
 };
 
+}  // namespace hap
 }  // namespace shelly

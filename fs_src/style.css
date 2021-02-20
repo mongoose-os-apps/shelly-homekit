@@ -25,6 +25,17 @@ button {
   border-radius: 18px;
   border: none;
   cursor: pointer;
+  background: #0071e3;
+}
+
+.button-container{
+  text-align: center;
+}
+
+button label {
+  position: relative;
+  cursor: pointer;
+  min-width: 10em;
 }
 
 a, a:link, a:visited {
@@ -51,34 +62,33 @@ h1 {
 .container {
   padding: 0 1em;
   margin: 1em auto;
-  max-width: 640px;
+  max-width: 440px;
   background: #fefefe;
   border-radius: 10px;
 }
 
 .form-control {
-  margin: 0.6em 0;
+  margin: 0.4em 0;
 }
 
-.form-control input:not([type=checkbox]), .form-control button {
+.form-wrap-control {
+  padding: 0 0.3em;
+  margin: 0.4em 0;
+  display: inline-flex;
+  flex-wrap: inherit;
+}
+
+.form-control input:not([type=checkbox]) {
   min-width: 10em;
 }
 
 .form label {
-  min-width: 9.0em;
+  min-width: 9.5em;
   display: inline-block;
 }
 
 .form {
   padding: 1em 0;
-}
-
-.btn {
-  background: #0071e3;
-}
-
-.btn label {
-  position: relative;
 }
 
 .badge {
@@ -113,7 +123,6 @@ a.badge {
   background-color: #fefefe;
   border: 1px solid #999999;
   border-radius: 12px;
-  box-shadow: 1px 1px 0.5px #c1c1c1;
   color: #0071e3 !important;
   font-weight: bold;
   font: 14px;
@@ -129,7 +138,7 @@ a.badge {
 }
 
 #header_container {
-  padding: 10px;
+  padding: 0px 16px 10px 16px;
 }
 
 .title {

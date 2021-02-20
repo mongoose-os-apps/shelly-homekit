@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Deomid "rojer" Ryabkov
+ * Copyright (c) Shelly-HomeKit Contributors
  * All rights reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +35,7 @@
 #define SHELLY_HAP_AID_BASE_OCCUPANCY_SENSOR 0x700
 #define SHELLY_HAP_AID_BASE_CONTACT_SENSOR 0x800
 #define SHELLY_HAP_AID_BASE_VALVE 0x900
+#define SHELLY_HAP_AID_BASE_DOORBELL 0xa00
 
 #define SHELLY_HAP_IID_BASE_SWITCH 0x100
 #define SHELLY_HAP_IID_STEP_SWITCH 4
@@ -54,6 +55,7 @@
 #define SHELLY_HAP_IID_STEP_SENSOR 0x10
 #define SHELLY_HAP_IID_BASE_VALVE 0xa00
 #define SHELLY_HAP_IID_STEP_VALVE 0x10
+#define SHELLY_HAP_IID_BASE_DOORBELL 0xb00
 
 namespace shelly {
 

@@ -1,18 +1,19 @@
-var lastInfo = null;
-
-var socket = null;
-
-var wifiEn = el("wifi_en");
-var wifiSSID = el("wifi_ssid");
-var wifiPass = el("wifi_pass");
-var wifiSpinner = el("wifi_spinner");
-
-var hapSetupCode = el("hap_setup_code");
-var hapSaveSpinner = el("hap_save_spinner");
-var hapResetSpinner = el("hap_reset_spinner");
-
-var sw1 = el("sw1_container");
-var sw2 = el("sw2_container");
+/*
+ * Copyright (c) Shelly-HomeKit Contributors
+ * All rights reserved
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 function el(container, id) {
   if (id === undefined) {
@@ -28,7 +29,7 @@ function checkName(name) {
 
 el("sys_save_btn").onclick = function () {
   if (!checkName(el("sys_name").value)) {
-    alert(`Name must be between 1 and 63 characters 
+    alert(`Name must be between 1 and 63 characters
            and consist of letters, numbers or dashes ('-')`);
     return;
   }
@@ -55,13 +56,13 @@ el("sys_save_btn").onclick = function () {
 };
 
 el("hap_save_btn").onclick = function () {
-  var codeMatch = hapSetupCode.value.match(/^(\d{3})\-?(\d{2})\-?(\d{3})$/);
+  var codeMatch = el("hap_setup_code").value.match(/^(\d{3})\-?(\d{2})\-?(\d{3})$/);
   if (!codeMatch) {
-    alert(`Invalid code ${hapSetupCode.value}, must be xxxyyzzz or xxx-yy-zzz.`);
+    alert(`Invalid code ${el("hap_setup_code").value}, must be xxxyyzzz or xxx-yy-zzz.`);
     return;
   }
   var code = codeMatch.slice(1).join('-');
-  hapSaveSpinner.className = "spin";
+  el("hap_save_spinner").className = "spin";
   sendMessageWebSocket("HAP.Setup", {"code": code})
     .catch(function (err) {
       if (err.response) {
@@ -69,14 +70,14 @@ el("hap_save_btn").onclick = function () {
       }
       alert(err);
     }).then(function () {
-    hapSaveSpinner.className = "";
+    el("hap_save_spinner").className = "";
   });
 };
 
 el("hap_reset_btn").onclick = function () {
   if(!confirm("HAP reset will erase all pairings and clear setup code. Are you sure?")) return;
 
-  hapResetSpinner.className = "spin";
+  el("hap_reset_spinner").className = "spin";
   sendMessageWebSocket("HAP.Reset", {"reset_server": true, "reset_code": true})
     .catch(function (err) {
       if (err.response) {
@@ -84,7 +85,7 @@ el("hap_reset_btn").onclick = function () {
       }
       alert(err);
     }).then(function () {
-    hapResetSpinner.className = "";
+    el("hap_reset_spinner").className = "";
   });
 };
 
@@ -95,38 +96,57 @@ el("fw_upload_btn").onclick = function () {
 };
 
 el("wifi_save_btn").onclick = function () {
-  wifiSpinner.className = "spin";
+  el("wifi_spinner").className = "spin";
   var data = {
     config: {
       wifi: {
-        sta: {enable: wifiEn.checked, ssid: wifiSSID.value},
-        ap: {enable: !wifiEn.checked},
+        sta: {enable: el("wifi_en").checked, ssid: el("wifi_ssid").value},
+        ap: {enable: !el("wifi_en").checked},
       },
     },
     reboot: true,
   };
-  if (wifiPass.value != "***") data.config.wifi.sta.pass = wifiPass.value;
+  if (el("wifi_pass").value && el("wifi_pass").value.length >= 8) {
+    data.config.wifi.sta.pass = el("wifi_pass").value;
+  }
+  var oldPauseAutoRefresh = pauseAutoRefresh;
+  pauseAutoRefresh = true;
   sendMessageWebSocket("Config.Set", data).then(function () {
     var dn = el("device_name").innerText;
-    document.body.innerHTML = `
-      <div class='container'><h1>Rebooting...</h1>
-        <p>Device is rebooting and connecting to <i>${wifiSSID.value}</i>.</p>
-        <p>
-          Connect to the same network and visit 
-          <a href='http://${dn}.local/'>http://${dn}.local/</a>.
-        </p>
-        <p>
-          If device cannot be contacted, see 
-          <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
-        </p>
-      </div>."`;
+    if (data.config.wifi.sta.enable) {
+      document.body.innerHTML = `
+        <div class='container'><h1>Rebooting...</h1>
+          <p>Device is rebooting and connecting to <b>${el("wifi_ssid").value}</b>.</p>
+          <p>
+            Connect to the same network and visit
+            <a href='http://${dn}.local/'>http://${dn}.local/</a>.
+          </p>
+          <p>
+            If device cannot be contacted, see
+            <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
+          </p>
+        </div>."`;
+    } else {
+      document.body.innerHTML = `
+        <div class='container'><h1>Rebooting...</h1>
+          <p>Device is rebooting into AP mode.</p>
+          <p>
+            It can be reached by connecting to <b>${lastInfo.wifi_ap_ssid}</b>
+            and navigating to <a href='http://${lastInfo.wifi_ap_ip}/'>http://${lastInfo.wifi_ap_ip}/</a>.
+          </p>
+          <p>
+            If device cannot be contacted, see
+            <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
+          </p>
+        </div>."`;
+    }
   }).catch(function (err) {
+    el("wifi_spinner").className = "";
+    pauseAutoRefresh = oldPauseAutoRefresh;
     if (err.response) {
       err = err.response.data.message;
     }
     alert(err);
-  }).then(function () {
-    wifiSpinner.className = "";
   });
 };
 
@@ -184,9 +204,9 @@ function dateStringToSeconds(dateString) {
   if (dateString == "") return 0;
 
   var {
-    days, hours, minutes, seconds, minutes
+    days, hours, minutes, seconds, minutes, milliseconds
   } = dateString.match(
-    /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\:(?<milliseconds>\d{3})/
+    /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\.(?<milliseconds>\d{3})/
   ).groups
 
   var seconds = parseInt(days) * 24 * 3600 +
@@ -369,14 +389,14 @@ function findOrAddContainer(cd) {
     case 2: // Lock
       c = el("sw_template").cloneNode(true);
       c.id = elId;
-      el(c, "toggle_btn").onclick = function () {
+      el(c, "state").onchange = function () {
         setComponentState(c, {state: !c.data.state}, el(c, "set_spinner"));
       };
       el(c, "save_btn").onclick = function () {
         swSetConfig(c);
       };
       el(c, "auto_off").onchange = function () {
-        el(c, "auto_off_delay").disabled = !this.checked;
+        el(c, "auto_off_delay_container").style.display = this.checked ? "block" : "none";
       };
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
@@ -423,12 +443,15 @@ function findOrAddContainer(cd) {
     case 7: // Motion Sensor.
     case 8: // Occupancy Sensor.
     case 9: // Contact Sensor.
+    case 10: // Doorbell
       c = el("sensor_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function () {
         mosSetConfig(c);
       };
       break;
+    default:
+      console.log(`Unhandled component type: ${cd.type}`);
   }
   if (c) {
     c.style.display = "block";
@@ -448,11 +471,11 @@ function updateComponent(cd) {
       if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
       setValueIfNotModified(el(c, "name"), cd.name);
-      el(c, "state").innerText = (cd.state ? "on" : "off");
+      el(c, "state").checked = cd.state;
       if (cd.apower !== undefined) {
-        el(c, "power_stats").innerText = `, ${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
+        el(c, "power_stats").innerText = `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
+        el(c, "power_stats_container").style.display = "block";
       }
-      el(c, "btn_label").innerText = `Turn ${cd.state ? "Off" : "On"}`;
       selectIfNotModified(el(c, "svc_type"), cd.svc_type);
       if (cd.svc_type == 3) {
         selectIfNotModified(el(c, "valve_type"), cd.valve_type);
@@ -474,7 +497,7 @@ function updateComponent(cd) {
         if (el(c, "initial_3")) el(c, "initial_3").remove();
       }
       checkIfNotModified(el(c, "auto_off"), cd.auto_off);
-      el(c, "auto_off_delay").disabled = !el(c, "auto_off").checked;
+      el(c, "auto_off_delay_container").style.display = el(c, "auto_off").checked ? "block" : "none";
       setValueIfNotModified(el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
       if (cd.state_led_en == -1) {
         el(c, "state_led_en_container").style.display = "none";
@@ -536,7 +559,7 @@ function updateComponent(cd) {
           el(c, "pos").innerText = cd.cur_pos;
         }
         el(c, "cal").innerText = `
-          movement time: ${cd.move_time_ms / 1000} s, 
+          movement time: ${cd.move_time_ms / 1000} s,
           avg power: ${cd.move_power} W`;
         el(c, "pos_ctl").style.display = "block";
       } else {
@@ -579,6 +602,7 @@ function updateComponent(cd) {
     case 7: // Motion Sensor
     case 8: // Occupancy Sensor
     case 9: // Contact Sensor
+    case 10: // Doorbell
       var headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
@@ -595,6 +619,8 @@ function updateComponent(cd) {
       }
       el(c, "status").innerText = statusText;
       break;
+    default:
+      console.log(`Unhandled component type: ${cd.type}`);
   }
   c.data = cd;
 }
@@ -607,27 +633,28 @@ function updateElement(key, value) {
     case "model":
     case "device_id":
     case "version":
+      el(key).innerHTML = value;
+      break;
     case "fw_build":
-      el(key).innerText = value;
+      el("fw_build").innerHTML = value;
       break;
     case "name":
       el("device_name").innerText = document.title = value;
       setValueIfNotModified(el("sys_name"), value);
       break;
     case "wifi_en":
-      checkIfNotModified(wifiEn, value);
+      checkIfNotModified(el("wifi_en"), value);
       break;
     case "wifi_ssid":
-      setValueIfNotModified(wifiSSID, value);
+      setValueIfNotModified(el("wifi_ssid"), value);
       break;
     case "wifi_pass":
-      setValueIfNotModified(wifiPass, value);
+      el("wifi_pass").placeholder = (value ? "(hidden)" : "(empty)");
       break;
     case "wifi_rssi":
-      if (value !== 0) {
-        el("wifi_rssi").innerText = `RSSI: ${value}`;
-        el("wifi_rssi").style.display = "inline";
-      } else el("wifi_rssi").style.display = "none";
+    case "host":
+      el(key).innerText = value;
+      el(`${key}_container`).style.display = (value !== 0) ? "block" : "none";
       break;
     case "wifi_ip":
       if (value !== undefined) {
@@ -640,17 +667,11 @@ function updateElement(key, value) {
         }
         el("donate_form_submit").style.display = "inline";
 
-        el("wifi_ip").innerText = `IP: ${value}`;
+        el("wifi_ip").innerText = value;
         el("wifi_container").style.display = "block";
       } else {
         el("wifi_ip").innerText = "Not connected";
       }
-      break;
-    case "host":
-      if (value !== "") {
-        el("host").innerText = `Host: ${value}`;
-        el("host").style.display = "inline";
-      } else el("host").style.display = "none";
       break;
     case "hap_paired":
       el(key).innerText = (value ? "yes" : "no");
@@ -667,7 +688,7 @@ function updateElement(key, value) {
       for (let i in value) updateComponent(value[i]);
       break;
     case "hap_running":
-      setValueIfNotModified(hapSetupCode, value ? "***-**-***" : "");
+      el("hap_setup_code").placeholder = (value ? "(hidden)" : "e.g. 111-22-333");
       if (!value) el("hap_ip_conns_max").innerText = "Server not running"
       el("hap_ip_conns_pending").style.display = "none";
       el("hap_ip_conns_active").style.display = "none";
@@ -682,7 +703,7 @@ function updateElement(key, value) {
       checkIfNotModified(el("debug_en"), value);
       el("debug_link").style.visibility = value ? "visible" : "hidden";
       break;
-    case "rsh_avail":
+    case "wc_avail":
       if (value) el("sys_mode_container").style.display = "block";
       else if (el("sys_mode_1")) el("sys_mode_1").remove();
       break;
@@ -709,6 +730,8 @@ function updateElement(key, value) {
   }
 }
 
+var lastInfo = null;
+
 function getInfo() {
   return new Promise(function (resolve, reject) {
     if (socket.readyState !== 1) {
@@ -726,6 +749,7 @@ function getInfo() {
 
       // always show system information if data is loaded
       el("sys_container").style.display = "block";
+      el("firmware_container").style.display = "block";
 
       if (data.failsafe_mode) {
         el("notify_failsafe").style.display = "inline";
@@ -759,7 +783,7 @@ function getInfo() {
 function getCookie(key) {
   cookie = (document.cookie.match(`(^|;)\\s*${key}\\s*=\\s*([^;]+)`) || []).pop()
   if (cookie === undefined) return;
-  
+
   return JSON.parse(cookie);
 }
 
@@ -784,8 +808,9 @@ el("debug_en").onclick = function () {
   });
 };
 
-var connectionTries = 0;
 var host = (new URLSearchParams(location.search)).get("host") || location.host;
+var socket = null;
+var connectionTries = 0;
 
 function connectWebSocket() {
   if (!host) {
@@ -1046,7 +1071,7 @@ async function checkUpdate() {
       }
       se.className = "";
       e.innerHTML = `
-        Version ${latestVersion} is available. 
+        Version ${latestVersion} is available.
         See <a href="${relNotesURL}" target="_blank">release notes</a>.`
       el("update_btn_text").innerText = "Install";
       el("update_btn").onclick = function () {
@@ -1070,4 +1095,3 @@ el("revert_btn").onclick = function () {
   var stockURL = `https://rojer.me/files/shelly/stock/${lastInfo.stock_model}.zip`;
   downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
 };
-

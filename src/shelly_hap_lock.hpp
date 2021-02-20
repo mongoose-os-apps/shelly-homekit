@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Deomid "rojer" Ryabkov
+ * Copyright (c) Shelly-HomeKit Contributors
  * All rights reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

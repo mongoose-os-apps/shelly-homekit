@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Deomid "rojer" Ryabkov
+ * Copyright (c) Shelly-HomeKit Contributors
  * All rights reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -545,6 +545,7 @@ static void StatusTimerCB(void *arg) {
         status.append(sts.status().error_message());
       }
     }
+    if (status.empty()) status = "disabled";
     LOG(LL_INFO, ("Up %.2lf, HAP %u/%u/%u ns %d, RAM: %lu/%lu; st %d; %s",
                   mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
                   (unsigned) tcpm_stats.numActiveTCPStreams,
@@ -877,6 +878,7 @@ void InitApp() {
                          nullptr /* msg */);
   }
 
+  LOG(LL_INFO, ("=== Creating peripherals"));
   CreatePeripherals(&s_inputs, &s_outputs, &s_pms, &s_sys_temp_sensor);
 
   StartService(false /* quiet */);

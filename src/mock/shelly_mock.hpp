@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-#include <string>
+#pragma once
 
-#include "HAP.h"
+#include <vector>
+
+#include "shelly_mock_pm.hpp"
+#include "shelly_mock_temp_sensor.hpp"
 
 namespace shelly {
 
-void GetDebugInfo(std::string *out);
+extern std::vector<MockPowerMeter *> g_mock_pms;
+extern MockTempSensor *g_mock_sys_temp_sensor;
 
-void SetDebugEnable(bool debug_en);
-
-bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
-               HAPPlatformTCPStreamManagerRef tcpm);
+void MockRPCInit();
 
 }  // namespace shelly

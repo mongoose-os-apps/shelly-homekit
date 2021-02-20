@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Deomid "rojer" Ryabkov
+ * Copyright (c) Shelly-HomeKit Contributors
  * All rights reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,23 +15,29 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "shelly_mock_temp_sensor.hpp"
 
-#include "shelly_temp_sensor.hpp"
+#include "shelly_common.hpp"
+
+#include <cmath>
 
 namespace shelly {
 
-class MockTempSensor : public TempSensor {
- public:
-  MockTempSensor(float initial_value);
-  virtual ~MockTempSensor();
+MockTempSensor::MockTempSensor(float initial_value) : value_(initial_value) {
+}
 
-  StatusOr<float> GetTemperature() override;
+MockTempSensor::~MockTempSensor() {
+}
 
-  void SetValue(float new_value);
+StatusOr<float> MockTempSensor::GetTemperature() {
+  if (std::isnan(value_)) {
+    return mgos::Status(STATUS_UNAVAILABLE, "failed");
+  }
+  return value_;
+}
 
- private:
-  float value_;
-};
+void MockTempSensor::SetValue(float new_value) {
+  value_ = new_value;
+}
 
 }  // namespace shelly

@@ -15,17 +15,20 @@
  * limitations under the License.
  */
 
-#include <string>
-
-#include "HAP.h"
+#pragma once
+#include "shelly_hap_stateless_switch_base.hpp"
 
 namespace shelly {
+namespace hap {
 
-void GetDebugInfo(std::string *out);
+class Doorbell : public StatelessSwitchBase {
+ public:
+  Doorbell(int id, Input *in, struct mgos_config_in_ssw *cfg);
+  virtual ~Doorbell();
 
-void SetDebugEnable(bool debug_en);
+  // Component interface impl.
+  Type type() const override;
+};
 
-bool DebugInit(HAPAccessoryServerRef *svr, HAPPlatformKeyValueStoreRef kvs,
-               HAPPlatformTCPStreamManagerRef tcpm);
-
+}  // namespace hap
 }  // namespace shelly

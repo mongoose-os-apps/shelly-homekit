@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Deomid "rojer" Ryabkov
+ * Copyright (c) Shelly-HomeKit Contributors
  * All rights reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,8 @@ OutputPin::OutputPin(int id, int pin, int on_value)
       on_value_(on_value),
       pulse_timer_(std::bind(&OutputPin::PulseTimerCB, this)) {
   mgos_gpio_set_mode(pin_, MGOS_GPIO_MODE_OUTPUT);
+  LOG(LL_INFO, ("OutputPin %d: pin %d, on_value %d, state %s", id, pin,
+                on_value, OnOff(GetState())));
 }
 
 OutputPin::~OutputPin() {

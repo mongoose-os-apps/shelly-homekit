@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Deomid "rojer" Ryabkov
+ * Copyright (c) Shelly-HomeKit Contributors
  * All rights reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,7 @@
 #include "mgos_hap.h"
 
 #include "shelly_hap_contact_sensor.hpp"
+#include "shelly_hap_doorbell.hpp"
 #include "shelly_hap_motion_sensor.hpp"
 #include "shelly_hap_occupancy_sensor.hpp"
 #include "shelly_hap_stateless_switch.hpp"
@@ -132,6 +133,13 @@ Status ShellyInput::Init() {
       s_ = cs;
       break;
     }
+    case Type::kDoorbell: {
+      auto *db = new hap::Doorbell(id(), in_,
+                                   (struct mgos_config_in_ssw *) &cfg_->ssw);
+      c_.reset(db);
+      s_ = db;
+      break;
+    }
     default: {
       return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid type %d",
                           (int) initial_type_);
@@ -195,6 +203,8 @@ uint16_t ShellyInput::GetAIDBase() const {
       return SHELLY_HAP_AID_BASE_OCCUPANCY_SENSOR;
     case Type::kContactSensor:
       return SHELLY_HAP_AID_BASE_CONTACT_SENSOR;
+    case Type::kDoorbell:
+      return SHELLY_HAP_AID_BASE_DOORBELL;
     default:
       return 0;
   }
@@ -212,6 +222,7 @@ bool ShellyInput::IsValidType(int type) {
     case (int) Type::kMotionSensor:
     case (int) Type::kOccupancySensor:
     case (int) Type::kContactSensor:
+    case (int) Type::kDoorbell:
       return true;
   }
   return false;

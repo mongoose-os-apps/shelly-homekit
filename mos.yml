@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.7.3
+version: 2.8.0-alpha1
 platform: esp8266
 
 libs_version: latest
@@ -9,6 +9,7 @@ mongoose_os_version: latest
 
 sources:
   - src
+  - src/mock
   - src/BL0937
   - src/${build_vars.MODEL}
 
@@ -278,7 +279,6 @@ conds:
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
         - origin: https://github.com/mongoose-os-libs/ade7953
-          version: master # Until 2.18 is out.
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
@@ -437,25 +437,57 @@ conds:
         - origin: https://github.com/mongoose-os-libs/adc
         - origin: https://github.com/mongoose-os-libs/wifi
 
-  - when: mos.platform == "ubuntu"
+  - when: build_vars.MODEL == "ShellyU"
     apply:
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: ubuntu-nossl
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
-      libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
-          variant: ubuntu-nossl
+        SHELLY_HAVE_PM: 1
       config_schema:
         - ["device.id", "ShellyU-????"]
         - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
         - ["http.document_root", "."]
-        - ["sw1", "sw", {title: "SW settings"}]
-        - ["sw1.name", "SW"]
-        - ["sw1.in_mode", 3]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "ShellyU SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
-        - ["in1.ssw.name", "Shelly SSW1"]
-        - ["in1.sensor.name", "Shelly MS1"]
+        - ["in1.ssw.name", "ShellyU SSW1"]
+        - ["in1.sensor.name", "ShellyU S1"]
+
+  - when: build_vars.MODEL == "ShellyU25"
+    apply:
+      sources:
+        - src/Shelly25/shelly_init_components.cpp  # Same components as Shelly25
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: ubuntu-nossl
+      cdefs:
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '""'
+        MG_ENABLE_SSL: 0
+        SHELLY_HAVE_PM: 1
+      config_schema:
+        - ["device.id", "ShellyU25-????"]
+        - ["shelly.name", "ShellyU25-????"]
+        - ["file_logger.dir", "./"]
+        - ["http.document_root", "."]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "ShellyU25 SW1"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "ShellyU25 SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["sw2", "sw", {title: "SW2 settings"}]
+        - ["sw2.name", "ShellyU25 SW2"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "ShellyU25 SSW2"]
+        - ["in2.sensor.name", "ShellyU25 S2"]
+        - ["wc1", "wc", {title: "WC1 settings"}]
+        - ["wc1.name", "Window 1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "ShellyU25 GDO"]
 
 manifest_version: 2020-01-29
