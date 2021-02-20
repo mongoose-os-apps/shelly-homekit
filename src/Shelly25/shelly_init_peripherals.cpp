@@ -39,6 +39,9 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
       .apower_scale_1 = (1 / 164.0),
       .aenergy_scale_0 = (1 / 25240.0),
       .aenergy_scale_1 = (1 / 25240.0),
+      .voltage_pga_gain = 0,
+      .current_pga_gain_0 = 0,
+      .current_pga_gain_1 = 0,
   };
 
   s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
