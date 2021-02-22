@@ -262,6 +262,7 @@ function swSetConfig(c) {
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
     in_inverted: el(c, "in_inverted").checked,
+    out_inverted: el(c, "out_inverted").checked,
   };
   if (autoOff) {
     cfg.auto_off_delay = dateStringToSeconds(autoOffDelay);
@@ -497,6 +498,7 @@ function updateComponent(cd) {
         el(c, "in_inverted_container").style.display = "none";
         if (el(c, "initial_3")) el(c, "initial_3").remove();
       }
+      checkIfNotModified(el(c, "out_inverted"), cd.out_inverted);
       checkIfNotModified(el(c, "auto_off"), cd.auto_off);
       el(c, "auto_off_delay_container").style.display = el(c, "auto_off").checked ? "block" : "none";
       setValueIfNotModified(el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));

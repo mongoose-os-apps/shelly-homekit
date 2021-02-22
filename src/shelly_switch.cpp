@@ -63,11 +63,11 @@ StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, "
       "in_inverted: %B, initial: %d, state: %B, auto_off: %B, "
-      "auto_off_delay: %.3f, state_led_en: %d",
+      "auto_off_delay: %.3f, state_led_en: %d, out_inverted: %B",
       id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type,
       cfg_->valve_type, cfg_->in_mode, cfg_->in_inverted, cfg_->initial_state,
       out_->GetState(), cfg_->auto_off, cfg_->auto_off_delay,
-      cfg_->state_led_en);
+      cfg_->state_led_en, cfg_->out_inverted);
   if (out_pm_ != nullptr) {
     auto power = out_pm_->GetPowerW();
     if (power.ok()) {
@@ -92,10 +92,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
       config_json.c_str(), config_json.size(),
       "{name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, in_inverted: %B, "
       "initial_state: %d, "
-      "auto_off: %B, auto_off_delay: %lf, state_led_en: %d}",
+      "auto_off: %B, auto_off_delay: %lf, state_led_en: %d, out_inverted: %B}",
       &cfg.name, &cfg.svc_type, &cfg.valve_type, &cfg.in_mode, &in_inverted,
       &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay,
-      &cfg.state_led_en);
+      &cfg.state_led_en, &cfg.out_inverted);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -159,6 +159,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
     cfg_->state_led_en = cfg.state_led_en;
     *restart_required = true;
   }
+  if (cfg_->out_inverted != cfg.out_inverted) {
+    cfg_->out_inverted = cfg.out_inverted;
+    *restart_required = true;
+  }
   return Status::OK();
 }
 
@@ -186,6 +190,7 @@ Status ShellySwitch::Init() {
         std::bind(&ShellySwitch::InputEventHandler, this, _1, _2));
     in_->SetInvert(cfg_->in_inverted);
   }
+  out_->SetInvert(cfg_->out_inverted);
   bool should_restore = (cfg_->initial_state == (int) InitialState::kLast);
   if (IsSoftReboot()) should_restore = true;
   if (should_restore) {

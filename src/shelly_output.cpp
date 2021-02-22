@@ -46,12 +46,12 @@ OutputPin::~OutputPin() {
 }
 
 bool OutputPin::GetState() {
-  return (mgos_gpio_read_out(pin_) == on_value_);
+  return (mgos_gpio_read_out(pin_) == on_value_) ^ out_invert_;
 }
 
 Status OutputPin::SetState(bool on, const char *source) {
   bool cur_state = GetState();
-  mgos_gpio_write(pin_, (on ? on_value_ : !on_value_));
+  mgos_gpio_write(pin_, ((on ^ out_invert_) ? on_value_ : !on_value_));
   pulse_active_ = false;
   if (on == cur_state) return Status::OK();
   if (source == nullptr) source = "";
@@ -71,6 +71,11 @@ Status OutputPin::Pulse(bool on, int duration_ms, const char *source) {
 void OutputPin::PulseTimerCB() {
   if (!pulse_active_) return;
   SetState(!GetState(), "pulse_off");
+}
+
+void OutputPin::SetInvert(bool out_invert) {
+  out_invert_ = out_invert;
+  GetState();
 }
 
 }  // namespace shelly
