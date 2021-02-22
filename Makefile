@@ -1,6 +1,6 @@
 MAKEFLAGS += --warn-undefined-variables
 
-.PHONY: build format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS
+.PHONY: build check-format format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS
 
 MOS ?= mos
 # Build locally by default if Docker is available.
@@ -12,8 +12,6 @@ RELEASE ?= 0
 RELEASE_SUFFIX ?=
 MOS_BUILD_FLAGS ?=
 BUILD_DIR ?= ./build_$*
-
-MAKEFLAGS += --warn-undefined-variables
 
 MOS_BUILD_FLAGS_FINAL = $(MOS_BUILD_FLAGS)
 ifeq "$(LOCAL)" "1"
@@ -85,6 +83,9 @@ endif
 
 format:
 	find src -name \*.cpp -o -name \*.hpp | xargs clang-format -i
+
+check-format: format
+	@git diff --exit-code || { printf "\n== Please format your code (run make format) ==\n\n"; exit 1; }
 
 upload:
 	rsync -azv releases/* rojer.me:www/files/shelly/
