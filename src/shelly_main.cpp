@@ -319,6 +319,9 @@ static bool StartService(bool quiet) {
     for (auto &in : s_inputs) {
       in->SetInvert(false);
     }
+    for (auto &out : s_outputs) {
+      out->SetInvert(false);
+    }
     CreateComponents(&g_comps, &s_accs, &s_server);
     s_accs.shrink_to_fit();
     g_comps.shrink_to_fit();

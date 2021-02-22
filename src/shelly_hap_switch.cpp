@@ -61,6 +61,8 @@ Status Switch::Init() {
   state_notify_chars_.push_back(on_char);
   AddChar(on_char);
 
+  out_->SetInvert(cfg_->out_inverted);
+
   return Status::OK();
 }
 
