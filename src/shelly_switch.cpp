@@ -107,7 +107,7 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   }
   if ((cfg.svc_type != 3 && cfg.valve_type != -1) ||
       (cfg.svc_type == 3 && cfg.valve_type < 0) ||
-      (cfg.svc_type == 3 && cfg.valve_type > 3)) {
+      (cfg.svc_type == 3 && cfg.valve_type > 1)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "valve_type");
   }
   if (cfg.in_mode != -2 &&

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+ /*
+  * At the moment only GenericValve and Irrigation are supported.
+  * See https://github.com/mongoose-os-apps/shelly-homekit/issues/510 for details.
+  */
+
 #include "shelly_hap_valve.hpp"
 
 #include "mgos_hap_accessory.hpp"
