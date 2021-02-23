@@ -358,10 +358,11 @@ static bool StartService(bool quiet) {
 }
 
 void StopService() {
-  if (HAPAccessoryServerGetState(&s_server) == kHAPAccessoryServerState_Idle) {
+  HAPAccessoryServerState state = HAPAccessoryServerGetState(&s_server);
+  if (state == kHAPAccessoryServerState_Idle) {
     return;
   }
-  LOG(LL_INFO, ("== Stopping HAP service"));
+  LOG(LL_INFO, ("== Stopping HAP service (%d)", state));
   HAPAccessoryServerStop(&s_server);
 }
 
