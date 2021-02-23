@@ -94,8 +94,8 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
       "initial_state: %d, "
       "auto_off: %B, auto_off_delay: %lf, state_led_en: %d, out_inverted: %B}",
       &cfg.name, &cfg.svc_type, &cfg.valve_type, &cfg.in_mode, &in_inverted,
-      &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay,
-      &cfg.state_led_en, &cfg.out_inverted);
+      &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay, &cfg.state_led_en,
+      &cfg.out_inverted);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
