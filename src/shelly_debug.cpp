@@ -67,6 +67,7 @@ void shelly_debug_write_nc(struct mg_connection *nc) {
   }
   HAPPlatformTCPStreamManagerStats tcpm_stats = {};
   HAPPlatformTCPStreamManagerGetStats(s_tcpm, &tcpm_stats);
+  HAPNetworkPort lport = HAPPlatformTCPStreamManagerGetListenerPort(s_tcpm);
   mg_printf(nc,
             "App: %s %s %s\r\n"
             "Uptime: %.2lf\r\n"
@@ -77,8 +78,7 @@ void shelly_debug_write_nc(struct mg_connection *nc) {
             MGOS_APP, mgos_sys_ro_vars_get_fw_version(),
             mgos_sys_ro_vars_get_fw_id(), mgos_uptime(),
             (unsigned long) mgos_get_free_heap_size(),
-            (unsigned long) mgos_get_min_free_heap_size(),
-            HAPPlatformTCPStreamManagerGetListenerPort(s_tcpm), cn,
+            (unsigned long) mgos_get_min_free_heap_size(), lport, cn,
             (unsigned) tcpm_stats.numPendingTCPStreams,
             (unsigned) tcpm_stats.numActiveTCPStreams,
             (unsigned) tcpm_stats.maxNumTCPStreams);
@@ -91,7 +91,7 @@ void shelly_debug_write_nc(struct mg_connection *nc) {
     struct mg_mgr *mgr = mgos_get_mgr();
     for (nc2 = mg_next(mgr, NULL); nc2 != NULL; nc2 = mg_next(mgr, nc2)) {
       if (nc2->listener == NULL ||
-          ntohs(nc2->listener->sa.sin.sin_port) != 9000) {
+          ntohs(nc2->listener->sa.sin.sin_port) != lport) {
         continue;
       }
       char addr[32];
