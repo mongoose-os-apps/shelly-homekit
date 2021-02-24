@@ -36,8 +36,6 @@ namespace shelly {
 // Common base for Switch, Outlet and Lock services.
 class ShellySwitch : public Component, public mgos::hap::Service {
  public:
-
-
   ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
                Output *led_out, struct mgos_config_sw *cfg);
   virtual ~ShellySwitch();

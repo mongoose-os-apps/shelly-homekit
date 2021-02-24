@@ -16,19 +16,20 @@
  */
 
 #include "shelly_hap_rgb.hpp"
-#include "shelly_switch.hpp"
 #include "shelly_main.hpp"
+#include "shelly_switch.hpp"
 
 #include "mgos.hpp"
-#include "mgos_system.hpp"
 #include "mgos_pwm.h"
+#include "mgos_system.hpp"
 
 #include "mgos_hap_accessory.hpp"
 
 namespace shelly {
 namespace hap {
 
-RGB::RGB(int id, Input *in, Output *out_r, Output *out_g, Output *out_b, struct mgos_config_rgb *cfg)
+RGB::RGB(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
+         struct mgos_config_rgb *cfg)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_LIGHTING +
                (SHELLY_HAP_IID_STEP_LIGHTING * (id - 1))),
@@ -63,8 +64,8 @@ Status RGB::Init() {
     return Status::OK();
   }
   if (in_ != nullptr) {
-    handler_id_ = in_->AddHandler(
-        std::bind(&RGB::InputEventHandler, this, _1, _2));
+    handler_id_ =
+        in_->AddHandler(std::bind(&RGB::InputEventHandler, this, _1, _2));
     in_->SetInvert(cfg_->in_inverted);
   }
   bool should_restore = (cfg_->initial_state == (int) InitialState::kLast);
@@ -138,7 +139,7 @@ Status RGB::Init() {
   return Status::OK();
 }
 
-void RGB::HSVtoRGB(float& h, float& s, float& v, float& r, float& g, float& b) {
+void RGB::HSVtoRGB(float &h, float &s, float &v, float &r, float &g, float &b) {
   if (s == 0.0) {
     r = g = b = 1.0;
   }
@@ -148,36 +149,49 @@ void RGB::HSVtoRGB(float& h, float& s, float& v, float& r, float& g, float& b) {
   float p = v * (1.0 - s);
   float q = v * (1.0 - s * f);
   float t = v * (1.0 - s * (1.0 - f));
-  
+
   switch (i % 6) {
-  case 0:
-    r = v; g = t; b = p;
-    break;
-  case 1:
-    r = q; g = v; b = p;
-    break;
-  case 2:
-    r = p; g = v; b = t;
-    break;
-  case 3:
-    r = p; g = q; b = v;
-    break;
-  case 4:
-    r = t; g = p; b = v;
-    break;
-  case 5:
-    r = v; g = p; b = q;
-    break;
+    case 0:
+      r = v;
+      g = t;
+      b = p;
+      break;
+    case 1:
+      r = q;
+      g = v;
+      b = p;
+      break;
+    case 2:
+      r = p;
+      g = v;
+      b = t;
+      break;
+    case 3:
+      r = p;
+      g = q;
+      b = v;
+      break;
+    case 4:
+      r = t;
+      g = p;
+      b = v;
+      break;
+    case 5:
+      r = v;
+      g = p;
+      b = q;
+      break;
   }
 }
 
 void RGB::SetOutputState(const char *source) {
-  LOG(LL_INFO, ("state: %s, brightness: %i, hue: %i, saturation: %i 4",
-          OnOff(cfg_->state), cfg_->brightness, cfg_->hue, cfg_->saturation));
+  LOG(LL_INFO,
+      ("state: %s, brightness: %i, hue: %i, saturation: %i 4",
+       OnOff(cfg_->state), cfg_->brightness, cfg_->hue, cfg_->saturation));
 
   float h = cfg_->hue / 360.0;
   float s = cfg_->saturation / 100.0;
-  float v = 1; // use 1 as value, real value will be done by pwm duty
+  float v = 1;  // use 1 as value, real value will be done by pwm duty
 
   float r = 0, g = 0, b = 0;
 
@@ -202,8 +216,8 @@ void RGB::SetOutputState(const char *source) {
 
 StatusOr<std::string> RGB::GetInfo() const {
   const_cast<RGB *>(this)->SaveState();
-  return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i",
-    OnOff(cfg_->state), cfg_->brightness, cfg_->hue, cfg_->saturation);
+  return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i", OnOff(cfg_->state),
+                       cfg_->brightness, cfg_->hue, cfg_->saturation);
 }
 
 StatusOr<std::string> RGB::GetInfoJSON() const {
@@ -212,25 +226,22 @@ StatusOr<std::string> RGB::GetInfoJSON() const {
       " brightness: %d, hue: %d, saturation: %d, "
       " in_inverted: %B, initial: %d, in_mode: %d, "
       "auto_off: %B, auto_off_delay: %.3f}",
-      id(), type(), cfg_->name, cfg_->state,
-      cfg_->brightness, cfg_->hue, cfg_->saturation,
-      cfg_->in_inverted, cfg_->initial_state, cfg_->in_mode,
+      id(), type(), cfg_->name, cfg_->state, cfg_->brightness, cfg_->hue,
+      cfg_->saturation, cfg_->in_inverted, cfg_->initial_state, cfg_->in_mode,
       cfg_->auto_off, cfg_->auto_off_delay);
 }
 
-Status RGB::SetConfig(const std::string &config_json,
-  bool *restart_required) {
+Status RGB::SetConfig(const std::string &config_json, bool *restart_required) {
   struct mgos_config_rgb cfg = *cfg_;
   int8_t in_inverted = -1;
   cfg.name = nullptr;
   cfg.in_mode = -2;
-  json_scanf(
-      config_json.c_str(), config_json.size(),
-      "{name: %Q, in_mode: %d, in_inverted: %B, "
-      "initial_state: %d, "
-      "auto_off: %B, auto_off_delay: %lf}",
-      &cfg.name, &cfg.in_mode, &in_inverted,
-      &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay);
+  json_scanf(config_json.c_str(), config_json.size(),
+             "{name: %Q, in_mode: %d, in_inverted: %B, "
+             "initial_state: %d, "
+             "auto_off: %B, auto_off_delay: %lf}",
+             &cfg.name, &cfg.in_mode, &in_inverted, &cfg.initial_state,
+             &cfg.auto_off, &cfg.auto_off_delay);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -282,8 +293,8 @@ Status RGB::SetState(const std::string &state_json) {
   bool state;
   int brightness, hue, saturation;
   json_scanf(state_json.c_str(), state_json.size(),
-            "{state: %B, brightness: %d, hue: %d, saturation: %d}",
-            &state, &brightness, &hue, &saturation);
+             "{state: %B, brightness: %d, hue: %d, saturation: %d}", &state,
+             &brightness, &hue, &saturation);
 
   if (cfg_->state != state) {
     cfg_->state = state;
@@ -377,18 +388,18 @@ void RGB::InputEventHandler(Input::Event ev, bool state) {
   }
 }
 
-HAPError RGB::HandleOnRead(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicReadRequest *request, bool *value) {
+HAPError RGB::HandleOnRead(HAPAccessoryServerRef *server,
+                           const HAPBoolCharacteristicReadRequest *request,
+                           bool *value) {
   *value = cfg_->state;
   (void) server;
   (void) request;
   return kHAPError_None;
 }
 
-HAPError RGB::HandleOnWrite(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicWriteRequest *request, bool value) {
+HAPError RGB::HandleOnWrite(HAPAccessoryServerRef *server,
+                            const HAPBoolCharacteristicWriteRequest *request,
+                            bool value) {
   LOG(LL_INFO, ("State %d: %s", id(), OnOff(value)));
   cfg_->state = value;
   dirty_ = true;
@@ -422,9 +433,9 @@ HAPError RGB::HandleBrightnessWrite(
   return kHAPError_None;
 }
 
-HAPError RGB::HandleHueRead(
-    HAPAccessoryServerRef *server,
-    const HAPUInt32CharacteristicReadRequest *request, uint32_t *value) {
+HAPError RGB::HandleHueRead(HAPAccessoryServerRef *server,
+                            const HAPUInt32CharacteristicReadRequest *request,
+                            uint32_t *value) {
   LOG(LL_INFO, ("HandleHueRead"));
   *value = cfg_->hue;
   (void) server;
@@ -432,11 +443,11 @@ HAPError RGB::HandleHueRead(
   return kHAPError_None;
 }
 
-HAPError RGB::HandleHueWrite(
-    HAPAccessoryServerRef *server,
-    const HAPUInt32CharacteristicWriteRequest *request, uint32_t value) {
-  LOG(LL_INFO, ("Hue %d: %i", id(), (int)value));
-  if (cfg_->hue != (int)value) {
+HAPError RGB::HandleHueWrite(HAPAccessoryServerRef *server,
+                             const HAPUInt32CharacteristicWriteRequest *request,
+                             uint32_t value) {
+  LOG(LL_INFO, ("Hue %d: %i", id(), (int) value));
+  if (cfg_->hue != (int) value) {
     cfg_->hue = value;
     dirty_ = true;
     state_notify_chars_[2]->RaiseEvent();
@@ -462,8 +473,8 @@ HAPError RGB::HandleSaturationRead(
 HAPError RGB::HandleSaturationWrite(
     HAPAccessoryServerRef *server,
     const HAPUInt32CharacteristicWriteRequest *request, uint32_t value) {
-  LOG(LL_INFO, ("Saturation %d: %i", id(), (int)value));
-  if (cfg_->saturation != (int)value) {
+  LOG(LL_INFO, ("Saturation %d: %i", id(), (int) value));
+  if (cfg_->saturation != (int) value) {
     cfg_->saturation = value;
     dirty_ = true;
     state_notify_chars_[3]->RaiseEvent();

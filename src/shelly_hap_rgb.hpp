@@ -24,8 +24,8 @@
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-#include "shelly_output.hpp"
 #include "shelly_input.hpp"
+#include "shelly_output.hpp"
 
 #include "mgos_pwm.h"
 #include "mgos_pwm_rgb_led.h"
@@ -36,7 +36,7 @@ namespace hap {
 class RGB : public Component, public mgos::hap::Service {
  public:
   RGB(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
-       struct mgos_config_rgb *cfg);
+      struct mgos_config_rgb *cfg);
   virtual ~RGB();
 
   // Component interface impl.
@@ -45,7 +45,7 @@ class RGB : public Component, public mgos::hap::Service {
   Status Init() override;
   void SetOutputState(const char *source);
   void SaveState();
-  void HSVtoRGB(float& h, float& s, float& v, float& r, float& g, float& b);
+  void HSVtoRGB(float &h, float &s, float &v, float &r, float &g, float &b);
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
@@ -67,13 +67,13 @@ class RGB : public Component, public mgos::hap::Service {
   mgos::Timer auto_off_timer_;
   bool dirty_ = false;
 
-  HAPError HandleOnRead(
-      HAPAccessoryServerRef *server,
-      const HAPBoolCharacteristicReadRequest *request, bool *value);
-  HAPError HandleOnWrite(
-      HAPAccessoryServerRef *server,
-      const HAPBoolCharacteristicWriteRequest *request, bool value);
-  
+  HAPError HandleOnRead(HAPAccessoryServerRef *server,
+                        const HAPBoolCharacteristicReadRequest *request,
+                        bool *value);
+  HAPError HandleOnWrite(HAPAccessoryServerRef *server,
+                         const HAPBoolCharacteristicWriteRequest *request,
+                         bool value);
+
   HAPError HandleBrightnessRead(
       HAPAccessoryServerRef *server,
       const HAPUInt8CharacteristicReadRequest *request, uint8_t *value);
@@ -82,13 +82,13 @@ class RGB : public Component, public mgos::hap::Service {
       HAPAccessoryServerRef *server,
       const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
 
-  HAPError HandleHueRead(
-      HAPAccessoryServerRef *server,
-      const HAPUInt32CharacteristicReadRequest *request, uint32_t *value);
+  HAPError HandleHueRead(HAPAccessoryServerRef *server,
+                         const HAPUInt32CharacteristicReadRequest *request,
+                         uint32_t *value);
 
-  HAPError HandleHueWrite(
-      HAPAccessoryServerRef *server,
-      const HAPUInt32CharacteristicWriteRequest *request, uint32_t value);
+  HAPError HandleHueWrite(HAPAccessoryServerRef *server,
+                          const HAPUInt32CharacteristicWriteRequest *request,
+                          uint32_t value);
 
   HAPError HandleSaturationRead(
       HAPAccessoryServerRef *server,
