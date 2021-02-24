@@ -177,6 +177,9 @@ PowerMeter *FindPM(int id) {
 
 // Executed very early, pretty much nothing is available here.
 extern "C" void mgos_app_preinit(void) {
+#if RST_GPIO_INIT >= 0
+  mgos_gpio_setup_output(RST_GPIO_INIT, 0);
+#endif
 #if BTN_GPIO >= 0
   mgos_gpio_setup_input(BTN_GPIO,
                         (BTN_DOWN ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP));
@@ -794,6 +797,11 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "relaydata",
       "index.html",
       "conf9_backup.json",
+      "conf3.json",
+      "hwinfo_struct.json",
+      "self_test",
+      "colordata",
+      "wifiresetdata",
       // Obsolete files from previopus versions.
       "style.css",
       "axios.min.js.gz",

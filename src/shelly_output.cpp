@@ -19,6 +19,7 @@
 
 #include "mgos.hpp"
 #include "mgos_gpio.h"
+#include "mgos_pwm.h"
 
 namespace shelly {
 
@@ -49,6 +50,10 @@ bool OutputPin::GetState() {
   return (mgos_gpio_read_out(pin_) == on_value_) ^ out_invert_;
 }
 
+int OutputPin::pin() const {
+  return pin_;
+}
+
 Status OutputPin::SetState(bool on, const char *source) {
   bool cur_state = GetState();
   mgos_gpio_write(pin_, ((on ^ out_invert_) ? on_value_ : !on_value_));
@@ -57,6 +62,17 @@ Status OutputPin::SetState(bool on, const char *source) {
   if (source == nullptr) source = "";
   LOG(LL_INFO,
       ("Output %d: %s -> %s (%s)", id(), OnOff(cur_state), OnOff(on), source));
+  return Status::OK();
+}
+
+Status OutputPin::SetStatePWM(float duty, const char *source) {
+  if (duty > 0.000001) { // fix rounding issue
+    mgos_pwm_set(pin_, 400, duty);
+    LOG(LL_INFO, ("Output %d: %f (%s)", id(), duty, source));
+  } else {
+    mgos_pwm_set(pin_, 0, 0);
+    LOG(LL_INFO, ("Output %d: OFF (%s)", id(), source));
+  }
   return Status::OK();
 }
 

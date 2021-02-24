@@ -583,6 +583,92 @@
     </div>
   </div>
 </div>
+
+<div class="container" id="rgb_template" style="display: none">
+  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/RGB-Settings"
+     target="_blank">?</a>
+  <h1 id="head">RGB</h1>
+  <div class="form">
+    <div class="">
+      <div class="form-control" id="state_container">
+        <label for="state">Status:</label>
+        <label class="switch">
+          <input type="checkbox" id="state">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="form-control" id="power_stats_container" style="display: none;">
+        <label for="power_stats">Power:</label>
+        <span id="power_stats"></span>
+      </div>
+    <div class="">
+      <div class="form-control">
+        <label>Color:</label>
+        <span id="color_preview"></span>
+        <span id="color_name"></span>
+      </div>
+      <div class="form-control">
+        <label>Hue:</label>
+        <input type="range" id="hue" min="0" max="360"><span id="hue_value"></span>
+      </div>
+      <div class="form-control">
+        <label>Saturation:</label>
+        <input type="range" id="saturation" min="0" max="100"><span id="saturation_value"></span>
+      </div>
+      <div class="form-control">
+        <label>Brightness:</label>
+        <input type="range" id="brightness" min="0" max="100"><span id="brightness_value"></span>
+      </div>
+      <div class="form-control">
+        <label>Name:</label>
+        <input type="text" id="name">
+      </div>
+      <div class="form-control" id="in_mode_container">
+        <label for="in_mode">Input Mode:</label>
+        <select id="in_mode">
+          <option id="in_mode_0" value="0">Momentary</option>
+          <option id="in_mode_1" value="1">Toggle</option>
+          <option id="in_mode_2" value="2">Edge</option>
+          <option id="in_mode_3" value="3">Detached</option>
+          <option id="in_mode_4" value="4">Activation</option>
+        </select>
+      </div>
+      <div class="form-control" id="in_inverted_container" style="display: none">
+        <label for="in_inverted">Inverted Input:</label>
+        <label class="switch">
+          <input type="checkbox" id="in_inverted">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="form-control">
+        <label for="initial">Initial state:</label>
+        <select id="initial">
+          <option id="initial_0" value="0">Off</option>
+          <option id="initial_1" value="1">On</option>
+          <option id="initial_2" value="2">Last</option>
+          <option id="initial_3" value="3">Input</option>
+        </select>
+      </div>
+      <div class="form-control">
+        <label for="auto_off">Auto off:</label>
+        <label class="switch">
+          <input type="checkbox" id="auto_off">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="form-control" id="auto_off_delay_container">
+        <label for="auto_off_delay">Auto off delay:</label>
+        <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
+               pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
+      </div>
+      <div class="button-container">
+        <button id="save_btn">
+          <label><span id="save_spinner"></span>Save</label>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- script.js inserted below during build -->
 <script src="script.js"></script>
 </body>

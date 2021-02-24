@@ -82,6 +82,20 @@ config_schema:
   - ["gdo.move_time_ms", "i", 30000, {title: "Movement time, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {title: "Output active time, ms"}]
 
+  - ["rgb", "o", {title: "RGB settings", abstract: true}]
+  - ["rgb.name", "s", "RGB", {title: "Accessory name"}]
+  - ["rgb.enable", "b", true, {title: "Enable this switch in the accessory"}]
+  - ["rgb.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
+  - ["rgb.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
+  - ["rgb.state", "b", false, {title: "State of the lightbulb"}]
+  - ["rgb.svc_type", 4] # Lighting
+  - ["rgb.hue", "i", 0, {title: "Hue of the lightbulb"}]
+  - ["rgb.brightness", "i", 0, {title: "Brightness of the lightbulb"}]
+  - ["rgb.saturation", "i", 0, {title: "Saturation of the lightbulb"}]
+  - ["rgb.initial_state", "i", 3, {title: "Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
+  - ["rgb.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
+  - ["rgb.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
+
   # Preserved from stock.
   - ["k_apparent", "i", 1750000, {}]
   - ["max_power", "i", 1800, {}]
@@ -102,6 +116,7 @@ cdefs:
   LED_GPIO: -1
   BTN_GPIO: -1
   BTN_NOISY: 0
+  RST_GPIO_INIT: -1
   HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
@@ -418,6 +433,38 @@ conds:
         - ["sw1.initial_state", 2]
         - ["sw1.state_led_en", 1]
         - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
+
+  - when: build_vars.MODEL == "ShellyRGBW2"
+    apply:
+      name: rgbw2-color # To allow OTA from stock fw.
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+        - origin: https://github.com/mongoose-os-libs/pwm
+          variant: esp8266
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x7000  # To be compatible with stock firmware.
+        MGOS_ROOT_FS_TYPE: SPIFFS
+      cdefs:
+        LED_GPIO: 2
+        LED_ON: 0
+        BTN_GPIO: 13
+        BTN_DOWN: 0
+        RST_GPIO_INIT: 15 # reset GPIO 15 to prevent green flash on startup
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHRGBW2"'
+        # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["device.id", "shellyrgbw2-??????"]
+        - ["shelly.name", "shellyrgbw2-??????"]
+        - ["wifi.ap.ssid", "shellyrgbw2-??????"]
+        - ["rgb1", "rgb", {title: "SW1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
 
   - when: mos.platform != "ubuntu"
     apply:
