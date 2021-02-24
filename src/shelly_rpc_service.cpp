@@ -325,6 +325,16 @@ static void WipeDeviceHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) fi;
 }
 
+static void AbortHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                         struct mg_rpc_frame_info *fi, struct mg_str args) {
+  LOG(LL_ERROR, ("Aborting as requested"));
+  abort();
+  (void) cb_arg;
+  (void) args;
+  (void) fi;
+  (void) ri;
+}
+
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm) {
@@ -342,6 +352,8 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                        nullptr);
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.InjectInputEvent",
                        "{id: %d, event: %d}", InjectInputEventHandler, nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.Abort", "", AbortHandler,
+                       nullptr);
   } else {
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
                        GetInfoFailsafeHandler, nullptr);
