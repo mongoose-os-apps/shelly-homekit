@@ -679,7 +679,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   else:
     latest_fw_label = flash_fw_version
 
-  if (not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or force_flash or (force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version))))) and requires_upgrade != 'Done':
+  if (not quiet_run or (quiet_run and (is_newer(flash_fw_version, current_fw_version) or (force_flash and flash_fw_version != '0.0.0') or (force_version and dlurl and parse_version(flash_fw_version) != parse_version(current_fw_version))))) and requires_upgrade != 'Done':
     logger.info(f"")
     logger.info(f"{WHITE}Host: {NC}http://{host}")
     logger.info(f"{WHITE}Device Name: {NC}{device_name}")
