@@ -604,13 +604,13 @@ static bool shelly_cfg_migrate(void) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
-          static_cast<int>(ShellySwitch::InitialState::kLast));
+          static_cast<int>(InitialState::kLast));
     }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
     if (mgos_sys_config_get_sw2_persist_state()) {
       mgos_sys_config_set_sw2_initial_state(
-          static_cast<int>(ShellySwitch::InitialState::kLast));
+          static_cast<int>(InitialState::kLast));
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(1);
