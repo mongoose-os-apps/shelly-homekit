@@ -462,39 +462,24 @@ class StockDevice(Device):
 
     logger.trace(response.text)
 
-def get_stock_release_info():
-  stock_release_info = False
+
+def get_release_info(info_type):
+  release_info = False
+  release_info_url = homekit_info_url if info_type == 'homekit' else stock_info_url
   try:
-    fp = requests.get("https://api.shelly.cloud/files/firmware", timeout=3)
+    fp = requests.get(release_info_url, timeout=3)
     logger.debug(f"stock_release_info status code: {fp.status_code}")
     if fp.status_code == 200:
-      stock_release_info = json.loads(fp.content)
+      release_info = json.loads(fp.content)
   except requests.exceptions.RequestException as err:
     logger.critical(f"{RED}CRITICAL:{NC} {err}")
-  logger.trace(f"stock_release_info: {json.dumps(stock_release_info, indent = 4)}")
-  if not stock_release_info:
+  logger.trace(f"{info_type} release_info: {json.dumps(stock_release_info, indent = 4)}")
+  if not release_info:
     logger.error("")
     logger.error(f"{RED}Failed to lookup online stock firmware information{NC}")
     logger.error("For more information please point your web browser to:")
     logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
-  return stock_release_info
-
-def get_homekit_release_info():
-  homekit_release_info = False
-  try:
-    fp = requests.get("https://rojer.me/files/shelly/update.json", timeout=3)
-    logger.debug(f"homekit_release_info status code: {fp.status_code}")
-    if fp.status_code == 200:
-      homekit_release_info = json.loads(fp.content)
-  except requests.exceptions.RequestException as err:
-    logger.critical(f"{RED}CRITICAL:{NC} {err}")
-  logger.trace(f"homekit_release_info: {json.dumps(homekit_release_info, indent = 4)}")
-  if not homekit_release_info:
-    logger.error("")
-    logger.error(f"{RED}Failed to lookup online homekit firmware information{NC}")
-    logger.error("For more information please point your web browser to:")
-    logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
-  return homekit_release_info
+  return release_info
 
 def parse_version(vs):
   # 1.9.2_1L
