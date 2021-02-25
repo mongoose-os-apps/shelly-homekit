@@ -234,10 +234,11 @@ class Device:
     return info
 
   def parse_stock_version(self, version):
-    # stock version is '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
-    v = re.search("/v(?P<ver>.*)@(?P<build>.*)", version)
+    # stock can be '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
+    # stock can be '20210107-122133/1.9_GU10_RGBW@07531e29', we need '1.9_GU10_RGBW'
+    v = re.search("/v?(?P<ver>.*)@(?P<build>.*)", version)
     debug_info = v.groupdict()  if v is not None else v
-    logger.trace(f"stock version group:{debug_info}")
+    logger.trace(f"stock version group: {debug_info}")
     parsed_version = v.group('ver') if v is not None else '0.0.0'
     parsed_build = v.group('build') if v is not None else '0'
     return parsed_version
@@ -486,14 +487,17 @@ def get_release_info(info_type):
     logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
   return release_info
 
+# v = re.search("\d{6}\/(?P<ver>.*)@(?P<build>.*)", version)
 def parse_version(vs):
   # 1.9.2_1L
   # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2_autocheck
-  v = re.search("^(?P<major>\d+).(?P<minor>\d+).(?P<patch>\d+)(?:_(?P<model>[a-zA-Z0-9]*))?(?:-(?P<prerelease>[a-zA-Z0-9_]*)?(?P<prerelease_seq>\d*))?$", vs)
-  logger.trace(f"group:{v.groupdict()}")
+  # 1.9_GU10_RGBW
+  v = re.search("^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:_(?P<model>[a-zA-Z0-9_]*))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$", vs)
+  debug_info = v.groupdict() if v is not None else v
+  logger.trace(f"group: {debug_info}")
   major = int(v.group('major'))
   minor = int(v.group('minor'))
-  patch = int(v.group('patch'))
+  patch = int(v.group('patch')) if v.group('patch') is not None else '0'
   variant = v.group('model') if v.group('model') else v.group('prerelease')
   varSeq = int(v.group('prerelease_seq')) if v.group('prerelease_seq') and v.group('prerelease_seq').isdigit() else 0
   return (major, minor, patch, variant, varSeq)
