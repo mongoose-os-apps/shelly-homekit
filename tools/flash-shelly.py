@@ -199,37 +199,31 @@ class Device:
       self.wifi_ip = socket.gethostbyname(test_host)
     return host_is_reachable
 
-  def get_device_url(self, is_flashing=False):
+  def get_device_info(self, is_flashing=False):
     self.device_url = None
+    info = None
     if self.is_host_reachable(self.host, is_flashing):
       try:
-        homekit_fwcheck = requests.head(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
-        stock_fwcheck = requests.head(f'http://{self.wifi_ip}/settings', timeout=3)
+        homekit_fwcheck = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
+        stock_fwcheck = requests.get(f'http://{self.wifi_ip}/settings', timeout=10)
         if homekit_fwcheck.status_code == 200:
+          fp = homekit_fwcheck
           self.fw_type = "homekit"
           self.device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
+          info = json.loads(fp.content)
         elif stock_fwcheck.status_code == 200:
+          fp = stock_fwcheck
           self.fw_type = "stock"
           self.device_url = f'http://{self.wifi_ip}/settings'
-      except:
-        pass
-    logger.trace(f"Device URL: {self.device_url}")
-    return self.device_url
-
-  def get_device_info(self, is_flashing=False):
-    info = None
-    if self.get_device_url(is_flashing):
-      try:
-        fp = requests.get(self.device_url, timeout=3)
-        if fp.status_code == 200:
           info = json.loads(fp.content)
           if 'settings' in self.device_url:
             fp2 = requests.get(self.device_url.replace('settings', 'status'), timeout=3)
             status = json.loads(fp2.content)
             info['status'] = status
-      except requests.exceptions.RequestException as err:
-        logger.debug(f"Error: {err}")
-    else:
+      except:
+        pass
+    logger.trace(f"Device URL: {self.device_url}")
+    if not info:
       logger.debug(f"Could not get info from device: {self.host}")
     self.info = info
     return info
