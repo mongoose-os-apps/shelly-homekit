@@ -93,14 +93,19 @@ log_level = {'0' : logging.CRITICAL,
              '5' : logging.TRACE}
 
 webserver_port = 8381
+http_server_started = False
+server = None
+thread = None
 total_devices = 0
 upgradeable_devices = 0
 flashed_devices = 0
 failed_flashed_devices = 0
 arch = platform.system()
+stock_info_url = "https://api.shelly.cloud/files/firmware"
 stock_release_info = None
-homekit_release_info = None
 tried_to_get_remote_homekit = False
+homekit_info_url = "https://rojer.me/files/shelly/update.json"
+homekit_release_info = None
 tried_to_get_remote_stock = False
 
 def upgrade_pip():
@@ -765,15 +770,7 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
   logger.debug(f"{PURPLE}[Probe Device]{NC}")
   logger.trace(f"device_info: {json.dumps(device, indent = 4)}")
 
-  global stock_release_info, homekit_release_info, tried_to_get_remote_homekit, tried_to_get_remote_stock
-  if not stock_release_info and not tried_to_get_remote_stock:
-    stock_release_info = get_stock_release_info()
-    tried_to_get_remote_stock = True
-  if not homekit_release_info and not tried_to_get_remote_homekit and not local_file:
-    homekit_release_info = get_homekit_release_info()
-    tried_to_get_remote_homekit = True
-
-  http_server_started = False
+  global stock_release_info, homekit_release_info, tried_to_get_remote_homekit, tried_to_get_remote_stock, http_server_started, webserver_port, server, thread
   requires_upgrade = False
   got_info = False
 
@@ -792,13 +789,12 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
     if local_file:
       deviceinfo.set_local_file(local_file)
     if deviceinfo.fw_type == 'stock' and local_file:
-      http_server_started = False
       loop = 1
-      global webserver_port
       while not http_server_started:
         try:
           logger.info(f"{WHITE}Starting local webserver on port {webserver_port}{NC}")
-          server = StoppableHTTPServer(("", webserver_port), HTTPRequestHandler)
+          if server is None:
+            server = StoppableHTTPServer(("", webserver_port), HTTPRequestHandler)
           http_server_started = True
         except OSError as err:
           logger.critical(f"{WHITE}Failed to start server {err} port {webserver_port}{NC}")
@@ -806,26 +802,35 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
           loop += 1
           if loop == 10:
             sys.exit(1)
-      thread = threading.Thread(None, server.run)
-      thread.start()
-      http_server_started = True
+      if thread is None:
+        thread = threading.Thread(None, server.run)
+        thread.start()
     if local_file and deviceinfo.parse_local_file():
       if deviceinfo.fw_type == 'stock':
-        if deviceinfo.flash_fw_type_str == 'HomeKit' and not stock_release_info and not tried_to_get_remote_stock:
-          stock_release_info = get_stock_release_info()
-          tried_to_get_remote_stock = True
+        if deviceinfo.flash_fw_type_str == 'HomeKit':
+          if not stock_release_info and not tried_to_get_remote_stock:
+            stock_release_info = get_release_info('stock')
+            tried_to_get_remote_stock = True
           if stock_release_info:
             deviceinfo.update_to_stock(stock_release_info)
             if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
               requires_upgrade = True
               got_info = True
+            else:
+              deviceinfo.parse_local_file()
+              got_info = True
         elif deviceinfo.flash_fw_type_str == 'Stock':
           got_info = True
       else:
-        print('PP')
         got_info = True
     else:
       if deviceinfo.fw_type == 'stock' and flashmode == 'homekit':
+        if not stock_release_info and not tried_to_get_remote_stock:
+          stock_release_info = get_release_info('stock')
+          tried_to_get_remote_stock = True
+        if not homekit_release_info and not tried_to_get_remote_homekit and not local_file:
+          homekit_release_info = get_release_info('homekit')
+          tried_to_get_remote_homekit = True
         if stock_release_info and homekit_release_info:
           deviceinfo.update_to_stock(stock_release_info)
           if (deviceinfo.fw_version == '0.0.0' or is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
@@ -834,12 +839,20 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
           else:
             deviceinfo.update_to_homekit(homekit_release_info)
             got_info = True
-      elif homekit_release_info and flashmode == 'homekit':
-        deviceinfo.update_to_homekit(homekit_release_info)
-        got_info = True
-      elif stock_release_info and flashmode == 'stock':
-        deviceinfo.update_to_stock(stock_release_info)
-        got_info = True
+      elif flashmode == 'homekit':
+        if not homekit_release_info and not tried_to_get_remote_homekit and not local_file:
+          homekit_release_info = get_release_info('homekit')
+          tried_to_get_remote_homekit = True
+        if homekit_release_info:
+          deviceinfo.update_to_homekit(homekit_release_info)
+          got_info = True
+      elif flashmode == 'stock':
+        if not stock_release_info and not tried_to_get_remote_stock:
+          stock_release_info = get_release_info('stock')
+          tried_to_get_remote_stock = True
+        if stock_release_info:
+          deviceinfo.update_to_stock(stock_release_info)
+          got_info = True
     if got_info and deviceinfo.fw_type == "homekit" and float(f"{parse_version(deviceinfo.info['version'])[0]}.{parse_version(deviceinfo.info['version'])[1]}") < 2.1:
       logger.error(f"{WHITE}Host: {NC}{deviceinfo.host}")
       logger.error(f"Version {deviceinfo.info['version']} is to old for this script,")
@@ -850,16 +863,12 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
       if requires_upgrade:
         requires_upgrade = 'Done'
         deviceinfo.get_info()
-        if not is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
+        if deviceinfo.flash_fw_version != '0.0.0' and not is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
           if local_file:
             deviceinfo.parse_local_file()
           else:
             deviceinfo.update_to_homekit(homekit_release_info)
           parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
-    if http_server_started:
-      server.shutdown()
-      thread.join()
-
 
 def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
   global total_devices
@@ -1021,3 +1030,7 @@ if __name__ == '__main__':
 
   device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.type, args.exclude, args.version, args.variant,
               args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
+  if http_server_started and server:
+    logger.trace("Shutting down webserver")
+    server.shutdown()
+    thread.join()
