@@ -634,6 +634,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   flash_label = device_info.flash_label
   sys_temp = device_info.info.get('sys_temp', None)
   uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if current_fw_type_str == 'HomeKit' else datetime.timedelta(seconds=device_info.info['status'].get('uptime',0))
+  hap_ip_conns_pending = device_info.info.get('hap_ip_conns_pending', None)
+  hap_ip_conns_active = device_info.info.get('hap_ip_conns_active', None)
+  hap_ip_conns_max = device_info.info.get('hap_ip_conns_max', None)
 
   logger.debug(f"host: {host}")
   logger.debug(f"device_name: {device_name}")
@@ -646,6 +649,9 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"colour_mode: {colour_mode}")
   logger.debug(f"sys_temp: {sys_temp}")
   logger.debug(f"uptime: {uptime}")
+  logger.debug(f"hap_ip_conns_pending: {hap_ip_conns_pending}")
+  logger.debug(f"hap_ip_conns_active: {hap_ip_conns_active}")
+  logger.debug(f"hap_ip_conns_max: {hap_ip_conns_max}")
   logger.debug(f"action: {action}")
   logger.debug(f"flash mode: {mode}")
   logger.debug(f"requires_upgrade: {requires_upgrade}")
@@ -691,6 +697,10 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
     if str(uptime) != '0:00:00':
       logger.info(f"{WHITE}Up Time: {NC}{uptime}{NC}")
+    if hap_ip_conns_max is not None:
+      if int(hap_ip_conns_pending) > 0:
+        hap_ip_conns_pending = f"{RED}{hap_ip_conns_pending}{NC}"
+      logger.info(f"{WHITE}HAP Connections: {NC}{hap_ip_conns_pending} / {hap_ip_conns_active} / {hap_ip_conns_max}{NC}")
     logger.info(f"{WHITE}Current: {NC}{current_fw_type_str} {current_fw_version}")
     col = YELLOW if is_newer(flash_fw_version, current_fw_version) else WHITE
     logger.info(f"{WHITE}{flash_label} {NC}{flash_fw_type_str} {col}{latest_fw_label}{NC}")
