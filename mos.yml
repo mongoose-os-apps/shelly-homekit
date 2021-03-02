@@ -133,7 +133,6 @@ libs:
   - origin: https://github.com/mongoose-os-libs/rpc-mqtt
   - origin: https://github.com/mongoose-os-libs/rpc-ws
   - origin: https://github.com/mongoose-os-libs/sntp
-  - origin: https://github.com/mongoose-os-libs/pwm
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
@@ -441,6 +440,8 @@ conds:
       libs:
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
+        - origin: https://github.com/mongoose-os-libs/pwm
+          variant: esp8266
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
