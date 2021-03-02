@@ -27,9 +27,6 @@
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 
-#include "mgos_pwm.h"
-#include "mgos_pwm_rgb_led.h"
-
 namespace shelly {
 namespace hap {
 

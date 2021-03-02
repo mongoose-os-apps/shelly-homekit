@@ -20,7 +20,6 @@
 #include "shelly_switch.hpp"
 
 #include "mgos.hpp"
-#include "mgos_pwm.h"
 #include "mgos_system.hpp"
 
 #include "mgos_hap_accessory.hpp"

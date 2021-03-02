@@ -117,6 +117,7 @@ cdefs:
   BTN_GPIO: -1
   BTN_NOISY: 0
   RST_GPIO_INIT: -1
+  PWM_SUPPORT: 0
   HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
@@ -440,8 +441,6 @@ conds:
       libs:
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
-        - origin: https://github.com/mongoose-os-libs/pwm
-          variant: esp8266
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
@@ -453,6 +452,7 @@ conds:
         BTN_GPIO: 13
         BTN_DOWN: 0
         RST_GPIO_INIT: 15 # reset GPIO 15 to prevent green flash on startup
+        PWM_SUPPORT: 1
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHRGBW2"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
@@ -482,9 +482,13 @@ conds:
       libs:
         - origin: https://github.com/mongoose-os-libs/adc
         - origin: https://github.com/mongoose-os-libs/wifi
+        - origin: https://github.com/mongoose-os-libs/pwm
+          variant: esp8266
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
+      sources:
+        - src/mock/pwm
       libs:
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
@@ -508,6 +512,7 @@ conds:
     apply:
       sources:
         - src/Shelly25/shelly_init_components.cpp  # Same components as Shelly25
+        - src/mock/pwm
       libs:
         - origin: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
@@ -537,3 +542,4 @@ conds:
         - ["gdo1.name", "ShellyU25 GDO"]
 
 manifest_version: 2020-01-29
+  
