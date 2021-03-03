@@ -1,0 +1,22 @@
+name: Mark stale issues.
+
+on:
+  schedule:
+  - cron: "30 1 * * *"
+
+jobs:
+  stale:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/stale@v3
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        exempt-all-pr-milestones: true
+        exempt-issue-labels: 'enhancement, new-device-support, new-HAP-type'
+        stale-issue-message: 'This issue is stale because it has been open 30 days with no activity. Comment or this will be closed in 7 days.'
+        stale-issue-label: 'stale'
+        close-issue-message: 'This issue has now been closed, as no update was provided after it was marked stale.'
+        days-before-issue-stale: 30
+        days-before-issue-close: 7
