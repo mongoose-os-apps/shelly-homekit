@@ -550,8 +550,8 @@ function updateComponent(cd) {
         } else {
           el(c, "pos").innerText = cd.cur_pos;
         }
-        el(c, "cal").innerText = `
-          movement time: ${cd.move_time_ms / 1000} s,
+        el(c, "cal").innerText = `\
+          movement time: ${cd.move_time_ms / 1000} s, \
           avg power: ${cd.move_power} W`;
         el(c, "pos_ctl").style.display = "block";
       } else {
