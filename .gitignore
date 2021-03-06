@@ -7,3 +7,4 @@ releases/
 core-*
 *.gz
 *.zip
+.vscode/
