@@ -72,6 +72,7 @@ config_schema:
   - ["wc.idle_power_thr", "d", 10.0, {title: "Power consumption threshold for motor idle detection"}]
   - ["wc.move_power", "d", 0.0, {title: "Power consumption during movement, watts"}]
   - ["wc.move_time_ms", "i", 0, {title: "Move time, in millseconds"}]
+  - ["wc.max_ramp_up_time_ms", "i", 5000, {title: "Maximum ramp up time, in millseconds"}]
   - ["wc.current_pos", "d", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
   - ["gdo", "o", {title: "Garage door settings", abstract: true}]

@@ -459,7 +459,7 @@ void WindowCovering::RunOnce() {
       const float p0 = p0v.ValueOrDie();
       LOG_EVERY_N(LL_INFO, 8, ("WC %d: P0 = %.3f", id(), p0));
       if (p0 < cfg_->idle_power_thr &&
-          (mgos_uptime_micros() - begin_ > 1000000)) {
+          (mgos_uptime_micros() - begin_ > cfg_->max_ramp_up_time_ms * 1000)) {
         out_open_->SetState(false, ss);
         SetInternalState(State::kPostCal0);
       }
@@ -547,7 +547,7 @@ void WindowCovering::RunOnce() {
         break;
       }
       int elapsed_us = (mgos_uptime_micros() - begin_);
-      if (elapsed_us > 1000000) {
+      if (elapsed_us > cfg_->max_ramp_up_time_ms * 1000) {
         LOG(LL_ERROR, ("Failed to start moving"));
         tgt_state_ = State::kError;
         SetInternalState(State::kStop);
@@ -592,8 +592,8 @@ void WindowCovering::RunOnce() {
            (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose)) &&
           !reverse) {
         LOG_EVERY_N(LL_INFO, 8, ("Moving to %d, p %.2f", (int) tgt_pos_, p));
-        if (p > cfg_->idle_power_thr ||
-            (mgos_uptime_micros() - begin_ < 1000000)) {
+        if (p > cfg_->idle_power_thr || (mgos_uptime_micros() - begin_ <
+                                         cfg_->max_ramp_up_time_ms * 1000)) {
           // Still moving or ramping up.
           break;
         } else {
