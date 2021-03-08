@@ -60,6 +60,7 @@
 #                          Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
 #    --log-file LOG_FILENAME
 #                          Create output log file with chosen filename.
+#    --reboot              Preform a reboot of the device.
 
 import argparse
 import datetime
@@ -425,7 +426,13 @@ class HomeKitDevice(Device):
     logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
     response = requests.post(f'http://{self.wifi_ip}/update', files=files)
     logger.debug(response.text)
+    time.sleep(5) # wait for flash to complete, before progressing on.
 
+  def preform_reboot(self):
+    logger.info(f"Rebooting...")
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/rpc/SyS.Reboot'}")
+    response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot')
+    logger.trace(response.text)
 
 class StockDevice(Device):
   def get_info(self):
@@ -465,7 +472,13 @@ class StockDevice(Device):
         response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
       except:
         logging.info(f"flash failed")
+    logger.trace(response.text)
+    time.sleep(15) # wait for flash to complete, before progressing on.
 
+  def preform_reboot(self):
+    logger.info(f"Rebooting...")
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}")
+    response = requests.get(url=f'http://{self.wifi_ip}/reboot')
     logger.trace(response.text)
 
 
@@ -559,12 +572,11 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
   if response.text.startswith('null'):
     logger.info(f"Done.")
 
-def write_flash(device_info):
-  logger.debug(f"{PURPLE}[Write Flash]{NC}")
-  flashed = False
-  device_info.flash_firmware()
+def wait_for_reboot(device_info):
+  logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
   logger.info(f"waiting for {device_info.friendly_host} to reboot...")
-  time.sleep(3)
+  onlinecheck = False
+  time.sleep(5)
   n = 1
   waittextshown = False
   info = None
@@ -574,12 +586,20 @@ def write_flash(device_info):
     elif n == 30:
       logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
     onlinecheck = device_info.get_current_version(is_flashing=True)
+    logger.debug(f"onlinecheck {onlinecheck}")
     time.sleep(1)
     n += 1
-    if onlinecheck == device_info.flash_fw_version:
+    if onlinecheck:
       break
     time.sleep(2)
-  if onlinecheck == device_info.flash_fw_version:
+  return onlinecheck
+
+def write_flash(device_info):
+  logger.debug(f"{PURPLE}[Write Flash]{NC}")
+  flashed = False
+  device_info.flash_firmware()
+  rebootcheck = wait_for_reboot(device_info)
+  if rebootcheck == device_info.flash_fw_version:
     global flashed_devices
     flashed_devices +=1
     logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
@@ -594,13 +614,19 @@ def write_flash(device_info):
       logger.info("Goto 'Device Type' and switch modes")
       logger.info("Once mode has been changed, you can switch it back to your preferred mode")
       logger.info(f"Restart homebridge.")
-    elif onlinecheck == '0.0.0':
+    elif rebootcheck == '0.0.0':
       logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
     else:
       global failed_flashed_devices
       failed_flashed_devices +=1
       logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     logger.debug("Current: %s" % onlinecheck)
+
+def reboot_device(device_info):
+  logger.debug(f"{PURPLE}[Reboot Device]{NC}")
+  device_info.preform_reboot()
+  wait_for_reboot(device_info)
+  logger.info(f"Device has rebooted...")
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
   logger.debug(f"")
@@ -709,7 +735,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     global upgradeable_devices
     upgradeable_devices += 1
 
-  if action != 'list':
+  if action == 'flash':
     message = "Would have been"
     keyword = ""
     if dlurl:
@@ -776,6 +802,18 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         set_ip = False
       if set_ip or silent_run:
         write_network_type(device_info, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
+  elif action == 'reboot':
+    reboot = False
+    if dry_run == False and silent_run == False:
+      if input(f"Do you wish to reboot {friendly_host} (y/n) ? ") == 'y':
+        reboot = True
+    elif silent_run == True:
+      reboot = True
+    elif dry_run == True:
+      logger.info(f"Would have been rebooted...")
+    if reboot == True:
+      reboot_device(device_info)
+
 
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
@@ -950,9 +988,15 @@ if __name__ == '__main__':
   parser.add_argument('--dns', action="store", dest="ipv4_dns", default=False, help="set DNS IP address")
   parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1', '2', '3', '4', '5'], default='3', help="Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.")
   parser.add_argument('--log-file', action="store", dest="log_filename", default=False, help="Create output log file with chosen filename.")
+  parser.add_argument('--reboot', action="store_true", dest='reboot', default=False, help="Preform a reboot of the device.")
   parser.add_argument('hosts', type=str, nargs='*')
   args = parser.parse_args()
-  action = 'list' if args.list else 'flash'
+  if args.list:
+    action = 'list'
+  elif args.reboot:
+    action = 'reboot'
+  else:
+    action = 'flash'
   args.mode = 'stock' if args.mode == 'revert' else args.mode
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
 
@@ -1016,6 +1060,8 @@ if __name__ == '__main__':
     message = f"{WHITE}Requires a hostname or -a | --all{NC}"
   elif args.hosts and args.do_all:
     message = f"{WHITE}Invalid option hostname or -a | --all not both.{NC}"
+  elif args.list and args.reboot:
+    message = f"{WHITE}Invalid option -l or --reboot not both.{NC}"
   elif args.network_type:
     if args.do_all:
       message = f"{WHITE}Invalid option -a | --all can not be used with --ip-type.{NC}"
