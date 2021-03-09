@@ -265,7 +265,6 @@ class Device:
     return version
 
   def get_uptime(self, is_flashing=False):
-    # time.sleep(1)
     info = self.get_device_info(is_flashing)
     if not info:
       return -1
@@ -447,7 +446,6 @@ class HomeKitDevice(Device):
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/rpc/SyS.Reboot'}")
     response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot')
     logger.trace(response.text)
-    time.sleep(1) # wait a second
 
 class StockDevice(Device):
   def get_info(self):
@@ -495,7 +493,6 @@ class StockDevice(Device):
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}")
     response = requests.get(url=f'http://{self.wifi_ip}/reboot')
     logger.trace(response.text)
-    time.sleep(1) # wait a second
 
 
 def get_release_info(info_type):
@@ -589,21 +586,24 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
   if response.text.startswith('null'):
     logger.info(f"Done.")
 
-def wait_for_reboot(device_info):
+def wait_for_reboot(device_info, reboot_only=False):
   logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
   logger.info(f"waiting for {device_info.friendly_host} to reboot...")
   onlinecheck = False
   info = None
   uptime_check = device_info.get_uptime(True)
+  logger.trace(f"uptime_check: {uptime_check}")
   time.sleep(1) # wait for time check to fall behind
   n = 1
-  while uptime_check != -1 and device_info.get_uptime(True) > uptime_check and n < 60:
+  while not reboot_only and device_info.get_uptime(True) > uptime_check and n < 60:
     if n == 15:
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
     elif n == 30:
       logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
     time.sleep(1) # wait 1 second befor retrying.
     n += 1
+  while reboot_only and device_info.get_uptime(True) < 3:
+    time.sleep(1) # wait 1 second befor retrying.
   onlinecheck = device_info.get_current_version(is_flashing=True)
   logger.debug(f"onlinecheck {onlinecheck}")
   return onlinecheck
@@ -639,7 +639,7 @@ def write_flash(device_info):
 def reboot_device(device_info):
   logger.debug(f"{PURPLE}[Reboot Device]{NC}")
   device_info.preform_reboot()
-  wait_for_reboot(device_info)
+  wait_for_reboot(device_info, True)
   logger.info(f"Device has rebooted...")
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
