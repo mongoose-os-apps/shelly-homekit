@@ -263,6 +263,18 @@ class Device:
       version = self.parse_stock_version(info['fw'])
     return version
 
+  def get_uptime(self, is_flashing=False):
+    # time.sleep(1)
+    info = self.get_device_info(is_flashing)
+    if not info:
+      return -1
+    if self.fw_type == 'homekit':
+      uptime = info.get('uptime', -1)
+    elif self.fw_type == 'stock':
+      uptime = info['status'].get('uptime',-1)
+    logger.trace(f'uptime: {uptime}')
+    return uptime
+
   def shelly_model(self, type):
     options = {'SHPLG-1' : ['ShellyPlug', 'shelly-plug'],
                'SHPLG-S' : ['ShellyPlugS', 'shelly-plug-s'],
@@ -428,13 +440,13 @@ class HomeKitDevice(Device):
     logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
     response = requests.post(f'http://{self.wifi_ip}/update', files=files)
     logger.debug(response.text)
-    time.sleep(5) # wait for flash to complete, before progressing on.
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/rpc/SyS.Reboot'}")
     response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot')
     logger.trace(response.text)
+    time.sleep(1) # wait a second
 
 class StockDevice(Device):
   def get_info(self):
@@ -474,15 +486,15 @@ class StockDevice(Device):
       try:
         response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
       except:
-        logging.info(f"flash failed")
+        logger.info(f"flash failed")
     logger.trace(response.text)
-    time.sleep(30) # wait for flash to complete, before progressing on.
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}")
     response = requests.get(url=f'http://{self.wifi_ip}/reboot')
     logger.trace(response.text)
+    time.sleep(1) # wait a second
 
 
 def get_release_info(info_type):
@@ -580,22 +592,19 @@ def wait_for_reboot(device_info):
   logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
   logger.info(f"waiting for {device_info.friendly_host} to reboot...")
   onlinecheck = False
-  time.sleep(5)
-  n = 1
-  waittextshown = False
   info = None
-  while n < 40:
+  uptime_check = device_info.get_uptime(True)
+  time.sleep(1) # wait for time check to fall behind
+  n = 1
+  while uptime_check != -1 and device_info.get_uptime(True) > uptime_check and n < 60:
     if n == 15:
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
     elif n == 30:
       logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
-    onlinecheck = device_info.get_current_version(is_flashing=True)
-    logger.debug(f"onlinecheck {onlinecheck}")
-    time.sleep(1)
+    time.sleep(1) # wait 1 second befor retrying.
     n += 1
-    if onlinecheck:
-      break
-    time.sleep(2)
+  onlinecheck = device_info.get_current_version(is_flashing=True)
+  logger.debug(f"onlinecheck {onlinecheck}")
   return onlinecheck
 
 def write_flash(device_info):
