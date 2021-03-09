@@ -177,7 +177,8 @@ class Device:
 
   def is_host_reachable(self, host, is_flashing=False):
     # check if host is reachable
-    self.host = f'{host}.local' if '.local' not in host else host
+    hostcheck = re.search("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", host)
+    self.host = f'{host}.local' if '.local' not in host and not hostcheck else host
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
     if not self.wifi_ip:
