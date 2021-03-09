@@ -595,13 +595,19 @@ def wait_for_reboot(device_info, reboot_only=False):
   uptime_check = device_info.get_uptime(True)
   logger.trace(f"uptime_check: {uptime_check}")
   time.sleep(1) # wait for time check to fall behind
+  uptime = device_info.get_uptime(True)
   n = 1
-  while not reboot_only and (device_info.get_uptime(True) == -1 or device_info.get_uptime(True) > uptime_check) and n < 60:
+  while not reboot_only and (uptime == -1 or uptime > uptime_check) and n < 60:
+    logger.trace(f'check1: {uptime == -1}')
+    logger.trace(f'check2: {uptime > uptime_check}')
+    logger.trace(f'check3: {n < 60}')
     if n == 15:
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
     elif n == 30:
       logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
     time.sleep(1) # wait 1 second befor retrying.
+    uptime = device_info.get_uptime(True)
+    logger.trace(f"uptime: {uptime}")
     n += 1
   while reboot_only and device_info.get_uptime(True) < 3:
     time.sleep(1) # wait 1 second befor retrying.
