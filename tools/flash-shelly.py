@@ -475,7 +475,7 @@ class StockDevice(Device):
       except:
         logging.info(f"flash failed")
     logger.trace(response.text)
-    time.sleep(15) # wait for flash to complete, before progressing on.
+    time.sleep(30) # wait for flash to complete, before progressing on.
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
