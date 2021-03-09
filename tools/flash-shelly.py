@@ -468,7 +468,8 @@ class StockDevice(Device):
       logger.debug(f"Remote URL: {dlurl}")
     logger.debug(f"http://{self.wifi_ip}/ota?url={dlurl}")
     if self.fw_version == '0.0.0':
-      response = requests.get(f'http://{self.wifi_ip}/ota?update')
+      logger.debug(f"http://{self.wifi_ip}/ota?update=true")
+      response = requests.get(f'http://{self.wifi_ip}/ota?update=true')
     else:
       try:
         response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
