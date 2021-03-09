@@ -623,7 +623,7 @@ def write_flash(device_info):
       global failed_flashed_devices
       failed_flashed_devices +=1
       logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
-    logger.debug("Current: %s" % onlinecheck)
+    logger.debug("Current: %s" % rebootcheck)
 
 def reboot_device(device_info):
   logger.debug(f"{PURPLE}[Reboot Device]{NC}")
