@@ -60,6 +60,7 @@
 #                          Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
 #    --log-file LOG_FILENAME
 #                          Create output log file with chosen filename.
+#    --reboot              Preform a reboot of the device.
 
 import argparse
 import datetime
@@ -176,7 +177,8 @@ class Device:
 
   def is_host_reachable(self, host, is_flashing=False):
     # check if host is reachable
-    self.host = f'{host}.local' if '.local' not in host else host
+    hostcheck = re.search("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", host)
+    self.host = f'{host}.local' if '.local' not in host and not hostcheck else host
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
     if not self.wifi_ip:
@@ -236,8 +238,10 @@ class Device:
   def parse_stock_version(self, version):
     # stock can be '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
     # stock can be '20210107-122133/1.9_GU10_RGBW@07531e29', we need '1.9_GU10_RGBW'
-    v = re.search("/v?(?P<ver>.*)@(?P<build>.*)", version)
-    debug_info = v.groupdict()  if v is not None else v
+    # stock can be '20201014-165335/1244-production-Shelly1L@6a254598', we need '0.0.0'
+    logger.trace(f"version: {version}")
+    v = re.search("/.*?(?P<ver>[0-9]+\.[0-9]+.*)@(?P<build>.*)", version)
+    debug_info = v.groupdict() if v is not None else v
     logger.trace(f"stock version group: {debug_info}")
     parsed_version = v.group('ver') if v is not None else '0.0.0'
     parsed_build = v.group('build') if v is not None else '0'
@@ -259,6 +263,17 @@ class Device:
     elif self.fw_type == 'stock':
       version = self.parse_stock_version(info['fw'])
     return version
+
+  def get_uptime(self, is_flashing=False):
+    info = self.get_device_info(is_flashing)
+    if not info:
+      return -1
+    if self.fw_type == 'homekit':
+      uptime = info.get('uptime', -1)
+    elif self.fw_type == 'stock':
+      uptime = info['status'].get('uptime',-1)
+    logger.trace(f'uptime: {uptime}')
+    return uptime
 
   def shelly_model(self, type):
     options = {'SHPLG-1' : ['ShellyPlug', 'shelly-plug'],
@@ -418,7 +433,7 @@ class HomeKitDevice(Device):
       files = {'file': ('shelly-flash.zip', myfile)}
     else:
       logger.info("Downloading Firmware...")
-      logger.debug(f"Remote URL: {self.dlurl}")
+      logger.debug(f"Remote Download URL: {self.dlurl}")
       myfile = requests.get(self.dlurl)
       logger.info("Now Flashing...")
       files = {'file': ('shelly-flash.zip', myfile.content)}
@@ -426,6 +441,11 @@ class HomeKitDevice(Device):
     response = requests.post(f'http://{self.wifi_ip}/update', files=files)
     logger.debug(response.text)
 
+  def preform_reboot(self):
+    logger.info(f"Rebooting...")
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/rpc/SyS.Reboot'}")
+    response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot')
+    logger.trace(response.text)
 
 class StockDevice(Device):
   def get_info(self):
@@ -454,18 +474,24 @@ class StockDevice(Device):
     dlurl = self.dlurl.replace('https', 'http')
     if self.local_file:
       logger.debug(f"Local file: {self.local_file}")
-      logger.debug(f"Local URL: {dlurl}")
+      logger.debug(f"Local Download URL: {dlurl}")
     else:
-      logger.debug(f"Remote URL: {dlurl}")
-    logger.debug(f"http://{self.wifi_ip}/ota?url={dlurl}")
+      logger.debug(f"Remote Download URL: {dlurl}")
     if self.fw_version == '0.0.0':
-      response = requests.get(f'http://{self.wifi_ip}/ota?update')
+      logger.debug(f"http://{self.wifi_ip}/ota?update=true")
+      response = requests.get(f'http://{self.wifi_ip}/ota?update=true')
     else:
+      logger.debug(f"http://{self.wifi_ip}/ota?url={dlurl}")
       try:
         response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
       except:
-        logging.info(f"flash failed")
+        logger.info(f"flash failed")
+    logger.trace(response.text)
 
+  def preform_reboot(self):
+    logger.info(f"Rebooting...")
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}")
+    response = requests.get(url=f'http://{self.wifi_ip}/reboot')
     logger.trace(response.text)
 
 
@@ -491,6 +517,7 @@ def parse_version(vs):
   # 1.9.2_1L
   # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2_autocheck
   # 1.9_GU10_RGBW
+  logger.trace(f"vs: {vs}")
   v = re.search("^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:_(?P<model>[a-zA-Z0-9_]*))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$", vs)
   debug_info = v.groupdict() if v is not None else v
   logger.trace(f"group: {debug_info}")
@@ -559,27 +586,34 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
   if response.text.startswith('null'):
     logger.info(f"Done.")
 
-def write_flash(device_info):
-  logger.debug(f"{PURPLE}[Write Flash]{NC}")
-  flashed = False
-  device_info.flash_firmware()
+def wait_for_reboot(device_info, reboot_only=False):
+  logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
   logger.info(f"waiting for {device_info.friendly_host} to reboot...")
-  time.sleep(3)
-  n = 1
-  waittextshown = False
+  onlinecheck = False
   info = None
-  while n < 40:
+  uptime_check = device_info.get_uptime(True)
+  logger.trace(f"uptime_check: {uptime_check}")
+  time.sleep(1) # wait for time check to fall behind
+  n = 1
+  while not reboot_only and device_info.get_uptime(True) > uptime_check and n < 60:
     if n == 15:
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
     elif n == 30:
       logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
-    onlinecheck = device_info.get_current_version(is_flashing=True)
-    time.sleep(1)
+    time.sleep(1) # wait 1 second befor retrying.
     n += 1
-    if onlinecheck == device_info.flash_fw_version:
-      break
-    time.sleep(2)
-  if onlinecheck == device_info.flash_fw_version:
+  while reboot_only and device_info.get_uptime(True) < 3:
+    time.sleep(1) # wait 1 second befor retrying.
+  onlinecheck = device_info.get_current_version(is_flashing=True)
+  logger.debug(f"onlinecheck {onlinecheck}")
+  return onlinecheck
+
+def write_flash(device_info):
+  logger.debug(f"{PURPLE}[Write Flash]{NC}")
+  flashed = False
+  device_info.flash_firmware()
+  rebootcheck = wait_for_reboot(device_info)
+  if rebootcheck == device_info.flash_fw_version:
     global flashed_devices
     flashed_devices +=1
     logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
@@ -594,13 +628,19 @@ def write_flash(device_info):
       logger.info("Goto 'Device Type' and switch modes")
       logger.info("Once mode has been changed, you can switch it back to your preferred mode")
       logger.info(f"Restart homebridge.")
-    elif onlinecheck == '0.0.0':
+    elif rebootcheck == '0.0.0':
       logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
     else:
       global failed_flashed_devices
       failed_flashed_devices +=1
       logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
-    logger.debug("Current: %s" % onlinecheck)
+    logger.debug("Current: %s" % rebootcheck)
+
+def reboot_device(device_info):
+  logger.debug(f"{PURPLE}[Reboot Device]{NC}")
+  device_info.preform_reboot()
+  wait_for_reboot(device_info, True)
+  logger.info(f"Device has rebooted...")
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
   logger.debug(f"")
@@ -709,7 +749,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
     global upgradeable_devices
     upgradeable_devices += 1
 
-  if action != 'list':
+  if action == 'flash':
     message = "Would have been"
     keyword = ""
     if dlurl:
@@ -752,7 +792,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         flash_message = f"Do you wish to contintue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
       else:
         flash_message = f"Do you wish to flash {friendly_host} to firmware version {flash_fw_version}"
-      if input(f"{flash_message} (y/n) ? ") == 'y':
+      if input(f"{flash_message} (y/n) ? ") in ('y', 'Y'):
         flash = True
       else:
         flash = False
@@ -770,12 +810,24 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         message = f"Do you wish to set your IP address to {ipv4_ip}"
       else:
         message = f"Do you wish to set your IP address to use DHCP"
-      if input(f"{message} (y/n) ? ") == 'y':
+      if input(f"{message} (y/n) ? ") in ('y', 'Y'):
         set_ip = True
       else:
         set_ip = False
       if set_ip or silent_run:
         write_network_type(device_info, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
+  elif action == 'reboot':
+    reboot = False
+    if dry_run == False and silent_run == False:
+      if input(f"Do you wish to reboot {friendly_host} (y/n) ? ") in ('y', 'Y'):
+        reboot = True
+    elif silent_run == True:
+      reboot = True
+    elif dry_run == True:
+      logger.info(f"Would have been rebooted...")
+    if reboot == True:
+      reboot_device(device_info)
+
 
 
 def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
@@ -950,9 +1002,15 @@ if __name__ == '__main__':
   parser.add_argument('--dns', action="store", dest="ipv4_dns", default=False, help="set DNS IP address")
   parser.add_argument('-v', '--verbose', action="store", dest="verbose", choices=['0', '1', '2', '3', '4', '5'], default='3', help="Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.")
   parser.add_argument('--log-file', action="store", dest="log_filename", default=False, help="Create output log file with chosen filename.")
+  parser.add_argument('--reboot', action="store_true", dest='reboot', default=False, help="Preform a reboot of the device.")
   parser.add_argument('hosts', type=str, nargs='*')
   args = parser.parse_args()
-  action = 'list' if args.list else 'flash'
+  if args.list:
+    action = 'list'
+  elif args.reboot:
+    action = 'reboot'
+  else:
+    action = 'flash'
   args.mode = 'stock' if args.mode == 'revert' else args.mode
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
 
@@ -986,7 +1044,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.4.0"
+  app_version = "2.5.2"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
@@ -1016,6 +1074,8 @@ if __name__ == '__main__':
     message = f"{WHITE}Requires a hostname or -a | --all{NC}"
   elif args.hosts and args.do_all:
     message = f"{WHITE}Invalid option hostname or -a | --all not both.{NC}"
+  elif args.list and args.reboot:
+    message = f"{WHITE}Invalid option -l or --reboot not both.{NC}"
   elif args.network_type:
     if args.do_all:
       message = f"{WHITE}Invalid option -a | --all can not be used with --ip-type.{NC}"
