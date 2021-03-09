@@ -781,7 +781,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         flash_message = f"Do you wish to contintue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
       else:
         flash_message = f"Do you wish to flash {friendly_host} to firmware version {flash_fw_version}"
-      if input(f"{flash_message} (y/n) ? ") == 'y':
+      if input(f"{flash_message} (y/n) ? ") in ('y', 'Y'):
         flash = True
       else:
         flash = False
@@ -799,7 +799,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
         message = f"Do you wish to set your IP address to {ipv4_ip}"
       else:
         message = f"Do you wish to set your IP address to use DHCP"
-      if input(f"{message} (y/n) ? ") == 'y':
+      if input(f"{message} (y/n) ? ") in ('y', 'Y'):
         set_ip = True
       else:
         set_ip = False
@@ -808,7 +808,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   elif action == 'reboot':
     reboot = False
     if dry_run == False and silent_run == False:
-      if input(f"Do you wish to reboot {friendly_host} (y/n) ? ") == 'y':
+      if input(f"Do you wish to reboot {friendly_host} (y/n) ? ") in ('y', 'Y'):
         reboot = True
     elif silent_run == True:
       reboot = True
