@@ -421,7 +421,7 @@ class HomeKitDevice(Device):
       files = {'file': ('shelly-flash.zip', myfile)}
     else:
       logger.info("Downloading Firmware...")
-      logger.debug(f"Remote URL: {self.dlurl}")
+      logger.debug(f"Remote Download URL: {self.dlurl}")
       myfile = requests.get(self.dlurl)
       logger.info("Now Flashing...")
       files = {'file': ('shelly-flash.zip', myfile.content)}
@@ -463,14 +463,14 @@ class StockDevice(Device):
     dlurl = self.dlurl.replace('https', 'http')
     if self.local_file:
       logger.debug(f"Local file: {self.local_file}")
-      logger.debug(f"Local URL: {dlurl}")
+      logger.debug(f"Local Download URL: {dlurl}")
     else:
-      logger.debug(f"Remote URL: {dlurl}")
-    logger.debug(f"http://{self.wifi_ip}/ota?url={dlurl}")
+      logger.debug(f"Remote Download URL: {dlurl}")
     if self.fw_version == '0.0.0':
       logger.debug(f"http://{self.wifi_ip}/ota?update=true")
       response = requests.get(f'http://{self.wifi_ip}/ota?update=true')
     else:
+      logger.debug(f"http://{self.wifi_ip}/ota?url={dlurl}")
       try:
         response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
       except:
