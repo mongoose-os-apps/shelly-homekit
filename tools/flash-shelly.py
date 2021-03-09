@@ -267,12 +267,11 @@ class Device:
   def get_uptime(self, is_flashing=False):
     info = self.get_device_info(is_flashing)
     if not info:
-      logger.trace(f'uptime: -1')
       return -1
     if self.fw_type == 'homekit':
       uptime = info.get('uptime', -1)
     elif self.fw_type == 'stock':
-      uptime = info['status'].get('uptime', -1)
+      uptime = info['status'].get('uptime',-1)
     logger.trace(f'uptime: {uptime}')
     return uptime
 
@@ -596,7 +595,7 @@ def wait_for_reboot(device_info, reboot_only=False):
   logger.trace(f"uptime_check: {uptime_check}")
   time.sleep(1) # wait for time check to fall behind
   n = 1
-  while not reboot_only and (device_info.get_uptime(True) == -1 or device_info.get_uptime(True) > uptime_check) and n < 60:
+  while not reboot_only and device_info.get_uptime(True) > uptime_check and n < 60:
     if n == 15:
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
     elif n == 30:
@@ -1045,7 +1044,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.5.2"
+  app_version = "2.5.3"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
