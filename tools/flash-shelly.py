@@ -267,13 +267,13 @@ class Device:
   def get_uptime(self, is_flashing=False):
     info = self.get_device_info(is_flashing)
     if not info:
-      logger.trace(f'uptime: -1')
+      logger.trace(f'get_uptime: -1')
       return -1
     if self.fw_type == 'homekit':
       uptime = info.get('uptime', -1)
     elif self.fw_type == 'stock':
       uptime = info['status'].get('uptime', -1)
-    logger.trace(f'uptime: {uptime}')
+    logger.trace(f'get_uptime: {uptime}')
     return uptime
 
   def shelly_model(self, type):
@@ -587,39 +587,44 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
   if response.text.startswith('null'):
     logger.info(f"Done.")
 
-def wait_for_reboot(device_info, reboot_only=False):
+def wait_for_reboot(device_info, preboot_uptime=-1, reboot_only=False):
   logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
   logger.info(f"waiting for {device_info.friendly_host} to reboot...")
-  onlinecheck = False
+  onlinecheck = None
   info = None
-  uptime_check = device_info.get_uptime(True)
-  logger.trace(f"uptime_check: {uptime_check}")
   time.sleep(1) # wait for time check to fall behind
-  uptime = device_info.get_uptime(True)
+  current_uptime = device_info.get_uptime(True)
+  logger.trace(f"current_uptime: {current_uptime}")
   n = 1
-  while not reboot_only and (uptime == -1 or uptime > uptime_check) and n < 60:
-    logger.trace(f'check1: {uptime == -1}')
-    logger.trace(f'check2: {uptime > uptime_check}')
-    logger.trace(f'check3: {n < 60}')
+  logger.trace(f'check1: {current_uptime > preboot_uptime}')
+  logger.trace(f'check2: {n < 60}')
+  while reboot_only == False and (current_uptime == -1 or current_uptime > preboot_uptime) and n < 60 and onlinecheck == None:
+    logger.trace(f'current_uptime: {current_uptime}')
+    logger.trace(f'preboot_uptime: {preboot_uptime}')
+
+    logger.trace(f'check1: {current_uptime > preboot_uptime}')
+    logger.trace(f'check2: {n < 60}')
     if n == 15:
       logger.info(f"still waiting for {device_info.friendly_host} to reboot...")
     elif n == 30:
       logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot...")
     time.sleep(1) # wait 1 second befor retrying.
-    uptime = device_info.get_uptime(True)
-    logger.trace(f"uptime: {uptime}")
+    current_uptime = device_info.get_uptime(True)
+    logger.trace(f"current_uptime: {current_uptime}")
     n += 1
+    logger.trace(f"n: {n}")
+    onlinecheck = device_info.get_current_version(is_flashing=True)
+    logger.debug(f"onlinecheck {onlinecheck}")
   while reboot_only and device_info.get_uptime(True) < 3:
     time.sleep(1) # wait 1 second befor retrying.
-  onlinecheck = device_info.get_current_version(is_flashing=True)
-  logger.debug(f"onlinecheck {onlinecheck}")
   return onlinecheck
 
 def write_flash(device_info):
   logger.debug(f"{PURPLE}[Write Flash]{NC}")
   flashed = False
+  uptime = device_info.get_uptime(True)
   device_info.flash_firmware()
-  rebootcheck = wait_for_reboot(device_info)
+  rebootcheck = wait_for_reboot(device_info, uptime)
   if rebootcheck == device_info.flash_fw_version:
     global flashed_devices
     flashed_devices +=1
@@ -646,7 +651,7 @@ def write_flash(device_info):
 def reboot_device(device_info):
   logger.debug(f"{PURPLE}[Reboot Device]{NC}")
   device_info.preform_reboot()
-  wait_for_reboot(device_info, True)
+  wait_for_reboot(device_info, reboot_only=True)
   logger.info(f"Device has rebooted...")
 
 def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
