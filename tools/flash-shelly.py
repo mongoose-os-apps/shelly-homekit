@@ -265,7 +265,7 @@ class Device:
     # stock can be '20201014-165335/1244-production-Shelly1L@6a254598', we need '0.0.0'
     # stock can be '20210226-091047/v1.10.0-rc2-89-g623b41ec0-master', we need '1.10.0-rc2'
     logger.trace(f"version: {version}")
-    v = re.search("/.*?(?P<ver>[0-9]+\.[0-9]+[0-9a-zA-Z_\.]*\-?[0-9a-z]*)@?\-?(?P<build>[a-zA-Z0-9\-]*)", version)
+    v = re.search("/.*?(?P<ver>[0-9]+\.[0-9]+[0-9a-z_\.]*\-?[0-9a-z]*)@?\-?(?P<build>[a-z0-9\-]*)", version, re.IGNORECASE)
     debug_info = v.groupdict() if v is not None else v
     logger.trace(f"stock version group: {debug_info}")
     parsed_version = v.group('ver') if v is not None else '0.0.0'
