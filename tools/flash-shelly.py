@@ -263,8 +263,9 @@ class Device:
     # stock can be '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
     # stock can be '20210107-122133/1.9_GU10_RGBW@07531e29', we need '1.9_GU10_RGBW'
     # stock can be '20201014-165335/1244-production-Shelly1L@6a254598', we need '0.0.0'
+    # stock can be '20210226-091047/v1.10.0-rc2-89-g623b41ec0-master', we need '1.10.0-rc2'
     logger.trace(f"version: {version}")
-    v = re.search("/.*?(?P<ver>[0-9]+\.[0-9]+.*)@(?P<build>.*)", version)
+    v = re.search("/.*?(?P<ver>[0-9]+\.[0-9]+[0-9a-zA-Z_\.]*\-?[0-9a-z]*)@?\-?(?P<build>[a-zA-Z0-9\-]*)", version)
     debug_info = v.groupdict() if v is not None else v
     logger.trace(f"stock version group: {debug_info}")
     parsed_version = v.group('ver') if v is not None else '0.0.0'
@@ -465,8 +466,6 @@ class HomeKitDevice(Device):
     logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
     response = requests.post(f'http://{self.wifi_ip}/update', files=files)
     logger.debug(response.text)
-    if response.text.startswith('1 Update applied'):
-      logger.info("Flash completed successfully.")
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
