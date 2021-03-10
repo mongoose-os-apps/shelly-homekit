@@ -465,6 +465,8 @@ class HomeKitDevice(Device):
     logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
     response = requests.post(f'http://{self.wifi_ip}/update', files=files)
     logger.debug(response.text)
+    if response.text.startswith('1 Update applied'):
+      logger.info("Flash completed successfully.")
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
