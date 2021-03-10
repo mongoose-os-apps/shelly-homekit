@@ -80,6 +80,28 @@ import threading
 import time
 import zipfile
 
+class MFileHandler(logging.FileHandler):
+  """Handler that controls the writing of the newline character"""
+  special_code = '[!n]'
+  def emit(self, record) -> None:
+    if self.special_code in record.msg:
+      record.msg = record.msg.replace( self.special_code, '' )
+      self.terminator = ''
+    else:
+      self.terminator = '\n'
+    return super().emit(record)
+
+class MStreamHandler(logging.StreamHandler):
+  """Handler that controls the writing of the newline character"""
+  special_code = '[!n]'
+  def emit(self, record) -> None:
+    if self.special_code in record.msg:
+      record.msg = record.msg.replace( self.special_code, '' )
+      self.terminator = ''
+    else:
+      self.terminator = '\n'
+    return super().emit(record)
+
 logging.TRACE = 5
 logging.addLevelName(logging.TRACE, 'TRACE')
 logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE)
@@ -1032,11 +1054,11 @@ if __name__ == '__main__':
   args.mode = 'stock' if args.mode == 'revert' else args.mode
   args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
 
-  sh = logging.StreamHandler()
+  sh = MStreamHandler()
   sh.setFormatter(logging.Formatter('%(message)s'))
   sh.setLevel(log_level[args.verbose])
   if args.log_filename:
-    fh = logging.FileHandler(args.log_filename, mode='w', encoding='utf-8')
+    fh = MFileHandler(args.log_filename, mode='w', encoding='utf-8')
     fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
     fh.setLevel(log_level[args.verbose])
     logger.addHandler(fh)
