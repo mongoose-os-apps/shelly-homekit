@@ -616,39 +616,28 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
 def wait_for_reboot(device_info, preboot_uptime=-1, reboot_only=False):
   logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
   logger.info(f"waiting for {device_info.friendly_host} to reboot[!n]")
-  onlinecheck = None
-  info = None
+  get_current_version = None
   time.sleep(1) # wait for time check to fall behind
   current_uptime = device_info.get_uptime(True)
-  logger.trace(f"current_uptime: {current_uptime}")
   n = 1
-  logger.trace(f'check1: {current_uptime > preboot_uptime}')
-  logger.trace(f'check2: {n < 60}')
   if reboot_only == False:
-    while current_uptime > preboot_uptime and n < 60 or onlinecheck == None:
-      logger.info(f"...[!n]")
-      logger.trace(f'current_uptime: {current_uptime}')
-      logger.trace(f'preboot_uptime: {preboot_uptime}')
-      logger.trace(f'check3: {current_uptime > preboot_uptime}')
-      logger.trace(f'check4: {n < 60}')
-      if n == 15:
+    while current_uptime > preboot_uptime and n < 60 or get_current_version == None:
+      logger.info(f".[!n]")
+      if n == 20:
         logger.info(f"\nstill waiting for {device_info.friendly_host} to reboot[!n]")
-      elif n == 30:
+      elif n == 40:
         logger.info(f"\nwe'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
       time.sleep(1) # wait 1 second befor retrying.
       current_uptime = device_info.get_uptime(True)
-      logger.trace(f"current_uptime: {current_uptime}")
+      get_current_version = device_info.get_current_version(is_flashing=True)
+      logger.debug(f"get_current_version: {get_current_version}")
       n += 1
-      logger.trace(f"n: {n}")
-      onlinecheck = device_info.get_current_version(is_flashing=True)
-      logger.debug(f"onlinecheck {onlinecheck}")
+      logger.trace(f"loop number: {n}")
   else:
     while device_info.get_uptime(True) < 3:
       time.sleep(1) # wait 1 second befor retrying.
-  logger.info(f"")
-  logger.trace(f'current_uptime: {current_uptime}')
-  logger.trace(f'preboot_uptime: {preboot_uptime}')
-  return onlinecheck
+  logger.info("")
+  return get_current_version
 
 def write_flash(device_info):
   logger.debug(f"{PURPLE}[Write Flash]{NC}")
