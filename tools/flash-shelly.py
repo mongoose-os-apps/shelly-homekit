@@ -245,10 +245,12 @@ class Device:
           self.fw_type = "stock"
           self.device_url = f'http://{self.wifi_ip}/settings'
           info = json.loads(fp.content)
+          info['status'] = {}
           if 'settings' in self.device_url:
             fp2 = requests.get(self.device_url.replace('settings', 'status'), timeout=3)
-            status = json.loads(fp2.content)
-            info['status'] = status
+            if fp2.status_code == 200:
+              status = json.loads(fp2.content)
+              info['status'] = status
       except:
         pass
     logger.trace(f"Device URL: {self.device_url}")
@@ -294,7 +296,7 @@ class Device:
     if self.fw_type == 'homekit':
       uptime = info.get('uptime', -1)
     elif self.fw_type == 'stock':
-      uptime = info['status'].get('uptime', -1)
+      uptime = info.get('status', {}).get('uptime', -1)
     logger.trace(f'get_uptime: {uptime}')
     return uptime
 
@@ -697,8 +699,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   device_id = device_info.device_id
   device_name = device_info.device_name
   wifi_ip = device_info.wifi_ip
-  wifi_ssid = device_info.info.get('wifi_ssid', None) if device_info.fw_type_str == 'HomeKit' else device_info.info['status']['wifi_sta'].get('ssid',None)
-  wifi_rssi = device_info.info.get('wifi_rssi', None) if device_info.fw_type_str == 'HomeKit' else device_info.info['status']['wifi_sta'].get('rssi',None)
+  wifi_ssid = device_info.info.get('wifi_ssid', None) if device_info.fw_type_str == 'HomeKit' else device_info.info.get('status', {}).get('wifi_sta', {}).get('ssid', None)
+  wifi_rssi = device_info.info.get('wifi_rssi', None) if device_info.fw_type_str == 'HomeKit' else device_info.info.get('status', {}).get('wifi_sta', {}).get('rssi', None)
   current_fw_version = device_info.fw_version
   current_fw_type = device_info.fw_type
   current_fw_type_str = device_info.fw_type_str
@@ -712,7 +714,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
   sys_temp = device_info.info.get('sys_temp', None)
-  uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if current_fw_type_str == 'HomeKit' else datetime.timedelta(seconds=device_info.info['status'].get('uptime',0))
+  uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if current_fw_type_str == 'HomeKit' else datetime.timedelta(seconds=device_info.info.get('status', {}).get('uptime',0))
   hap_ip_conns_pending = device_info.info.get('hap_ip_conns_pending', None)
   hap_ip_conns_active = device_info.info.get('hap_ip_conns_active', None)
   hap_ip_conns_max = device_info.info.get('hap_ip_conns_max', None)
