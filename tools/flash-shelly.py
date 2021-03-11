@@ -626,7 +626,7 @@ def wait_for_reboot(device_info, preboot_uptime=-1, reboot_only=False):
         logger.info(f"\nstill waiting for {device_info.friendly_host} to reboot[!n]")
       elif n == 40:
         logger.info(f"\nwe'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
-      time.sleep(1) # wait 1 second befor retrying.
+      time.sleep(1) # wait 1 second before retrying.
       current_uptime = device_info.get_uptime(True)
       get_current_version = device_info.get_current_version(is_flashing=True)
       logger.debug(f"get_current_version: {get_current_version}")
@@ -634,7 +634,7 @@ def wait_for_reboot(device_info, preboot_uptime=-1, reboot_only=False):
       logger.trace(f"loop number: {n}")
   else:
     while device_info.get_uptime(True) < 3:
-      time.sleep(1) # wait 1 second befor retrying.
+      time.sleep(1) # wait 1 second before retrying.
   logger.info("")
   return get_current_version
 
