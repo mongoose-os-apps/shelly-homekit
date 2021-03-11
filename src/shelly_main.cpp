@@ -744,6 +744,7 @@ static void SetupButton(int pin, bool on_value) {
 }
 
 static void OTABeginCB(int ev, void *ev_data, void *userdata) {
+  static double s_wait_start = 0;
   struct mgos_ota_begin_arg *arg = (struct mgos_ota_begin_arg *) ev_data;
   // Some other callback objected.
   if (arg->result != MGOS_UPD_OK) return;
@@ -760,11 +761,22 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
     return;
   }
   // Stop the HAP server.
+  if (!(s_service_flags & SHELLY_SERVICE_FLAG_UPDATE)) {
+    s_wait_start = mgos_uptime();
+  }
   s_service_flags |= SHELLY_SERVICE_FLAG_UPDATE;
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
-    arg->result = MGOS_UPD_WAIT;
-    StopService();
-    return;
+    // There is a bug in HAP server where it will get stuck and fail to shut
+    // down reported to happen after approximately 25 days. This is a workaround
+    // until it's fixed.
+    if (mgos_uptime() - s_wait_start > 10) {
+      LOG(LL_WARN,
+          ("Server failed to stop, proceeding with the update anyway"));
+    } else {
+      arg->result = MGOS_UPD_WAIT;
+      StopService();
+      return;
+    }
   }
   LOG(LL_INFO, ("Starting firmware update"));
   (void) ev;
