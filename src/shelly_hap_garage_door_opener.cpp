@@ -362,7 +362,7 @@ void GarageDoorOpener::RunOnce() {
           break;
         }
       }
-      if (is_closed && elapsed_ms > 5000) {
+      if (is_closed && elapsed_ms > cfg_->begin_move_time_ms) {
         SetTgtState(State::kClosed, "ext");
         SetCurState(State::kClosed);
       }
@@ -379,7 +379,7 @@ void GarageDoorOpener::RunOnce() {
         SetCurState(State::kStopped);
         break;
       }
-      if (is_open == 1 && elapsed_ms > 5000) {
+      if (is_open == 1 && elapsed_ms > cfg_->begin_move_time_ms) {
         SetTgtState(State::kOpen, "ext");
         SetCurState(State::kOpen);
       }

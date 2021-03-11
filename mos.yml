@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.8.0-alpha3
+version: 2.8.1
 platform: esp8266
 
 libs_version: latest
@@ -72,6 +72,7 @@ config_schema:
   - ["wc.idle_power_thr", "d", 10.0, {title: "Power consumption threshold for motor idle detection"}]
   - ["wc.move_power", "d", 0.0, {title: "Power consumption during movement, watts"}]
   - ["wc.move_time_ms", "i", 0, {title: "Move time, in millseconds"}]
+  - ["wc.max_ramp_up_time_ms", "i", 5000, {title: "Maximum ramp up time, in millseconds"}]
   - ["wc.current_pos", "d", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
   - ["gdo", "o", {title: "Garage door settings", abstract: true}]
@@ -80,6 +81,7 @@ config_schema:
   - ["gdo.open_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
   - ["gdo.out_mode", "i", 0, {title: "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close)"}]
   - ["gdo.move_time_ms", "i", 30000, {title: "Movement time, ms"}]
+  - ["gdo.begin_move_time_ms", "i", 7000, {title: "Time allowed for movement to begin, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {title: "Output active time, ms"}]
 
   - ["rgb", "o", {title: "RGB settings", abstract: true}]
@@ -114,7 +116,7 @@ cdefs:
   PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
   BTN_GPIO: -1
-  BTN_NOISY: 0
+  BTN_NOISY: 1
   RST_GPIO_INIT: -1
   PWM_SUPPORT: 0
   HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
@@ -183,7 +185,6 @@ conds:
         LED_ON: 0
         BTN_GPIO: 13
         BTN_DOWN: 0
-        BTN_NOISY: 1
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-L"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
@@ -223,7 +224,6 @@ conds:
         LED_ON: 0
         BTN_GPIO: 2
         BTN_DOWN: 0
-        BTN_NOISY: 1
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-PM"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
@@ -450,6 +450,7 @@ conds:
         LED_ON: 0
         BTN_GPIO: 13
         BTN_DOWN: 0
+        BTN_NOISY: 0
         RST_GPIO_INIT: 15 # reset GPIO 15 to prevent green flash on startup
         PWM_SUPPORT: 1
         PRODUCT_HW_REV: '"1.0"'
@@ -496,6 +497,7 @@ conds:
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
+        BTN_NOISY: 0
       config_schema:
         - ["device.id", "ShellyU-????"]
         - ["shelly.name", "ShellyU-????"]
@@ -520,6 +522,7 @@ conds:
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
+        BTN_NOISY: 0
       config_schema:
         - ["device.id", "ShellyU25-????"]
         - ["shelly.name", "ShellyU25-????"]
