@@ -245,10 +245,12 @@ class Device:
           self.fw_type = "stock"
           self.device_url = f'http://{self.wifi_ip}/settings'
           info = json.loads(fp.content)
+          info['status'] = {}
           if 'settings' in self.device_url:
             fp2 = requests.get(self.device_url.replace('settings', 'status'), timeout=3)
-            status = json.loads(fp2.content)
-            info['status'] = status
+            if fp2.status_code == 200:
+              status = json.loads(fp2.content)
+              info['status'] = status
       except:
         pass
     logger.trace(f"Device URL: {self.device_url}")
@@ -261,8 +263,9 @@ class Device:
     # stock can be '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
     # stock can be '20210107-122133/1.9_GU10_RGBW@07531e29', we need '1.9_GU10_RGBW'
     # stock can be '20201014-165335/1244-production-Shelly1L@6a254598', we need '0.0.0'
+    # stock can be '20210226-091047/v1.10.0-rc2-89-g623b41ec0-master', we need '1.10.0-rc2'
     logger.trace(f"version: {version}")
-    v = re.search("/.*?(?P<ver>[0-9]+\.[0-9]+.*)@(?P<build>.*)", version)
+    v = re.search("/.*?(?P<ver>[0-9]+\.[0-9]+[0-9a-z_\.]*\-?[0-9a-z]*)@?\-?(?P<build>[a-z0-9\-]*)", version, re.IGNORECASE)
     debug_info = v.groupdict() if v is not None else v
     logger.trace(f"stock version group: {debug_info}")
     parsed_version = v.group('ver') if v is not None else '0.0.0'
@@ -294,7 +297,7 @@ class Device:
     if self.fw_type == 'homekit':
       uptime = info.get('uptime', -1)
     elif self.fw_type == 'stock':
-      uptime = info['status'].get('uptime', -1)
+      uptime = info.get('status', {}).get('uptime', -1)
     logger.trace(f'get_uptime: {uptime}')
     return uptime
 
@@ -612,39 +615,28 @@ def write_hap_setup_code(wifi_ip, hap_setup_code):
 def wait_for_reboot(device_info, preboot_uptime=-1, reboot_only=False):
   logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
   logger.info(f"waiting for {device_info.friendly_host} to reboot[!n]")
-  onlinecheck = None
-  info = None
+  get_current_version = None
   time.sleep(1) # wait for time check to fall behind
   current_uptime = device_info.get_uptime(True)
-  logger.trace(f"current_uptime: {current_uptime}")
   n = 1
-  logger.trace(f'check1: {current_uptime > preboot_uptime}')
-  logger.trace(f'check2: {n < 60}')
   if reboot_only == False:
-    while current_uptime > preboot_uptime and n < 60 or onlinecheck == None:
-      logger.info(f"...[!n]")
-      logger.trace(f'current_uptime: {current_uptime}')
-      logger.trace(f'preboot_uptime: {preboot_uptime}')
-      logger.trace(f'check3: {current_uptime > preboot_uptime}')
-      logger.trace(f'check4: {n < 60}')
-      if n == 15:
+    while current_uptime > preboot_uptime and n < 60 or get_current_version == None:
+      logger.info(f".[!n]")
+      if n == 20:
         logger.info(f"\nstill waiting for {device_info.friendly_host} to reboot[!n]")
-      elif n == 30:
+      elif n == 40:
         logger.info(f"\nwe'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
       time.sleep(1) # wait 1 second befor retrying.
       current_uptime = device_info.get_uptime(True)
-      logger.trace(f"current_uptime: {current_uptime}")
+      get_current_version = device_info.get_current_version(is_flashing=True)
+      logger.debug(f"get_current_version: {get_current_version}")
       n += 1
-      logger.trace(f"n: {n}")
-      onlinecheck = device_info.get_current_version(is_flashing=True)
-      logger.debug(f"onlinecheck {onlinecheck}")
+      logger.trace(f"loop number: {n}")
   else:
     while device_info.get_uptime(True) < 3:
       time.sleep(1) # wait 1 second befor retrying.
-  logger.info(f"")
-  logger.trace(f'current_uptime: {current_uptime}')
-  logger.trace(f'preboot_uptime: {preboot_uptime}')
-  return onlinecheck
+  logger.info("")
+  return get_current_version
 
 def write_flash(device_info):
   logger.debug(f"{PURPLE}[Write Flash]{NC}")
@@ -697,8 +689,8 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   device_id = device_info.device_id
   device_name = device_info.device_name
   wifi_ip = device_info.wifi_ip
-  wifi_ssid = device_info.info.get('wifi_ssid', None) if device_info.fw_type_str == 'HomeKit' else device_info.info['status']['wifi_sta'].get('ssid',None)
-  wifi_rssi = device_info.info.get('wifi_rssi', None) if device_info.fw_type_str == 'HomeKit' else device_info.info['status']['wifi_sta'].get('rssi',None)
+  wifi_ssid = device_info.info.get('wifi_ssid', None) if device_info.fw_type_str == 'HomeKit' else device_info.info.get('status', {}).get('wifi_sta', {}).get('ssid', None)
+  wifi_rssi = device_info.info.get('wifi_rssi', None) if device_info.fw_type_str == 'HomeKit' else device_info.info.get('status', {}).get('wifi_sta', {}).get('rssi', None)
   current_fw_version = device_info.fw_version
   current_fw_type = device_info.fw_type
   current_fw_type_str = device_info.fw_type_str
@@ -712,7 +704,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
   sys_temp = device_info.info.get('sys_temp', None)
-  uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if current_fw_type_str == 'HomeKit' else datetime.timedelta(seconds=device_info.info['status'].get('uptime',0))
+  uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if current_fw_type_str == 'HomeKit' else datetime.timedelta(seconds=device_info.info.get('status', {}).get('uptime',0))
   hap_ip_conns_pending = device_info.info.get('hap_ip_conns_pending', None)
   hap_ip_conns_active = device_info.info.get('hap_ip_conns_active', None)
   hap_ip_conns_max = device_info.info.get('hap_ip_conns_max', None)
@@ -1084,7 +1076,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.5.6"
+  app_version = "2.5.7"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
