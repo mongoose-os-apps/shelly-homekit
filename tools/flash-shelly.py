@@ -370,8 +370,8 @@ class Device:
         self.dlurl = 'local'
       else:
         self.dlurl = f'http://{local_ip}:{webserver_port}/{self.local_file}'
-      if self.fw_type == 'stock' and self.stock_model == 'SHRGBW2' and self.colour_mode is not None:
-        m_model = f"{self.app}-{self.colour_mode}"
+      if self.fw_type == 'stock' and self.stock_model == 'SHRGBW2' and self.color_mode is not None:
+        m_model = f"{self.app}-{self.color_mode}"
       else:
         m_model = self.app
       if m_model != manifest_name:
@@ -426,8 +426,8 @@ class Device:
       self.flash_fw_version = self.version
       self.dlurl = f'http://archive.shelly-tools.de/version/v{self.version}/{self.stock_model}.zip'
     if self.stock_model  == 'SHRGBW2':
-      if self.dlurl and not self.version and self.colour_mode and not self.local_file:
-        self.dlurl = self.dlurl.replace('.zip',f'-{self.colour_mode}.zip')
+      if self.dlurl and not self.version and self.color_mode and not self.local_file:
+        self.dlurl = self.dlurl.replace('.zip',f'-{self.color_mode}.zip')
 
 class HomeKitDevice(Device):
   def get_info(self):
@@ -440,7 +440,7 @@ class HomeKitDevice(Device):
     self.app = self.info['app'] if 'app' in self.info else self.shelly_model(self.stock_model)[1]
     self.device_id = self.info['device_id'] if 'device_id' in self.info else None
     self.device_name = self.info['name'] if 'name' in self.info else None
-    self.colour_mode = self.info['colour_mode'] if 'colour_mode' in self.info else None
+    self.color_mode = self.info['color_mode'] if 'color_mode' in self.info else None
     return True
 
   def update_to_homekit(self, release_info=None):
@@ -484,7 +484,7 @@ class StockDevice(Device):
     self.app = self.shelly_model(self.stock_model)[1]
     self.device_id = self.info['mqtt']['id'] if 'id' in self.info['mqtt'] else self.friendly_host
     self.device_name = self.info['name'] if 'name' in self.info else None
-    self.colour_mode = self.info['mode'] if 'mode' in self.info else None
+    self.color_mode = self.info['mode'] if 'mode' in self.info else None
     return True
 
   def update_to_homekit(self, release_info=None):
@@ -700,7 +700,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   force_flash = device_info.force_flash
   model = device_info.model
   stock_model = device_info.stock_model
-  colour_mode = device_info.colour_mode
+  color_mode = device_info.color_mode
   dlurl = device_info.dlurl
   flash_label = device_info.flash_label
   sys_temp = device_info.info.get('sys_temp', None)
@@ -717,7 +717,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
   logger.debug(f"wifi_rssi: {wifi_rssi}")
   logger.debug(f"model: {model}")
   logger.debug(f"stock_model: {stock_model}")
-  logger.debug(f"colour_mode: {colour_mode}")
+  logger.debug(f"color_mode: {color_mode}")
   logger.debug(f"sys_temp: {sys_temp}")
   logger.debug(f"uptime: {uptime}")
   logger.debug(f"hap_ip_conns_pending: {hap_ip_conns_pending}")
