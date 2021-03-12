@@ -34,8 +34,10 @@
 #    -h, --help            show this help message and exit
 #    -m {homekit,keep,revert}, --mode {homekit,keep,revert}
 #                          Script mode.
-#    -t {homekit,stock,all}, --type {homekit,stock,all}
+#    -ft {homekit,stock,all}, --fw-type {homekit,stock,all}
 #                          Limit scan to current firmware type.
+#    -mt MODEL_TYPE, --model-type MODEL_TYPE
+#                          Limit scan to model type (dimmer, rgbw2, shelly1, etc).
 #    -a, --all             Run against all the devices on the network.
 #    -q, --quiet           Only include upgradeable shelly devices.
 #    -l, --list            List info of shelly device.
@@ -967,7 +969,7 @@ def probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, 
             deviceinfo.update_to_homekit(homekit_release_info)
           parse_info(deviceinfo, action, dry_run, quiet_run, silent_run, flashmode, exclude, hap_setup_code, requires_upgrade, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
 
-def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
+def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, fw_type, model_type, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip='', ipv4_mask='', ipv4_gw='', ipv4_dns=''):
   global total_devices
   if hosts:
     for host in hosts:
@@ -1009,14 +1011,17 @@ def device_scan(hosts, action, dry_run, quiet_run, silent_run, mode, type, exclu
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
       deviceinfo.get_device_info()
-      if deviceinfo.fw_type is not None and (deviceinfo.fw_type in type or type == 'all'):
-        device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
-        probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
+      if deviceinfo.fw_type is not None:
+        fw_model = deviceinfo.info.get('model') if 'homekit' == deviceinfo.fw_type else deviceinfo.shelly_model(deviceinfo.info.get('device').get('type'))[0]
+        if (deviceinfo.fw_type in fw_type or fw_type == 'all') and (model_type is not None and model_type.lower() in fw_model.lower() or model_type == 'all'):
+          device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
+          probe_device(device, action, dry_run, quiet_run, silent_run, mode, exclude, version, variant, hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
   parser.add_argument('-m', '--mode', action="store", choices=['homekit', 'keep', 'revert'], default="homekit", help="Script mode.")
-  parser.add_argument('-t', '--type', action="store", choices=['homekit', 'stock', 'all'], default="all", help="Limit scan to current firmware type.")
+  parser.add_argument('-ft', '--fw-type', action="store", dest='fw_type', choices=['homekit', 'stock', 'all'], default="all", help="Limit scan to current firmware type.")
+  parser.add_argument('-mt', '--model-type', action="store", dest='model_type', default='all', help="Limit scan to model type (dimmer, rgbw2, shelly1, etc).")
   parser.add_argument('-a', '--all', action="store_true", dest='do_all', default=False, help="Run against all the devices on the network.")
   parser.add_argument('-q', '--quiet', action="store_true", dest='quiet_run', default=False, help="Only include upgradeable shelly devices.")
   parser.add_argument('-l', '--list', action="store_true", default=False, help="List info of shelly device.")
@@ -1083,7 +1088,8 @@ if __name__ == '__main__':
   logger.debug(f"manual_hosts: {args.hosts} ({len(args.hosts)})")
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
-  logger.debug(f"type: {args.type}")
+  logger.debug(f"fw_type: {args.fw_type}")
+  logger.debug(f"model_type: {args.model_type}")
   logger.debug(f"do_all: {args.do_all}")
   logger.debug(f"dry_run: {args.dry_run}")
   logger.debug(f"quiet_run: {args.quiet_run}")
@@ -1136,7 +1142,7 @@ if __name__ == '__main__':
     parser.print_help()
     sys.exit(1)
 
-  device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.type, args.exclude, args.version, args.variant,
+  device_scan(args.hosts, action, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.fw_type, args.model_type, args.exclude, args.version, args.variant,
               args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
   if http_server_started and server:
     logger.trace("Shutting down webserver")
