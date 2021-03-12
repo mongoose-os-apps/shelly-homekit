@@ -1103,7 +1103,10 @@ if __name__ == '__main__':
 
   message = None
   if not args.hosts and not args.do_all:
-    message = f"{WHITE}Requires a hostname or -a | --all{NC}"
+    if action == 'list':
+      args.do_all = True
+    else:
+      message = f"{WHITE}Requires a hostname or -a | --all{NC}"
   elif args.hosts and args.do_all:
     message = f"{WHITE}Invalid option hostname or -a | --all not both.{NC}"
   elif args.list and args.reboot:
