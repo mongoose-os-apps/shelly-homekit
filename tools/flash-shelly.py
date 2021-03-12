@@ -824,7 +824,7 @@ def parse_info(device_info, action, dry_run, quiet_run, silent_run, mode, exclud
       elif requires_upgrade == 'Done':
         flash_message = f"Do you wish to contintue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
       else:
-        flash_message = f"Do you wish to flash {friendly_host} to firmware version {flash_fw_version}"
+        flash_message = f"Do you wish to flash {friendly_host} to {flash_fw_type_str} firmware version {flash_fw_version}"
       if input(f"{flash_message} (y/n) ? ") in ('y', 'Y'):
         flash = True
       else:
