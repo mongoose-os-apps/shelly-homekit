@@ -1152,7 +1152,7 @@ if __name__ == '__main__':
 
   message = None
   if not args.hosts and not args.do_all:
-    if action == 'list':
+    if action in ('list', 'flash'):
       args.do_all = True
     else:
       message = f"{WHITE}Requires a hostname or -a | --all{NC}"
