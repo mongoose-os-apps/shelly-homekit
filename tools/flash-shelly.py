@@ -579,7 +579,7 @@ class Main():
     major = int(v.group('major'))
     minor = int(v.group('minor'))
     patch = int(v.group('patch')) if v.group('patch') is not None else '0'
-    variant = v.group('model') if v.group('model') else v.group('prerelease')
+    variant = v.group('prerelease')
     varSeq = int(v.group('prerelease_seq')) if v.group('prerelease_seq') and v.group('prerelease_seq').isdigit() else 0
     return (major, minor, patch, variant, varSeq)
 
