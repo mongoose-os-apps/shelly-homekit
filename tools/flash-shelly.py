@@ -672,8 +672,9 @@ class Main():
     flashed = False
     uptime = device_info.get_uptime(True)
     device_info.flash_firmware()
-    rebootcheck = self.wait_for_reboot(device_info, uptime)
-    if rebootcheck == device_info.flash_fw_version:
+    reboot_check = self.parse_version(self.wait_for_reboot(device_info, uptime))
+    flashfw = self.parse_version(device_info.flash_fw_version)
+    if reboot_check == flashfw:
       global flashed_devices
       flashed_devices +=1
       logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
@@ -688,13 +689,14 @@ class Main():
         logger.info("Goto 'Device Type' and switch modes")
         logger.info("Once mode has been changed, you can switch it back to your preferred mode")
         logger.info(f"Restart homebridge.")
-      elif rebootcheck == '0.0.0':
+      elif reboot_check == '0.0.0':
         logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
       else:
         global failed_flashed_devices
         failed_flashed_devices +=1
-        logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
-      logger.debug("Current: %s" % rebootcheck)
+        logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {flashfw}{NC}")
+      logger.debug(f"Current: {reboot_check}")
+      logger.debug(f"flash_fw_version: {flashfw}")
 
   def reboot_device(self, device_info):
     logger.debug(f"{PURPLE}[Reboot Device]{NC}")
