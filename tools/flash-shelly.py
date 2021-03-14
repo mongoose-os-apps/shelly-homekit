@@ -806,7 +806,7 @@ class Main():
           if int(hap_ip_conns_pending) > 0:
             hap_ip_conns_pending = f"{RED}{hap_ip_conns_pending}{NC}"
           logger.info(f"{WHITE}HAP Connections: {NC}{hap_ip_conns_pending} / {hap_ip_conns_active} / {hap_ip_conns_max}{NC}")
-      if current_fw_type == self.flashmode and current_fw_version == flash_fw_version:
+      if current_fw_type == self.flashmode and (current_fw_version == flash_fw_version or flash_fw_version == '0.0.0'):
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} {GREEN}\u2714{NC}")
       elif current_fw_type == self.flashmode and flashfw_newer:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} \u279c {YELLOW}{latest_fw_label}{NC}")
