@@ -824,7 +824,7 @@ class Main():
 
     if self.action == 'flash':
       message = "Would have been"
-      keyword = ""
+      keyword = None
       if dlurl:
         if self.exclude and friendly_host in self.exclude:
           logger.info("Skipping as device has been excluded...")
@@ -851,9 +851,7 @@ class Main():
           keyword = f"Version {force_version} is not available..."
         elif device_info.local_file:
           keyword = "Incorrect Zip File for device..."
-        else:
-          keyword = f"{flash_fw_type_str} {RED}firmware is not supported yet...{NC}"
-        if not self.quiet_run:
+        if keyword is not None and not self.quiet_run:
           logger.info(f"{keyword}")
         return 0
 
@@ -874,8 +872,6 @@ class Main():
         flash = True
       elif perform_flash == True and self.dry_run == True:
         logger.info(f"{message} {keyword}...")
-      elif self.quiet_run == False:
-        logger.info(f"Does not need updating.")
       if flash == True:
         self.write_flash(device_info)
       if device_info.fw_type == 'homekit' and self.hap_setup_code:
