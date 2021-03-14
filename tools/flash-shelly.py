@@ -644,6 +644,7 @@ class Main():
   def wait_for_reboot(self, device_info, preboot_uptime=-1, reboot_only=False):
     logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
     logger.info(f"waiting for {device_info.friendly_host} to reboot[!n]")
+    logger.trace("")
     get_current_version = None
     time.sleep(1) # wait for time check to fall behind
     current_uptime = device_info.get_uptime(True)
@@ -694,7 +695,7 @@ class Main():
       else:
         global failed_flashed_devices
         failed_flashed_devices +=1
-        logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {flashfw}{NC}")
+        logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
       logger.debug(f"Current: {reboot_check}")
       logger.debug(f"flash_fw_version: {flashfw}")
 
