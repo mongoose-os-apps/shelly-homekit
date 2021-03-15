@@ -277,7 +277,13 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     sw2->set_primary(true);
     pri_acc->SetCategory(cat);
     pri_acc->AddService(sw2);
-    pri_acc->SetName(sw2->name());
+    // This was requested in
+    // https://github.com/mongoose-os-apps/shelly-homekit/issues/237 however,
+    // without https://github.com/mongoose-os-libs/dns-sd/issues/5 it causes
+    // confusion when multiple accessories advertise the same name (reported in
+    // https://github.com/mongoose-os-apps/shelly-homekit/issues/561).
+    // So for now we're going back to less readable but unique accessory names.
+    // pri_acc->SetName(sw2->name());
     return;
   }
   if (!sw_hidden) {
@@ -652,6 +658,17 @@ static bool shelly_cfg_migrate(void) {
     mgos_sys_config_set_in3_ssw_in_mode(mgos_sys_config_get_ssw3_in_mode());
 #endif
     mgos_sys_config_set_shelly_cfg_version(4);
+    changed = true;
+  }
+  if (mgos_sys_config_get_shelly_cfg_version() == 4) {
+    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+      LOG(LL_ERROR, ("Failed to increment CN"));
+    }
+    // Disable file logging.
+    if (mgos_sys_config_get_file_logger_enable()) {
+      SetDebugEnable(false);
+    }
+    mgos_sys_config_set_shelly_cfg_version(5);
     changed = true;
   }
   return changed;
