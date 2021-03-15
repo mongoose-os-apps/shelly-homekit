@@ -761,7 +761,6 @@ function getInfo() {
 
       el("homekit_container").style.display = "block";
       el("gs_container").style.display = "block";
-      el("debug_log_container").style.display = "block";
     }).catch(function (err) {
       alert(err);
       console.log(err);
@@ -781,17 +780,25 @@ function setCookie(key, value) {
   document.cookie = `${key}=${JSON.stringify(value)}`;
 }
 
-var host = (new URLSearchParams(location.search)).get("host") || location.host;
+var host = null;
 var socket = null;
 var connectionTries = 0;
 
-function connectWebSocket() {
+function setupHost() {
+  host = (new URLSearchParams(location.search)).get("host") || location.host;
+
   if (!host) {
     host = prompt("Please enter the host of your shelly.");
     if (host !== null) {
       location.href = `${location.host}?host=${host}`;
     }
   }
+
+  el("debug_link").href = `http://${host}/debug/log?follow=1`;
+}
+
+function connectWebSocket() {
+  setupHost();
 
   return new Promise(function (resolve, reject) {
     socket = new WebSocket(`ws://${host}/rpc`);
