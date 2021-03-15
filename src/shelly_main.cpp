@@ -666,9 +666,8 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
   if (ev == MGOS_EVENT_REBOOT) {
     // Increment CN on every reboot, because why not.
     // This will cover firmware update as well as other configuration changes.
-    uint16_t cn;
-    if (HAPAccessoryServerGetCN(&s_kvs, &cn) != kHAPError_None) {
-      cn = 0;
+    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+      LOG(LL_ERROR, ("Failed to increment CN"));
     }
   }
   (void) ev;
