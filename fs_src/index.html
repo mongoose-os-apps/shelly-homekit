@@ -69,7 +69,7 @@
         </ul>
       </div>
       <div class="form-control">
-        <label>Setup code:</label>
+        <label>Setup Code:</label>
         <input type="text" id="hap_setup_code" placeholder="e.g. 111-22-333">
       </div>
       <div class="button-container">
@@ -97,11 +97,11 @@
         </label>
       </div>
       <div class="form-control">
-        <label>WiFi network:</label>
+        <label>WiFi Network:</label>
         <input type="text" id="wifi_ssid">
       </div>
       <div class="form-control">
-        <label>WiFi password:</label>
+        <label>WiFi Password:</label>
         <input type="password" id="wifi_pass">
       </div>
       <div class="form-control" id="wifi_rssi_container">
@@ -136,7 +136,7 @@
         <span id="model"></span>
       </div>
       <div class="form-control">
-        <label>Device Id:</label>
+        <label>Device ID:</label>
         <span id="device_id"></span>
       </div>
       <div class="form-control">
@@ -149,11 +149,7 @@
       </div>
       <div class="form-control" id="debug_log_container" style="display: none">
         <label>Debug Log:</label>
-        <label class="switch">
-          <input type="checkbox" id="debug_en">
-          <span class="slider round"></span>
-        </label>
-        <span id="debug_link"><a href="/debug/log?follow=1" style="margin-left: 1em">Log</a></span>
+        <a href="/debug/log?follow=1">Log</a>
       </div>
       <div class="button-container">
         <button class="btn" id="reboot_btn">
@@ -192,7 +188,7 @@
         <span id="update_status"></span>
       </div>
       <div class="form-control" id="revert_to_stock_container" style="display: none">
-        <label>Revert to stock:</label>
+        <label>Revert to Stock:</label>
         <button id="revert_btn">
           <label><span id="revert_btn_spinner"></span>Revert</label>
         </button>
@@ -302,21 +298,21 @@
         </select>
       </div>
       <div class="form-control">
-        <label for="out_inverted">Inverted output:</label>
+        <label for="out_inverted">Inverted Output:</label>
         <label class="switch">
           <input type="checkbox" id="out_inverted">
           <span class="slider round"></span>
         </label>
       </div>
       <div class="form-control">
-        <label for="auto_off">Auto off:</label>
+        <label for="auto_off">Auto Off:</label>
         <label class="switch">
           <input type="checkbox" id="auto_off">
           <span class="slider round"></span>
         </label>
       </div>
       <div class="form-control" id="auto_off_delay_container">
-        <label for="auto_off_delay">Auto off delay:</label>
+        <label for="auto_off_delay">Auto Off Delay:</label>
         <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
                pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
       </div>
