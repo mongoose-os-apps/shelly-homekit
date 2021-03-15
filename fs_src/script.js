@@ -693,10 +693,6 @@ function updateElement(key, value, info) {
         el(key).innerText = `${value} ${key.split("_").slice(-1)[0]}`;
       }
       break;
-    case "debug_en":
-      checkIfNotModified(el("debug_en"), value);
-      el("debug_link").style.visibility = value ? "visible" : "hidden";
-      break;
     case "wc_avail":
       if (value) el("sys_mode_container").style.display = "block";
       else if (el("sys_mode_1")) el("sys_mode_1").remove();
@@ -784,23 +780,6 @@ function getCookie(key) {
 function setCookie(key, value) {
   document.cookie = `${key}=${JSON.stringify(value)}`;
 }
-
-el("debug_en").onclick = function () {
-  var debugEn = el("debug_en").checked;
-  pauseAutoRefresh = true;
-  sendMessageWebSocket("Shelly.SetConfig", {config: {debug_en: debugEn}})
-    .then(() => setTimeout(() => {
-      pauseAutoRefresh = false;
-      refreshUI();
-    }, 1300))
-    .catch(function (err) {
-      if (err.response) {
-        err = err.response.data.message;
-      }
-      alert(err);
-      pauseAutoRefresh = false;
-  });
-};
 
 var host = (new URLSearchParams(location.search)).get("host") || location.host;
 var socket = null;
