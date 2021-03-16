@@ -33,7 +33,7 @@ Summary of supported devices and features:
    * Stateless input
 
 Features that are not yet supported:
- * Shelly 1L, 1PM, 2, Plug, Plug S: power measurement
+ * Shelly 1L, 2: power measurement
  * Cloud connections: no Shelly Cloud, no MQTT
  * Remote actions (web hooks)
 
