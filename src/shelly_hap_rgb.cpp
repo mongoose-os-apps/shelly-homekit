@@ -185,7 +185,7 @@ void RGB::HSVtoRGB(float &h, float &s, float &v, float &r, float &g, float &b) {
 
 void RGB::SetOutputState(const char *source) {
   LOG(LL_INFO,
-      ("state: %s, brightness: %i, hue: %i, saturation: %i 4",
+      ("state: %s, brightness: %i, hue: %i, saturation: %i",
        OnOff(cfg_->state), cfg_->brightness, cfg_->hue, cfg_->saturation));
 
   float h = cfg_->hue / 360.0;

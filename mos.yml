@@ -86,7 +86,7 @@ config_schema:
 
   - ["rgb", "o", {title: "RGB settings", abstract: true}]
   - ["rgb.name", "s", "RGB", {title: "Accessory name"}]
-  - ["rgb.enable", "b", true, {title: "Enable this switch in the accessory"}]
+  - ["rgb.enable", "b", true, {title: "Enable this light in the accessory"}]
   - ["rgb.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
   - ["rgb.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
   - ["rgb.state", "b", false, {title: "State of the light"}]
@@ -461,7 +461,7 @@ conds:
         - ["device.id", "shellyrgbw2-??????"]
         - ["shelly.name", "shellyrgbw2-??????"]
         - ["wifi.ap.ssid", "shellyrgbw2-??????"]
-        - ["rgb1", "rgb", {title: "SW1 settings"}]
+        - ["rgb1", "rgb", {title: "RGB1 settings"}]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
