@@ -654,12 +654,15 @@ class Main():
       while current_uptime > preboot_uptime and n < 60 or get_current_version == None:
         logger.info(f".[!n]")
         if n == 20:
-          logger.info(f"\nstill waiting for {device_info.friendly_host} to reboot[!n]")
+          logger.info("")
+          logger.info(f"still waiting for {device_info.friendly_host} to reboot[!n]")
         elif n == 40:
-          logger.info(f"\nwe'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
+          logger.info("")
+          logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
         time.sleep(1) # wait 1 second before retrying.
         current_uptime = device_info.get_uptime(True)
         get_current_version = device_info.get_current_version(is_flashing=True)
+        logger.debug("")
         logger.debug(f"get_current_version: {get_current_version}")
         n += 1
         logger.trace(f"loop number: {n}")
