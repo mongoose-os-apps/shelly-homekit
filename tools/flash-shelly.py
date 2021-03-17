@@ -66,6 +66,7 @@
 #                          Create output log file with chosen filename.
 #    --reboot              Preform a reboot of the device.
 
+import atexit
 import argparse
 import datetime
 import functools
@@ -163,7 +164,7 @@ class StoppableHTTPServer(http.server.HTTPServer):
   def run(self):
     try:
       self.serve_forever()
-    except KeyboardInterrupt:
+    except Exception:
       pass
     finally:
       self.server_close()
@@ -255,7 +256,7 @@ class Device:
             if fp2.status_code == 200:
               status = json.loads(fp2.content)
               info['status'] = status
-      except:
+      except Exception:
         pass
     logger.trace(f"Device URL: {self.device_url}")
     if not info:
@@ -422,7 +423,7 @@ class Device:
         try:
           self.flash_fw_version = self.parse_stock_version(stock_model_info['version']) if 'version' in stock_model_info else self.parse_stock_version(stock_model_info['beta_url'])
           self.dlurl = stock_model_info['url']
-        except:
+        except Exception:
           self.flash_fw_version = '0.0.0'
           self.dlurl = None
     else:
@@ -514,7 +515,7 @@ class StockDevice(Device):
       logger.debug(f"http://{self.wifi_ip}/ota?url={dlurl}")
       try:
         response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
-      except:
+      except Exception:
         logger.info(f"flash failed")
     logger.trace(response.text)
 
@@ -1008,6 +1009,23 @@ class Main():
               deviceinfo.update_to_homekit(homekit_release_info)
             self.parse_info(deviceinfo, requires_upgrade)
 
+  def stop_scan(self):
+    while True:
+      try:
+        self.listener.queue.get_nowait()
+      except queue.Empty:
+        self.zc.close()
+        break
+
+  def results(self):
+    logger.info(f"")
+    if self.action == 'flash':
+      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
+    else:
+      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
+    if self.log_filename:
+      logger.info(f"Log file created: {args.log_filename}")
+
   def device_scan(self):
     global total_devices
     if self.hosts:
@@ -1019,32 +1037,17 @@ class Main():
         if deviceinfo.fw_type is not None:
           device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
           self.probe_device(device)
-      logger.info(f"")
-      if self.action == 'flash':
-        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
-      else:
-        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
-      if args.log_filename:
-        logger.info(f"Log file created: {args.log_filename}")
     else:
       logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
       logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
-      zc = zeroconf.Zeroconf()
-      listener = MyListener()
-      browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
+      self.zc = zeroconf.Zeroconf()
+      self.listener = MyListener()
+      browser = zeroconf.ServiceBrowser(self.zc, '_http._tcp.local.', self.listener)
       total_devices = 0
       while True:
         try:
-          deviceinfo = listener.queue.get(timeout=20)
+          deviceinfo = self.listener.queue.get(timeout=20)
         except queue.Empty:
-          logger.info(f"")
-          if self.action == 'flash':
-            logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
-          else:
-            logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
-          if self.log_filename:
-            logger.info(f"Log file created: {args.log_filename}")
-          zc.close()
           break
         logger.debug(f"")
         logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
@@ -1186,7 +1189,12 @@ if __name__ == '__main__':
 
   main = Main(args.hosts, action, args.log_filename, args.dry_run, args.quiet_run, args.silent_run, args.mode, None, args.info_level, args.fw_type, args.model_type, args.exclude, args.version, args.variant,
               args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
-  main.device_scan()
+  atexit.register(main.results)
+  try:
+    main.device_scan()
+  except KeyboardInterrupt:
+    main.stop_scan
+
   if http_server_started and server:
     logger.trace("Shutting down webserver")
     server.shutdown()
