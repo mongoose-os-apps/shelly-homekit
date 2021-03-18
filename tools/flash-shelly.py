@@ -574,14 +574,22 @@ class Main():
     # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2_autocheck
     # 1.9_GU10_RGBW
     logger.trace(f"vs: {vs}")
-    v = re.search("^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:_(?P<model>[a-zA-Z0-9_]*))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$", vs)
-    debug_info = v.groupdict() if v is not None else v
-    logger.trace(f"group: {debug_info}")
-    major = int(v.group('major'))
-    minor = int(v.group('minor'))
-    patch = int(v.group('patch')) if v.group('patch') is not None else '0'
-    variant = v.group('prerelease')
-    varSeq = int(v.group('prerelease_seq')) if v.group('prerelease_seq') and v.group('prerelease_seq').isdigit() else 0
+    try:
+      v = re.search("^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:_(?P<model>[a-zA-Z0-9_]*))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$", vs)
+      debug_info = v.groupdict() if v is not None else v
+      logger.trace(f"group: {debug_info}")
+      major = int(v.group('major'))
+      minor = int(v.group('minor'))
+      patch = int(v.group('patch')) if v.group('patch') is not None else 0
+      variant = v.group('prerelease')
+      varSeq = int(v.group('prerelease_seq')) if v.group('prerelease_seq') and v.group('prerelease_seq').isdigit() else 0
+    except Exception:
+      major = 0
+      minor = 0
+      patch = 0
+      variant = ''
+      varSeq = 0
+
     return (major, minor, patch, variant, varSeq)
 
   def is_newer(self, v1, v2):
