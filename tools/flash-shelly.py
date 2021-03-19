@@ -66,6 +66,7 @@
 #                          Create output log file with chosen filename.
 #    --reboot              Preform a reboot of the device.
 
+import atexit
 import argparse
 import datetime
 import functools
@@ -163,7 +164,7 @@ class StoppableHTTPServer(http.server.HTTPServer):
   def run(self):
     try:
       self.serve_forever()
-    except KeyboardInterrupt:
+    except Exception:
       pass
     finally:
       self.server_close()
@@ -255,7 +256,7 @@ class Device:
             if fp2.status_code == 200:
               status = json.loads(fp2.content)
               info['status'] = status
-      except:
+      except Exception:
         pass
     logger.trace(f"Device URL: {self.device_url}")
     if not info:
@@ -265,15 +266,16 @@ class Device:
 
   def parse_stock_version(self, version):
     # stock can be '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
-    # stock can be '20210107-122133/1.9_GU10_RGBW@07531e29', we need '1.9_GU10_RGBW'
+    # stock can be '20201124-092159/v1.9.5-DM2_autocheck', we need '1.9.5-DM2'
+    # stock can be '20210107-122133/1.9_GU10_RGBW@07531e29', we need '1.9'
     # stock can be '20201014-165335/1244-production-Shelly1L@6a254598', we need '0.0.0'
     # stock can be '20210226-091047/v1.10.0-rc2-89-g623b41ec0-master', we need '1.10.0-rc2'
+    # stock can be '20210318-141537/v1.10.0-geba262d', we need '1.10.0'
     logger.trace(f"version: {version}")
-    v = re.search("/.*?(?P<ver>[0-9]+\.[0-9]+[0-9a-z_\.]*\-?[0-9a-z]*)@?\-?(?P<build>[a-z0-9\-]*)", version, re.IGNORECASE)
+    v = re.search("/.*?(?P<ver>([0-9]+\.)([0-9]+)(\.[0-9]+)?(-[a-z0-9]*)?)(?P<rest>(@|-|_)[a-z0-9\-]*)", version, re.IGNORECASE)
     debug_info = v.groupdict() if v is not None else v
     logger.trace(f"stock version group: {debug_info}")
     parsed_version = v.group('ver') if v is not None else '0.0.0'
-    parsed_build = v.group('build') if v is not None else '0'
     return parsed_version
 
   def set_local_file(self, local_file):
@@ -422,7 +424,7 @@ class Device:
         try:
           self.flash_fw_version = self.parse_stock_version(stock_model_info['version']) if 'version' in stock_model_info else self.parse_stock_version(stock_model_info['beta_url'])
           self.dlurl = stock_model_info['url']
-        except:
+        except Exception:
           self.flash_fw_version = '0.0.0'
           self.dlurl = None
     else:
@@ -514,7 +516,7 @@ class StockDevice(Device):
       logger.debug(f"http://{self.wifi_ip}/ota?url={dlurl}")
       try:
         response = requests.get(f'http://{self.wifi_ip}/ota?url={dlurl}')
-      except:
+      except Exception:
         logger.info(f"flash failed")
     logger.trace(response.text)
 
@@ -569,18 +571,24 @@ class Main():
     return release_info
 
   def parse_version(self, vs):
-    # 1.9.2_1L
-    # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2_autocheck
-    # 1.9_GU10_RGBW
+    # 1.9.2 / 1.9
+    # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2
     logger.trace(f"vs: {vs}")
-    v = re.search("^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:_(?P<model>[a-zA-Z0-9_]*))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$", vs)
-    debug_info = v.groupdict() if v is not None else v
-    logger.trace(f"group: {debug_info}")
-    major = int(v.group('major'))
-    minor = int(v.group('minor'))
-    patch = int(v.group('patch')) if v.group('patch') is not None else '0'
-    variant = v.group('prerelease')
-    varSeq = int(v.group('prerelease_seq')) if v.group('prerelease_seq') and v.group('prerelease_seq').isdigit() else 0
+    try:
+      v = re.search("^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$", vs)
+      debug_info = v.groupdict() if v is not None else v
+      logger.trace(f"group: {debug_info}")
+      major = int(v.group('major'))
+      minor = int(v.group('minor'))
+      patch = int(v.group('patch')) if v.group('patch') is not None else 0
+      variant = v.group('prerelease')
+      varSeq = int(v.group('prerelease_seq')) if v.group('prerelease_seq') and v.group('prerelease_seq').isdigit() else 0
+    except Exception:
+      major = 0
+      minor = 0
+      patch = 0
+      variant = ''
+      varSeq = 0
     return (major, minor, patch, variant, varSeq)
 
   def is_newer(self, v1, v2):
@@ -653,12 +661,15 @@ class Main():
       while current_uptime > preboot_uptime and n < 60 or get_current_version == None:
         logger.info(f".[!n]")
         if n == 20:
-          logger.info(f"\nstill waiting for {device_info.friendly_host} to reboot[!n]")
+          logger.info("")
+          logger.info(f"still waiting for {device_info.friendly_host} to reboot[!n]")
         elif n == 40:
-          logger.info(f"\nwe'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
+          logger.info("")
+          logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
         time.sleep(1) # wait 1 second before retrying.
         current_uptime = device_info.get_uptime(True)
         get_current_version = device_info.get_current_version(is_flashing=True)
+        logger.debug("")
         logger.debug(f"get_current_version: {get_current_version}")
         n += 1
         logger.trace(f"loop number: {n}")
@@ -1008,6 +1019,23 @@ class Main():
               deviceinfo.update_to_homekit(homekit_release_info)
             self.parse_info(deviceinfo, requires_upgrade)
 
+  def stop_scan(self):
+    while True:
+      try:
+        self.listener.queue.get_nowait()
+      except queue.Empty:
+        self.zc.close()
+        break
+
+  def results(self):
+    logger.info(f"")
+    if self.action == 'flash':
+      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
+    else:
+      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
+    if self.log_filename:
+      logger.info(f"Log file created: {args.log_filename}")
+
   def device_scan(self):
     global total_devices
     if self.hosts:
@@ -1019,32 +1047,17 @@ class Main():
         if deviceinfo.fw_type is not None:
           device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
           self.probe_device(device)
-      logger.info(f"")
-      if self.action == 'flash':
-        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
-      else:
-        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
-      if args.log_filename:
-        logger.info(f"Log file created: {args.log_filename}")
     else:
       logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
       logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
-      zc = zeroconf.Zeroconf()
-      listener = MyListener()
-      browser = zeroconf.ServiceBrowser(zc, '_http._tcp.local.', listener)
+      self.zc = zeroconf.Zeroconf()
+      self.listener = MyListener()
+      browser = zeroconf.ServiceBrowser(self.zc, '_http._tcp.local.', self.listener)
       total_devices = 0
       while True:
         try:
-          deviceinfo = listener.queue.get(timeout=20)
+          deviceinfo = self.listener.queue.get(timeout=20)
         except queue.Empty:
-          logger.info(f"")
-          if self.action == 'flash':
-            logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
-          else:
-            logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
-          if self.log_filename:
-            logger.info(f"Log file created: {args.log_filename}")
-          zc.close()
           break
         logger.debug(f"")
         logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
@@ -1122,7 +1135,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.6.0"
+  app_version = "2.6.1"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
@@ -1186,7 +1199,12 @@ if __name__ == '__main__':
 
   main = Main(args.hosts, action, args.log_filename, args.dry_run, args.quiet_run, args.silent_run, args.mode, None, args.info_level, args.fw_type, args.model_type, args.exclude, args.version, args.variant,
               args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
-  main.device_scan()
+  atexit.register(main.results)
+  try:
+    main.device_scan()
+  except KeyboardInterrupt:
+    main.stop_scan
+
   if http_server_started and server:
     logger.trace("Shutting down webserver")
     server.shutdown()
