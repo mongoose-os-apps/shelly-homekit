@@ -258,6 +258,9 @@ class Device:
               info['status'] = status
       except Exception:
         pass
+    if info is not None and info.get('status','') == 'Updating, please wait...':
+      info = None
+      self.device_url = None
     logger.trace(f"Device URL: {self.device_url}")
     if not info:
       logger.debug(f"Could not get info from device: {self.host}")
