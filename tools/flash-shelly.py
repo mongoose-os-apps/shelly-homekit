@@ -266,16 +266,16 @@ class Device:
 
   def parse_stock_version(self, version):
     # stock can be '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
+    # stock can be '20201124-092159/v1.9.5-DM2_autocheck', we need '1.9.5-DM2'
     # stock can be '20210107-122133/1.9_GU10_RGBW@07531e29', we need '1.9'
     # stock can be '20201014-165335/1244-production-Shelly1L@6a254598', we need '0.0.0'
     # stock can be '20210226-091047/v1.10.0-rc2-89-g623b41ec0-master', we need '1.10.0-rc2'
     # stock can be '20210318-141537/v1.10.0-geba262d', we need '1.10.0'
     logger.trace(f"version: {version}")
-    v = re.search("/.*?(?P<ver>([0-9]+\.)([0-9]+)(\.[0-9]+)?(-[a-z0-9]*)?)(?P<build>(@|-|_)[a-z0-9\-]*)", version, re.IGNORECASE)
+    v = re.search("/.*?(?P<ver>([0-9]+\.)([0-9]+)(\.[0-9]+)?(-[a-z0-9]*)?)(?P<rest>(@|-|_)[a-z0-9\-]*)", version, re.IGNORECASE)
     debug_info = v.groupdict() if v is not None else v
     logger.trace(f"stock version group: {debug_info}")
     parsed_version = v.group('ver') if v is not None else '0.0.0'
-    parsed_build = v.group('build') if v is not None else '0'
     return parsed_version
 
   def set_local_file(self, local_file):
@@ -572,7 +572,7 @@ class Main():
 
   def parse_version(self, vs):
     # 1.9.2 / 1.9
-    # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2_autocheck
+    # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2
     logger.trace(f"vs: {vs}")
     try:
       v = re.search("^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$", vs)
