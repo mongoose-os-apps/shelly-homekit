@@ -1002,7 +1002,7 @@ class Main():
         logger.error("")
       elif got_info:
         self.parse_info(deviceinfo, requires_upgrade)
-        if requires_upgrade and self.action == 'flash' and self.silent_run:
+        if requires_upgrade and self.action == 'flash':
           time.sleep(10) # need to allow time for previous flash reboot to fully boot.
           requires_upgrade = 'Done'
           deviceinfo.get_info()
