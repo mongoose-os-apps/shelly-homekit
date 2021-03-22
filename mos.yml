@@ -118,7 +118,6 @@ cdefs:
   BTN_GPIO: -1
   BTN_NOISY: 1
   RST_GPIO_INIT: -1
-  PWM_SUPPORT: 0
   HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
@@ -452,7 +451,6 @@ conds:
         BTN_DOWN: 0
         BTN_NOISY: 0
         RST_GPIO_INIT: 15 # reset GPIO 15 to prevent green flash on startup
-        PWM_SUPPORT: 1
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHRGBW2"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
