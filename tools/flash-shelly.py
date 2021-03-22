@@ -66,8 +66,8 @@
 #                          Create output log file with chosen filename.
 #    --reboot              Preform a reboot of the device.
 
-import atexit
 import argparse
+import atexit
 import datetime
 import functools
 import http.server
@@ -81,6 +81,7 @@ import re
 import socket
 import subprocess
 import sys
+import traceback
 import threading
 import time
 import zipfile
@@ -175,11 +176,16 @@ class MyListener:
     self.queue = queue.Queue()
 
   def add_service(self, zeroconf, type, device):
+    host = device.replace(f'.{type}', '')
     info = zeroconf.get_service_info(type, device)
-    device = device.replace('._http._tcp.local.', '')
     if info:
-      logger.trace(f"[Device Scan] found device: {device} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
-      self.queue.put(Device(device, socket.inet_ntoa(info.addresses[0])))
+      properties = info.properties
+      properties = { y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys() }
+      logger.trace(f"[Device Scan] found device: {host} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
+      logger.trace(f'info: {info}')
+      logger.trace(f'properties: {properties}')
+      logger.trace('')
+      self.queue.put(Device(host, socket.inet_ntoa(info.addresses[0])))
 
   def remove_service(self, *args, **kwargs):
     pass
@@ -189,17 +195,15 @@ class MyListener:
 
 
 class Device:
-  def __init__(self, host=None, wifi_ip=None, fw_type=None, device_url=None, info=None, variant=None, version=None):
+  def __init__(self, host=None, wifi_ip=None, fw_type=None, info=None):
     self.host = host
     self.friendly_host = host.replace('.local','')
-    self.fw_type = fw_type
-    self.device_url = device_url
-    self.local_file = None
-    self.info = info
-    self.variant = variant
-    self.version = version
     self.wifi_ip = wifi_ip
-    self.flash_label = "Latest:"
+    self.fw_type = fw_type
+    self.info = info
+    self.variant = main.variant
+    self.version = main.version
+    self.local_file = main.local_file
     self.force_flash = False
 
   def is_host_reachable(self, host, is_flashing=False):
@@ -234,34 +238,32 @@ class Device:
     return host_is_reachable
 
   def get_device_info(self, is_flashing=False):
-    self.device_url = None
+    device_url = None
     info = None
+    status = None
+    fw_info = None
     if self.is_host_reachable(self.host, is_flashing):
       try:
-        homekit_fwcheck = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
-        stock_fwcheck = requests.get(f'http://{self.wifi_ip}/settings', timeout=10)
-        if homekit_fwcheck.status_code == 200:
-          fp = homekit_fwcheck
-          self.fw_type = "homekit"
-          self.device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
-          info = json.loads(fp.content)
-        elif stock_fwcheck.status_code == 200:
-          fp = stock_fwcheck
+        status_check = requests.get(f'http://{self.wifi_ip}/status', timeout=10)
+        if status_check.status_code == 200:
+          status = json.loads(status_check.content)
+          if status.get('status','') != '':
+            self.info = None
+            return None
+          fw_info = requests.get(f'http://{self.wifi_ip}/settings', timeout=3)
           self.fw_type = "stock"
-          self.device_url = f'http://{self.wifi_ip}/settings'
-          info = json.loads(fp.content)
-          info['status'] = {}
-          if 'settings' in self.device_url:
-            fp2 = requests.get(self.device_url.replace('settings', 'status'), timeout=3)
-            if fp2.status_code == 200:
-              status = json.loads(fp2.content)
-              info['status'] = status
+          device_url = f'http://{self.wifi_ip}/settings'
+        else:
+          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
+          self.fw_type = "homekit"
+          device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
       except Exception:
         pass
-    if info is not None and info.get('status','') == 'Updating, please wait...':
-      info = None
-      self.device_url = None
-    logger.trace(f"Device URL: {self.device_url}")
+    if fw_info is not None and fw_info.status_code == 200:
+      info = json.loads(fw_info.content)
+      if status is not None:
+        info['status'] = status
+    logger.trace(f"Device URL: {device_url}")
     if not info:
       logger.debug(f"Could not get info from device: {self.host}")
     self.info = info
@@ -281,32 +283,27 @@ class Device:
     parsed_version = v.group('ver') if v is not None else '0.0.0'
     return parsed_version
 
-  def set_local_file(self, local_file):
-    self.local_file = local_file
-
   def set_force_version(self, version):
     self.flash_fw_version = version
     self.force_flash = True
 
   def get_current_version(self, is_flashing=False): # used when flashing between formware versions.
-    info = self.get_device_info(is_flashing)
-    if not info:
+    if not self.get_device_info(is_flashing):
       return None
     if self.fw_type == 'homekit':
-      version = info['version']
+      version = self.info['version']
     elif self.fw_type == 'stock':
-      version = self.parse_stock_version(info['fw'])
+      version = self.parse_stock_version(self.info['fw'])
     return version
 
   def get_uptime(self, is_flashing=False):
-    info = self.get_device_info(is_flashing)
-    if not info:
+    if not self.get_device_info(is_flashing):
       logger.trace(f'get_uptime: -1')
       return -1
     if self.fw_type == 'homekit':
-      uptime = info.get('uptime', -1)
+      uptime = self.info.get('uptime', -1)
     elif self.fw_type == 'stock':
-      uptime = info.get('status', {}).get('uptime', -1)
+      uptime = self.info.get('status', {}).get('uptime', -1)
     logger.trace(f'get_uptime: {uptime}')
     return uptime
 
@@ -351,7 +348,6 @@ class Device:
     return options.get(type, type)
 
   def parse_local_file(self):
-    self.flash_label = "Local:"
     if os.path.exists(self.local_file) and self.local_file.endswith('.zip'):
       local_host = socket.gethostname()
       s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -411,7 +407,6 @@ class Device:
           self.dlurl = i[1]['urls'][self.model] if self.model in i[1]['urls'] else None
           break
     else:
-      self.flash_label = "Manual:"
       self.flash_fw_version = self.version
       self.dlurl = f'http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.model}.zip'
 
@@ -431,7 +426,6 @@ class Device:
           self.flash_fw_version = '0.0.0'
           self.dlurl = None
     else:
-      self.flash_label = "Manual:"
       self.flash_fw_version = self.version
       self.dlurl = f'http://archive.shelly-tools.de/version/v{self.version}/{self.stock_model}.zip'
     if self.stock_model  == 'SHRGBW2':
@@ -745,7 +739,6 @@ class Main():
     force_version = device_info.version
     force_flash = device_info.force_flash
     dlurl = device_info.dlurl
-    flash_label = device_info.flash_label
     wifi_ip = device_info.wifi_ip
     wifi_ssid = device_info.info.get('wifi_ssid', None) if device_info.fw_type_str == 'HomeKit' else device_info.info.get('status', {}).get('wifi_sta', {}).get('ssid', None)
     wifi_rssi = device_info.info.get('wifi_rssi', None) if device_info.fw_type_str == 'HomeKit' else device_info.info.get('status', {}).get('wifi_sta', {}).get('rssi', None)
@@ -754,6 +747,11 @@ class Main():
     hap_ip_conns_pending = device_info.info.get('hap_ip_conns_pending', None)
     hap_ip_conns_active = device_info.info.get('hap_ip_conns_active', None)
     hap_ip_conns_max = device_info.info.get('hap_ip_conns_max', None)
+
+    if force_version:
+      device_info.set_force_version(force_version)
+      flash_fw_version = force_version
+      force_flash = device_info.force_flash
 
     logger.debug(f"flash mode: {self.flashmode}")
     logger.debug(f"requires_upgrade: {requires_upgrade}")
@@ -777,10 +775,6 @@ class Main():
     logger.debug(f"hap_ip_conns_active: {hap_ip_conns_active}")
     logger.debug(f"hap_ip_conns_max: {hap_ip_conns_max}")
 
-    if force_version:
-      device_info.set_force_version(force_version)
-      flash_fw_version = force_version
-
     if dlurl and dlurl != 'local':
       durl_request = requests.head(dlurl)
       logger.debug(f"durl_request: {durl_request}")
@@ -803,7 +797,7 @@ class Main():
       latest_fw_label = flash_fw_version
 
     flashfw_newer = self.is_newer(flash_fw_version, current_fw_version)
-    if (not self.quiet_run or (self.quiet_run and (flashfw_newer or (force_flash and flash_fw_version != '0.0.0') or (force_version and dlurl and flash_fw_version != current_fw_version)))) and requires_upgrade != 'Done':
+    if (not self.quiet_run or (self.quiet_run and (flashfw_newer or (force_flash and flash_fw_version != '0.0.0')))) and requires_upgrade != 'Done':
       logger.info(f"")
       logger.info(f"{WHITE}Host: {NC}http://{host}")
       if int(self.info_level) > 1 or device_name != friendly_host:
@@ -835,7 +829,7 @@ class Main():
         print("I DON'T THINK THIS IS NEEDED")
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} {flash_fw_type_str} {latest_fw_label}{NC}")
 
-    if dlurl and ((force_version and flash_fw_version != current_fw_version) or force_flash or requires_upgrade == True or (current_fw_type != self.flashmode) or (current_fw_type == self.flashmode and flashfw_newer)):
+    if dlurl and (force_flash or requires_upgrade == True or (current_fw_type != self.flashmode) or (current_fw_type == self.flashmode and flashfw_newer)):
       global upgradeable_devices
       upgradeable_devices += 1
 
@@ -854,7 +848,7 @@ class Main():
           elif self.flashmode == 'homekit':
             message = "This device needs to be"
             keyword = "upgraded to latest stock firmware version, before you can flash to HomeKit"
-        elif force_flash or (force_version and flash_fw_version != current_fw_version):
+        elif force_flash:
           perform_flash = True
           keyword = f"flashed to {flash_fw_type_str} version {flash_fw_version}"
         elif current_fw_type != self.flashmode:
@@ -930,15 +924,13 @@ class Main():
     else:
       self.flashmode = self.mode
     if device['fw_type'] == 'homekit':
-      deviceinfo = HomeKitDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], self.variant, self.version)
+      deviceinfo = HomeKitDevice(device['host'], device['wifi_ip'], device['fw_type'], device['info'])
     elif device['fw_type'] == 'stock':
-      deviceinfo = StockDevice(device['host'], device['wifi_ip'], device['fw_type'], device['device_url'], device['info'], self.variant, self.version)
+      deviceinfo = StockDevice(device['host'], device['wifi_ip'], device['fw_type'], device['info'])
     if not deviceinfo.get_info():
       logger.warning("")
       logger.warning(f"{RED}Failed to lookup local information of {device['host']}{NC}")
     else:
-      if self.local_file:
-        deviceinfo.set_local_file(self.local_file)
       if deviceinfo.fw_type == 'stock' and self.local_file:
         loop = 1
         while not http_server_started:
@@ -1011,7 +1003,7 @@ class Main():
         logger.error("")
       elif got_info:
         self.parse_info(deviceinfo, requires_upgrade)
-        if requires_upgrade:
+        if requires_upgrade and self.action == 'flash':
           time.sleep(10) # need to allow time for previous flash reboot to fully boot.
           requires_upgrade = 'Done'
           deviceinfo.get_info()
@@ -1047,8 +1039,8 @@ class Main():
         logger.debug(f"{PURPLE}[Device Scan] manual{NC}")
         deviceinfo = Device(host)
         deviceinfo.get_device_info()
-        if deviceinfo.fw_type is not None:
-          device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info': deviceinfo.info}
+        if deviceinfo.info is not None:
+          device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'info': deviceinfo.info}
           self.probe_device(device)
     else:
       logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
@@ -1065,10 +1057,10 @@ class Main():
         logger.debug(f"")
         logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
         deviceinfo.get_device_info()
-        if deviceinfo.fw_type is not None:
+        if deviceinfo.info is not None:
           fw_model = deviceinfo.info.get('model') if 'homekit' == deviceinfo.fw_type else deviceinfo.shelly_model(deviceinfo.info.get('device').get('type'))[0]
           if (deviceinfo.fw_type in self.fw_type or self.fw_type == 'all') and (self.model_type is not None and self.model_type.lower() in fw_model.lower() or self.model_type == 'all'):
-            device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'device_url': deviceinfo.device_url, 'info' : deviceinfo.info}
+            device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'info': deviceinfo.info}
             self.probe_device(device)
 
 if __name__ == '__main__':
@@ -1138,7 +1130,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.6.2"
+  app_version = "2.6.3"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
@@ -1205,6 +1197,13 @@ if __name__ == '__main__':
   atexit.register(main.results)
   try:
     main.device_scan()
+  except Exception:
+    logger.info(f'{RED}')
+    logger.info(f'flash-shelly version: {app_version}')
+    logger.info("Try to update your script, maybe the bug is already fixed!")
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
+    logger.info(f'{NC}')
   except KeyboardInterrupt:
     main.stop_scan
 
