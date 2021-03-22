@@ -258,6 +258,9 @@ class Device:
               info['status'] = status
       except Exception:
         pass
+    if info is not None and info.get('status','') == 'Updating, please wait...':
+      info = None
+      self.device_url = None
     logger.trace(f"Device URL: {self.device_url}")
     if not info:
       logger.debug(f"Could not get info from device: {self.host}")
@@ -1135,7 +1138,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.6.1"
+  app_version = "2.6.2"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
