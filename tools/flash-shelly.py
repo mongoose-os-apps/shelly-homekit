@@ -81,6 +81,7 @@ import re
 import socket
 import subprocess
 import sys
+import traceback
 import threading
 import time
 import zipfile
@@ -1196,6 +1197,12 @@ if __name__ == '__main__':
   atexit.register(main.results)
   try:
     main.device_scan()
+  except Exception:
+    logger.info(f'{RED}flash-shelly version: {app_version}')
+    logger.info("Try to update your script, maybe the bug is already fixed!")
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
+    logger.info(f'{NC}')
   except KeyboardInterrupt:
     main.stop_scan
 
