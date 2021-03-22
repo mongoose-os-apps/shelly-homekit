@@ -1198,7 +1198,8 @@ if __name__ == '__main__':
   try:
     main.device_scan()
   except Exception:
-    logger.info(f'{RED}flash-shelly version: {app_version}')
+    logger.info(f'{RED}')
+    logger.info(f'flash-shelly version: {app_version}')
     logger.info("Try to update your script, maybe the bug is already fixed!")
     exc_type, exc_value, exc_traceback = sys.exc_info()
     traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
