@@ -481,7 +481,6 @@ conds:
         - origin: https://github.com/mongoose-os-libs/adc
         - origin: https://github.com/mongoose-os-libs/wifi
         - origin: https://github.com/mongoose-os-libs/pwm
-          variant: esp8266
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
