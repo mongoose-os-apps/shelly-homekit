@@ -392,6 +392,7 @@ class Device:
   def update_homekit(self, release_info=None):
     self.flash_fw_type_str = 'HomeKit'
     self.flash_fw_type = 'homekit'
+    logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if not self.version:
       for i in release_info:
         if self.variant and self.variant not in i[1]['version']:
@@ -413,6 +414,7 @@ class Device:
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
     self.flash_fw_type = 'stock'
+    logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if not self.version:
       stock_model_info = release_info['data'][self.stock_model] if self.stock_model in release_info['data'] else None
       if self.variant == 'beta':
@@ -445,14 +447,6 @@ class HomeKitDevice(Device):
     self.device_name = self.info['name'] if 'name' in self.info else None
     self.color_mode = self.info['color_mode'] if 'color_mode' in self.info else None
     return True
-
-  def update_to_homekit(self, release_info=None):
-    logger.debug("Mode: HomeKit To HomeKit")
-    self.update_homekit(release_info)
-
-  def update_to_stock(self, release_info=None):
-    logger.debug("Mode: HomeKit To Stock")
-    self.update_stock(release_info)
 
   def flash_firmware(self):
     if self.local_file:
@@ -489,14 +483,6 @@ class StockDevice(Device):
     self.device_name = self.info['name'] if 'name' in self.info else None
     self.color_mode = self.info['mode'] if 'mode' in self.info else None
     return True
-
-  def update_to_homekit(self, release_info=None):
-    logger.debug("Mode: Stock To HomeKit")
-    self.update_homekit(release_info)
-
-  def update_to_stock(self, release_info=None):
-    logger.debug("Mode: Stock To Stock")
-    self.update_stock(release_info)
 
   def flash_firmware(self):
     logger.info("Now Flashing...")
@@ -955,7 +941,7 @@ class Main():
               stock_release_info = self.get_release_info('stock')
               tried_to_get_remote_stock = True
             if stock_release_info:
-              deviceinfo.update_to_stock(stock_release_info)
+              deviceinfo.update_stock(stock_release_info)
               if (deviceinfo.fw_version == '0.0.0' or self.is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
                 requires_upgrade = True
                 got_info = True
@@ -975,26 +961,26 @@ class Main():
             homekit_release_info = self.get_release_info('homekit')
             tried_to_get_remote_homekit = True
           if stock_release_info and homekit_release_info:
-            deviceinfo.update_to_stock(stock_release_info)
+            deviceinfo.update_stock(stock_release_info)
             if (deviceinfo.fw_version == '0.0.0' or self.is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
               requires_upgrade = True
               got_info = True
             else:
-              deviceinfo.update_to_homekit(homekit_release_info)
+              deviceinfo.update_homekit(homekit_release_info)
               got_info = True
         elif self.flashmode == 'homekit':
           if not homekit_release_info and not tried_to_get_remote_homekit and not self.local_file:
             homekit_release_info = self.get_release_info('homekit')
             tried_to_get_remote_homekit = True
           if homekit_release_info:
-            deviceinfo.update_to_homekit(homekit_release_info)
+            deviceinfo.update_homekit(homekit_release_info)
             got_info = True
         elif self.flashmode == 'stock':
           if not stock_release_info and not tried_to_get_remote_stock:
             stock_release_info = self.get_release_info('stock')
             tried_to_get_remote_stock = True
           if stock_release_info:
-            deviceinfo.update_to_stock(stock_release_info)
+            deviceinfo.update_stock(stock_release_info)
             got_info = True
       if got_info and deviceinfo.fw_type == "homekit" and float(f"{self.parse_version(deviceinfo.info['version'])[0]}.{self.parse_version(deviceinfo.info['version'])[1]}") < 2.1:
         logger.error(f"{WHITE}Host: {NC}{deviceinfo.host}")
@@ -1130,7 +1116,7 @@ if __name__ == '__main__':
 
   homekit_release_info = None
   stock_release_info = None
-  app_version = "2.6.3"
+  app_version = "2.6.4"
 
   logger.debug(f"OS: {PURPLE}{arch}{NC}")
   logger.debug(f"app_version: {app_version}")
