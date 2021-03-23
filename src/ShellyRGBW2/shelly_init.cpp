@@ -41,9 +41,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  auto *rgb_cfg = (struct mgos_config_rgb *) mgos_sys_config_get_rgb1();
+  auto *lb_cfg = (struct mgos_config_lb *) mgos_sys_config_get_lb1();
   std::unique_ptr<hap::RGB> rgb(new hap::RGB(
-      1, FindInput(1), FindOutput(1), FindOutput(2), FindOutput(3), rgb_cfg));
+      1, FindInput(1), FindOutput(1), FindOutput(2), FindOutput(3), lb_cfg));
   if (rgb == nullptr || !rgb->Init().ok()) {
     return;
   }
@@ -53,7 +53,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   pri_acc->AddService(rgb.get());
   comps->emplace_back(std::move(rgb));
 
-  if (rgb_cfg->in_mode == 3) {
+  if (lb_cfg->in_mode == 3) {
     hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
   }
 }

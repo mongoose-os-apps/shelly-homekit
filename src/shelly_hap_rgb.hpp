@@ -33,7 +33,7 @@ namespace hap {
 class RGB : public Component, public mgos::hap::Service {
  public:
   RGB(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
-      struct mgos_config_rgb *cfg);
+      struct mgos_config_lb *cfg);
   virtual ~RGB();
 
   // Component interface impl.
@@ -56,7 +56,7 @@ class RGB : public Component, public mgos::hap::Service {
 
   Input *const in_;
   Output *const out_r_, *const out_g_, *const out_b_;
-  struct mgos_config_rgb *cfg_;
+  struct mgos_config_lb *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
   std::vector<mgos::hap::Characteristic *> state_notify_chars_;

@@ -28,7 +28,7 @@ namespace shelly {
 namespace hap {
 
 RGB::RGB(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
-         struct mgos_config_rgb *cfg)
+         struct mgos_config_lb *cfg)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_LIGHTING +
                (SHELLY_HAP_IID_STEP_LIGHTING * (id - 1))),
@@ -231,7 +231,7 @@ StatusOr<std::string> RGB::GetInfoJSON() const {
 }
 
 Status RGB::SetConfig(const std::string &config_json, bool *restart_required) {
-  struct mgos_config_rgb cfg = *cfg_;
+  struct mgos_config_lb cfg = *cfg_;
   int8_t in_inverted = -1;
   cfg.name = nullptr;
   cfg.in_mode = -2;
