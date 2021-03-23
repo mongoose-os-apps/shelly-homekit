@@ -208,7 +208,7 @@ class Device:
 
   def is_host_reachable(self, host, is_flashing=False):
     # check if host is reachable
-    hostcheck = re.search("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", host)
+    hostcheck = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host)
     self.host = f'{host}.local' if '.local' not in host and not hostcheck else host
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
@@ -277,7 +277,7 @@ class Device:
     # stock can be '20210226-091047/v1.10.0-rc2-89-g623b41ec0-master', we need '1.10.0-rc2'
     # stock can be '20210318-141537/v1.10.0-geba262d', we need '1.10.0'
     logger.trace(f"version: {version}")
-    v = re.search("/.*?(?P<ver>([0-9]+\.)([0-9]+)(\.[0-9]+)?(-[a-z0-9]*)?)(?P<rest>(@|-|_)[a-z0-9\-]*)", version, re.IGNORECASE)
+    v = re.search(r'/.*?(?P<ver>([0-9]+\.)([0-9]+)(\.[0-9]+)?(-[a-z0-9]*)?)(?P<rest>(@|-|_)[a-z0-9\-]*)', version, re.IGNORECASE)
     debug_info = v.groupdict() if v is not None else v
     logger.trace(f"stock version group: {debug_info}")
     parsed_version = v.group('ver') if v is not None else '0.0.0'
@@ -399,7 +399,7 @@ class Device:
           self.dlurl = None
           return
         if self.variant:
-          re_search = '-*'
+          re_search = r'-*'
         else:
           re_search = i[0]
         if re.search(re_search, self.fw_version):
@@ -572,7 +572,7 @@ class Main():
     # 1.9.3-rc3 / 2.7.0-beta1 / 2.7.0-latest / 1.9.5-DM2
     logger.trace(f"vs: {vs}")
     try:
-      v = re.search("^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$", vs)
+      v = re.search(r'^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$', vs)
       debug_info = v.groupdict() if v is not None else v
       logger.trace(f"group: {debug_info}")
       major = int(v.group('major'))
