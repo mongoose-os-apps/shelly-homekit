@@ -177,6 +177,9 @@ PowerMeter *FindPM(int id) {
 
 // Executed very early, pretty much nothing is available here.
 extern "C" void mgos_app_preinit(void) {
+#if RST_GPIO_INIT >= 0
+  mgos_gpio_setup_output(RST_GPIO_INIT, 0);
+#endif
 #if BTN_GPIO >= 0
   mgos_gpio_setup_input(BTN_GPIO,
                         (BTN_DOWN ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP));
@@ -607,13 +610,13 @@ static bool shelly_cfg_migrate(void) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
-          static_cast<int>(ShellySwitch::InitialState::kLast));
+          static_cast<int>(InitialState::kLast));
     }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
     if (mgos_sys_config_get_sw2_persist_state()) {
       mgos_sys_config_set_sw2_initial_state(
-          static_cast<int>(ShellySwitch::InitialState::kLast));
+          static_cast<int>(InitialState::kLast));
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(1);
@@ -822,6 +825,7 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "relaydata",
       "index.html",
       "conf9_backup.json",
+      "conf3.json",
       // Obsolete files from previopus versions.
       "style.css",
       "axios.min.js.gz",

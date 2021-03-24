@@ -53,6 +53,11 @@ input[type=password], input[type=text] {
   font-size: 14px;
 }
 
+input[type=range] {
+  margin: 0;
+}
+
+
 h1 {
   margin: 0;
   padding-top: 0.5em;
@@ -251,4 +256,15 @@ input:checked + .slider:before {
 
 .comma-list li:last-child:after {
   content: "";
+}
+
+#color_preview, #color_name, #hue_value, #saturation_value, #brightness_value {
+  display: inline-block;
+  min-width: 60px;
+  text-align: right;
+  min-height: 15px;
+}
+
+#color_preview {
+  width: 140px;
 }

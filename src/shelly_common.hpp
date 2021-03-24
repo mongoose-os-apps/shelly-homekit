@@ -36,6 +36,7 @@
 #define SHELLY_HAP_AID_BASE_CONTACT_SENSOR 0x800
 #define SHELLY_HAP_AID_BASE_VALVE 0x900
 #define SHELLY_HAP_AID_BASE_DOORBELL 0xa00
+#define SHELLY_HAP_AID_BASE_LIGHTING 0xb00
 
 #define SHELLY_HAP_IID_BASE_SWITCH 0x100
 #define SHELLY_HAP_IID_STEP_SWITCH 4
@@ -56,6 +57,8 @@
 #define SHELLY_HAP_IID_BASE_VALVE 0xa00
 #define SHELLY_HAP_IID_STEP_VALVE 0x10
 #define SHELLY_HAP_IID_BASE_DOORBELL 0xb00
+#define SHELLY_HAP_IID_BASE_LIGHTING 0xc00
+#define SHELLY_HAP_IID_STEP_LIGHTING 0x10
 
 namespace shelly {
 
@@ -80,5 +83,23 @@ inline const char *YesNo(bool yes) {
       cs_log_printf x;                                                    \
     }                                                                     \
   } while (0)
+
+enum class InMode {
+  kAbsent = -1,
+  kMomentary = 0,
+  kToggle = 1,
+  kEdge = 2,
+  kDetached = 3,
+  kActivation = 4,
+  kMax,
+};
+
+enum class InitialState {
+  kOff = 0,
+  kOn = 1,
+  kLast = 2,
+  kInput = 3,
+  kMax,
+};
 
 }  // namespace shelly
