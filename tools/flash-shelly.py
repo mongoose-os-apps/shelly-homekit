@@ -269,6 +269,18 @@ class Device:
     self.info = info
     return info
 
+  def is_homekit(self):
+    if self.fw_type == 'homekit':
+      return True
+    else:
+      return False
+
+  def is_stock(self):
+    if self.fw_type == 'stock':
+      return True
+    else:
+      return False
+
   def parse_stock_version(self, version):
     # stock can be '20201124-092159/v1.9.0@57ac4ad8', we need '1.9.0'
     # stock can be '20201124-092159/v1.9.5-DM2_autocheck', we need '1.9.5-DM2'
@@ -290,9 +302,9 @@ class Device:
   def get_current_version(self, is_flashing=False): # used when flashing between formware versions.
     if not self.get_device_info(is_flashing):
       return None
-    if self.fw_type == 'homekit':
+    if self.is_homekit:
       version = self.info['version']
-    elif self.fw_type == 'stock':
+    elif self.is_stock():
       version = self.parse_stock_version(self.info['fw'])
     return version
 
@@ -300,9 +312,9 @@ class Device:
     if not self.get_device_info(is_flashing):
       logger.trace(f'get_uptime: -1')
       return -1
-    if self.fw_type == 'homekit':
+    if self.is_homekit():
       uptime = self.info.get('uptime', -1)
-    elif self.fw_type == 'stock':
+    elif self.is_stock():
       uptime = self.info.get('status', {}).get('uptime', -1)
     logger.trace(f'get_uptime: {uptime}')
     return uptime
@@ -371,11 +383,11 @@ class Device:
       else:
         self.set_force_version(manifest_version)
         self.flash_fw_type_str = "HomeKit"
-      if self.fw_type == 'homekit':
+      if self.is_homekit():
         self.dlurl = 'local'
       else:
         self.dlurl = f'http://{local_ip}:{webserver_port}/{self.local_file}'
-      if self.fw_type == 'stock' and self.stock_model == 'SHRGBW2' and self.color_mode is not None:
+      if self.is_stock() and self.stock_model == 'SHRGBW2' and self.color_mode is not None:
         m_model = f"{self.app}-{self.color_mode}"
       else:
         m_model = self.app
@@ -391,7 +403,6 @@ class Device:
 
   def update_homekit(self, release_info=None):
     self.flash_fw_type_str = 'HomeKit'
-    self.flash_fw_type = 'homekit'
     logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if not self.version:
       for i in release_info:
@@ -413,7 +424,6 @@ class Device:
 
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
-    self.flash_fw_type = 'stock'
     logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if not self.version:
       stock_model_info = release_info['data'][self.stock_model] if self.stock_model in release_info['data'] else None
@@ -445,7 +455,7 @@ class HomeKitDevice(Device):
     self.app = self.info['app'] if 'app' in self.info else self.shelly_model(self.stock_model)[1]
     self.device_id = self.info['device_id'] if 'device_id' in self.info else None
     self.device_name = self.info['name'] if 'name' in self.info else None
-    self.color_mode = self.info['color_mode'] if 'color_mode' in self.info else None
+    self.color_mode = self.info['mode'] if 'mode' in self.info else None
     return True
 
   def flash_firmware(self):
@@ -511,7 +521,7 @@ class StockDevice(Device):
 
 
 class Main():
-  def __init__(self, hosts, action, log_filename, dry_run, quiet_run, silent_run, mode, flashmode, info_level, fw_type, model_type, exclude, version, variant,
+  def __init__(self, hosts, action, log_filename, dry_run, quiet_run, silent_run, mode, flashmode, info_level, fw_type_filter, model_type_filter, exclude, version, variant,
                hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
     self.hosts = hosts
     self.action = action
@@ -522,8 +532,8 @@ class Main():
     self.mode = mode
     self.flashmode = flashmode
     self.info_level = info_level
-    self.fw_type = fw_type
-    self.model_type = model_type
+    self.fw_type_filter = fw_type_filter
+    self.model_type_filter = model_type_filter
     self.exclude = exclude
     self.version = version
     self.variant = variant
@@ -593,7 +603,7 @@ class Main():
   def write_network_type(self, device_info):
     logger.debug(f"{PURPLE}[Write Network Type]{NC}")
     wifi_ip = device_info.wifi_ip
-    if device_info.fw_type == 'homekit':
+    if device_info.is_homekit():
       if self.network_type == 'static':
         message = f"Configuring static IP to {self.ipv4_ip}..."
         value={'config': {'wifi': {'sta': {'ip': self.ipv4_ip, 'netmask': self.ipv4_mask, 'gw': self.ipv4_gw, 'nameserver': self.ipv4_dns}}}}
@@ -613,7 +623,7 @@ class Main():
     else:
       if self.network_type == 'static':
         message = f"Configuring static IP to {self.ipv4_ip}..."
-        config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=static&ip={self.ipv4_ip}&netmask={ipv4_mask}&gateway={ipv4_gw}&dns={ipv4_dns}'
+        config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=static&ip={self.ipv4_ip}&netmask={self.ipv4_mask}&gateway={self.ipv4_gw}&dns={self.ipv4_dns}'
       else:
         message = f"Configuring IP to use DHCP..."
         config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=dhcp'
@@ -726,10 +736,10 @@ class Main():
     force_flash = device_info.force_flash
     dlurl = device_info.dlurl
     wifi_ip = device_info.wifi_ip
-    wifi_ssid = device_info.info.get('wifi_ssid', None) if device_info.fw_type_str == 'HomeKit' else device_info.info.get('status', {}).get('wifi_sta', {}).get('ssid', None)
-    wifi_rssi = device_info.info.get('wifi_rssi', None) if device_info.fw_type_str == 'HomeKit' else device_info.info.get('status', {}).get('wifi_sta', {}).get('rssi', None)
+    wifi_ssid = device_info.info.get('wifi_ssid', None) if device_info.is_homekit() else device_info.info.get('status', {}).get('wifi_sta', {}).get('ssid', None)
+    wifi_rssi = device_info.info.get('wifi_rssi', None) if device_info.is_homekit() else device_info.info.get('status', {}).get('wifi_sta', {}).get('rssi', None)
     sys_temp = device_info.info.get('sys_temp', None)
-    uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if current_fw_type_str == 'HomeKit' else datetime.timedelta(seconds=device_info.info.get('status', {}).get('uptime',0))
+    uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if device_info.is_homekit() else datetime.timedelta(seconds=device_info.info.get('status', {}).get('uptime',0))
     hap_ip_conns_pending = device_info.info.get('hap_ip_conns_pending', None)
     hap_ip_conns_active = device_info.info.get('hap_ip_conns_active', None)
     hap_ip_conns_max = device_info.info.get('hap_ip_conns_max', None)
@@ -741,10 +751,6 @@ class Main():
 
     logger.debug(f"flash mode: {self.flashmode}")
     logger.debug(f"requires_upgrade: {requires_upgrade}")
-    logger.debug(f"host: {host}")
-    logger.debug(f"device_name: {device_name}")
-    logger.debug(f"device_id: {device_id}")
-    logger.debug(f"model: {model}")
     logger.debug(f"stock_model: {stock_model}")
     logger.debug(f"color_mode: {color_mode}")
     logger.debug(f"current_fw_version: {current_fw_type_str} {current_fw_version}")
@@ -752,14 +758,6 @@ class Main():
     logger.debug(f"force_flash: {force_flash}")
     logger.debug(f"force_version: {force_version}")
     logger.debug(f"dlurl: {dlurl}")
-    logger.debug(f"wifi_ip: {wifi_ip}")
-    logger.debug(f"wifi_ssid: {wifi_ssid}")
-    logger.debug(f"wifi_rssi: {wifi_rssi}")
-    logger.debug(f"sys_temp: {sys_temp}")
-    logger.debug(f"uptime: {uptime}")
-    logger.debug(f"hap_ip_conns_pending: {hap_ip_conns_pending}")
-    logger.debug(f"hap_ip_conns_active: {hap_ip_conns_active}")
-    logger.debug(f"hap_ip_conns_max: {hap_ip_conns_max}")
 
     if dlurl and dlurl != 'local':
       durl_request = requests.head(dlurl)
@@ -871,7 +869,7 @@ class Main():
         logger.info(f"{message} {keyword}...")
       if flash == True:
         self.write_flash(device_info)
-      if device_info.fw_type == 'homekit' and self.hap_setup_code:
+      if device_info.is_homekit() and self.hap_setup_code:
         self.write_hap_setup_code(device_info.wifi_ip)
       if self.network_type:
         if self.network_type == 'static':
@@ -910,14 +908,14 @@ class Main():
     else:
       self.flashmode = self.mode
     if device['fw_type'] == 'homekit':
-      deviceinfo = HomeKitDevice(device['host'], device['wifi_ip'], device['fw_type'], device['info'])
+      device_info = HomeKitDevice(device['host'], device['wifi_ip'], device['fw_type'], device['info'])
     elif device['fw_type'] == 'stock':
-      deviceinfo = StockDevice(device['host'], device['wifi_ip'], device['fw_type'], device['info'])
-    if not deviceinfo.get_info():
+      device_info = StockDevice(device['host'], device['wifi_ip'], device['fw_type'], device['info'])
+    if not device_info.get_info():
       logger.warning("")
       logger.warning(f"{RED}Failed to lookup local information of {device['host']}{NC}")
     else:
-      if deviceinfo.fw_type == 'stock' and self.local_file:
+      if device_info.is_stock() and self.local_file:
         loop = 1
         while not http_server_started:
           try:
@@ -934,26 +932,26 @@ class Main():
         if thread is None:
           thread = threading.Thread(None, server.run)
           thread.start()
-      if self.local_file and deviceinfo.parse_local_file():
-        if deviceinfo.fw_type == 'stock':
-          if deviceinfo.flash_fw_type_str == 'HomeKit':
+      if self.local_file and device_info.parse_local_file():
+        if device_info.is_stock():
+          if device_info.is_homekit():
             if not stock_release_info and not tried_to_get_remote_stock:
               stock_release_info = self.get_release_info('stock')
               tried_to_get_remote_stock = True
             if stock_release_info:
-              deviceinfo.update_stock(stock_release_info)
-              if (deviceinfo.fw_version == '0.0.0' or self.is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
+              device_info.update_stock(stock_release_info)
+              if (device_info.fw_version == '0.0.0' or self.is_newer(device_info.flash_fw_version, device_info.fw_version)):
                 requires_upgrade = True
                 got_info = True
               else:
-                deviceinfo.parse_local_file()
+                device_info.parse_local_file()
                 got_info = True
-          elif deviceinfo.flash_fw_type_str == 'Stock':
+          elif device_info.is_stock():
             got_info = True
         else:
           got_info = True
       else:
-        if deviceinfo.fw_type == 'stock' and self.flashmode == 'homekit':
+        if device_info.is_stock() and self.flashmode == 'homekit':
           if not stock_release_info and not tried_to_get_remote_stock:
             stock_release_info = self.get_release_info('stock')
             tried_to_get_remote_stock = True
@@ -961,44 +959,44 @@ class Main():
             homekit_release_info = self.get_release_info('homekit')
             tried_to_get_remote_homekit = True
           if stock_release_info and homekit_release_info:
-            deviceinfo.update_stock(stock_release_info)
-            if (deviceinfo.fw_version == '0.0.0' or self.is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version)):
+            device_info.update_stock(stock_release_info)
+            if (device_info.fw_version == '0.0.0' or self.is_newer(device_info.flash_fw_version, device_info.fw_version)):
               requires_upgrade = True
               got_info = True
             else:
-              deviceinfo.update_homekit(homekit_release_info)
+              device_info.update_homekit(homekit_release_info)
               got_info = True
         elif self.flashmode == 'homekit':
           if not homekit_release_info and not tried_to_get_remote_homekit and not self.local_file:
             homekit_release_info = self.get_release_info('homekit')
             tried_to_get_remote_homekit = True
           if homekit_release_info:
-            deviceinfo.update_homekit(homekit_release_info)
+            device_info.update_homekit(homekit_release_info)
             got_info = True
         elif self.flashmode == 'stock':
           if not stock_release_info and not tried_to_get_remote_stock:
             stock_release_info = self.get_release_info('stock')
             tried_to_get_remote_stock = True
           if stock_release_info:
-            deviceinfo.update_stock(stock_release_info)
+            device_info.update_stock(stock_release_info)
             got_info = True
-      if got_info and deviceinfo.fw_type == "homekit" and float(f"{self.parse_version(deviceinfo.info['version'])[0]}.{self.parse_version(deviceinfo.info['version'])[1]}") < 2.1:
-        logger.error(f"{WHITE}Host: {NC}{deviceinfo.host}")
-        logger.error(f"Version {deviceinfo.info['version']} is to old for this script,")
+      if got_info and device_info.fw_type == "homekit" and float(f"{self.parse_version(device_info.info['version'])[0]}.{self.parse_version(device_info.info['version'])[1]}") < 2.1:
+        logger.error(f"{WHITE}Host: {NC}{device_info.host}")
+        logger.error(f"Version {device_info.info['version']} is to old for this script,")
         logger.error(f"please update via the device webUI.")
         logger.error("")
       elif got_info:
-        self.parse_info(deviceinfo, requires_upgrade)
+        self.parse_info(device_info, requires_upgrade)
         if requires_upgrade and self.action == 'flash':
           time.sleep(10) # need to allow time for previous flash reboot to fully boot.
           requires_upgrade = 'Done'
-          deviceinfo.get_info()
-          if deviceinfo.flash_fw_version != '0.0.0' and not self.is_newer(deviceinfo.flash_fw_version, deviceinfo.fw_version):
+          device_info.get_info()
+          if device_info.flash_fw_version != '0.0.0' and not self.is_newer(device_info.flash_fw_version, device_info.fw_version):
             if self.local_file:
-              deviceinfo.parse_local_file()
+              device_info.parse_local_file()
             else:
-              deviceinfo.update_to_homekit(homekit_release_info)
-            self.parse_info(deviceinfo, requires_upgrade)
+              device_info.update_to_homekit(homekit_release_info)
+            self.parse_info(device_info, requires_upgrade)
 
   def stop_scan(self):
     while True:
@@ -1023,10 +1021,10 @@ class Main():
       for host in self.hosts:
         logger.debug(f"")
         logger.debug(f"{PURPLE}[Device Scan] manual{NC}")
-        deviceinfo = Device(host)
-        deviceinfo.get_device_info()
-        if deviceinfo.info is not None:
-          device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'info': deviceinfo.info}
+        device_info = Device(host)
+        device_info.get_device_info()
+        if device_info.info is not None:
+          device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.fw_type, 'info': device_info.info}
           self.probe_device(device)
     else:
       logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
@@ -1037,24 +1035,24 @@ class Main():
       total_devices = 0
       while True:
         try:
-          deviceinfo = self.listener.queue.get(timeout=20)
+          device_info = self.listener.queue.get(timeout=20)
         except queue.Empty:
           break
         logger.debug(f"")
         logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
-        deviceinfo.get_device_info()
-        if deviceinfo.info is not None:
-          fw_model = deviceinfo.info.get('model') if 'homekit' == deviceinfo.fw_type else deviceinfo.shelly_model(deviceinfo.info.get('device').get('type'))[0]
-          if (deviceinfo.fw_type in self.fw_type or self.fw_type == 'all') and (self.model_type is not None and self.model_type.lower() in fw_model.lower() or self.model_type == 'all'):
-            device = {'host': deviceinfo.host, 'wifi_ip': deviceinfo.wifi_ip, 'fw_type': deviceinfo.fw_type, 'info': deviceinfo.info}
+        device_info.get_device_info()
+        if device_info.info is not None:
+          fw_model = device_info.info.get('model') if 'homekit' == device_info.fw_type else device_info.shelly_model(device_info.info.get('device').get('type'))[0]
+          if (device_info.fw_type in self.fw_type_filter or self.fw_type_filter == 'all') and (self.model_type_filter is not None and self.model_type_filter.lower() in fw_model.lower() or self.model_type_filter == 'all'):
+            device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.fw_type, 'info': device_info.info}
             self.probe_device(device)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Shelly HomeKit flashing script utility')
   parser.add_argument('-m', '--mode', action="store", choices=['homekit', 'keep', 'revert'], default="homekit", help="Script mode.")
   parser.add_argument('-i', '--info-level', action="store", dest='info_level', choices=['1', '2', '3'], default="2", help="Control how much detail is output in the list 1=minimal, 2=basic, 3=all.")
-  parser.add_argument('-ft', '--fw-type', action="store", dest='fw_type', choices=['homekit', 'stock', 'all'], default="all", help="Limit scan to current firmware type.")
-  parser.add_argument('-mt', '--model-type', action="store", dest='model_type', default='all', help="Limit scan to model type (dimmer, rgbw2, shelly1, etc).")
+  parser.add_argument('-ft', '--fw-type', action="store", dest='fw_type_filter', choices=['homekit', 'stock', 'all'], default="all", help="Limit scan to current firmware type.")
+  parser.add_argument('-mt', '--model-type', action="store", dest='model_type_filter', default='all', help="Limit scan to model type (dimmer, rgbw2, shelly1, etc).")
   parser.add_argument('-a', '--all', action="store_true", dest='do_all', default=False, help="Run against all the devices on the network.")
   parser.add_argument('-q', '--quiet', action="store_true", dest='quiet_run', default=False, help="Only include upgradeable shelly devices.")
   parser.add_argument('-l', '--list', action="store_true", default=False, help="List info of shelly device.")
@@ -1124,8 +1122,8 @@ if __name__ == '__main__':
   logger.debug(f"action: {action}")
   logger.debug(f"mode: {args.mode}")
   logger.debug(f"info_level: {args.info_level}")
-  logger.debug(f"fw_type: {args.fw_type}")
-  logger.debug(f"model_type: {args.model_type}")
+  logger.debug(f"fw_type_filter: {args.fw_type_filter}")
+  logger.debug(f"model_type_filter: {args.model_type_filter}")
   logger.debug(f"do_all: {args.do_all}")
   logger.debug(f"dry_run: {args.dry_run}")
   logger.debug(f"quiet_run: {args.quiet_run}")
@@ -1178,7 +1176,7 @@ if __name__ == '__main__':
     parser.print_help()
     sys.exit(1)
 
-  main = Main(args.hosts, action, args.log_filename, args.dry_run, args.quiet_run, args.silent_run, args.mode, None, args.info_level, args.fw_type, args.model_type, args.exclude, args.version, args.variant,
+  main = Main(args.hosts, action, args.log_filename, args.dry_run, args.quiet_run, args.silent_run, args.mode, None, args.info_level, args.fw_type_filter, args.model_type_filter, args.exclude, args.version, args.variant,
               args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
   atexit.register(main.results)
   try:
