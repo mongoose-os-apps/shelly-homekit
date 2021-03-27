@@ -146,53 +146,49 @@ void RGB::HSVtoRGB(float h, float s, float v, float &r, float &g,
     // if saturation is zero than all rgb hannels same as brightness
     r = g = b = v;
   } else {
-    float h1 = fmod(h, 360.0f);  // jail hue into 0-359°
-    float c = v * s;
-    float h2 = h1 / 60.0f;
-    float x = c * (1.0f - fmod(h2, 2.0f) - 1.0f);
-    float m = v - c;
+    int i = static_cast<int>(h * 6);
+    float f = (h * 6.0f - i);
+    float p = v * (1.0f - s);
+    float q = v * (1.0f - f * s);
+    float t = v * (1.0f - (1.0f - f) * s);
 
-    switch (static_cast<int>(h2)) {
+    switch (i % 6) {
       case 0:
-        r = c;
-        g = x;
-        b = 0;
+        r = v;
+        g = t;
+        b = p;
         break;
 
       case 1:
-        r = x;
-        g = c;
-        b = 0;
+        r = q;
+        g = v;
+        b = p;
         break;
 
       case 2:
-        r = 0;
-        g = c;
-        b = x;
+        r = p;
+        g = v;
+        b = t;
         break;
 
       case 3:
-        r = 0;
-        g = x;
-        b = c;
+        r = p;
+        g = q;
+        b = v;
         break;
 
       case 4:
-        r = x;
-        g = 0;
-        b = c;
+        r = t;
+        g = p;
+        b = v;
         break;
 
       case 5:
-        r = c;
-        g = 0;
-        b = x;
+        r = v;
+        g = p;
+        b = q;
         break;
     }
-
-    r += m;
-    g += m;
-    b += m;
   }
 }
 
@@ -201,7 +197,7 @@ void RGB::SetOutputState(const char *source) {
       ("state: %s, brightness: %i, hue: %i, saturation: %i", OnOff(cfg_->state),
        cfg_->brightness, cfg_->hue, cfg_->saturation));
 
-  float h = cfg_->hue;
+  float h = cfg_->hue / 360.0f;
   float s = cfg_->saturation / 100.0f;
   float v = cfg_->brightness / 100.0f;
 
@@ -209,7 +205,7 @@ void RGB::SetOutputState(const char *source) {
 
   HSVtoRGB(h, s, v, r, g, b);
 
-  int on = cfg_->state != 0 ? 1 : 0;
+  int on = cfg_->state ? 1 : 0;
 
   out_r_->SetStatePWM(r * on, source);
   out_g_->SetStatePWM(g * on, source);
