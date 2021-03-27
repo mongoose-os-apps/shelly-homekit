@@ -24,8 +24,6 @@
 
 #include "mgos_hap_accessory.hpp"
 
-#include <math.h>
-
 namespace shelly {
 namespace hap {
 
@@ -145,50 +143,51 @@ void RGB::HSVtoRGB(float h, float s, float v, float &r, float &g,
   if (s == 0.0) {
     // if saturation is zero than all rgb hannels same as brightness
     r = g = b = v;
-  } else {
-    int i = static_cast<int>(h * 6);
-    float f = (h * 6.0f - i);
-    float p = v * (1.0f - s);
-    float q = v * (1.0f - f * s);
-    float t = v * (1.0f - (1.0f - f) * s);
+    return;
+  }
 
-    switch (i % 6) {
-      case 0:
-        r = v;
-        g = t;
-        b = p;
-        break;
+  int i = static_cast<int>(h * 6);
+  float f = (h * 6.0f - i);
+  float p = v * (1.0f - s);
+  float q = v * (1.0f - f * s);
+  float t = v * (1.0f - (1.0f - f) * s);
 
-      case 1:
-        r = q;
-        g = v;
-        b = p;
-        break;
+  switch (i % 6) {
+    case 0:
+      r = v;
+      g = t;
+      b = p;
+      break;
 
-      case 2:
-        r = p;
-        g = v;
-        b = t;
-        break;
+    case 1:
+      r = q;
+      g = v;
+      b = p;
+      break;
 
-      case 3:
-        r = p;
-        g = q;
-        b = v;
-        break;
+    case 2:
+      r = p;
+      g = v;
+      b = t;
+      break;
 
-      case 4:
-        r = t;
-        g = p;
-        b = v;
-        break;
+    case 3:
+      r = p;
+      g = q;
+      b = v;
+      break;
 
-      case 5:
-        r = v;
-        g = p;
-        b = q;
-        break;
-    }
+    case 4:
+      r = t;
+      g = p;
+      b = v;
+      break;
+
+    case 5:
+      r = v;
+      g = p;
+      b = q;
+      break;
   }
 }
 
