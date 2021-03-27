@@ -138,7 +138,8 @@ Status RGB::Init() {
   return Status::OK();
 }
 
-void RGB::HSVtoRGB(float &h, float &s, float &v, float &r, float &g, float &b) {
+void RGB::HSVtoRGB(float h, float s, float v,
+                   float &r, float &g, float &b) const {
   if (s == 0.0) {
     r = g = b = 1.0;
   }
