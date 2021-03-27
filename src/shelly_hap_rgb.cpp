@@ -24,6 +24,8 @@
 
 #include "mgos_hap_accessory.hpp"
 
+#include <math.h>
+
 namespace shelly {
 namespace hap {
 
