@@ -141,46 +141,44 @@ Status RGB::Init() {
 void RGB::HSVtoRGB(float h, float s, float v, float &r, float &g,
                    float &b) const {
   if (s == 0.0) {
-    r = g = b = 1.0;
-  }
+    // if saturation is zero than all rgb hannels same as brightness
+    r = g = b = v;
+  } else {
+    float h1 = fmod(h, 360.0f);  // jail it to 0-359°
+    float c = v * s;
+    float h2 = h1 / 60.0f;
+    float x = c * (1.0f - fmod(h2, 2.0f) - 1.0f);
+    float m = v - c;
 
-  int i = int(h * 6.0);
-  float f = (h * 6.0) - i;
-  float p = v * (1.0 - s);
-  float q = v * (1.0 - s * f);
-  float t = v * (1.0 - s * (1.0 - f));
+    if (h1 < 60.0f) {
+      r = c;
+      g = x;
+      b = 0;
+    } else if (h1 < 120.0f) {
+      r = x;
+      g = c;
+      b = 0;
+    } else if (h1 < 180.0f) {
+      r = 0;
+      g = c;
+      b = x;
+    } else if (h1 < 240.0f) {
+      r = 0;
+      g = x;
+      b = c;
+    } else if (h1 < 300.0f) {
+      r = x;
+      g = 0;
+      b = c;
+    } else if (h1 < 360.0f) {
+      r = c;
+      g = 0;
+      b = x;
+    }
 
-  switch (i % 6) {
-    case 0:
-      r = v;
-      g = t;
-      b = p;
-      break;
-    case 1:
-      r = q;
-      g = v;
-      b = p;
-      break;
-    case 2:
-      r = p;
-      g = v;
-      b = t;
-      break;
-    case 3:
-      r = p;
-      g = q;
-      b = v;
-      break;
-    case 4:
-      r = t;
-      g = p;
-      b = v;
-      break;
-    case 5:
-      r = v;
-      g = p;
-      b = q;
-      break;
+    r += m;
+    g += m;
+    b += m;
   }
 }
 
