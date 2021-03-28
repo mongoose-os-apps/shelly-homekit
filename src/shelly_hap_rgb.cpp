@@ -195,19 +195,19 @@ void RGB::SetOutputState(const char *source) {
       ("state: %s, brightness: %i, hue: %i, saturation: %i", OnOff(cfg_->state),
        cfg_->brightness, cfg_->hue, cfg_->saturation));
 
-  float h = cfg_->hue / 360.0f;
-  float s = cfg_->saturation / 100.0f;
-  float v = cfg_->brightness / 100.0f;
-
   float r = 0, g = 0, b = 0;
 
-  HSVtoRGB(h, s, v, r, g, b);
+  if (cfg_->state) {
+    float h = cfg_->hue / 360.0f;
+    float s = cfg_->saturation / 100.0f;
+    float v = cfg_->brightness / 100.0f;
 
-  int on = cfg_->state ? 1 : 0;
+    HSVtoRGB(h, s, v, r, g, b);
+  }
 
-  out_r_->SetStatePWM(r * on, source);
-  out_g_->SetStatePWM(g * on, source);
-  out_b_->SetStatePWM(b * on, source);
+  out_r_->SetStatePWM(r, source);
+  out_g_->SetStatePWM(g, source);
+  out_b_->SetStatePWM(b, source);
 
   if (cfg_->state && cfg_->auto_off) {
     auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
