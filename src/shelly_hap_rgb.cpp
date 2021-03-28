@@ -138,8 +138,7 @@ Status RGB::Init() {
   return Status::OK();
 }
 
-void RGB::HSVtoRGB(float h, float s, float v, float &r, float &g,
-                   float &b) const {
+void RGB::HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
   if (s == 0.0) {
     // if saturation is zero than all rgb hannels same as brightness
     r = g = b = v;
