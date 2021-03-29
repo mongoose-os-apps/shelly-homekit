@@ -744,7 +744,6 @@ class Main:
   def parse_info(self, device_info, requires_upgrade):
     logger.debug(f"")
     logger.debug(f"{PURPLE}[Parse Info]{NC}")
-    logger.trace(f"device_info: {device_info}")
 
     global total_devices, flash_question
     total_devices += 1
