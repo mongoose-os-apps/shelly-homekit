@@ -615,21 +615,22 @@ class Main:
     return major, minor, patch, variant, var_seq
 
   def is_newer(self, v1, v2):
-    logger.trace(f"is: {v1}  newer than: {v2}")
     vi1 = self.parse_version(v1)
     vi2 = self.parse_version(v2)
     if vi1[0] != vi2[0]:
-      return vi1[0] > vi2[0]
+      value = vi1[0] > vi2[0]
     elif vi1[1] != vi2[1]:
-      return vi1[1] > vi2[1]
+      value = vi1[1] > vi2[1]
     elif vi1[2] != vi2[2]:
-      return vi1[2] > vi2[2]
+      value = vi1[2] > vi2[2]
     elif vi1[3] != vi2[3]:
-      return True
+      value = True
     elif vi1[4] != vi2[4]:
-      return vi1[4] > vi2[4]
+      value = vi1[4] > vi2[4]
     else:
-      return False
+      value = False
+    logger.trace(f"is {v1} newer than {v2}: {value}")
+    return value
 
   def write_network_type(self, device_info):
     logger.debug(f"{PURPLE}[Write Network Type]{NC}")
