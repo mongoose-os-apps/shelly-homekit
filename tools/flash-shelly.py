@@ -123,6 +123,12 @@ logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE
 logging.trace = functools.partial(logging.log, logging.TRACE)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.TRACE)
+log_level = {'0': logging.CRITICAL,
+             '1': logging.ERROR,
+             '2': logging.WARNING,
+             '3': logging.INFO,
+             '4': logging.DEBUG,
+             '5': logging.TRACE}
 
 webserver_port = 8381
 http_server_started = False
@@ -1101,13 +1107,13 @@ if __name__ == '__main__':
 
   sh = MStreamHandler()
   sh.setFormatter(logging.Formatter('%(message)s'))
-  sh.setLevel(int(args.verbose))
+  sh.setLevel(log_level[args.verbose])
   if int(args.verbose) >= 4:
     args.info_level = 3
   if args.log_filename:
     fh = MFileHandler(args.log_filename, mode='w', encoding='utf-8')
     fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
-    fh.setLevel(int(args.verbose))
+    fh.setLevel(log_level[args.verbose])
     logger.addHandler(fh)
   logger.addHandler(sh)
 
