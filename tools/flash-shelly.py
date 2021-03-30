@@ -1043,13 +1043,13 @@ class Main:
       logger.info(f"Log file created: {args.log_filename}")
 
   def is_fw_type(self, fw_type):
-    return(fw_type.lower() in self.fw_type_filter.lower() or self.fw_type_filter == 'all')
+    return fw_type.lower() in self.fw_type_filter.lower() or self.fw_type_filter == 'all'
 
   def is_model_type(self, fw_model):
-    return(self.model_type_filter is not None and self.model_type_filter.lower() in fw_model.lower() or self.model_type_filter == 'all')
+    return self.model_type_filter is not None and self.model_type_filter.lower() in fw_model.lower() or self.model_type_filter == 'all'
 
   def is_device_name(self, device_name):
-    return(device_name is not None and self.device_name_filter is not None and self.device_name_filter.lower() in device_name.lower() or self.device_name_filter == 'all')
+    return device_name is not None and self.device_name_filter is not None and self.device_name_filter.lower() in device_name.lower() or self.device_name_filter == 'all'
 
   def device_scan(self):
     global total_devices
