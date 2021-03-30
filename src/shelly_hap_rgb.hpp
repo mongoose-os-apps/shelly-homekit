@@ -30,11 +30,26 @@
 namespace shelly {
 namespace hap {
 
-class RGB : public Component, public mgos::hap::Service {
+class RGBWLight : public Component, public mgos::hap::Service {
  public:
-  RGB(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
-      struct mgos_config_lb *cfg);
-  virtual ~RGB();
+  RGBWLight(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
+            Output *out_w, struct mgos_config_lb *cfg);
+  virtual ~RGBWLight();
+
+  enum class DeviceType : int { kRGB = 0, kRGBW = 1 };
+
+  struct HSV {
+    float h;
+    float s;
+    float v;
+  };
+
+  struct RGBW {
+    float r;
+    float g;
+    float b;
+    float w;
+  };
 
   // Component interface impl.
   Type type() const override;
@@ -42,12 +57,14 @@ class RGB : public Component, public mgos::hap::Service {
   Status Init() override;
   void SetOutputState(const char *source);
   void SaveState();
-  static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
+  void HSVtoRGBW(const HSV &hsv, RGBW &rgbw) const;
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
   Status SetState(const std::string &state_json) override;
+
+  DeviceType getDeviceType() const;
 
  protected:
   void InputEventHandler(Input::Event ev, bool state);
@@ -55,7 +72,7 @@ class RGB : public Component, public mgos::hap::Service {
   void AutoOffTimerCB();
 
   Input *const in_;
-  Output *const out_r_, *const out_g_, *const out_b_;
+  Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
   struct mgos_config_lb *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
