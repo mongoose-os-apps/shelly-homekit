@@ -22,50 +22,53 @@ version of this firmware, if you are looking to flash your device from stock
 or any other firmware please follow instructions here:
 https://github.com/mongoose-os-apps/shelly-homekit/wiki
 
-usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-t {homekit,stock,all}] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE]
-                      [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--log-file LOG_FILENAME]
-                      [hosts ...]
+usage: flash-shelly.py [-h] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION]
+                       [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}]
+                       [--log-file LOG_FILENAME] [--reboot]
+                       [hosts ...]
 
 Shelly HomeKit flashing script utility
 
 positional arguments:
- hosts
+  hosts
 
 optional arguments:
- -h, --help            show this help message and exit
- -m {homekit,keep,revert}, --mode {homekit,keep,revert}
-                       Script mode.
- -i {1,2,3}, --info-level {1,2,3}
-                       Control how much detail is output in the list 1=minimal, 2=basic, 3=all.
- -ft {homekit,stock,all}, --fw-type {homekit,stock,all}
-                       Limit scan to current firmware type.
- -mt MODEL_TYPE, --model-type MODEL_TYPE
-                       Limit scan to model type (dimmer, rgbw2, shelly1, etc).
- -a, --all             Run against all the devices on the network.
- -q, --quiet           Only include upgradeable shelly devices.
- -l, --list            List info of shelly device.
- -e [EXCLUDE ...], --exclude [EXCLUDE ...]
-                       Exclude hosts from found devices.
- -n, --assume-no       Do a dummy run through.
- -y, --assume-yes      Do not ask any confirmation to perform the flash.
- -V VERSION, --version VERSION
-                       Force a particular version.
- --variant VARIANT     Prerelease variant name.
- --local-file LOCAL_FILE
-                       Use local file to flash.
- -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
-                       Configure HomeKit setup code, after flashing.
- --ip-type {dhcp,static}
-                       Configure network IP type (Static or DHCP)
- --ip IPV4_IP          set IP address
- --gw IPV4_GW          set Gateway IP address
- --mask IPV4_MASK      set Subnet mask address
- --dns IPV4_DNS        set DNS IP address
- -v {0,1,2,3,4,5}, --verbose {0,1,2,3,4,5}
-                       Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
- --log-file LOG_FILENAME
-                       Create output log file with chosen filename.
- --reboot              Preform a reboot of the device.
+  -h, --help            show this help message and exit
+  -m {homekit,keep,revert}, --mode {homekit,keep,revert}
+                        Script mode.
+  -i {1,2,3}, --info-level {1,2,3}
+                        Control how much detail is output in the list 1=minimal, 2=basic, 3=all.
+  -ft {homekit,stock,all}, --fw-type {homekit,stock,all}
+                        Limit scan to current firmware type.
+  -mt MODEL_TYPE_FILTER, --model-type MODEL_TYPE_FILTER
+                        Limit scan to model type (dimmer, rgbw2, shelly1, etc).
+  -dn DEVICE_NAME_FILTER, --device-name DEVICE_NAME_FILTER
+                        Limit scan to include term in device name..
+  -a, --all             Run against all the devices on the network.
+  -q, --quiet           Only include upgradeable shelly devices.
+  -l, --list            List info of shelly device.
+  -e [EXCLUDE ...], --exclude [EXCLUDE ...]
+                        Exclude hosts from found devices.
+  -n, --assume-no       Do a dummy run through.
+  -y, --assume-yes      Do not ask any confirmation to perform the flash.
+  -V VERSION, --version VERSION
+                        Force a particular version.
+  --variant VARIANT     Prerelease variant name.
+  --local-file LOCAL_FILE
+                        Use local file to flash.
+  -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
+                        Configure HomeKit setup code, after flashing.
+  --ip-type {dhcp,static}
+                        Configure network IP type (Static or DHCP)
+  --ip IPV4_IP          set IP address
+  --gw IPV4_GW          set Gateway IP address
+  --mask IPV4_MASK      set Subnet mask address
+  --dns IPV4_DNS        set DNS IP address
+  -v {0,1,2,3,4,5}, --verbose {0,1,2,3,4,5}
+                        Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
+  --log-file LOG_FILENAME
+                        Create output log file with chosen filename.
+  --reboot              Preform a reboot of the device.
 """
 
 import argparse
@@ -231,7 +234,6 @@ class Device:
     self.model = None
     self.color_mode = None
     self.device_id = None
-    self.device_name = None
     self.flash_fw_version = '0.0.0'
     self.flash_fw_type_str = None
     self.download_url = None
@@ -294,6 +296,7 @@ class Device:
       if fw_info is not None and fw_info.status_code == 200:
         info = json.loads(fw_info.content)
         info['fw_type'] = fw_type
+        info['device_name'] = info.get('name')
         if status is not None:
           info['status'] = status
       logger.trace(f"Device URL: {device_url}")
@@ -478,7 +481,6 @@ class HomeKitDevice(Device):
     self.stock_model = self.info.get('stock_model')
     self.app = self.info.get('app', self.shelly_model(self.stock_model)[1])
     self.device_id = self.info.get('device_id')
-    self.device_name = self.info.get('name')
     self.color_mode = self.info.get('mode')
     return True
 
@@ -515,7 +517,6 @@ class StockDevice(Device):
     self.model = self.shelly_model(self.stock_model)[0]
     self.app = self.shelly_model(self.stock_model)[1]
     self.device_id = self.info.get('mqtt', {}).get('id', self.friendly_host)
-    self.device_name = self.info.get('name', '')
     self.color_mode = self.info.get('mode')
     return True
 
@@ -548,7 +549,7 @@ class StockDevice(Device):
 
 
 class Main:
-  def __init__(self, hosts, run_action, log_filename, dry_run, quiet_run, silent_run, mode, info_level, fw_type_filter, model_type_filter, exclude, version, variant,
+  def __init__(self, hosts, run_action, log_filename, dry_run, quiet_run, silent_run, mode, info_level, fw_type_filter, model_type_filter, device_name_filter, exclude, version, variant,
                hap_setup_code, local_file, network_type, ipv4_ip, ipv4_mask, ipv4_gw, ipv4_dns):
     self.hosts = hosts
     self.run_action = run_action
@@ -560,6 +561,7 @@ class Main:
     self.info_level = info_level
     self.fw_type_filter = fw_type_filter
     self.model_type_filter = model_type_filter
+    self.device_name_filter = device_name_filter
     self.exclude = exclude
     self.version = version
     self.variant = variant
@@ -753,7 +755,7 @@ class Main:
     download_url_request = False
     host = device_info.host
     friendly_host = device_info.friendly_host
-    device_name = device_info.device_name
+    device_name = device_info.info.get('device_name')
     device_id = device_info.device_id
     model = device_info.model
     stock_model = device_info.stock_model
@@ -1039,6 +1041,15 @@ class Main:
     if self.log_filename:
       logger.info(f"Log file created: {args.log_filename}")
 
+  def is_fw_type(self, fw_type):
+    return(fw_type.lower() in self.fw_type_filter.lower() or self.fw_type_filter == 'all')
+
+  def is_model_type(self, fw_model):
+    return(self.model_type_filter is not None and self.model_type_filter.lower() in fw_model.lower() or self.model_type_filter == 'all')
+
+  def is_device_name(self, device_name):
+    return(device_name is not None and self.device_name_filter is not None and self.device_name_filter.lower() in device_name.lower() or self.device_name_filter == 'all')
+
   def device_scan(self):
     global total_devices
     if self.hosts:
@@ -1065,7 +1076,7 @@ class Main:
         logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
         if device_info.info:
           fw_model = device_info.info.get('model') if 'homekit' == device_info.info.get('fw_type') else device_info.shelly_model(device_info.info.get('device').get('type'))[0]
-          if (device_info.info.get('fw_type') in self.fw_type_filter or self.fw_type_filter == 'all') and (self.model_type_filter is not None and self.model_type_filter.lower() in fw_model.lower() or self.model_type_filter == 'all'):
+          if (device_info.info.get('fw_type') in self.fw_type_filter or self.fw_type_filter == 'all') and self.is_model_type(fw_model) and self.is_device_name(device_info.info.get('device_name')):
             device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
             self.probe_device(device)
 
@@ -1076,6 +1087,7 @@ if __name__ == '__main__':
   parser.add_argument('-i', '--info-level', action="store", dest='info_level', choices=['1', '2', '3'], default="2", help="Control how much detail is output in the list 1=minimal, 2=basic, 3=all.")
   parser.add_argument('-ft', '--fw-type', action="store", dest='fw_type_filter', choices=['homekit', 'stock', 'all'], default="all", help="Limit scan to current firmware type.")
   parser.add_argument('-mt', '--model-type', action="store", dest='model_type_filter', default='all', help="Limit scan to model type (dimmer, rgbw2, shelly1, etc).")
+  parser.add_argument('-dn', '--device-name', action="store", dest='device_name_filter', default='all', help="Limit scan to include term in device name..")
   parser.add_argument('-a', '--all', action="store_true", dest='do_all', default=False, help="Run against all the devices on the network.")
   parser.add_argument('-q', '--quiet', action="store_true", dest='quiet_run', default=False, help="Only include upgradeable shelly devices.")
   parser.add_argument('-l', '--list', action="store_true", default=False, help="List info of shelly device.")
@@ -1147,6 +1159,7 @@ if __name__ == '__main__':
   logger.debug(f"info_level: {args.info_level}")
   logger.debug(f"fw_type_filter: {args.fw_type_filter}")
   logger.debug(f"model_type_filter: {args.model_type_filter}")
+  logger.debug(f"device_name_filter: {args.device_name_filter}")
   logger.debug(f"do_all: {args.do_all}")
   logger.debug(f"dry_run: {args.dry_run}")
   logger.debug(f"quiet_run: {args.quiet_run}")
@@ -1199,7 +1212,7 @@ if __name__ == '__main__':
     parser.print_help()
     sys.exit(1)
 
-  main = Main(args.hosts, action, args.log_filename, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.info_level, args.fw_type_filter, args.model_type_filter,
+  main = Main(args.hosts, action, args.log_filename, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.info_level, args.fw_type_filter, args.model_type_filter, args.device_name_filter,
               args.exclude, args.version, args.variant, args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
   atexit.register(main.results)
   try:
