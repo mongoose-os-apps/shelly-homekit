@@ -138,16 +138,18 @@ Status RGB::Init() {
   return Status::OK();
 }
 
-void RGB::HSVtoRGB(float &h, float &s, float &v, float &r, float &g, float &b) {
+void RGB::HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
   if (s == 0.0) {
-    r = g = b = 1.0;
+    // if saturation is zero than all rgb channels same as brightness
+    r = g = b = v;
+    return;
   }
 
-  int i = int(h * 6.0);
-  float f = (h * 6.0) - i;
-  float p = v * (1.0 - s);
-  float q = v * (1.0 - s * f);
-  float t = v * (1.0 - s * (1.0 - f));
+  int i = static_cast<int>(h * 6);
+  float f = (h * 6.0f - i);
+  float p = v * (1.0f - s);
+  float q = v * (1.0f - f * s);
+  float t = v * (1.0f - (1.0f - f) * s);
 
   switch (i % 6) {
     case 0:
@@ -155,26 +157,31 @@ void RGB::HSVtoRGB(float &h, float &s, float &v, float &r, float &g, float &b) {
       g = t;
       b = p;
       break;
+
     case 1:
       r = q;
       g = v;
       b = p;
       break;
+
     case 2:
       r = p;
       g = v;
       b = t;
       break;
+
     case 3:
       r = p;
       g = q;
       b = v;
       break;
+
     case 4:
       r = t;
       g = p;
       b = v;
       break;
+
     case 5:
       r = v;
       g = p;
@@ -188,19 +195,19 @@ void RGB::SetOutputState(const char *source) {
       ("state: %s, brightness: %i, hue: %i, saturation: %i", OnOff(cfg_->state),
        cfg_->brightness, cfg_->hue, cfg_->saturation));
 
-  float h = cfg_->hue / 360.0;
-  float s = cfg_->saturation / 100.0;
-  float v = 1;  // use 1 as value, real value will be done by pwm duty
-
   float r = 0, g = 0, b = 0;
 
-  HSVtoRGB(h, s, v, r, g, b);
+  if (cfg_->state) {
+    float h = cfg_->hue / 360.0f;
+    float s = cfg_->saturation / 100.0f;
+    float v = cfg_->brightness / 100.0f;
 
-  float brv = cfg_->state ? (cfg_->brightness / 100.0) : 0;
+    HSVtoRGB(h, s, v, r, g, b);
+  }
 
-  out_r_->SetStatePWM(r * brv, source);
-  out_g_->SetStatePWM(g * brv, source);
-  out_b_->SetStatePWM(b * brv, source);
+  out_r_->SetStatePWM(r, source);
+  out_g_->SetStatePWM(g, source);
+  out_b_->SetStatePWM(b, source);
 
   if (cfg_->state && cfg_->auto_off) {
     auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);

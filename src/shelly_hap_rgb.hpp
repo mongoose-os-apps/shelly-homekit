@@ -42,7 +42,7 @@ class RGB : public Component, public mgos::hap::Service {
   Status Init() override;
   void SetOutputState(const char *source);
   void SaveState();
-  void HSVtoRGB(float &h, float &s, float &v, float &r, float &g, float &b);
+  static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
