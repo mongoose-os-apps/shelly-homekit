@@ -1027,12 +1027,13 @@ class Main:
             self.parse_info(device_info, requires_upgrade)
 
   def stop_scan(self):
-    while True:
-      try:
-        self.listener.queue.get_nowait()
-      except queue.Empty:
-        self.zc.close()
-        break
+    if self.listener is not None:
+      while True:
+        try:
+          self.listener.queue.get_nowait()
+        except queue.Empty:
+          self.zc.close()
+          break
 
   def results(self):
     logger.info(f"")
