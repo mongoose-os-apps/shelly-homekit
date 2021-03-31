@@ -53,7 +53,7 @@ optional arguments:
   -y, --assume-yes      Do not ask any confirmation to perform the flash.
   -V VERSION, --version VERSION
                         Force a particular version.
-  --variant VARIANT     Prerelease variant name.
+  --variant VARIANT     Pre-release variant name.
   --local-file LOCAL_FILE
                         Use local file to flash.
   -c HAP_SETUP_CODE, --hap-setup-code HAP_SETUP_CODE
@@ -1098,7 +1098,7 @@ if __name__ == '__main__':
   parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', default=False, help="Do a dummy run through.")
   parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=False, help="Do not ask any confirmation to perform the flash.")
   parser.add_argument('-V', '--version', type=str, action="store", dest="version", default=False, help="Force a particular version.")
-  parser.add_argument('--variant', action="store", dest="variant", default=False, help="Prerelease variant name.")
+  parser.add_argument('--variant', action="store", dest="variant", default=False, help="Pre-release variant name.")
   parser.add_argument('--local-file', action="store", dest="local_file", default=False, help="Use local file to flash.")
   parser.add_argument('-c', '--hap-setup-code', action="store", dest="hap_setup_code", default=False, help="Configure HomeKit setup code, after flashing.")
   parser.add_argument('--ip-type', action="store", choices=['dhcp', 'static'], dest="network_type", default=False, help="Configure network IP type (Static or DHCP)")
