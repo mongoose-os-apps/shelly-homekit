@@ -602,14 +602,14 @@ class Main:
   def parse_version(vs):
     # 1.9 / 1.9.2 / 1.9.3-rc3 / 1.9.5-DM2 / 2.7.0-beta1 / 2.7.0-latest
     try:
-      v = re.search(r'^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:-(?P<prerelease>[a-zA-Z_]*)?(?P<prerelease_seq>\d*))?$', vs)
+      v = re.search(r'^(?P<major>\d+).(?P<minor>\d+)(?:.(?P<patch>\d+))?(?:-(?P<pr>[a-zA-Z_]*)?(?P<pr_seq>\d*))?$', vs)
       debug_info = v.groupdict() if v is not None else v
       logger.trace(f"parse version: {vs}  group: {debug_info}")
       major = int(v.group('major'))
       minor = int(v.group('minor'))
       patch = int(v.group('patch')) if v.group('patch') is not None else 0
-      variant = v.group('prerelease')
-      var_seq = int(v.group('prerelease_seq')) if v.group('prerelease_seq') and v.group('prerelease_seq').isdigit() else 0
+      variant = v.group('pr')
+      var_seq = int(v.group('pr_seq')) if v.group('pr_seq') and v.group('pr_seq').isdigit() else 0
     except Exception:
       major = 0
       minor = 0
