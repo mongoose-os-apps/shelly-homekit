@@ -372,6 +372,7 @@ class Device:
                'SHWT-1': ['ShellyFlood', 'water-sensor'],
                'SHDW-1': ['ShellyDoorWindow', 'doorwindow-sensor'],
                'SHDW-2': ['ShellyDoorWindow2', 'doorwindow-sensor2'],
+               'SHMOS-01': ['ShellyMotion', 'motion-sensor'],
                'SHSPOT-1': ['ShellySpot', 'spot'],
                'SHCL-255': ['ShellyColor', 'color'],
                'SHBLB-1': ['ShellyBulb', 'bulb'],
@@ -388,7 +389,7 @@ class Device:
                'SHBTN-2': ['ShellyButton2', 'wifi-button2'],
                'SHIX3-1': ['ShellyI3', 'ix3']
                }
-    return options.get(stock_model, stock_model)
+    return options.get(stock_model, [stock_model, stock_model])
 
   def parse_local_file(self):
     if os.path.exists(self.local_file) and self.local_file.endswith('.zip'):
