@@ -786,6 +786,7 @@ class Main:
     hap_ip_conns_pending = device_info.info.get('hap_ip_conns_pending')
     hap_ip_conns_active = device_info.info.get('hap_ip_conns_active')
     hap_ip_conns_max = device_info.info.get('hap_ip_conns_max')
+    battery = None if device_info.is_homekit() else device_info.info.get('status', {}).get('bat', {}).get('value')
 
     logger.debug(f"flash mode: {self.flash_mode}")
     logger.debug(f"requires_upgrade: {requires_upgrade}")
@@ -822,11 +823,11 @@ class Main:
     if (not self.quiet_run or (self.quiet_run and (flash_fw_newer or (force_flash and flash_fw_version != '0.0.0')))) and requires_upgrade != 'Done':
       logger.info(f"")
       logger.info(f"{WHITE}Host: {NC}http://{host}")
-      if int(self.info_level) > 1 or device_name != friendly_host:
+      if self.info_level > 1 or device_name != friendly_host:
         logger.info(f"{WHITE}Device Name: {NC}{device_name}")
-      if int(self.info_level) > 1:
+      if self.info_level > 1:
         logger.info(f"{WHITE}Model: {NC}{model}")
-      if int(self.info_level) >= 3:
+      if self.info_level >= 3:
         logger.info(f"{WHITE}Device ID: {NC}{device_id}")
         logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
         logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
@@ -839,6 +840,8 @@ class Main:
           if int(hap_ip_conns_pending) > 0:
             hap_ip_conns_pending = f"{RED}{hap_ip_conns_pending}{NC}"
           logger.info(f"{WHITE}HAP Connections: {NC}{hap_ip_conns_pending} / {hap_ip_conns_active} / {hap_ip_conns_max}{NC}")
+        if battery is not None:
+          logger.info(f"{WHITE}Battery: {NC}{battery}%{NC}")
       if current_fw_type == self.flash_mode and (current_fw_version == flash_fw_version or flash_fw_version == '0.0.0'):
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} {GREEN}\u2714{NC}")
       elif current_fw_type == self.flash_mode and flash_fw_newer:
