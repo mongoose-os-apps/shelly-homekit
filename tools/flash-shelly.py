@@ -93,9 +93,9 @@ import re
 import socket
 import subprocess
 import sys
-import traceback
 import threading
 import time
+import traceback
 import zipfile
 
 
@@ -133,12 +133,12 @@ logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE
 logging.trace = functools.partial(logging.log, logging.TRACE)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.TRACE)
-log_level = {'0': logging.CRITICAL,
-             '1': logging.ERROR,
-             '2': logging.WARNING,
-             '3': logging.INFO,
-             '4': logging.DEBUG,
-             '5': logging.TRACE}
+log_level = {0: logging.CRITICAL,
+             1: logging.ERROR,
+             2: logging.WARNING,
+             3: logging.INFO,
+             4: logging.DEBUG,
+             5: logging.TRACE}
 
 webserver_port = 8381
 http_server_started = False
