@@ -258,8 +258,7 @@ function rgbSetConfig(c) {
     name: name,
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
-    in_inverted: el(c, "in_inverted").checked,
-    device_type: parseInt(el(c, "device_type").value)
+    in_inverted: el(c, "in_inverted").checked
   };
   if (autoOff) {
     cfg.auto_off_delay = dateStringToSeconds(autoOffDelay);
@@ -494,7 +493,6 @@ function findOrAddContainer(cd) {
       el(c, "save_btn").onclick = function () {
         rgbSetConfig(c);
       };
-      el(c, "device_type").onchange =
       el(c, "hue").onchange =
       el(c, "saturation").onchange =
       el(c, "brightness").onchange = function () {
@@ -518,7 +516,6 @@ function findOrAddContainer(cd) {
 function rgbState(c, newState) {
   return {
     state: newState,
-    device_type: el(c, "device_type").value,
     hue: el(c, "hue").value,
     saturation: el(c, "saturation").value,
     brightness: el(c, "brightness").value
@@ -583,7 +580,6 @@ function updateComponent(cd) {
         var headText = "RGB";
         if (cd.name) headText += ` (${cd.name})`;
         el(c, "head").innerText = headText;
-        selectIfNotModified(el(c, "device_type"), cd.device_type);
         setValueIfNotModified(el(c, "name"), cd.name);
         el(c, "state").checked = cd.state;
         if (cd.apower !== undefined) {

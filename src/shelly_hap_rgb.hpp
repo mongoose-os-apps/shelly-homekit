@@ -36,7 +36,7 @@ class RGBWLight : public Component, public mgos::hap::Service {
             Output *out_w, struct mgos_config_lb *cfg);
   virtual ~RGBWLight();
 
-  enum class DeviceType : int { kRGB = 0, kRGBW = 1 };
+  enum class LightMode { rgb = 0, rgbw = 1 };
 
   struct HSV {
     float h;
@@ -64,7 +64,7 @@ class RGBWLight : public Component, public mgos::hap::Service {
                    bool *restart_required) override;
   Status SetState(const std::string &state_json) override;
 
-  DeviceType getDeviceType() const;
+  LightMode getLightMode() const;
 
  protected:
   void InputEventHandler(Input::Event ev, bool state);

@@ -190,7 +190,7 @@ void RGBWLight::HSVtoRGBW(const HSV &hsv, RGBW &rgbw) const {
     }
   }
 
-  if (getDeviceType() == DeviceType::kRGBW) {
+  if (getLightMode() == LightMode::rgbw) {
     // apply white channel to rgb if activated
     rgbw.w = std::min(rgbw.r, std::min(rgbw.g, rgbw.b));
     rgbw.r = rgbw.r - rgbw.w;
@@ -245,10 +245,10 @@ StatusOr<std::string> RGBWLight::GetInfoJSON() const {
       "{id: %d, type: %d, name: %Q, state: %B, "
       " brightness: %d, hue: %d, saturation: %d, "
       " in_inverted: %B, initial: %d, in_mode: %d, "
-      "auto_off: %B, auto_off_delay: %.3f, device_type: %d}",
+      "auto_off: %B, auto_off_delay: %.3f}",
       id(), type(), cfg_->name, cfg_->state, cfg_->brightness, cfg_->hue,
       cfg_->saturation, cfg_->in_inverted, cfg_->initial_state, cfg_->in_mode,
-      cfg_->auto_off, cfg_->auto_off_delay, cfg_->device_type);
+      cfg_->auto_off, cfg_->auto_off_delay);
 }
 
 Status RGBWLight::SetConfig(const std::string &config_json,
@@ -260,9 +260,9 @@ Status RGBWLight::SetConfig(const std::string &config_json,
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, in_mode: %d, in_inverted: %B, "
              "initial_state: %d, "
-             "auto_off: %B, auto_off_delay: %lf, device_type: %d}",
+             "auto_off: %B, auto_off_delay: %lf}",
              &cfg.name, &cfg.in_mode, &in_inverted, &cfg.initial_state,
-             &cfg.auto_off, &cfg.auto_off_delay, &cfg.device_type);
+             &cfg.auto_off, &cfg.auto_off_delay);
 
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
@@ -302,7 +302,6 @@ Status RGBWLight::SetConfig(const std::string &config_json,
   cfg_->initial_state = cfg.initial_state;
   cfg_->auto_off = cfg.auto_off;
   cfg_->auto_off_delay = cfg.auto_off_delay;
-  cfg_->device_type = cfg.device_type;
   return Status::OK();
 }
 
@@ -314,19 +313,13 @@ void RGBWLight::SaveState() {
 
 Status RGBWLight::SetState(const std::string &state_json) {
   bool state;
-  int device_type;
   int brightness, hue, saturation;
-  json_scanf(
-      state_json.c_str(), state_json.size(),
-      "{state: %B, brightness: %d, hue: %d, saturation: %d, device_type: %d}",
-      &state, &brightness, &hue, &saturation, &device_type);
+  json_scanf(state_json.c_str(), state_json.size(),
+             "{state: %B, brightness: %d, hue: %d, saturation: %d}", &state,
+             &brightness, &hue, &saturation);
 
   if (cfg_->state != state) {
     cfg_->state = state;
-    dirty_ = true;
-  }
-  if (cfg_->device_type != device_type) {
-    cfg_->device_type = device_type;
     dirty_ = true;
   }
   if (cfg_->brightness != brightness) {
@@ -349,8 +342,14 @@ Status RGBWLight::SetState(const std::string &state_json) {
   return Status::OK();
 }
 
-RGBWLight::DeviceType RGBWLight::getDeviceType() const {
-  return static_cast<DeviceType>(cfg_->device_type);
+RGBWLight::LightMode RGBWLight::getLightMode() const {
+  switch (mgos_sys_config_get_shelly_mode()) {
+    case 4:
+      return LightMode::rgbw;
+    case 3:
+    default:
+      return LightMode::rgb;
+  }
 }
 
 void RGBWLight::AutoOffTimerCB() {
