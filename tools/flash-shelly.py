@@ -486,7 +486,18 @@ class HomeKitDevice(Device):
     self.fw_type_str = 'HomeKit'
     self.fw_version = self.info.get('version', '0.0.0')
     self.info['color_mode'] = 'color'
+    self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
     return True
+
+  @staticmethod
+  def get_mode(mode):
+    options = {0: 'Switch',
+               1: 'Roller Shutter',
+               2: 'Garage Door',
+               3: 'RGB',
+               4: 'RGBW'
+               }
+    return options.get(mode, mode)
 
   def flash_firmware(self):
     if self.local_file:
@@ -771,6 +782,7 @@ class Main:
     wifi_ssid = device_info.info.get('wifi_ssid')
     wifi_rssi = device_info.info.get('wifi_rssi')
     sys_temp = device_info.info.get('sys_temp')
+    sys_mode = device_info.info.get('sys_mode_str')
     uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0))
     hap_ip_conns_pending = device_info.info.get('hap_ip_conns_pending')
     hap_ip_conns_active = device_info.info.get('hap_ip_conns_active')
@@ -818,6 +830,8 @@ class Main:
         logger.info(f"{WHITE}Model: {NC}{model}")
       if self.info_level >= 3:
         logger.info(f"{WHITE}Device ID: {NC}{device_id}")
+        if sys_mode:
+          logger.info(f"{WHITE}Mode: {NC}{sys_mode}")
         logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
         logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
         logger.info(f"{WHITE}RSSI: {NC}{wifi_rssi}")
