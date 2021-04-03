@@ -22,9 +22,9 @@ version of this firmware, if you are looking to flash your device from stock
 or any other firmware please follow instructions here:
 https://github.com/mongoose-os-apps/shelly-homekit/wiki
 
-usage: flash-shelly.py [-h] [--app-version] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-l] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION] [--variant VARIANT]
-                       [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT] [--log-file LOG_FILENAME] [--reboot]
-                       [--config CONFIG] [--save-config SAVE_CONFIG] [--delete-config-file]
+usage: flash-shelly.py [-h] [--app-version] [-f] [-l] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION]
+                       [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT]
+                       [--log-file LOG_FILENAME] [--reboot] [--config CONFIG] [--save-config SAVE_CONFIG] [--delete-config-file]
                        [hosts ...]
 
 Shelly HomeKit flashing script utility
@@ -35,8 +35,10 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --app-version         Shows app version and exists.
+  -f, --flash           Flash firmware to shelly device(s).
+  -l, --list            List info of shelly device(s).
   -m {homekit,keep,revert}, --mode {homekit,keep,revert}
-                        Script mode.
+                        Script mode homekit=homekit firmware, revert=stock firmware, keep=use current firmware type
   -i {1,2,3}, --info-level {1,2,3}
                         Control how much detail is output in the list 1=minimal, 2=basic, 3=all.
   -ft {homekit,stock,all}, --fw-type {homekit,stock,all}
@@ -47,7 +49,6 @@ optional arguments:
                         Limit scan to include term in device name..
   -a, --all             Run against all the devices on the network.
   -q, --quiet           Only include upgradeable shelly devices.
-  -l, --list            List info of shelly device.
   -e [EXCLUDE ...], --exclude [EXCLUDE ...]
                         Exclude hosts from found devices.
   -n, --assume-no       Do a dummy run through.
@@ -1110,14 +1111,15 @@ if __name__ == '__main__':
   app_ver = "2.7.0"
   parser = argparse.ArgumentParser(prog='flash-shelly.py', fromfile_prefix_chars='@', description='Shelly HomeKit flashing script utility')
   parser.add_argument('--app-version', action="store_true", help="Shows app version and exists.")
-  parser.add_argument('-m', '--mode', choices=['homekit', 'keep', 'revert'], default="homekit", help="Script mode.")
+  parser.add_argument('-f', '--flash', action="store_true", help="Flash firmware to shelly device(s).")
+  parser.add_argument('-l', '--list', action="store_true", help="List info of shelly device(s).")
+  parser.add_argument('-m', '--mode', choices=['homekit', 'keep', 'revert'], default="homekit", help="Script mode homekit=homekit firmware, revert=stock firmware, keep=use current firmware type")
   parser.add_argument('-i', '--info-level', dest='info_level', type=int, choices=[1, 2, 3], default=2, help="Control how much detail is output in the list 1=minimal, 2=basic, 3=all.")
   parser.add_argument('-ft', '--fw-type', dest='fw_type_filter', choices=['homekit', 'stock', 'all'], default="all", help="Limit scan to current firmware type.")
   parser.add_argument('-mt', '--model-type', dest='model_type_filter', default='all', help="Limit scan to model type (dimmer, rgbw2, shelly1, etc).")
   parser.add_argument('-dn', '--device-name', dest='device_name_filter', default='all', help="Limit scan to include term in device name..")
   parser.add_argument('-a', '--all', action="store_true", dest='do_all', help="Run against all the devices on the network.")
   parser.add_argument('-q', '--quiet', action="store_true", dest='quiet_run', help="Only include upgradeable shelly devices.")
-  parser.add_argument('-l', '--list', action="store_true", help="List info of shelly device.")
   parser.add_argument('-e', '--exclude', dest="exclude", nargs='*', default='', help="Exclude hosts from found devices.")
   parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', help="Do a dummy run through.")
   parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', help="Do not ask any confirmation to perform the flash.")
@@ -1169,12 +1171,13 @@ if __name__ == '__main__':
       config.remove_section(args.save_config)
     config.add_section(args.save_config)
     for x in arg_list:
-      if not x == 'save_config':
-        if x == 'hosts' and arg_list[x]:
-          h = re.sub(r"[\[\]',]", "", str(arg_list[x]))
-          config.set(args.save_config, x, str(h))
-        else:
-          config.set(args.save_config, x, str(arg_list[x]))
+      if x in ('save_config', 'app_version', 'flash'):
+        continue
+      if x == 'hosts' and arg_list[x]:
+        h = re.sub(r"[\[\]',]", "", str(arg_list[x]))
+        config.set(args.save_config, x, str(h))
+      else:
+        config.set(args.save_config, x, str(arg_list[x]))
     with open(config_file, "w") as file_object:
       config.write(file_object)
     sys.exit(0)
@@ -1196,7 +1199,9 @@ if __name__ == '__main__':
     arg_list = vars(args)
     logger.trace(f"Loaded config: {arg_list}")
 
-  if args.list:
+  if args.flash:
+    action = 'flash'
+  elif args.list:
     action = 'list'
   elif args.reboot:
     action = 'reboot'
