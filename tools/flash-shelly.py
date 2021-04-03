@@ -235,13 +235,8 @@ class Device:
     self.variant = main.variant
     self.version = main.version
     self.local_file = main.local_file
-    self.stock_model = None
     self.fw_version = None
     self.fw_type_str = None
-    self.app = None
-    self.model = None
-    self.color_mode = None
-    self.device_id = None
     self.flash_fw_version = '0.0.0'
     self.flash_fw_type_str = None
     self.download_url = None
@@ -428,16 +423,16 @@ class Device:
         self.download_url = 'local'
       else:
         self.download_url = f'http://{local_ip}:{webserver_port}/{self.local_file}'
-      if self.is_stock() and self.stock_model == 'SHRGBW2' and self.color_mode is not None:
-        m_model = f"{self.app}-{self.color_mode}"
+      if self.is_stock() and self.info.get('stock_model') == 'SHRGBW2' and self.info.get('color_mode'):
+        m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
       else:
-        m_model = self.app
+        m_model = self.info.get('app')
       if m_model != manifest_name:
         self.flash_fw_version = '0.0.0'
         self.download_url = None
       return True
     else:
-      logger.debug(f"File does not exist")
+      logger.info(f"File does not exist.")
       self.flash_fw_version = '0.0.0'
       self.download_url = None
       return False
@@ -457,17 +452,19 @@ class Device:
           re_search = i[0]
         if re.search(re_search, self.fw_version):
           self.flash_fw_version = i[1].get('version', '0.0.0')
-          self.download_url = i[1].get('urls', {}).get(self.model)
+          self.download_url = i[1].get('urls', {}).get(self.info.get('model'))
           break
     else:
       self.flash_fw_version = self.version
-      self.download_url = f'http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.model}.zip'
+      self.download_url = f"http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.info.get('model')}.zip"
 
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
+    stock_model = self.info.get('stock_model')
+    color_mode = self.info.get('color_mode')
     logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if not self.version:
-      stock_model_info = release_info.get('data', {}).get(self.stock_model)
+      stock_model_info = release_info.get('data', {}).get(stock_model)
       if self.variant == 'beta':
         self.flash_fw_version = self.parse_stock_version(stock_model_info.get('beta_ver', '0.0.0'))
         self.download_url = stock_model_info.get('beta_url')
@@ -476,10 +473,10 @@ class Device:
         self.download_url = stock_model_info.get('url')
     else:
       self.flash_fw_version = self.version
-      self.download_url = f'http://archive.shelly-tools.de/version/v{self.version}/{self.stock_model}.zip'
-    if self.stock_model == 'SHRGBW2':
-      if self.download_url and not self.version and self.color_mode and not self.local_file:
-        self.download_url = self.download_url.replace('.zip', f'-{self.color_mode}.zip')
+      self.download_url = f'http://archive.shelly-tools.de/version/v{self.version}/{stock_model}.zip'
+    if stock_model == 'SHRGBW2':
+      if self.download_url and not self.version and color_mode and not self.local_file:
+        self.download_url = self.download_url.replace('.zip', f'-{color_mode}.zip')
 
 
 class HomeKitDevice(Device):
@@ -488,11 +485,7 @@ class HomeKitDevice(Device):
       return False
     self.fw_type_str = 'HomeKit'
     self.fw_version = self.info.get('version', '0.0.0')
-    self.model = self.info.get('model', self.shelly_model(self.info.get('app', {})[0]))
-    self.stock_model = self.info.get('stock_model')
-    self.app = self.info.get('app', self.shelly_model(self.stock_model)[1])
-    self.device_id = self.info.get('device_id')
-    self.color_mode = self.info.get('mode')
+    self.info['color_mode'] = 'color'
     return True
 
   def flash_firmware(self):
@@ -524,11 +517,16 @@ class StockDevice(Device):
       return False
     self.fw_type_str = 'Stock'
     self.fw_version = self.parse_stock_version(self.info.get('fw', '0.0.0'))  # current firmware version
-    self.stock_model = self.info.get('device', {}).get('type', '')
-    self.model = self.shelly_model(self.stock_model)[0]
-    self.app = self.shelly_model(self.stock_model)[1]
-    self.device_id = self.info.get('mqtt', {}).get('id', self.friendly_host)
-    self.color_mode = self.info.get('mode')
+    stock_model = self.info.get('device', {}).get('type', '')
+    self.info['stock_model'] = stock_model
+    self.info['model'] = self.shelly_model(stock_model)[0]
+    self.info['app'] = self.shelly_model(stock_model)[1]
+    self.info['device_id'] = self.info.get('mqtt', {}).get('id', self.friendly_host)
+    self.info['color_mode'] = self.info.get('mode')
+    self.info['wifi_ssid'] = self.info.get('status', {}).get('wifi_sta', {}).get('ssid')
+    self.info['wifi_rssi'] = self.info.get('status', {}).get('wifi_sta', {}).get('rssi')
+    self.info['uptime'] = self.info.get('status', {}).get('uptime', 0)
+    self.info['battery'] = self.info.get('status', {}).get('bat', {}).get('value')
     return True
 
   def flash_firmware(self):
@@ -729,17 +727,7 @@ class Main:
       flashed_devices += 1
       logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     else:
-      if device_info.stock_model == 'SHRGBW2':
-        logger.info("")
-        logger.info("To finalise flash process you will need to switch 'Modes' in the device WebUI,")
-        logger.info(f"{WHITE}WARNING!!{NC} If you are using this device in conjunction with Homebridge")
-        logger.info(f"{WHITE}STOP!!{NC} homebridge before performing next steps.")
-        logger.info(f"Goto http://{device_info.host} in your web browser")
-        logger.info("Goto settings section")
-        logger.info("Goto 'Device Type' and switch modes")
-        logger.info("Once mode has been changed, you can switch it back to your preferred mode")
-        logger.info(f"Restart homebridge.")
-      elif reboot_check == '0.0.0':
+      if reboot_check == '0.0.0':
         logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
       else:
         global failed_flashed_devices
@@ -765,12 +753,12 @@ class Main:
     flash_question = None
     download_url_request = False
     host = device_info.host
+    wifi_ip = device_info.wifi_ip
     friendly_host = device_info.friendly_host
-    device_name = device_info.info.get('device_name')
-    device_id = device_info.device_id
-    model = device_info.model
-    stock_model = device_info.stock_model
-    color_mode = device_info.color_mode
+    device_id = device_info.info.get('device_id')
+    model = device_info.info.get('model')
+    stock_model = device_info.info.get('stock_model')
+    color_mode = device_info.info.get('color_mode')
     current_fw_version = device_info.fw_version
     current_fw_type = device_info.info.get('fw_type')
     current_fw_type_str = device_info.fw_type_str
@@ -779,15 +767,15 @@ class Main:
     force_version = device_info.version
     force_flash = True if force_version else False
     download_url = device_info.download_url
-    wifi_ip = device_info.wifi_ip
-    wifi_ssid = device_info.info.get('wifi_ssid') if device_info.is_homekit() else device_info.info.get('status', {}).get('wifi_sta', {}).get('ssid')
-    wifi_rssi = device_info.info.get('wifi_rssi') if device_info.is_homekit() else device_info.info.get('status', {}).get('wifi_sta', {}).get('rssi')
+    device_name = device_info.info.get('device_name')
+    wifi_ssid = device_info.info.get('wifi_ssid')
+    wifi_rssi = device_info.info.get('wifi_rssi')
     sys_temp = device_info.info.get('sys_temp')
-    uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0)) if device_info.is_homekit() else datetime.timedelta(seconds=device_info.info.get('status', {}).get('uptime', 0))
+    uptime = datetime.timedelta(seconds=device_info.info.get('uptime', 0))
     hap_ip_conns_pending = device_info.info.get('hap_ip_conns_pending')
     hap_ip_conns_active = device_info.info.get('hap_ip_conns_active')
     hap_ip_conns_max = device_info.info.get('hap_ip_conns_max')
-    battery = None if device_info.is_homekit() else device_info.info.get('status', {}).get('bat', {}).get('value')
+    battery = device_info.info.get('battery')
 
     logger.debug(f"flash mode: {self.flash_mode}")
     logger.debug(f"requires_upgrade: {requires_upgrade}")
@@ -833,15 +821,15 @@ class Main:
         logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
         logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
         logger.info(f"{WHITE}RSSI: {NC}{wifi_rssi}")
-        if sys_temp is not None:
+        if sys_temp:
           logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
         if str(uptime) != '0:00:00':
           logger.info(f"{WHITE}Up Time: {NC}{uptime}{NC}")
-        if hap_ip_conns_max is not None:
+        if hap_ip_conns_max:
           if int(hap_ip_conns_pending) > 0:
             hap_ip_conns_pending = f"{RED}{hap_ip_conns_pending}{NC}"
           logger.info(f"{WHITE}HAP Connections: {NC}{hap_ip_conns_pending} / {hap_ip_conns_active} / {hap_ip_conns_max}{NC}")
-        if battery is not None:
+        if battery:
           logger.info(f"{WHITE}Battery: {NC}{battery}%{NC}")
       if current_fw_type == self.flash_mode and (current_fw_version == flash_fw_version or flash_fw_version == '0.0.0'):
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} {GREEN}\u2714{NC}")
