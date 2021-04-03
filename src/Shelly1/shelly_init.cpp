@@ -22,7 +22,7 @@
 
 namespace shelly {
 
-const std::set<std::string> g_compatibleFirmwareNames{"todo!!!"};
+const std::set<std::string> g_compatibleFirmwareNames{"switch1"};
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,

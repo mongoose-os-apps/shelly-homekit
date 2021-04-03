@@ -22,7 +22,7 @@
 
 namespace shelly {
 
-const std::set<std::string> g_compatibleFirmwareNames{"todo!!!"};
+const std::set<std::string> g_compatibleFirmwareNames{"shelly-plug-s"};
 
 static OutputPin *s_led_out = nullptr;
 

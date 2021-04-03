@@ -25,7 +25,7 @@
 
 namespace shelly {
 
-const std::set<std::string> g_compatibleFirmwareNames{"todo!!!"};
+const std::set<std::string> g_compatibleFirmwareNames{"switch25"};
 
 static struct mgos_ade7953 *s_ade7953 = NULL;
 
