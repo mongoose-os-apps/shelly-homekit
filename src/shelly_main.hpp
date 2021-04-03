@@ -18,6 +18,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "mgos_sys_config.h"
@@ -33,6 +34,7 @@
 namespace shelly {
 
 extern std::vector<std::unique_ptr<Component>> g_comps;
+extern const std::set<std::string> g_compatibleFirmwareNames;
 
 Input *FindInput(int id);
 Output *FindOutput(int id);

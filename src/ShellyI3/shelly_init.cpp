@@ -23,6 +23,8 @@
 
 namespace shelly {
 
+const std::set<std::string> g_compatibleFirmwareNames{"todo!!!"};
+
 // i3 inputs are super noisy and cause interrupt storm.
 // Instead we run a frequent hardware timer that smoothes things out.
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,

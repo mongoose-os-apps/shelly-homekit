@@ -22,6 +22,8 @@
 
 namespace shelly {
 
+const std::set<std::string> g_compatibleFirmwareNames{"todo!!!"};
+
 static OutputPin *s_led_out = nullptr;
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,

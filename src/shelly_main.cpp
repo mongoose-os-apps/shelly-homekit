@@ -772,13 +772,17 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
     arg->result = MGOS_UPD_WAIT;
     return;
   }
+
   // Check app name.
-  if (mg_vcmp(&arg->mi.name, MGOS_APP) != 0) {
+  std::string app_name(arg->mi.name.p);
+  if (g_compatibleFirmwareNames.find(app_name) ==
+      g_compatibleFirmwareNames.end()) {
     LOG(LL_ERROR,
-        ("Wrong app name '%.*s'", (int) arg->mi.name.len, arg->mi.name.p));
+        ("Wrong app name '%.*s'", (int) app_name.length(), app_name.c_str()));
     arg->result = MGOS_UPD_ABORT;
     return;
   }
+
   // Stop the HAP server.
   if (!(s_service_flags & SHELLY_SERVICE_FLAG_UPDATE)) {
     s_wait_start = mgos_uptime();

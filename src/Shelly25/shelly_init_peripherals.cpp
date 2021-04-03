@@ -25,6 +25,8 @@
 
 namespace shelly {
 
+const std::set<std::string> g_compatibleFirmwareNames{"todo!!!"};
+
 static struct mgos_ade7953 *s_ade7953 = NULL;
 
 static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
