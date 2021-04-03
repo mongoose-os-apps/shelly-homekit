@@ -22,7 +22,8 @@
 
 namespace shelly {
 
-const std::set<std::string> g_compatibleFirmwareNames{"rgbw2", "rgbww"};
+const std::set<std::string> g_compatibleFirmwareNames{"rgbw2", "rgbw2-color",
+                                                      "rgbw2-white"};
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
