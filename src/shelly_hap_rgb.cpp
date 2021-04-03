@@ -119,7 +119,7 @@ Status RGBWLight::Init() {
   AddChar(brightness_char);
   // Hue
   auto *hue_char = new mgos::hap::UInt32Characteristic(
-      iid++, &kHAPCharacteristicType_Hue, 0.0f, 360.0f, 1.0f,
+      iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
       std::bind(&RGBWLight::HandleHueRead, this, _1, _2, _3),
       true /* supports_notification */,
       std::bind(&RGBWLight::HandleHueWrite, this, _1, _2, _3),
@@ -128,7 +128,7 @@ Status RGBWLight::Init() {
   AddChar(hue_char);
   // Saturation
   auto *saturation_char = new mgos::hap::UInt32Characteristic(
-      iid++, &kHAPCharacteristicType_Saturation, 0.0f, 100.0f, 1.0f,
+      iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
       std::bind(&RGBWLight::HandleSaturationRead, this, _1, _2, _3),
       true /* supports_notification */,
       std::bind(&RGBWLight::HandleSaturationWrite, this, _1, _2, _3),
