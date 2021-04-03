@@ -36,7 +36,7 @@ class RGBWLight : public Component, public mgos::hap::Service {
             Output *out_w, struct mgos_config_lb *cfg);
   virtual ~RGBWLight();
 
-  enum class LightMode { rgb = 0, rgbw = 1 };
+  enum class LightMode { kRgb = 0, kRgbw = 1 };
 
   struct HSV {
     float h;

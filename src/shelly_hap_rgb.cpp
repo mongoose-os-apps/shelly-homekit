@@ -190,7 +190,7 @@ void RGBWLight::HSVtoRGBW(const HSV &hsv, RGBW &rgbw) const {
     }
   }
 
-  if (getLightMode() == LightMode::rgbw) {
+  if (getLightMode() == LightMode::kRgbw) {
     // apply white channel to rgb if activated
     rgbw.w = std::min(rgbw.r, std::min(rgbw.g, rgbw.b));
     rgbw.r = rgbw.r - rgbw.w;
@@ -345,10 +345,10 @@ Status RGBWLight::SetState(const std::string &state_json) {
 RGBWLight::LightMode RGBWLight::getLightMode() const {
   switch (mgos_sys_config_get_shelly_mode()) {
     case 4:
-      return LightMode::rgbw;
+      return LightMode::kRgbw;
     case 3:
     default:
-      return LightMode::rgb;
+      return LightMode::kRgb;
   }
 }
 
