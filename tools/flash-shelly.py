@@ -68,14 +68,14 @@ optional arguments:
   --dns IPV4_DNS        set DNS IP address
   -v {0,1,2,3,4,5}, --verbose {0,1,2,3,4,5}
                         Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.
-  --timeout TIMEOUT     Scan: Time of seconds to wait after last detected device before quitting.  Manual: Time of seconds to keeping to connect.
+  --timeout TIMEOUT     Scan: Time of seconds to wait after last detected device before quitting. Manual: Time of seconds to keeping to connect.
   --log-file LOG_FILENAME
                         Create output log file with chosen filename.
   --reboot              Preform a reboot of the device.
   --config CONFIG       Load options from config file.
   --save-config SAVE_CONFIG
                         Save current options to config file.
-  --delete-config-file  Delete config file..
+  --delete-config-file  Delete config file.
 """
 
 import argparse
@@ -1189,12 +1189,14 @@ if __name__ == '__main__':
       sys.exit(1)
     logger.info(f'Reading configuration section {args.config} from {config_file}')
     parser.set_defaults(mode=config.get(args.config, 'mode'), info_level=config.getint(args.config, 'info_level'), fw_type_filter=config.get(args.config, 'fw_type_filter'),
-                        model_type_filter=config.get(args.config, 'model_type_filter'), device_name_filter=config.get(args.config, 'device_name_filter'), do_all=config.getboolean(args.config, 'do_all'),
-                        quiet_run=config.getboolean(args.config, 'quiet_run'), list=config.getboolean(args.config, 'list'), exclude=config.get(args.config, 'exclude'), dry_run=config.getboolean(args.config, 'dry_run'),
-                        silent_run=config.getboolean(args.config, 'silent_run'), version=config.get(args.config, 'version'), variant=config.get(args.config, 'variant'), local_file=config.get(args.config, 'local_file'),
+                        model_type_filter=config.get(args.config, 'model_type_filter'), device_name_filter=config.get(args.config, 'device_name_filter'),
+                        do_all=config.getboolean(args.config, 'do_all'), quiet_run=config.getboolean(args.config, 'quiet_run'), list=config.getboolean(args.config, 'list'),
+                        exclude=config.get(args.config, 'exclude'), dry_run=config.getboolean(args.config, 'dry_run'), silent_run=config.getboolean(args.config, 'silent_run'),
+                        version=config.get(args.config, 'version'), variant=config.get(args.config, 'variant'), local_file=config.get(args.config, 'local_file'),
                         hap_setup_code=config.get(args.config, 'hap_setup_code'), network_type=config.get(args.config, 'network_type'), ipv4_ip=config.get(args.config, 'ipv4_ip'),
-                        ipv4_gw=config.get(args.config, 'ipv4_gw'), ipv4_mask=config.get(args.config, 'ipv4_mask'), ipv4_dns=config.get(args.config, 'ipv4_dns'), verbose=config.getint(args.config, 'verbose'),
-                        timeout=config.get(args.config, 'timeout'), log_filename=config.get(args.config, 'log_filename'), reboot=config.getboolean(args.config, 'reboot'), hosts=config.get(args.config, 'hosts').split())
+                        ipv4_gw=config.get(args.config, 'ipv4_gw'), ipv4_mask=config.get(args.config, 'ipv4_mask'), ipv4_dns=config.get(args.config, 'ipv4_dns'),
+                        verbose=config.getint(args.config, 'verbose'), timeout=config.get(args.config, 'timeout'), log_filename=config.get(args.config, 'log_filename'),
+                        reboot=config.getboolean(args.config, 'reboot'), hosts=config.get(args.config, 'hosts').split())
     args = parser.parse_args()
     arg_list = vars(args)
     logger.trace(f"Loaded config: {arg_list}")
@@ -1301,8 +1303,8 @@ if __name__ == '__main__':
     parser.print_help()
     sys.exit(1)
 
-  main = Main(args.hosts, action, args.timeout, args.log_filename, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.info_level, args.fw_type_filter, args.model_type_filter, args.device_name_filter,
-              args.exclude, args.version, args.variant, args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
+  main = Main(args.hosts, action, args.timeout, args.log_filename, args.dry_run, args.quiet_run, args.silent_run, args.mode, args.info_level, args.fw_type_filter, args.model_type_filter,
+              args.device_name_filter, args.exclude, args.version, args.variant, args.hap_setup_code, args.local_file, args.network_type, args.ipv4_ip, args.ipv4_mask, args.ipv4_gw, args.ipv4_dns)
   atexit.register(main.results)
   try:
     main.device_scan()
