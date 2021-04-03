@@ -32,7 +32,7 @@ Summary of supported devices and features:
  * [Shelly i3](https://shelly.cloud/products/shelly-i3-smart-home-automation-device/)
    * Stateless input
  * [Shelly RGBW2](https://shelly.cloud/products/shelly-rgbw2-smart-home-automation-led-controller/)
-   * only in RGB/RGBW mode
+   * RGB/RGBW mode only
 
 Features that are not yet supported:
  * Shelly 1L, 2: power measurement
