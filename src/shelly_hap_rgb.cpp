@@ -27,13 +27,14 @@
 namespace shelly {
 namespace hap {
 
-RGBWLight::RGBWLight(int id, Input *in, Output *out_r, Output *out_g,
+RGBWLight::RGBWLight(int id, Mode mode, Input *in, Output *out_r, Output *out_g,
                      Output *out_b, Output *out_w, struct mgos_config_lb *cfg)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_LIGHTING +
                (SHELLY_HAP_IID_STEP_LIGHTING * (id - 1))),
               &kHAPServiceType_LightBulb,
               kHAPServiceDebugDescription_LightBulb),
+      mode_(mode),
       in_(in),
       out_r_(out_r),
       out_g_(out_g),
@@ -190,7 +191,7 @@ void RGBWLight::HSVtoRGBW(const HSV &hsv, RGBW &rgbw) const {
     }
   }
 
-  if (getLightMode() == LightMode::kRgbw) {
+  if (GetMode() == Mode::kRgbw) {
     // apply white channel to rgb if activated
     rgbw.w = std::min(rgbw.r, std::min(rgbw.g, rgbw.b));
     rgbw.r = rgbw.r - rgbw.w;
@@ -342,14 +343,8 @@ Status RGBWLight::SetState(const std::string &state_json) {
   return Status::OK();
 }
 
-RGBWLight::LightMode RGBWLight::getLightMode() const {
-  switch (mgos_sys_config_get_shelly_mode()) {
-    case 4:
-      return LightMode::kRgbw;
-    case 3:
-    default:
-      return LightMode::kRgb;
-  }
+RGBWLight::Mode RGBWLight::GetMode() const {
+  return mode_;
 }
 
 void RGBWLight::AutoOffTimerCB() {
