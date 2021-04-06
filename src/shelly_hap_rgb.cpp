@@ -217,13 +217,12 @@ void RGBWLight::SetOutputState(const char *source) {
       ("state: %s, brightness: %i, hue: %i, saturation: %i", OnOff(cfg_->state),
        cfg_->brightness, cfg_->hue, cfg_->saturation));
 
-  RGBW rgbw{0};
+  RGBW rgbw{};
 
   if (cfg_->state) {
-    HSV hsv;
-    hsv.h = cfg_->hue / 360.0f;
-    hsv.s = cfg_->saturation / 100.0f;
-    hsv.v = cfg_->brightness / 100.0f;
+    HSV hsv{.h = cfg_->hue / 360.0f,
+            .s = cfg_->saturation / 100.0f,
+            .v = cfg_->brightness / 100.0f};
 
     HSVtoRGBW(hsv, rgbw);
   }
