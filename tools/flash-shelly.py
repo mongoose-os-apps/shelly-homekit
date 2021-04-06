@@ -415,7 +415,7 @@ class Device:
             logger.debug(f"zipfile: {name}")
             mfile = zfile.read(name)
             manifest_file = json.loads(mfile)
-            logger.debug(f"manifest: {json.dumps(manifest_file, indent=4)}")
+            logger.debug(f"manifest: {json.dumps(manifest_file, indent=2)}")
             break
       manifest_version = manifest_file.get('version', '0.0.0')
       manifest_name = manifest_file.get('name')
@@ -841,7 +841,7 @@ class Main:
         release_info = json.loads(fp.content)
     except requests.exceptions.RequestException as err:
       logger.critical(f"{RED}CRITICAL:{NC} {err}")
-    logger.trace(f"{info_type} release_info: {json.dumps(release_info, indent=4)}")
+    logger.trace(f"{info_type} release_info: {json.dumps(release_info, indent=2)}")
     if not release_info:
       logger.error("")
       logger.error(f"{RED}Failed to lookup online stock firmware information{NC}")
@@ -1171,7 +1171,7 @@ class Main:
   def probe_device(self, device):
     logger.debug("")
     logger.debug(f"{PURPLE}[Probe Device] {device.get('host')}{NC}")
-    logger.trace(f"device_info: {json.dumps(device, indent=4)}")
+    logger.trace(f"device_info: {json.dumps(device, indent=2)}")
 
     global stock_release_info, homekit_release_info, tried_to_get_remote_homekit, tried_to_get_remote_stock, http_server_started, webserver_port, server, thread, flash_question
     requires_upgrade = False
