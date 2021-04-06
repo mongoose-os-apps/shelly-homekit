@@ -701,12 +701,12 @@ class Main:
     logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
     logger.info(f"waiting for {device_info.friendly_host} to reboot[!n]")
     logger.trace("")
-    get_current_version = None
+    current_version = None
     time.sleep(1)  # wait for time check to fall behind
     current_uptime = device_info.get_uptime(True)
     n = 1
     if not reboot_only:
-      while current_uptime > before_reboot_uptime and n < 60 or get_current_version is None:
+      while current_uptime > before_reboot_uptime and n < 60 or current_version is None:
         logger.info(f".[!n]")
         if n == 20:
           logger.info("")
@@ -716,16 +716,16 @@ class Main:
           logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
         time.sleep(1)  # wait 1 second before retrying.
         current_uptime = device_info.get_uptime(True)
-        get_current_version = device_info.get_current_version(no_error_message=True)
+        current_version = device_info.get_current_version(no_error_message=True)
         logger.debug("")
-        logger.debug(f"get_current_version: {get_current_version}")
+        logger.debug(f"current_version: {current_version}")
         n += 1
         logger.trace(f"loop number: {n}")
     else:
       while device_info.get_uptime(True) < 3:
         time.sleep(1)  # wait 1 second before retrying.
     logger.info("")
-    return get_current_version
+    return current_version
 
   def write_flash(self, device_info):
     logger.debug(f"{PURPLE}[Write Flash]{NC}")
