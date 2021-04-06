@@ -32,10 +32,8 @@ namespace hap {
 
 class RGBWLight : public Component, public mgos::hap::Service {
  public:
-  enum class Mode : int { kRgb = 3, kRgbw = 4 };
-
-  RGBWLight(int id, Mode mode, Input *in, Output *out_r, Output *out_g,
-            Output *out_b, Output *out_w, struct mgos_config_lb *cfg);
+  RGBWLight(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
+            Output *out_w, struct mgos_config_lb *cfg);
   virtual ~RGBWLight();
 
   struct HSV {
@@ -64,14 +62,11 @@ class RGBWLight : public Component, public mgos::hap::Service {
                    bool *restart_required) override;
   Status SetState(const std::string &state_json) override;
 
-  Mode GetMode() const;
-
  protected:
   void InputEventHandler(Input::Event ev, bool state);
 
   void AutoOffTimerCB();
 
-  const Mode mode_;
   Input *const in_;
   Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
   struct mgos_config_lb *cfg_;

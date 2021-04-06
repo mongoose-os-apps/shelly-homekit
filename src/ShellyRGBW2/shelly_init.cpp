@@ -43,12 +43,13 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       HAPAccessoryServerRef *svr) {
   auto *lb_cfg = (struct mgos_config_lb *) mgos_sys_config_get_lb1();
 
-  hap::RGBWLight::Mode mode =
-      static_cast<hap::RGBWLight::Mode>(mgos_sys_config_get_shelly_mode());
+  // if we are in mode 4 (RGBW) we have a white channel
+  Output *const out_w =
+      mgos_sys_config_get_shelly_mode() == 4 ? FindOutput(4) : nullptr;
 
   std::unique_ptr<hap::RGBWLight> rgbw_light(
-      new hap::RGBWLight(1, mode, FindInput(1), FindOutput(1), FindOutput(2),
-                         FindOutput(3), FindOutput(4), lb_cfg));
+      new hap::RGBWLight(1, FindInput(1), FindOutput(1), FindOutput(2),
+                         FindOutput(3), out_w, lb_cfg));
 
   if (rgbw_light == nullptr || !rgbw_light->Init().ok()) {
     return;

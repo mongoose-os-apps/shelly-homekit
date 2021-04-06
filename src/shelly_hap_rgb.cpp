@@ -27,14 +27,13 @@
 namespace shelly {
 namespace hap {
 
-RGBWLight::RGBWLight(int id, Mode mode, Input *in, Output *out_r, Output *out_g,
+RGBWLight::RGBWLight(int id, Input *in, Output *out_r, Output *out_g,
                      Output *out_b, Output *out_w, struct mgos_config_lb *cfg)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_LIGHTING +
                (SHELLY_HAP_IID_STEP_LIGHTING * (id - 1))),
               &kHAPServiceType_LightBulb,
               kHAPServiceDebugDescription_LightBulb),
-      mode_(mode),
       in_(in),
       out_r_(out_r),
       out_g_(out_g),
@@ -48,6 +47,16 @@ RGBWLight::~RGBWLight() {
   if (in_ != nullptr) {
     in_->RemoveHandler(handler_id_);
   }
+
+  // turn off all channels
+  out_r_->SetStatePWM(0.0f, "dtor");
+  out_g_->SetStatePWM(0.0f, "dtor");
+  out_b_->SetStatePWM(0.0f, "dtor");
+
+  if (out_w_ != nullptr) {
+    out_w_->SetStatePWM(0.0f, "dtor");
+  }
+
   SaveState();
 }
 
@@ -191,8 +200,8 @@ void RGBWLight::HSVtoRGBW(const HSV &hsv, RGBW &rgbw) const {
     }
   }
 
-  if (GetMode() == Mode::kRgbw) {
-    // apply white channel to rgb if activated
+  if (out_w_ != nullptr) {
+    // apply white channel to rgb if available
     rgbw.w = std::min(rgbw.r, std::min(rgbw.g, rgbw.b));
     rgbw.r = rgbw.r - rgbw.w;
     rgbw.g = rgbw.g - rgbw.w;
@@ -208,7 +217,7 @@ void RGBWLight::SetOutputState(const char *source) {
       ("state: %s, brightness: %i, hue: %i, saturation: %i", OnOff(cfg_->state),
        cfg_->brightness, cfg_->hue, cfg_->saturation));
 
-  RGBW rgbw{0.0f, 0.0f, 0.0f, 0.0f};
+  RGBW rgbw{0};
 
   if (cfg_->state) {
     HSV hsv;
@@ -222,7 +231,10 @@ void RGBWLight::SetOutputState(const char *source) {
   out_r_->SetStatePWM(rgbw.r, source);
   out_g_->SetStatePWM(rgbw.g, source);
   out_b_->SetStatePWM(rgbw.b, source);
-  out_w_->SetStatePWM(rgbw.w, source);
+
+  if (out_w_ != nullptr) {
+    out_w_->SetStatePWM(rgbw.w, source);
+  }
 
   if (cfg_->state && cfg_->auto_off) {
     auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
@@ -341,10 +353,6 @@ Status RGBWLight::SetState(const std::string &state_json) {
   }
 
   return Status::OK();
-}
-
-RGBWLight::Mode RGBWLight::GetMode() const {
-  return mode_;
 }
 
 void RGBWLight::AutoOffTimerCB() {
