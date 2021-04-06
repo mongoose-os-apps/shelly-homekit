@@ -1157,7 +1157,13 @@ el("revert_btn").onclick = function () {
   if(!confirm("Revert to stock firmware?")) return;
 
   el("revert_msg").style.display = "block";
-  var stockURL = `https://rojer.me/files/shelly/stock/${lastInfo.stock_model}.zip`;
+
+  var model = lastInfo.stock_model;
+  if (model == "SHRGBW2") {
+    model = `${model}-color`
+  }
+  var stockURL = `https://rojer.me/files/shelly/stock/${model}.zip`;
+
   downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
 };
 
