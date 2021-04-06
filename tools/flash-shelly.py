@@ -99,6 +99,57 @@ import time
 import traceback
 import zipfile
 
+logging.TRACE = 5
+logging.addLevelName(logging.TRACE, 'TRACE')
+logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE)
+logging.trace = functools.partial(logging.log, logging.TRACE)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.TRACE)
+log_level = {0: logging.CRITICAL,
+             1: logging.ERROR,
+             2: logging.WARNING,
+             3: logging.INFO,
+             4: logging.DEBUG,
+             5: logging.TRACE}
+
+
+def upgrade_pip():
+  logger.info("Updating pip...")
+  subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
+
+
+try:
+  import zeroconf
+except ImportError:
+  logger.info("Installing zeroconf...")
+  upgrade_pip()
+  subprocess.run([sys.executable, '-m', 'pip', 'install', 'zeroconf'])
+  import zeroconf
+try:
+  import requests
+except ImportError:
+  logger.info("Installing requests...")
+  upgrade_pip()
+  subprocess.run([sys.executable, '-m', 'pip', 'install', 'requests'])
+  import requests
+
+webserver_port = 8381
+http_server_started = False
+server = None
+thread = None
+total_devices = 0
+upgradeable_devices = 0
+flashed_devices = 0
+failed_flashed_devices = 0
+arch = platform.system()
+stock_info_url = "https://api.shelly.cloud/files/firmware"
+stock_release_info = None
+tried_to_get_remote_homekit = False
+homekit_info_url = "https://rojer.me/files/shelly/update.json"
+homekit_release_info = None
+tried_to_get_remote_stock = False
+flash_question = None
+
 
 class MFileHandler(logging.FileHandler):
   # Handler that controls the writing of the newline character
@@ -126,58 +177,6 @@ class MStreamHandler(logging.StreamHandler):
     else:
       self.terminator = '\n'
     return super().emit(record)
-
-
-logging.TRACE = 5
-logging.addLevelName(logging.TRACE, 'TRACE')
-logging.Logger.trace = functools.partialmethod(logging.Logger.log, logging.TRACE)
-logging.trace = functools.partial(logging.log, logging.TRACE)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.TRACE)
-log_level = {0: logging.CRITICAL,
-             1: logging.ERROR,
-             2: logging.WARNING,
-             3: logging.INFO,
-             4: logging.DEBUG,
-             5: logging.TRACE}
-
-webserver_port = 8381
-http_server_started = False
-server = None
-thread = None
-total_devices = 0
-upgradeable_devices = 0
-flashed_devices = 0
-failed_flashed_devices = 0
-arch = platform.system()
-stock_info_url = "https://api.shelly.cloud/files/firmware"
-stock_release_info = None
-tried_to_get_remote_homekit = False
-homekit_info_url = "https://rojer.me/files/shelly/update.json"
-homekit_release_info = None
-tried_to_get_remote_stock = False
-flash_question = None
-
-
-def upgrade_pip():
-  logger.info("Updating pip...")
-  subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
-
-
-try:
-  import zeroconf
-except ImportError:
-  logger.info("Installing zeroconf...")
-  upgrade_pip()
-  subprocess.run([sys.executable, '-m', 'pip', 'install', 'zeroconf'])
-  import zeroconf
-try:
-  import requests
-except ImportError:
-  logger.info("Installing requests...")
-  upgrade_pip()
-  subprocess.run([sys.executable, '-m', 'pip', 'install', 'requests'])
-  import requests
 
 
 class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
