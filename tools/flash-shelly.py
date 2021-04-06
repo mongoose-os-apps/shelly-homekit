@@ -1290,10 +1290,6 @@ class Main:
       logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
     if self.log_filename:
       logger.info(f"Log file created: {self.log_filename}")
-    if http_server_started and server is not None:
-      logger.trace("Shutting down webserver")
-      server.shutdown()
-      thread.join()
 
   def is_fw_type(self, fw_type):
     return fw_type.lower() in self.fw_type_filter.lower() or self.fw_type_filter == 'all'
@@ -1324,6 +1320,10 @@ class Main:
       if device_info.info:
         device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
         self.probe_device(device)
+    if http_server_started and server is not None:
+      logger.trace("Shutting down webserver")
+      server.shutdown()
+      thread.join()
 
   def device_scan(self):
     global total_devices
