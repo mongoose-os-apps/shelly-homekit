@@ -24,7 +24,7 @@ https://github.com/mongoose-os-apps/shelly-homekit/wiki
 
 usage: flash-shelly.py [-h] [--app-version] [-f] [-l] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION]
                        [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT]
-                       [--log-file LOG_FILENAME] [--reboot] [--config CONFIG] [--save-config SAVE_CONFIG] [--delete-config-file]
+                       [--log-file LOG_FILENAME] [--reboot]
                        [hosts ...]
 
 Shelly HomeKit flashing script utility
@@ -72,15 +72,10 @@ optional arguments:
   --log-file LOG_FILENAME
                         Create output log file with chosen filename.
   --reboot              Preform a reboot of the device.
-  --config CONFIG       Load options from config file.
-  --save-config SAVE_CONFIG
-                        Save current options to config file.
-  --delete-config-file  Delete config file.
 """
 
 import argparse
 import atexit
-import configparser
 import datetime
 import functools
 import http.server
@@ -609,55 +604,6 @@ class Main:
     self.zc = None
     self.listener = None
 
-  @staticmethod
-  def config(args, parser):
-    if args.config and args.save_config:
-      logger.info(f"Invalid option config or save-config not together.")
-      parser.print_help()
-      sys.exit(1)
-
-    arg_list = vars(args)
-    logger.trace(f"default args: {arg_list}")
-    config_file = '.flashrc'
-    config = configparser.ConfigParser()
-    if args.save_config:
-      logger.info(f'Saved configuration section {args.save_config} to {config_file}')
-      config.read(config_file)
-      if config.has_section(args.save_config):
-        config.remove_section(args.save_config)
-      config.add_section(args.save_config)
-      for x in arg_list:
-        if x in ('config', 'save_config', 'app_version', 'flash'):
-          continue
-        if x == 'hosts' and arg_list[x]:
-          h = re.sub(r"[\[\]',]", "", str(arg_list[x]))
-          config.set(args.save_config, x, str(h))
-        else:
-          config.set(args.save_config, x, str(arg_list[x]))
-      with open(config_file, "w") as file_object:
-        config.write(file_object)
-      sys.exit(0)
-    elif os.path.exists(config_file) and args.config:
-      config.read(config_file)
-      logger.debug(f"sections: {config.sections()}")
-      if not config.has_section(args.config):
-        logger.info(f"Configuration '{args.config}' not found")
-        sys.exit(1)
-      logger.info(f'Reading configuration section {args.config} from {config_file}')
-      parser.set_defaults(list=config.getboolean(args.config, 'list'), mode=config.get(args.config, 'mode'), info_level=config.getint(args.config, 'info_level'),
-                          fw_type_filter=config.get(args.config, 'fw_type_filter'), model_type_filter=config.get(args.config, 'model_type_filter'),
-                          device_name_filter=config.get(args.config, 'device_name_filter'), do_all=config.getboolean(args.config, 'do_all'), quiet_run=config.getboolean(args.config, 'quiet_run'),
-                          exclude=config.get(args.config, 'exclude'), dry_run=config.getboolean(args.config, 'dry_run'), silent_run=config.getboolean(args.config, 'silent_run'),
-                          version=config.get(args.config, 'version'), variant=config.get(args.config, 'variant'), local_file=config.get(args.config, 'local_file'),
-                          hap_setup_code=config.get(args.config, 'hap_setup_code'), network_type=config.get(args.config, 'network_type'), ipv4_ip=config.get(args.config, 'ipv4_ip'),
-                          ipv4_gw=config.get(args.config, 'ipv4_gw'), ipv4_mask=config.get(args.config, 'ipv4_mask'), ipv4_dns=config.get(args.config, 'ipv4_dns'),
-                          verbose=config.getint(args.config, 'verbose'), timeout=config.get(args.config, 'timeout'), log_filename=config.get(args.config, 'log_filename'),
-                          reboot=config.getboolean(args.config, 'reboot'), hosts=config.get(args.config, 'hosts').split())
-      args = parser.parse_args()
-      arg_list = vars(args)
-      logger.trace(f"Loaded config: {arg_list}")
-      return args
-
   def run_app(self):
     parser = argparse.ArgumentParser(prog='flash-shelly.py', fromfile_prefix_chars='@', description='Shelly HomeKit flashing script utility')
     parser.add_argument('--app-version', action="store_true", help="Shows app version and exists.")
@@ -686,8 +632,6 @@ class Main:
     parser.add_argument('--timeout', type=int, default=20, help="Scan: Time of seconds to wait after last detected device before quitting.  Manual: Time of seconds to keeping to connect.")
     parser.add_argument('--log-file', dest="log_filename", default='', help="Create output log file with chosen filename.")
     parser.add_argument('--reboot', action="store_true", help="Preform a reboot of the device.")
-    parser.add_argument('--config', default=False, help="Load options from config file.")
-    parser.add_argument('--save-config', default=False, help="Save current options to config file.")
     parser.add_argument('hosts', type=str, nargs='*', default='')
     args = parser.parse_args()
 
@@ -699,9 +643,6 @@ class Main:
     if args.app_version:
       logger.info(f"Version: {app_ver}")
       sys.exit(0)
-
-    if args.config:
-      args = self.config(args, parser)
 
     if args.flash:
       action = 'flash'
