@@ -258,7 +258,8 @@ function rgbSetConfig(c) {
     name: name,
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
-    in_inverted: el(c, "in_inverted").checked
+    in_inverted: el(c, "in_inverted").checked,
+    transition_time: parseInt(el(c, "transition_time").value)
   };
   if (autoOff) {
     cfg.auto_off_delay = dateStringToSeconds(autoOffDelay);
@@ -589,6 +590,7 @@ function updateComponent(cd) {
         slideIfNotModified(el(c, "hue"), cd.hue);
         slideIfNotModified(el(c, "saturation"), cd.saturation);
         slideIfNotModified(el(c, "brightness"), cd.brightness);
+        setValueIfNotModified(el(c, "transition_time"), cd.transition_time);
         setPreviewColor(c);
       }
       break;

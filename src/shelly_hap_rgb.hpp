@@ -53,19 +53,33 @@ class RGBWLight : public Component, public mgos::hap::Service {
   Type type() const override;
   std::string name() const override;
   Status Init() override;
-  void SetOutputState(const char *source);
-  void SaveState();
-  void HSVtoRGBW(const HSV &hsv, RGBW &rgbw) const;
+
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) override;
   Status SetState(const std::string &state_json) override;
 
+  void TurnOn(const std::string &source);
+  void TurnOff(const std::string &source);
+  void Toggle(const std::string &source);
+  bool IsOn() const;
+  bool IsOff() const;
+  void SetHsv(int h, int s, int v, const std::string &source);
+  bool IsAutoOffEnabled() const;
+
  protected:
   void InputEventHandler(Input::Event ev, bool state);
 
   void AutoOffTimerCB();
+  void TransitionTimerCB();
+
+  void UpdateOnOff(bool on, const std::string &source);
+  void HSVtoRGBW(const HSV &hsv, RGBW &rgbw) const;
+  void StartTransition(int hue, int saturation, int brightness);
+  void SaveState();
+  void ResetAutoOff();
+  void DisableAutoOff();
 
   Input *const in_;
   Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
@@ -75,7 +89,12 @@ class RGBWLight : public Component, public mgos::hap::Service {
   std::vector<mgos::hap::Characteristic *> state_notify_chars_;
 
   mgos::Timer auto_off_timer_;
-  bool dirty_ = false;
+
+  mgos::Timer transition_timer_;
+  int64_t transition_start_;
+  RGBW rgbw_start_{};
+  RGBW rgbw_now_{};
+  RGBW rgbw_end_{};
 
   HAPError HandleOnRead(HAPAccessoryServerRef *server,
                         const HAPBoolCharacteristicReadRequest *request,
