@@ -361,7 +361,7 @@ class Device:
     return uptime
 
   @staticmethod
-  def shelly_model(stock_model):
+  def shelly_model(stock_fw_model):
     options = {'SHPLG-1': ['ShellyPlug', 'shelly-plug'],
                'SHPLG-S': ['ShellyPlugS', 'shelly-plug-s'],
                'SHPLG-U1': ['ShellyPlugUS', 'shelly-plug-u1'],
@@ -400,7 +400,7 @@ class Device:
                'SHBTN-2': ['ShellyButton2', 'wifi-button2'],
                'SHIX3-1': ['ShellyI3', 'ix3']
                }
-    return options.get(stock_model, [stock_model, stock_model])
+    return options.get(stock_fw_model, [stock_fw_model, stock_fw_model])
 
   def parse_local_file(self):
     if os.path.exists(self.local_file) and self.local_file.endswith('.zip'):
@@ -431,7 +431,7 @@ class Device:
         self.download_url = 'local'
       else:
         self.download_url = f'http://{local_ip}:{webserver_port}/{self.local_file}'
-      if self.is_stock() and self.info.get('stock_model') == 'SHRGBW2' and self.info.get('color_mode'):
+      if self.is_stock() and self.info.get('stock_fw_model') == 'SHRGBW2' and self.info.get('color_mode'):
         m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
       else:
         m_model = self.info.get('app')
@@ -468,11 +468,11 @@ class Device:
 
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
-    stock_model = self.info.get('stock_model')
+    stock_fw_model = self.info.get('stock_fw_model')
     color_mode = self.info.get('color_mode')
     logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if not self.version:
-      stock_model_info = release_info.get('data', {}).get(stock_model)
+      stock_model_info = release_info.get('data', {}).get(stock_fw_model)
       if self.variant == 'beta':
         self.flash_fw_version = self.parse_stock_version(stock_model_info.get('beta_ver', '0.0.0'))
         self.download_url = stock_model_info.get('beta_url')
@@ -481,8 +481,8 @@ class Device:
         self.download_url = stock_model_info.get('url')
     else:
       self.flash_fw_version = self.version
-      self.download_url = f'http://archive.shelly-tools.de/version/v{self.version}/{stock_model}.zip'
-    if stock_model == 'SHRGBW2':
+      self.download_url = f'http://archive.shelly-tools.de/version/v{self.version}/{stock_fw_model}.zip'
+    if stock_fw_model == 'SHRGBW2':
       if self.download_url and not self.version and color_mode and not self.local_file:
         self.download_url = self.download_url.replace('.zip', f'-{color_mode}.zip')
 
@@ -493,8 +493,10 @@ class HomeKitDevice(Device):
       return False
     self.fw_type_str = 'HomeKit'
     self.fw_version = self.info.get('version', '0.0.0')
-    self.info['color_mode'] = 'color'
     self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
+    if self.info.get('stock_fw_model') is None:
+      self.info['stock_fw_model'] = self.info.get('stock_model')
+    self.info['color_mode'] = 'color' if self.info.get('stock_fw_model').startswith('SHRGBW2') else None
     return True
 
   @staticmethod
@@ -536,10 +538,10 @@ class StockDevice(Device):
       return False
     self.fw_type_str = 'Stock'
     self.fw_version = self.parse_stock_version(self.info.get('fw', '0.0.0'))  # current firmware version
-    stock_model = self.info.get('device', {}).get('type', '')
-    self.info['stock_model'] = stock_model
-    self.info['model'] = self.shelly_model(stock_model)[0]
-    self.info['app'] = self.shelly_model(stock_model)[1]
+    stock_fw_model = self.info.get('device', {}).get('type', '')
+    self.info['stock_fw_model'] = stock_fw_model
+    self.info['model'] = self.shelly_model(stock_fw_model)[0]
+    self.info['app'] = self.shelly_model(stock_fw_model)[1]
     self.info['device_id'] = self.info.get('mqtt', {}).get('id', self.friendly_host)
     self.info['color_mode'] = self.info.get('mode')
     self.info['wifi_ssid'] = self.info.get('status', {}).get('wifi_sta', {}).get('ssid')
@@ -1001,7 +1003,7 @@ class Main:
     friendly_host = device_info.friendly_host
     device_id = device_info.info.get('device_id')
     model = device_info.info.get('model')
-    stock_model = device_info.info.get('stock_model')
+    stock_fw_model = device_info.info.get('stock_fw_model')
     color_mode = device_info.info.get('color_mode')
     current_fw_version = device_info.fw_version
     current_fw_type = device_info.info.get('fw_type')
@@ -1024,7 +1026,7 @@ class Main:
 
     logger.debug(f"flash mode: {self.flash_mode}")
     logger.debug(f"requires_upgrade: {requires_upgrade}")
-    logger.debug(f"stock_model: {stock_model}")
+    logger.debug(f"stock_fw_model: {stock_fw_model}")
     logger.debug(f"color_mode: {color_mode}")
     logger.debug(f"current_fw_version: {current_fw_type_str} {current_fw_version}")
     logger.debug(f"flash_fw_version: {flash_fw_type_str} {flash_fw_version}")
