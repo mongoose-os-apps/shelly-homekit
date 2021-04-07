@@ -389,6 +389,8 @@ class Device:
                'SHBLB-1': ['ShellyBulb', 'bulb'],
                'SHCB-1': ['ShellyColorBulb', 'color-bulb'],
                'SHRGBW2': ['ShellyRGBW2', 'rgbw2'],
+               'SHRGBW2-color': ['ShellyRGBW2', 'rgbw2-color'],
+               'SHRGBW2-white': ['ShellyRGBW2', 'rgbw2-white'],
                'SHRGBWW-01': ['ShellyRGBWW', 'rgbww'],
                'SH2LED-1': ['ShellyLED', 'led1'],
                'SHDM-1': ['ShellyDimmer', 'dimmer'],
