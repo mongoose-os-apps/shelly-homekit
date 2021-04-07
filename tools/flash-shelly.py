@@ -1210,24 +1210,20 @@ class Main:
         if thread is None:
           thread = threading.Thread(None, server.run)
           thread.start()
-      if self.local_file and device_info.parse_local_file():
-        if device_info.is_stock():
-          if device_info.is_homekit():
-            if not stock_release_info and not tried_to_get_remote_stock:
-              stock_release_info = self.get_release_info('stock')
-              tried_to_get_remote_stock = True
-            if stock_release_info:
-              device_info.update_stock(stock_release_info)
-              if device_info.fw_version == '0.0.0' or self.is_newer(device_info.flash_fw_version, device_info.fw_version):
-                requires_upgrade = True
-                got_info = True
-              else:
-                device_info.parse_local_file()
-                got_info = True
-          elif device_info.is_stock():
-            got_info = True
-        else:
+      if self.local_file:
+        if device_info.is_homekit() and device_info.parse_local_file():
           got_info = True
+        else:
+          if not stock_release_info and not tried_to_get_remote_stock:
+            stock_release_info = self.get_release_info('stock')
+            tried_to_get_remote_stock = True
+          if stock_release_info:
+            device_info.update_stock(stock_release_info)
+            if device_info.fw_version == '0.0.0' or self.is_newer(device_info.flash_fw_version, device_info.fw_version):
+              requires_upgrade = True
+              got_info = True
+            elif device_info.parse_local_file():
+              got_info = True
       else:
         if device_info.is_stock() and self.flash_mode == 'homekit':
           if not stock_release_info and not tried_to_get_remote_stock:
