@@ -496,7 +496,7 @@ class HomeKitDevice(Device):
     self.fw_type_str = 'HomeKit'
     self.fw_version = self.info.get('version', '0.0.0')
     self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
-    if self.info.get('stock_fw_model') is None:
+    if self.info.get('stock_fw_model') is None: # TODO REMOVE AFTER MAY 2021
       self.info['stock_fw_model'] = self.info.get('stock_model')
     self.info['color_mode'] = 'color' if self.info.get('stock_fw_model').startswith('SHRGBW2') else None
     return True
@@ -718,7 +718,7 @@ class Main:
     if args.verbose >= 4:
       args.info_level = 3
     if args.log_filename:
-      fh = MFileHandler(args.log_filename, mode='w', encoding='utf-8')
+      fh = MFileHandler(args.log_filename, mode='w', encoding='UTF-8')
       fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
       fh.setLevel(log_level[args.verbose])
       logger.addHandler(fh)
