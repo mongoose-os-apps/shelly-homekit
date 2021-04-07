@@ -172,7 +172,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                &debug_en);
     mgos::ScopedCPtr name_owner(name_c);
 
-    if (sys_mode == 0 || sys_mode == 1 || sys_mode == 2) {
+    if (sys_mode >= 0 && sys_mode <= 4) {
       if (sys_mode != mgos_sys_config_get_shelly_mode()) {
         mgos_sys_config_set_shelly_mode(sys_mode);
         restart_required = true;

@@ -42,16 +42,24 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   auto *lb_cfg = (struct mgos_config_lb *) mgos_sys_config_get_lb1();
-  std::unique_ptr<hap::RGB> rgb(new hap::RGB(
-      1, FindInput(1), FindOutput(1), FindOutput(2), FindOutput(3), lb_cfg));
-  if (rgb == nullptr || !rgb->Init().ok()) {
+
+  // if we are in mode 4 (RGBW) we have a white channel
+  Output *const out_w =
+      mgos_sys_config_get_shelly_mode() == 4 ? FindOutput(4) : nullptr;
+
+  std::unique_ptr<hap::RGBWLight> rgbw_light(
+      new hap::RGBWLight(1, FindInput(1), FindOutput(1), FindOutput(2),
+                         FindOutput(3), out_w, lb_cfg));
+
+  if (rgbw_light == nullptr || !rgbw_light->Init().ok()) {
     return;
   }
-  rgb->set_primary(true);
+
+  rgbw_light->set_primary(true);
   mgos::hap::Accessory *pri_acc = (*accs)[0].get();
   pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
-  pri_acc->AddService(rgb.get());
-  comps->emplace_back(std::move(rgb));
+  pri_acc->AddService(rgbw_light.get());
+  comps->emplace_back(std::move(rgbw_light));
 
   if (lb_cfg->in_mode == 3) {
     hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);

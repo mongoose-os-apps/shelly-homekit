@@ -31,7 +31,7 @@ config_schema:
   - ["wifi.sta_all_chan_scan", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
@@ -456,6 +456,7 @@ conds:
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
+        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW"
         - ["device.id", "shellyrgbw2-??????"]
         - ["shelly.name", "shellyrgbw2-??????"]
         - ["wifi.ap.ssid", "shellyrgbw2-??????"]
