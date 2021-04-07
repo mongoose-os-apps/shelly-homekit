@@ -718,6 +718,8 @@ class Main:
     if args.verbose >= 4:
       args.info_level = 3
     if args.log_filename:
+      args.verbose = 5
+      args.info_level = 3
       fh = MFileHandler(args.log_filename, mode='w', encoding='UTF-8')
       fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
       fh.setLevel(log_level[args.verbose])
