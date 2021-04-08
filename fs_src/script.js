@@ -484,7 +484,7 @@ function findOrAddContainer(cd) {
         mosSetConfig(c);
       };
       break;
-    case 11: // RGB.
+    case 11: // RGB
       c = el("rgb_template").cloneNode(true);
       c.id = elId;
       el(c, "state").onchange = function () {
@@ -706,7 +706,6 @@ function updateElement(key, value, info) {
       el("uptime").innerText = durationStr(value);
       break;
     case "model":
-      console.log(value)
       if (value == "ShellyRGBW2") {
         el("sys_mode_container").style.display = "block";
         if (el("sys_mode_0")) el("sys_mode_0").remove();
@@ -714,6 +713,7 @@ function updateElement(key, value, info) {
         if (el("sys_mode_3")) el("sys_mode_3").remove();
         if (el("sys_mode_4")) el("sys_mode_4").remove();
       }
+      el(key).innerHTML = value;
       break;
     case "device_id":
     case "version":
