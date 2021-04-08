@@ -21,7 +21,7 @@ Summary of supported devices and features
 |Power measurement|✗|✓|-|✓|✓|✗|✓|✗|-|
 |RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✓|
 
-_✓ supported, - possible but not supported yet, ✗ not possible_
+_✓ supported, - possible but not supported yet, ✗ not possible_  
 _Switch & Co. includes lock, outlet, valve_
 
 Features that are not yet supported:
