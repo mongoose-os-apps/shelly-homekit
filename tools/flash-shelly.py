@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Copyright (c) 2021 Andrew Blackburn & Deomid "rojer" Ryabkov
+Copyright (c) 2021 Andrew Blackburn, Deomid "rojer" Ryabkov & Timo Schilling
 All rights reserved
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -491,7 +491,7 @@ class HomeKitDevice(Device):
     self.fw_type_str = 'HomeKit'
     self.fw_version = self.info.get('version', '0.0.0')
     self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
-    if self.info.get('stock_fw_model') is None: # TODO REMOVE AFTER MAY 2021
+    if self.info.get('stock_fw_model') is None:  # TODO REMOVE AFTER MAY 2021
       self.info['stock_fw_model'] = self.info.get('stock_model')
     self.info['color_mode'] = 'color' if self.info.get('stock_fw_model').startswith('SHRGBW2') else None
     return True
