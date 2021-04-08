@@ -9,35 +9,26 @@ Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute 
 
 Reverting to stock firmware is also possible [see here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#reverting-to-stock-firmware).
 
-Summary of supported devices and features:
- * [Shelly 1](https://shelly.cloud/products/shelly-1-smart-home-automation-relay/), [Shelly 1PM](https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/)
-   * Switch/lock/outlet/valve
-   * Stateless input
-   * Garage door opener mode
- * [Shelly 1L](https://shelly.cloud/products/shelly-1l-single-wire-smart-home-automation-relay/)
-   * Switch/lock/outlet/valve
-   * Stateless input
- * [Shelly Plug](https://shelly.cloud/products/shelly-plug-smart-home-automation-device/), [Shelly Plug S](https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/)
-   * Switch/lock/outlet/valve
- * Shelly 2
-   * Switch/lock/outlet/valve
-   * Stateless input
-   * Garage door opener mode
- * [Shelly 2.5](https://shelly.cloud/products/shelly-25-smart-home-automation-relay/)
-   * Switch/lock/outlet/valve
-   * Stateless input
-   * Garage door opener mode
-   * Roller shutter mode
-   * Power measurement
- * [Shelly i3](https://shelly.cloud/products/shelly-i3-smart-home-automation-device/)
-   * Stateless input
- * [Shelly RGBW2](https://shelly.cloud/products/shelly-rgbw2-smart-home-automation-led-controller/)
-   * RGB/RGBW mode only
+Summary of supported devices and features
+
+||[1]|[1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[RGBW2]|
+|-|-|-|-|----|-----|-|---|--|-----|
+|Switch & Co.|✓|✓|✓|✓|✓|✓|✓|✗|✗|
+|Stateless Input|✓|✓|✓|✗|✗|✓|✓|✓|✓|
+|Sensors|✓|✓|✓|✗|✗|✓|✓|✓|✓|
+|Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✗|
+|Roller shutter mode|✗|✗|✗|✗|✗|✗|✓|✗|✗|
+|Power measurement|✗|✓|-|✓|✓|✗|✓|✗|-|
+|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✓|
+
+_✓ supported, - possible but not supported yet, ✗ not possible_  
+_Switch & Co. includes lock, outlet, valve_
 
 Features that are not yet supported:
- * Shelly 1L, 2: power measurement
  * Cloud connections: no Shelly Cloud, no MQTT
  * Remote actions (web hooks)
+ * Valve with timer support
+ * Temprature addon
 
 ## Quick Start
 
@@ -96,3 +87,12 @@ See [here](AUTHORS.md).
 ## License
 
 This firmware is free software and is distributed under [Apache 2.0 license](LICENSE).
+
+[1]: https://shelly.cloud/products/shelly-1-smart-home-automation-relay/
+[1PM]: https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/
+[1L]: https://shelly.cloud/products/shelly-1l-single-wire-smart-home-automation-relay/
+[Plug]: https://shelly.cloud/products/shelly-plug-smart-home-automation-device/
+[PlugS]: https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/
+[2.5]: https://shelly.cloud/products/shelly-25-smart-home-automation-relay/
+[i3]: https://shelly.cloud/products/shelly-i3-smart-home-automation-device/
+[RGBW2]: https://shelly.cloud/products/shelly-rgbw2-smart-home-automation-led-controller/
