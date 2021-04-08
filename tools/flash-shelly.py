@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Copyright (c) 2021 Andrew Blackburn, Deomid "rojer" Ryabkov & Timo Schilling
+Copyright (c) 2021 Shelly-HomeKit Contributors
 All rights reserved
 
 Licensed under the Apache License, Version 2.0 (the "License");
