@@ -1228,7 +1228,10 @@ class Main:
   def exit_app(self):
     logger.info(f"")
     if self.run_action == 'flash':
-      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices} Failed: {failed_flashed_devices}{NC}")
+      if failed_flashed_devices > 0:
+        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices}{NC} {RED}Failed: {failed_flashed_devices}{NC}")
+      else:
+        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices}{NC}")
     else:
       logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
     if self.log_filename:
