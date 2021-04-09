@@ -145,6 +145,8 @@ homekit_info_url = "https://rojer.me/files/shelly/update.json"
 homekit_release_info = None
 tried_to_get_remote_stock = False
 flash_question = None
+requires_upgrade = None
+requires_mode_change = None
 
 WHITE = '\033[1m'
 RED = '\033[1;91m'
@@ -243,6 +245,7 @@ class Device:
     self.flash_fw_version = '0.0.0'
     self.flash_fw_type_str = None
     self.download_url = None
+    self.already_processed = False
     self.get_device_info(False, no_error_message)
 
   def is_host_reachable(self, host, no_error_message=False):
@@ -469,6 +472,8 @@ class Device:
     color_mode = self.info.get('color_mode')
     logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if not self.version:
+      if stock_fw_model == 'SHRGBW2-color':  # we need to use real stock model here
+        stock_fw_model = 'SHRGBW2'
       stock_model_info = release_info.get('data', {}).get(stock_fw_model)
       if self.variant == 'beta':
         self.flash_fw_version = self.parse_stock_version(stock_model_info.get('beta_ver', '0.0.0'))
@@ -510,13 +515,13 @@ class HomeKitDevice(Device):
     if self.local_file:
       logger.debug(f"Local file: {self.local_file}")
       my_file = open(self.local_file, 'rb')
-      logger.info("Now Flashing...")
+      logger.info(f"Now Flashing {self.flash_fw_type_str}: {self.flash_fw_version}")
       files = {'file': ('shelly-flash.zip', my_file)}
     else:
       logger.info("Downloading Firmware...")
       logger.debug(f"Remote Download URL: {self.download_url}")
       my_file = requests.get(self.download_url)
-      logger.info("Now Flashing...")
+      logger.info(f"Now Flashing {self.flash_fw_type_str}: {self.flash_fw_version}")
       files = {'file': ('shelly-flash.zip', my_file.content)}
     logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
     response = requests.post(f'http://{self.wifi_ip}/update', files=files)
@@ -547,8 +552,14 @@ class StockDevice(Device):
     self.info['battery'] = self.info.get('status', {}).get('bat', {}).get('value')
     return True
 
+  def get_color_mode(self, no_error_message=False):  # used when flashing between firmware versions.
+    if not self.get_device_info(True, no_error_message):
+      return None
+    logger.trace(f"Current color mode: {self.info.get('mode')}")
+    return self.info.get('mode')
+
   def flash_firmware(self):
-    logger.info("Now Flashing...")
+    logger.info(f"Now Flashing {self.flash_fw_type_str}: {self.flash_fw_version}")
     response = None
     download_url = self.download_url.replace('https', 'http')
     if self.local_file:
@@ -572,6 +583,12 @@ class StockDevice(Device):
     logger.info(f"Rebooting...")
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}")
     response = requests.get(url=f'http://{self.wifi_ip}/reboot')
+    logger.trace(response.text)
+
+  def perform_mode_change(self, mode_color):
+    logger.info("Performing mode change...")
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}")
+    response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}')
     logger.trace(response.text)
 
 
@@ -758,7 +775,7 @@ class Main:
 
     if message:
       logger.info(message)
-      parser.print_help()
+      parser.logger.trace_help()
       sys.exit(1)
 
     atexit.register(main.exit_app)
@@ -772,7 +789,7 @@ class Main:
       logger.info(f'flash-shelly version: {app_ver}')
       logger.info("Try to update your script, maybe the bug is already fixed!")
       exc_type, exc_value, exc_traceback = sys.exc_info()
-      traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
+      traceback.logger.trace_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
       logger.info(f'{NC}')
     except KeyboardInterrupt:
       main.stop_scan()
@@ -886,12 +903,14 @@ class Main:
     current_uptime = device_info.get_uptime(True)
     n = 1
     if not reboot_only:
-      while current_uptime > before_reboot_uptime and n < 60 or current_version is None:
+      while current_uptime > before_reboot_uptime and n < 90 or current_version is None:
+        logger.debug(f"current_uptime: {current_uptime}")
+        logger.debug(f"before_reboot_uptime: {before_reboot_uptime}")
         logger.info(f".[!n]")
-        if n == 20:
+        if n == 30:
           logger.info("")
           logger.info(f"still waiting for {device_info.friendly_host} to reboot[!n]")
-        elif n == 40:
+        elif n == 60:
           logger.info("")
           logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
         time.sleep(1)  # wait 1 second before retrying.
@@ -914,15 +933,16 @@ class Main:
     reboot_check = self.parse_version(self.wait_for_reboot(device_info, uptime))
     flash_fw = self.parse_version(device_info.flash_fw_version)
     if reboot_check == flash_fw:
-      global flashed_devices
-      flashed_devices += 1
+      global flashed_devices, requires_upgrade
+      if device_info.already_processed is False:
+        flashed_devices += 1
+      requires_upgrade = 'Done'
+      device_info.already_processed = True
       logger.critical(f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
     else:
       if reboot_check == '0.0.0':
         logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
       else:
-        global failed_flashed_devices
-        failed_flashed_devices += 1
         logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_version}{NC}")
       logger.debug(f"Current: {reboot_check}")
       logger.debug(f"flash_fw_version: {flash_fw}")
@@ -933,14 +953,29 @@ class Main:
     self.wait_for_reboot(device_info, reboot_only=True)
     logger.info(f"Device has rebooted...")
 
-  def parse_info(self, device_info, requires_upgrade):
+  def mode_change(self, device_info, mode_color):
+    logger.debug(f"{PURPLE}[Color Mode Change] change from {device_info.info.get('color_mode')} to {mode_color}{NC}")
+    uptime = device_info.get_uptime(True)
+    device_info.perform_mode_change(mode_color)
+    self.wait_for_reboot(device_info, uptime)
+    current_color_mode = device_info.get_color_mode()
+    logger.debug(f"mode_color: {mode_color}")
+    if current_color_mode == mode_color:
+      device_info.already_processed = True
+      logger.critical(f"{GREEN}Successfully changed {device_info.friendly_host} to mode: {current_color_mode}{NC}")
+      global requires_mode_change
+      requires_mode_change = 'Done'
+
+  def parse_info(self, device_info):
     logger.debug(f"")
     logger.debug(f"{PURPLE}[Parse Info]{NC}")
 
     global total_devices, flash_question
-    total_devices += 1
+    if device_info.already_processed is False:
+      total_devices += 1
 
     perform_flash = False
+    do_mode_change = False
     flash_question = None
     download_url_request = False
     host = device_info.host
@@ -971,6 +1006,7 @@ class Main:
 
     logger.debug(f"flash mode: {self.flash_mode}")
     logger.debug(f"requires_upgrade: {requires_upgrade}")
+    logger.debug(f"requires_mode_change: {requires_mode_change}")
     logger.debug(f"stock_fw_model: {stock_fw_model}")
     logger.debug(f"color_mode: {color_mode}")
     logger.debug(f"current_fw_version: {current_fw_type_str} {current_fw_version}")
@@ -1036,74 +1072,118 @@ class Main:
 
     if download_url and (force_flash or requires_upgrade is True or (current_fw_type != self.flash_mode) or (current_fw_type == self.flash_mode and flash_fw_newer)):
       global upgradeable_devices
-      upgradeable_devices += 1
+      if device_info.already_processed is False:
+        upgradeable_devices += 1
 
     if self.run_action == 'flash':
+      logger.trace('TEST A1')
       action_message = "Would have been"
       keyword = None
       if download_url:
+        logger.trace('TEST A2')
         if self.exclude and friendly_host in self.exclude:
+          logger.trace('TEST A3')
           logger.info("Skipping as device has been excluded...")
           logger.info("")
           return 0
         elif requires_upgrade is True:
+          logger.trace('TEST A4')
           perform_flash = True
           if self.flash_mode == 'stock':
+            logger.trace('TEST A5')
             keyword = f"upgraded to version {flash_fw_version}"
           elif self.flash_mode == 'homekit':
+            logger.trace('TEST A6')
             action_message = "This device needs to be"
             keyword = "upgraded to latest stock firmware version, before you can flash to HomeKit"
+        elif requires_mode_change is True:
+          logger.trace('TEST A7')
+          do_mode_change = True
+          action_message = "This device needs to be"
+          keyword = "changed to colour mode in stock firmware, before you can flash to HomeKit"
         elif force_flash:
+          logger.trace('TEST A8')
           perform_flash = True
           keyword = f"flashed to {flash_fw_type_str} version {flash_fw_version}"
         elif current_fw_type != self.flash_mode:
+          logger.trace('TEST A9')
           perform_flash = True
           keyword = f"converted to {flash_fw_type_str} firmware"
         elif current_fw_type == self.flash_mode and flash_fw_newer:
+          logger.trace('TEST A10')
           perform_flash = True
           keyword = f"upgraded from {current_fw_version} to version {flash_fw_version}"
       elif not download_url:
+        logger.trace('TEST A11')
         if force_version:
+          logger.trace('TEST A12')
           keyword = f"Version {force_version} is not available..."
         elif device_info.local_file:
+          logger.trace('TEST A13')
           keyword = "Incorrect Zip File for device..."
         if keyword is not None and not self.quiet_run:
+          logger.trace('TEST A14')
           logger.info(f"{keyword}")
         return 0
 
       logger.debug(f"perform_flash: {perform_flash}")
-      if perform_flash is True and self.dry_run is False and self.silent_run is False:
+      logger.debug(f"do_mode_change: {do_mode_change}")
+      logger.trace('TEST A15')
+      if (perform_flash is True or do_mode_change is True) and self.dry_run is False and self.silent_run is False:
+        logger.trace('TEST A16')
         if requires_upgrade is True:
+          logger.trace('TEST A17')
           flash_message = f"{action_message} {keyword}"
-        elif requires_upgrade == 'Done':
+        elif requires_upgrade == 'Done' and requires_mode_change is False:
+          logger.trace('TEST A18')
           flash_message = f"Do you wish to continue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
+        elif requires_mode_change is True:
+          logger.trace('TEST A19')
+          flash_message = f"{action_message} {keyword}"
         else:
+          logger.trace('TEST A20')
           flash_message = f"Do you wish to flash {friendly_host} to {flash_fw_type_str} firmware version {flash_fw_version}"
+        logger.trace('TEST A21')
         if flash_question is None and input(f"{flash_message} (y/n) ? ") in ('y', 'Y'):
+          logger.trace('TEST A22')
           flash_question = True
         else:
+          logger.trace('TEST A23')
           flash_question = False
           logger.info("Skipping Flash...")
-      elif perform_flash is True and self.dry_run is False and self.silent_run is True:
+      elif (perform_flash is True or do_mode_change is True) and self.dry_run is False and self.silent_run is True:
+        logger.trace('TEST A24')
         flash_question = True
-      elif perform_flash is True and self.dry_run is True:
+      elif (perform_flash is True or do_mode_change is True) and self.dry_run is True:
+        logger.trace('TEST A25')
         logger.info(f"{action_message} {keyword}...")
+
+      logger.trace('TEST A26')
+      logger.debug(f"flash_question: {flash_question}")
+      logger.trace(f"do_mode_change: {do_mode_change}")
       if flash_question is True:
-        self.write_flash(device_info)
-      if device_info.is_homekit() and self.hap_setup_code:
-        self.write_hap_setup_code(device_info.wifi_ip)
-      if self.network_type:
-        if self.network_type == 'static':
-          action_message = f"Do you wish to set your IP address to {self.ipv4_ip}"
+        logger.trace('TEST A27')
+        if do_mode_change is True:
+          logger.trace('TEST A28')
+          self.mode_change(device_info, 'color')
         else:
-          action_message = f"Do you wish to set your IP address to use DHCP"
-        if input(f"{action_message} (y/n) ? ") in ('y', 'Y'):
-          set_ip = True
-        else:
-          set_ip = False
-        if set_ip or self.silent_run:
-          self.write_network_type(device_info)
-    elif self.run_action == 'reboot':
+          logger.trace('TEST A29')
+          self.write_flash(device_info)
+
+    if device_info.is_homekit() and self.hap_setup_code:
+      self.write_hap_setup_code(device_info.wifi_ip)
+    if self.network_type:
+      if self.network_type == 'static':
+        action_message = f"Do you wish to set your IP address to {self.ipv4_ip}"
+      else:
+        action_message = f"Do you wish to set your IP address to use DHCP"
+      if input(f"{action_message} (y/n) ? ") in ('y', 'Y'):
+        set_ip = True
+      else:
+        set_ip = False
+      if set_ip or self.silent_run:
+        self.write_network_type(device_info)
+    if self.run_action == 'reboot':
       reboot = False
       if self.dry_run is False and self.silent_run is False:
         if input(f"Do you wish to reboot {friendly_host} (y/n) ? ") in ('y', 'Y'):
@@ -1120,8 +1200,9 @@ class Main:
     logger.debug(f"{PURPLE}[Probe Device] {device.get('host')}{NC}")
     logger.trace(f"device_info: {json.dumps(device, indent=2)}")
 
-    global stock_release_info, homekit_release_info, tried_to_get_remote_homekit, tried_to_get_remote_stock, http_server_started, webserver_port, server, thread, flash_question
+    global stock_release_info, homekit_release_info, tried_to_get_remote_homekit, tried_to_get_remote_stock, http_server_started, webserver_port, server, thread, flash_question, requires_upgrade, requires_mode_change
     requires_upgrade = False
+    requires_mode_change = False
     got_info = False
 
     if self.mode == 'keep':
@@ -1162,6 +1243,8 @@ class Main:
             tried_to_get_remote_stock = True
           if stock_release_info:
             device_info.update_stock(stock_release_info)
+            if device_info.info.get('color_mode') == 'white' and self.flash_mode == 'homekit':
+              requires_mode_change = True
             if device_info.fw_version == '0.0.0' or self.is_newer(device_info.flash_fw_version, device_info.fw_version):
               requires_upgrade = True
               got_info = True
@@ -1177,6 +1260,8 @@ class Main:
             tried_to_get_remote_homekit = True
           if stock_release_info and homekit_release_info:
             device_info.update_stock(stock_release_info)
+            if device_info.info.get('color_mode') == 'white' and self.flash_mode == 'homekit':
+              requires_mode_change = True
             if device_info.fw_version == '0.0.0' or self.is_newer(device_info.flash_fw_version, device_info.fw_version):
               requires_upgrade = True
               got_info = True
@@ -1204,17 +1289,47 @@ class Main:
         logger.error(f"please update via the device webUI.")
         logger.error("")
       elif got_info:
-        self.parse_info(device_info, requires_upgrade)
-        if requires_upgrade and self.run_action == 'flash' and flash_question is True:
-          time.sleep(10)  # need to allow time for previous flash reboot to fully boot.
-          requires_upgrade = 'Done'
+        logger.trace('TEST 1')
+        logger.trace(f"requires_upgrade: {requires_upgrade}")
+        logger.trace(f"requires_mode_change: {requires_mode_change}")
+        self.parse_info(device_info)
+        logger.trace('TEST 2')
+        logger.trace(f"requires_upgrade: {requires_upgrade}")
+        logger.trace(f"requires_mode_change: {requires_mode_change}")
+        logger.trace(f"flash_question: {flash_question}")
+        logger.trace(f"self.run_action: {self.run_action}")
+        if self.run_action == 'flash' and (requires_upgrade in ('Done', True) or requires_mode_change in ('Done', True)) and flash_question is True:
+          logger.trace('TEST 3')
+          if requires_mode_change is True:
+            logger.trace('TEST 4')
+            logger.info(f"Waiting for device...")
+            if device_info.info.get('stock_fw_model') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
+              time.sleep(30)  # need to allow time for previous flash reboot to fully boot, SHRGBW2 needs extra time due to firmware self updating.
+            else:
+              time.sleep(15)  # need to allow time for previous flash reboot to fully boot.
+            device_info.get_info()
+            logger.trace(f"requires_upgrade: {requires_upgrade}")
+            logger.trace(f"requires_mode_change: {requires_mode_change}")
+            logger.trace(f"flash_question: {flash_question}")
+            logger.trace(f"self.run_action: {self.run_action}")
+            self.parse_info(device_info)
           device_info.get_info()
+          # logger.trace('TEST 5')
           if device_info.flash_fw_version != '0.0.0' and not self.is_newer(device_info.flash_fw_version, device_info.fw_version):
+            logger.trace('TEST 6')
             if self.local_file:
+              logger.trace('TEST 7')
               device_info.parse_local_file()
             else:
+              logger.trace('TEST 8')
               device_info.update_homekit(homekit_release_info)
-            self.parse_info(device_info, requires_upgrade)
+            logger.trace('TEST 9')
+            logger.info(f"Waiting for device...")
+            if device_info.info.get('stock_fw_model') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
+              time.sleep(30)  # need to allow time for previous flash reboot to fully boot, SHRGBW2 needs extra time due to firmware self updating.
+            else:
+              time.sleep(15)  # need to allow time for previous flash reboot to fully boot.
+            self.parse_info(device_info)
 
   def stop_scan(self):
     if self.listener is not None:
