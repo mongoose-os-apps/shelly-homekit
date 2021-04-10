@@ -452,7 +452,7 @@ conds:
         BTN_NOISY: 0
         RST_GPIO_INIT: 15 # reset GPIO 15 to prevent green flash on startup
         PRODUCT_HW_REV: '"1.0"'
-        STOCK_FW_MODEL: '"SHRGBW2"'
+        STOCK_FW_MODEL: '"SHRGBW2-color"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
