@@ -1263,7 +1263,7 @@ class Main:
       if self.local_file:
         if device_info.is_homekit() and device_info.parse_local_file():
           got_info = True
-        else:
+        if device_info.is_stock() and device_info.parse_local_file():
           if not stock_release_info and not tried_to_get_remote_stock:
             stock_release_info = self.get_release_info('stock')
             tried_to_get_remote_stock = True
