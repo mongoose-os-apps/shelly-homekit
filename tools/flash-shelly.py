@@ -1431,8 +1431,8 @@ class Main:
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
       if device_info.info:
-        fw_model = device_info.info.get('model') if 'homekit' == device_info.info.get('fw_type') else device_info.shelly_model(device_info.info.get('device').get('type'))[0]
-        if (device_info.info.get('fw_type') in self.fw_type_filter or self.fw_type_filter == 'all') and self.is_model_type(fw_model) and self.is_device_name(device_info.info.get('device_name')):
+        fw_model = device_info.info.get('model') if device_info.is_homekit() else device_info.shelly_model(device_info.info.get('device').get('type'))[0]
+        if self.is_fw_type(device_info.info.get('fw_type')) and self.is_model_type(fw_model) and self.is_device_name(device_info.info.get('device_name')):
           device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
           self.probe_device(device)
 
