@@ -499,6 +499,8 @@ class HomeKitDevice(Device):
       return False
     self.fw_type_str = 'HomeKit'
     self.fw_version = self.info.get('version', '0.0.0')
+    if self.info.get('stock_fw_model') is None:  # TODO remove once 2.9.x is mainstream.
+      self.info['stock_fw_model'] = self.info.get('stock_model')
     self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
     return True
 
