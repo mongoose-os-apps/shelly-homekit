@@ -671,10 +671,10 @@ class Main:
 
     if args.flash:
       action = 'flash'
-    elif args.list:
-      action = 'list'
     elif args.reboot:
       action = 'reboot'
+    elif args.list:
+      action = 'list'
     else:
       action = 'flash'
     args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
@@ -760,7 +760,7 @@ class Main:
     elif args.hosts and args.do_all:
       message = f"{WHITE}Invalid option hostname or -a | --all not both.{NC}"
     elif args.list and args.reboot:
-      message = f"{WHITE}Invalid option -l or --reboot not both.{NC}"
+      args.list = False
     elif args.network_type:
       if args.do_all:
         message = f"{WHITE}Invalid option -a | --all can not be used with --ip-type.{NC}"
