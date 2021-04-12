@@ -237,6 +237,38 @@ function nDigitString(num, digits) {
   return num.toString().padStart(digits, "0");
 }
 
+function rgbSetConfig(c) {
+  var name = el(c, "name").value;
+  var initialState = el(c, "initial").value;
+  var autoOff = el(c, "auto_off").checked;
+  var autoOffDelay = el(c, "auto_off_delay").value;
+  var spinner = el(c, "save_spinner");
+
+  if (name == "") {
+    alert("Name must not be empty");
+    return;
+  }
+
+  if (autoOff && autoOffDelay && !autoOffDelayValid(autoOffDelay)) {
+    alert("Auto off delay must follow 24 hour format D:HH:MM:SS.sss with a value between 10ms and 24 days.");
+    return;
+  }
+
+  var cfg = {
+    name: name,
+    initial_state: parseInt(el(c, "initial").value),
+    auto_off: autoOff,
+    in_inverted: el(c, "in_inverted").checked
+  };
+  if (autoOff) {
+    cfg.auto_off_delay = dateStringToSeconds(autoOffDelay);
+  }
+  if (c.data.in_mode >= 0) {
+    cfg.in_mode = parseInt(el(c, "in_mode").value);
+  }
+  setComponentConfig(c, cfg, spinner);
+}
+
 function swSetConfig(c) {
   var name = el(c, "name").value;
   var svcType = el(c, "svc_type").value;
@@ -452,6 +484,25 @@ function findOrAddContainer(cd) {
         mosSetConfig(c);
       };
       break;
+    case 11: // RGB
+      c = el("rgb_template").cloneNode(true);
+      c.id = elId;
+      el(c, "state").onchange = function () {
+        setComponentState(c, rgbState(c, !c.data.state), el(c, "set_spinner"));
+      };
+      el(c, "save_btn").onclick = function () {
+        rgbSetConfig(c);
+      };
+      el(c, "hue").onchange =
+      el(c, "saturation").onchange =
+      el(c, "brightness").onchange = function () {
+        setComponentState(c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
+        setPreviewColor(c);
+      };
+      el(c, "auto_off").onchange = function () {
+        el(c, "auto_off_delay_container").style.display = this.checked ? "block" : "none";
+      };
+      break;
     default:
       console.log(`Unhandled component type: ${cd.type}`);
   }
@@ -462,6 +513,15 @@ function findOrAddContainer(cd) {
   return c;
 }
 
+function rgbState(c, newState) {
+  return {
+    state: newState,
+    hue: el(c, "hue").value,
+    saturation: el(c, "saturation").value,
+    brightness: el(c, "brightness").value
+  }
+}
+
 function updateComponent(cd) {
   var c = findOrAddContainer(cd);
   if (!c) return;
@@ -469,6 +529,7 @@ function updateComponent(cd) {
     case 0: // Switch
     case 1: // Outlet
     case 2: // Lock
+    case 11: // RGB
       var headText = `Switch ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       el(c, "head").innerText = headText;
@@ -478,13 +539,15 @@ function updateComponent(cd) {
         el(c, "power_stats").innerText = `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
         el(c, "power_stats_container").style.display = "block";
       }
-      selectIfNotModified(el(c, "svc_type"), cd.svc_type);
-      if (cd.svc_type == 3) {
-        selectIfNotModified(el(c, "valve_type"), cd.valve_type);
-        el(c, "valve_type_container").style.display = "block";
-        el(c, "valve_type_label").innerText = "Valve Type:";
-      } else {
-        el(c, "valve_type_container").style.display = "none";
+      if (cd.svc_type !== undefined) {
+        selectIfNotModified(el(c, "svc_type"), cd.svc_type);
+        if (cd.svc_type == 3) {
+          selectIfNotModified(el(c, "valve_type"), cd.valve_type);
+          el(c, "valve_type_container").style.display = "block";
+          el(c, "valve_type_label").innerText = "Valve Type:";
+        } else {
+          el(c, "valve_type_container").style.display = "none";
+        }
       }
       selectIfNotModified(el(c, "initial"), cd.initial);
       if (cd.in_mode >= 0) {
@@ -498,15 +561,35 @@ function updateComponent(cd) {
         el(c, "in_inverted_container").style.display = "none";
         if (el(c, "initial_3")) el(c, "initial_3").remove();
       }
-      checkIfNotModified(el(c, "out_inverted"), cd.out_inverted);
+      if (cd.out_inverted !== undefined) {
+        checkIfNotModified(el(c, "out_inverted"), cd.out_inverted);
+      }
       checkIfNotModified(el(c, "auto_off"), cd.auto_off);
       el(c, "auto_off_delay_container").style.display = el(c, "auto_off").checked ? "block" : "none";
       setValueIfNotModified(el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
-      if (cd.state_led_en == -1) {
-        el(c, "state_led_en_container").style.display = "none";
-      } else {
-        el(c, "state_led_en_container").style.display = "block";
-        checkIfNotModified(el(c, "state_led_en"), cd.state_led_en == 1);
+      if (cd.state_led_en !== undefined) {
+        if (cd.state_led_en == -1) {
+          el(c, "state_led_en_container").style.display = "none";
+        } else {
+          el(c, "state_led_en_container").style.display = "block";
+          checkIfNotModified(el(c, "state_led_en"), cd.state_led_en == 1);
+        }
+      }
+
+      if (cd.type == 11) { // RGB
+        var headText = "RGB";
+        if (cd.name) headText += ` (${cd.name})`;
+        el(c, "head").innerText = headText;
+        setValueIfNotModified(el(c, "name"), cd.name);
+        el(c, "state").checked = cd.state;
+        if (cd.apower !== undefined) {
+          el(c, "power_stats").innerText = `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
+          el(c, "power_stats_container").style.display = "block";
+        }
+        slideIfNotModified(el(c, "hue"), cd.hue);
+        slideIfNotModified(el(c, "saturation"), cd.saturation);
+        slideIfNotModified(el(c, "brightness"), cd.brightness);
+        setPreviewColor(c);
       }
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
@@ -623,6 +706,15 @@ function updateElement(key, value, info) {
       el("uptime").innerText = durationStr(value);
       break;
     case "model":
+      if (value == "ShellyRGBW2") {
+        el("sys_mode_container").style.display = "block";
+        if (el("sys_mode_0")) el("sys_mode_0").remove();
+      } else {
+        if (el("sys_mode_3")) el("sys_mode_3").remove();
+        if (el("sys_mode_4")) el("sys_mode_4").remove();
+      }
+      el(key).innerHTML = value;
+      break;
     case "device_id":
     case "version":
       el(key).innerHTML = value;
@@ -761,7 +853,6 @@ function getInfo() {
 
       el("homekit_container").style.display = "block";
       el("gs_container").style.display = "block";
-      el("debug_log_container").style.display = "block";
     }).catch(function (err) {
       alert(err);
       console.log(err);
@@ -781,17 +872,25 @@ function setCookie(key, value) {
   document.cookie = `${key}=${JSON.stringify(value)}`;
 }
 
-var host = (new URLSearchParams(location.search)).get("host") || location.host;
+var host = null;
 var socket = null;
 var connectionTries = 0;
 
-function connectWebSocket() {
+function setupHost() {
+  host = (new URLSearchParams(location.search)).get("host") || location.host;
+
   if (!host) {
     host = prompt("Please enter the host of your shelly.");
     if (host !== null) {
       location.href = `${location.host}?host=${host}`;
     }
   }
+
+  el("debug_link").href = `http://${host}/debug/log?follow=1`;
+}
+
+function connectWebSocket() {
+  setupHost();
 
   return new Promise(function (resolve, reject) {
     socket = new WebSocket(`ws://${host}/rpc`);
@@ -907,6 +1006,15 @@ function checkIfNotModified(e, newState) {
       e.lastSetValue !== e.checked))   // it is not currently the same as the visible value
     return;
   e.checked = e.lastSetValue = newState;
+}
+
+function slideIfNotModified(e, newValue) {
+  // do not update the value of the input field if
+  if (e.lastSetValue === e.value &&    // the value has not been changed by the user AND
+    (e.lastSetValue !== undefined &&   // a value has previously been set AND
+      e.lastSetValue !== e.value))     // it is not currently the same as the visible value
+    return;
+  e.value = e.lastSetValue = newValue.toString();
 }
 
 function selectIfNotModified(e, newSelection) {
@@ -1068,3 +1176,50 @@ el("revert_btn").onclick = function () {
   var stockURL = `https://rojer.me/files/shelly/stock/${lastInfo.stock_model}.zip`;
   downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
 };
+
+function setPreviewColor(c) {
+  var h = el(c, "hue").value / 360;
+  var s = el(c, "saturation").value / 100;
+
+  // use fixed 100% for v, because we want to control brightness over pwm frequence
+  var [r, g, b] = hsv2rgb(h, s, 100);
+
+  r = Math.round(r * 2.55);
+  g = Math.round(g * 2.55);
+  b = Math.round(b * 2.55);
+
+  rgbHex = [r, g, b].map(x => nDigitString(x.toString(16), 2)).join('').toUpperCase();
+
+  el(c, "color_preview").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+  el(c, "color_name").innerHTML = `#${rgbHex}`;
+  el(c, "hue_value").innerHTML = `${el(c, "hue").value}&#176;`;
+  el(c, "saturation_value").innerHTML = `${el(c, "saturation").value}%`;
+  el(c, "brightness_value").innerHTML = `${el(c, "brightness").value}%`;
+}
+
+function hsv2rgb(h, s, v) {
+  if(s == 0.0)
+    return [v, v, v];
+
+  i = parseInt(h * 6.0);
+  f = (h * 6.0) - i;
+  p = v * (1.0 - s);
+  q = v * (1.0 - s * f);
+  t = v * (1.0 - s * (1.0 - f));
+  i = i % 6;
+
+  switch(i) {
+  case 0:
+    return [v, t, p];
+  case 1:
+    return [q, v, p];
+  case 2:
+    return [p, v, t];
+  case 3:
+    return [p, q, v];
+  case 4:
+    return [t, p, v];
+  case 5:
+    return [v, p, q];
+  }
+}

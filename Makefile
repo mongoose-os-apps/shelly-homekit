@@ -1,10 +1,10 @@
 MAKEFLAGS += --warn-undefined-variables
 
-.PHONY: build check-format format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS
+.PHONY: build check-format format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2
 
 MOS ?= mos
 # Build locally by default if Docker is available.
-LOCAL ?= $(shell which docker> /dev/null && echo -n 1 || echo -n 0)
+LOCAL ?= $(shell which docker> /dev/null && echo 1 || echo 0)
 CLEAN ?= 0
 V ?= 0
 VERBOSE ?= 0
@@ -24,7 +24,7 @@ ifneq "$(VERBOSE)$(V)" "00"
   MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
-build: Shelly1 Shelly1L Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyU ShellyU25
+build: Shelly1 Shelly1L Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2 ShellyU ShellyU25
 
 release:
 	$(MAKE) build CLEAN=1 RELEASE=1
@@ -55,6 +55,9 @@ ShellyPlug: build-ShellyPlug
 ShellyPlugS: build-ShellyPlugS
 	@true
 
+ShellyRGBW2: build-ShellyRGBW2
+	@true
+
 ShellyU: PLATFORM=ubuntu
 ShellyU: build-ShellyU
 	@true
@@ -65,10 +68,9 @@ ShellyU25: build-ShellyU25
 
 fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js fs_src/logo.svg Makefile
 	cat fs_src/index.html | \
-	sed "s/.*<link.*rel=\"stylesheet\".*/<style>\n\n<\/style>/g" | sed -e '/<style>/ r fs_src/style.css' | \
-	sed "s/.*<script.*src=\"script.js\".*/<script>\n\n<\/script>/g" | sed -e '/<script>/ r fs_src/script.js' | \
-	sed -e '/.*<img.*src=".\/logo.svg".*/ {' -e 'r fs_src/logo.svg' -e 'd' -e '}' | \
-	gzip -9 -c > fs/index.html.gz
+	sed "s/.*<link.*rel=\"stylesheet\".*//g" | sed -e '/<style>/ r fs_src/style.css' | \
+	sed "s/.*<script.*src=\"script.js\".*/<script>/g" | sed -e '/<script>/ r fs_src/script.js' | \
+	sed -e '/.*<img.*src=".\/logo.svg".*/ {' -e 'r fs_src/logo.svg' -e 'd' -e '}' > fs/index.html
 
 build-%: fs/index.html.gz Makefile
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \

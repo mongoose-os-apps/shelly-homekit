@@ -3,6 +3,7 @@ build/
 build_*/
 deps/
 releases/
+.vscode/
 .DS_Store
 core-*
 *.gz
