@@ -36,12 +36,6 @@ class RGBWLight : public Component, public mgos::hap::Service {
             Output *out_w, struct mgos_config_lb *cfg);
   virtual ~RGBWLight();
 
-  struct HSV {
-    float h;
-    float s;
-    float v;
-  };
-
   struct RGBW {
     float r;
     float g;
@@ -53,9 +47,7 @@ class RGBWLight : public Component, public mgos::hap::Service {
   Type type() const override;
   std::string name() const override;
   Status Init() override;
-  void SetOutputState(const char *source);
-  void SaveState();
-  void HSVtoRGBW(const HSV &hsv, RGBW &rgbw) const;
+
   StatusOr<std::string> GetInfo() const override;
   StatusOr<std::string> GetInfoJSON() const override;
   Status SetConfig(const std::string &config_json,
@@ -66,6 +58,22 @@ class RGBWLight : public Component, public mgos::hap::Service {
   void InputEventHandler(Input::Event ev, bool state);
 
   void AutoOffTimerCB();
+  void TransitionTimerCB();
+
+  void UpdateOnOff(bool on, const std::string &source);
+  void SetHue(int hue, const std::string &source);
+  void SetSaturation(int saturation, const std::string &source);
+  void SetBrightness(int brightness, const std::string &source);
+
+  bool IsOn() const;
+  bool IsOff() const;
+  bool IsAutoOffEnabled() const;
+
+  void HSVtoRGBW(RGBW &rgbw) const;
+  void StartTransition();
+  void SaveState();
+  void ResetAutoOff();
+  void DisableAutoOff();
 
   Input *const in_;
   Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
@@ -76,6 +84,12 @@ class RGBWLight : public Component, public mgos::hap::Service {
 
   mgos::Timer auto_off_timer_;
   bool dirty_ = false;
+
+  mgos::Timer transition_timer_;
+  int64_t transition_start_ = 0;
+  RGBW rgbw_start_{};
+  RGBW rgbw_now_{};
+  RGBW rgbw_end_{};
 
   HAPError HandleOnRead(HAPAccessoryServerRef *server,
                         const HAPBoolCharacteristicReadRequest *request,
