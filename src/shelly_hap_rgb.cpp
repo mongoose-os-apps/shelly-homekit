@@ -83,7 +83,7 @@ Status RGBWLight::Init() {
   if (IsSoftReboot()) should_restore = true;
 
   if (should_restore) {
-    UpdateOnOff(IsOn(), "init");
+    UpdateOnOff(IsOn(), "init", true);
   } else {
     switch (static_cast<InitialState>(cfg_->initial_state)) {
       case InitialState::kOff:
@@ -215,8 +215,8 @@ void RGBWLight::HSVtoRGBW(RGBW &rgbw) const {
   }
 }
 
-void RGBWLight::UpdateOnOff(bool on, const std::string &source) {
-  if (cfg_->state == static_cast<int>(on)) return;
+void RGBWLight::UpdateOnOff(bool on, const std::string &source, bool force) {
+  if (!force && cfg_->state == static_cast<int>(on)) return;
 
   LOG(LL_INFO, ("State changed (%s): %s => %s", source.c_str(),
                 OnOff(cfg_->state), OnOff(on)));
