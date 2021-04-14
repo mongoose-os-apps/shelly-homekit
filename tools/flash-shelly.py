@@ -1289,7 +1289,7 @@ class Main:
             tried_to_get_remote_homekit = True
           if stock_release_info and homekit_release_info:
             device_info.update_stock(stock_release_info)
-            if device_info.info.get('color_mode') == 'white' and self.flash_mode == 'homekit':
+            if device_info.info.get('device', {}).get('type', '') == 'SHRGBW2' and device_info.info.get('color_mode') == 'white':
               requires_mode_change = True
             if device_info.fw_version == '0.0.0' or self.is_newer(device_info.flash_fw_version, device_info.fw_version):
               requires_upgrade = True
@@ -1335,9 +1335,11 @@ class Main:
           if requires_mode_change is True:
             logger.trace('TEST 4')
             logger.info(f"Waiting for device...")
-            if device_info.info.get('stock_fw_model') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
+            if device_info.info.get('device', {}).get('type', '') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
+              logger.trace('TEST 5a')
               time.sleep(30)  # need to allow time for previous flash reboot to fully boot, SHRGBW2 needs extra time due to firmware self updating.
             else:
+              logger.trace('TEST 5b')
               time.sleep(15)  # need to allow time for previous flash reboot to fully boot.
             device_info.get_info()
             logger.trace(f"requires_upgrade: {requires_upgrade}")
@@ -1357,7 +1359,7 @@ class Main:
               device_info.update_homekit(homekit_release_info)
             logger.trace('TEST 9')
             logger.info(f"Waiting for device...")
-            if device_info.info.get('stock_fw_model') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
+            if device_info.info.get('device', {}).get('type', '') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
               time.sleep(30)  # need to allow time for previous flash reboot to fully boot, SHRGBW2 needs extra time due to firmware self updating.
             else:
               time.sleep(15)  # need to allow time for previous flash reboot to fully boot.
