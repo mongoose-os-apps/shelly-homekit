@@ -126,7 +126,7 @@ Status RGBWLight::Init() {
   if (IsSoftReboot()) should_restore = true;
 
   if (should_restore) {
-    UpdateOnOff(IsOn(), "init", true);
+    UpdateOnOff(IsOn(), "init", true /* force */);
   } else {
     switch (static_cast<InitialState>(cfg_->initial_state)) {
       case InitialState::kOff:
