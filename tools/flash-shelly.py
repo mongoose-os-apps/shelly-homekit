@@ -991,7 +991,6 @@ class Main:
 
     perform_flash = False
     do_mode_change = False
-    flash_question = None
     download_url_request = False
     host = device_info.host
     wifi_ip = device_info.wifi_ip
@@ -1168,14 +1167,16 @@ class Main:
         else:
           logger.trace('TEST A22')
           flash_message = f"Do you wish to flash {friendly_host} to {flash_fw_type_str} firmware version {flash_fw_version}"
-        logger.trace('TEST A23')
-        if flash_question is None and input(f"{flash_message} (y/n) ? ") in ('y', 'Y'):
-          logger.trace('TEST A24')
-          flash_question = True
-        else:
-          logger.trace('TEST A25')
-          flash_question = False
-          logger.info("Skipping Flash...")
+        logger.trace('TEST A23a')
+        if flash_question is None:
+          logger.trace('TEST A23b')
+          if input(f"{flash_message} (y/n) ? ") in ('y', 'Y'):
+            logger.trace('TEST A24')
+            flash_question = True
+          else:
+            logger.trace('TEST A25')
+            flash_question = False
+            logger.info("Skipping Flash...")
       elif (perform_flash is True or do_mode_change is True) and self.dry_run is False and self.silent_run is True:
         logger.trace('TEST A26')
         flash_question = True
