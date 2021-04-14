@@ -981,7 +981,7 @@ class Main:
       global requires_mode_change
       requires_mode_change = 'Done'
 
-  def parse_info(self, device_info):
+  def parse_info(self, device_info, hk_ver=None):
     logger.debug(f"")
     logger.debug(f"{PURPLE}[Parse Info]{NC}")
 
@@ -1050,6 +1050,9 @@ class Main:
       latest_fw_label = f"{RED}Not available{NC}"
       flash_fw_version = '0.0.0'
       download_url = None
+    elif hk_ver is not None:
+      latest_fw_label = hk_ver
+      flash_fw_type_str = "HomeKit"
     else:
       latest_fw_label = flash_fw_version
 
@@ -1233,6 +1236,7 @@ class Main:
     requires_upgrade = False
     requires_mode_change = False
     got_info = False
+    hk_flash_fw_version = None
 
     if self.mode == 'keep':
       self.flash_mode = device.get('fw_type')
@@ -1288,6 +1292,11 @@ class Main:
             homekit_release_info = self.get_release_info('homekit')
             tried_to_get_remote_homekit = True
           if stock_release_info and homekit_release_info:
+            device_info.update_homekit(homekit_release_info)
+            if device_info.download_url:
+              download_url_request = requests.head(device_info.download_url)
+              logger.debug(f"download_url_request: {download_url_request}")
+              hk_flash_fw_version = device_info.flash_fw_version
             device_info.update_stock(stock_release_info)
             if device_info.info.get('device', {}).get('type', '') == 'SHRGBW2' and device_info.info.get('color_mode') == 'white':
               requires_mode_change = True
@@ -1324,7 +1333,7 @@ class Main:
         logger.trace('TEST 1')
         logger.trace(f"requires_upgrade: {requires_upgrade}")
         logger.trace(f"requires_mode_change: {requires_mode_change}")
-        self.parse_info(device_info)
+        self.parse_info(device_info, hk_flash_fw_version)
         logger.trace('TEST 2')
         logger.trace(f"requires_upgrade: {requires_upgrade}")
         logger.trace(f"requires_mode_change: {requires_mode_change}")
