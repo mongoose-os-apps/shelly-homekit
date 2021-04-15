@@ -960,6 +960,8 @@ class Main:
       if reboot_check == '0.0.0':
         logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
       else:
+        global failed_flashed_devices
+        failed_flashed_devices += 1
         logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}")
       logger.debug(f"Current: {reboot_check}")
       logger.debug(f"flash_fw_version: {flash_fw}")
