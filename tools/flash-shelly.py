@@ -520,6 +520,7 @@ class HomeKitDevice(Device):
     return options.get(mode, mode)
 
   def flash_firmware(self, revert=False):
+    logger.trace(f"revert {revert}")
     if self.local_file:
       logger.debug(f"Local file: {self.local_file}")
       my_file = open(self.local_file, 'rb')
@@ -569,6 +570,7 @@ class StockDevice(Device):
     return self.info.get('mode')
 
   def flash_firmware(self, revert=False):
+    logger.trace(f"revert {revert}")
     logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
     response = None
     download_url = self.download_url.replace('https', 'http')
