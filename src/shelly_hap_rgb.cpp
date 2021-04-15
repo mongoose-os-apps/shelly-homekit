@@ -74,35 +74,6 @@ Status RGBWLight::Init() {
     LOG(LL_INFO, ("'%s' is disabled", cfg_->name));
     return Status::OK();
   }
-  if (in_ != nullptr) {
-    handler_id_ =
-        in_->AddHandler(std::bind(&RGBWLight::InputEventHandler, this, _1, _2));
-    in_->SetInvert(cfg_->in_inverted);
-  }
-  bool should_restore = (cfg_->initial_state == (int) InitialState::kLast);
-  if (IsSoftReboot()) should_restore = true;
-
-  if (should_restore) {
-    UpdateOnOff(IsOn(), "init");
-  } else {
-    switch (static_cast<InitialState>(cfg_->initial_state)) {
-      case InitialState::kOff:
-        UpdateOnOff(false, "init");
-        break;
-      case InitialState::kOn:
-        UpdateOnOff(true, "init");
-        break;
-      case InitialState::kInput:
-        if (in_ != nullptr &&
-            cfg_->in_mode == static_cast<int>(InMode::kToggle)) {
-          UpdateOnOff(in_->GetState(), "init");
-        }
-        break;
-      case InitialState::kLast:
-      case InitialState::kMax:
-        break;
-    }
-  }
 
   uint16_t iid = svc_.iid + 1;
 
@@ -144,6 +115,37 @@ Status RGBWLight::Init() {
       kHAPCharacteristicDebugDescription_Saturation);
   state_notify_chars_.push_back(saturation_char);
   AddChar(saturation_char);
+
+  if (in_ != nullptr) {
+    handler_id_ =
+        in_->AddHandler(std::bind(&RGBWLight::InputEventHandler, this, _1, _2));
+    in_->SetInvert(cfg_->in_inverted);
+  }
+
+  bool should_restore = (cfg_->initial_state == (int) InitialState::kLast);
+  if (IsSoftReboot()) should_restore = true;
+
+  if (should_restore) {
+    UpdateOnOff(IsOn(), "init", true /* force */);
+  } else {
+    switch (static_cast<InitialState>(cfg_->initial_state)) {
+      case InitialState::kOff:
+        UpdateOnOff(false, "init");
+        break;
+      case InitialState::kOn:
+        UpdateOnOff(true, "init");
+        break;
+      case InitialState::kInput:
+        if (in_ != nullptr &&
+            cfg_->in_mode == static_cast<int>(InMode::kToggle)) {
+          UpdateOnOff(in_->GetState(), "init");
+        }
+        break;
+      case InitialState::kLast:
+      case InitialState::kMax:
+        break;
+    }
+  }
 
   return Status::OK();
 }
@@ -215,8 +217,8 @@ void RGBWLight::HSVtoRGBW(RGBW &rgbw) const {
   }
 }
 
-void RGBWLight::UpdateOnOff(bool on, const std::string &source) {
-  if (cfg_->state == static_cast<int>(on)) return;
+void RGBWLight::UpdateOnOff(bool on, const std::string &source, bool force) {
+  if (!force && cfg_->state == static_cast<int>(on)) return;
 
   LOG(LL_INFO, ("State changed (%s): %s => %s", source.c_str(),
                 OnOff(cfg_->state), OnOff(on)));
