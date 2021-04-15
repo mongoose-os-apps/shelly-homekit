@@ -147,6 +147,7 @@ tried_to_get_remote_stock = False
 flash_question = None
 requires_upgrade = None
 requires_mode_change = None
+not_supported = None
 
 WHITE = '\033[1m'
 RED = '\033[1;91m'
@@ -449,6 +450,7 @@ class Device:
       return False
 
   def update_homekit(self, release_info=None):
+    global not_supported
     self.flash_fw_type_str = 'HomeKit'
     logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if self.version:
@@ -471,6 +473,7 @@ class Device:
           self.flash_fw_version = i[1].get('version', '0.0.0')
           self.download_url = i[1].get('urls', {}).get(self.info.get('model'))
           break
+      not_supported = True
 
   def update_stock(self, release_info=None):
     self.flash_fw_type_str = 'Stock'
@@ -992,6 +995,7 @@ class Main:
     perform_flash = False
     do_mode_change = False
     download_url_request = False
+    no_variant = False
     host = device_info.host
     wifi_ip = device_info.wifi_ip
     friendly_host = device_info.friendly_host
@@ -1028,6 +1032,7 @@ class Main:
     logger.debug(f"force_flash: {force_flash}")
     logger.debug(f"force_version: {force_version}")
     logger.debug(f"download_url: {download_url}")
+    logger.debug(f"not_supported: {not_supported}")
 
     if download_url and download_url != 'local':
       download_url_request = requests.head(download_url)
@@ -1037,6 +1042,7 @@ class Main:
       latest_fw_label = f"{RED}No {device_info.variant} available{NC}"
       flash_fw_version = '0.0.0'
       download_url = None
+      no_variant = True
     elif flash_fw_version == 'revert':
       flash_fw_type_str = 'Revert to'
       latest_fw_label = 'Stock'
@@ -1057,6 +1063,11 @@ class Main:
       latest_fw_label = flash_fw_version
 
     flash_fw_newer = self.is_newer(flash_fw_version, current_fw_version)
+    if not_supported is True and download_url is None:
+      flash_fw_type_str = f"{RED}{flash_fw_type_str}{NC}"
+      latest_fw_label = f"{RED}Not supported{NC}"
+      flash_fw_version = '0.0.0'
+      download_url = None
     if (not self.quiet_run or (self.quiet_run and (flash_fw_newer or (force_flash and flash_fw_version != '0.0.0')))) and requires_upgrade != 'Done':
       logger.info(f"")
       logger.info(f"{WHITE}Host: {NC}http://{host}")
@@ -1081,9 +1092,9 @@ class Main:
           logger.info(f"{WHITE}HAP Connections: {NC}{hap_ip_conns_pending} / {hap_ip_conns_active} / {hap_ip_conns_max}{NC}")
         if battery:
           logger.info(f"{WHITE}Battery: {NC}{battery}%{NC}")
-      if current_fw_type == self.flash_mode and (current_fw_version == flash_fw_version or flash_fw_version == '0.0.0'):
+      if current_fw_type == self.flash_mode and current_fw_version == flash_fw_version:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} {GREEN}\u2714{NC}")
-      elif current_fw_type == self.flash_mode and flash_fw_newer:
+      elif current_fw_type == self.flash_mode and (flash_fw_newer or no_variant is True):
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} \u279c {YELLOW}{latest_fw_label}{NC}")
       elif current_fw_type != self.flash_mode and current_fw_version != flash_fw_version:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} \u279c {YELLOW}{flash_fw_type_str} {latest_fw_label}{NC}")
