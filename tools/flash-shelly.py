@@ -987,6 +987,7 @@ class Main:
     global total_devices, flash_question
     if device_info.already_processed is False:
       total_devices += 1
+      flash_question = None
 
     perform_flash = False
     do_mode_change = False
