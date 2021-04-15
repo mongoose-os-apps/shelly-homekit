@@ -1288,7 +1288,7 @@ class Main:
           if not stock_release_info and not tried_to_get_remote_stock:
             stock_release_info = self.get_release_info('stock')
             tried_to_get_remote_stock = True
-          if not homekit_release_info and not tried_to_get_remote_homekit and not self.local_file:
+          if not homekit_release_info and not tried_to_get_remote_homekit:
             homekit_release_info = self.get_release_info('homekit')
             tried_to_get_remote_homekit = True
           if stock_release_info and homekit_release_info:
