@@ -61,7 +61,6 @@ extern "C" {
 #include "shelly_switch.hpp"
 #include "shelly_temp_sensor.hpp"
 
-#define KVS_FILE_NAME "kvs.json"
 #define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
 
@@ -207,7 +206,14 @@ static void DoReset(void *arg) {
 #ifdef MGOS_SYS_CONFIG_HAVE_WIFI
   mgos_sys_config_set_wifi_sta_enable(false);
   mgos_sys_config_set_wifi_ap_enable(true);
-  mgos_sys_config_save(&mgos_sys_config, false, nullptr);
+#endif
+  mgos_sys_config_set_rpc_acl_file(nullptr);
+  mgos_sys_config_set_rpc_auth_file(nullptr);
+  mgos_sys_config_set_http_auth_file(nullptr);
+  if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
+    remove(AUTH_FILE_NAME);
+  }
+#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
   mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
 #endif
   CheckLED(LED_GPIO, LED_ON);
@@ -848,6 +854,7 @@ bool WipeDevice() {
       "conf2.json",
       "conf9.json",
       KVS_FILE_NAME,
+      AUTH_FILE_NAME,
   };
   bool wiped = false;
   for (const char *wipe_fn : s_wipe_files) {

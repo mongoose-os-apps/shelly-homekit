@@ -15,6 +15,27 @@
  * limitations under the License.
  */
 
+// Options.
+const maxAuthAge = 24 * 60 * 60;
+
+// Globals.
+var lastInfo = null;
+var infoLevel = 0;
+var host = null;
+var socket = null;
+var connectionTries = 0;
+
+var pauseAutoRefresh = false;
+var pendingGetInfo = false;
+
+var pendingRequests = {};  // id -> Promise.
+
+let nextRequestID = Math.ceil(Math.random() * 10000);
+let authRequired = false;
+let authResp = null;
+
+const authUser = "admin";
+
 function el(container, id) {
   if (id === undefined) {
     id = container;
@@ -41,7 +62,7 @@ el("sys_save_btn").onclick = function () {
   };
   el("sys_save_spinner").className = "spin";
   pauseAutoRefresh = true;
-  sendMessageWebSocket("Shelly.SetConfig", data).then(function () {
+  callDevice("Shelly.SetConfig", data).then(function () {
     setTimeout(() => {
       el("sys_save_spinner").className = "";
       pauseAutoRefresh = false;
@@ -63,7 +84,7 @@ el("hap_save_btn").onclick = function () {
   }
   var code = codeMatch.slice(1).join('-');
   el("hap_save_spinner").className = "spin";
-  sendMessageWebSocket("HAP.Setup", {"code": code})
+  callDevice("HAP.Setup", {"code": code})
     .then(function () {
       el("hap_save_spinner").className = "";
       el("hap_setup_code").value = "";
@@ -80,7 +101,7 @@ el("hap_reset_btn").onclick = function () {
   if(!confirm("HAP reset will erase all pairings and clear setup code. Are you sure?")) return;
 
   el("hap_reset_spinner").className = "spin";
-  sendMessageWebSocket("HAP.Reset", {"reset_server": true, "reset_code": true})
+  callDevice("HAP.Reset", {"reset_server": true, "reset_code": true})
     .then(function () {
       el("hap_reset_spinner").className = "";
       getInfo();
@@ -115,7 +136,7 @@ el("wifi_save_btn").onclick = function () {
   }
   var oldPauseAutoRefresh = pauseAutoRefresh;
   pauseAutoRefresh = true;
-  sendMessageWebSocket("Config.Set", data).then(function () {
+  callDevice("Config.Set", data).then(function () {
     var dn = el("device_name").innerText;
     if (data.config.wifi.sta.enable) {
       document.body.innerHTML = `
@@ -162,7 +183,7 @@ function setComponentConfig(c, cfg, spinner) {
     config: cfg,
   };
   pauseAutoRefresh = true;
-  sendMessageWebSocket("Shelly.SetConfig", data)
+  callDevice("Shelly.SetConfig", data)
     .then(function () {
       setTimeout(() => {
         if (spinner) spinner.className = "";
@@ -186,7 +207,7 @@ function setComponentState(c, state, spinner) {
     type: c.data.type,
     state: state,
   };
-  sendMessageWebSocket("Shelly.SetState", data)
+  callDevice("Shelly.SetState", data)
     .then(function () {
       if (spinner) spinner.className = "";
       refreshUI();
@@ -401,7 +422,7 @@ function gdoSetConfig(c, cfg, spinner) {
 el("reboot_btn").onclick = function () {
   if(!confirm("Reboot the device?")) return;
 
-  sendMessageWebSocket("Sys.Reboot", {delay_ms: 500}).then(function () {
+  callDevice("Sys.Reboot", {delay_ms: 500}).then(function () {
     alert("System is rebooting and will reconnect when ready.");
   });
 }
@@ -409,7 +430,7 @@ el("reboot_btn").onclick = function () {
 el("reset_btn").onclick = function () {
   if(!confirm("Device configuration will be wiped and return to AP mode. Are you sure?")) return;
 
-  sendMessageWebSocket("Shelly.WipeDevice", {}).then(function () {
+  callDevice("Shelly.WipeDevice", {}).then(function () {
     alert("Device configuration has been reset, it will reboot in AP mode.");
   });
 }
@@ -725,7 +746,8 @@ function updateElement(key, value, info) {
       el("fw_build").innerHTML = value;
       break;
     case "name":
-      el("device_name").innerText = document.title = value;
+      document.title = value;
+      el("device_name").innerText = value;
       setValueIfNotModified(el("sys_name"), value);
       break;
     case "wifi_en":
@@ -809,74 +831,96 @@ function updateElement(key, value, info) {
     case "overheat_on":
       el("notify_overheat").style.display = (value ? "inline" : "none");
       break;
-    default:
-      //console.log(key, value);
   }
 }
 
-var lastInfo = null;
-
 function getInfo() {
   return new Promise(function (resolve, reject) {
-    if (socket.readyState !== 1) {
-      reject();
-      return;
-    }
+    let method = (infoLevel == 1 ? "Shelly.GetInfoExt" : "Shelly.GetInfo");
 
-    sendMessageWebSocket("Shelly.GetInfo").then(function (res) {
+    callDevice(method).then(function (res) {
       var info = res.result;
 
-      if (info == null) {
+      if (!info) {
         reject();
         return;
       }
 
-      // always show system information if data is loaded
+      // Update the essentials.
+      ["name", "model", "device_id", "version", "fw_build"].forEach((key) => {
+        updateElement(key, info[key], info);
+      });
+      if (info.failsafe_mode) {
+        el("sys_container").style.display = "block";
+        el("firmware_container").style.display = "block";
+        el("notify_failsafe").style.display = "inline";
+        pauseAutoRefresh = true;
+        reject();
+        return;
+      }
+
+      if (infoLevel == 0) {
+        infoLevel++;
+        // Get extended info.
+        resolve(getInfo());
+        return;
+      }
+
+      lastInfo = info;
+
+      el("sec_old_pass_container").style.display = (info.auth_en ? "block" : "none");
+      el("homekit_container").style.display = "block";
+      el("sec_container").style.display = "block";
       el("sys_container").style.display = "block";
       el("firmware_container").style.display = "block";
-
-      if (info.failsafe_mode) {
-        el("notify_failsafe").style.display = "inline";
-        // only show this limited set of infos
-        ["model", "device_id", "version", "fw_build"]
-          .forEach(element => updateElement(element, info[element], info));
-        reject();
-        return;
-      }
+      el("gs_container").style.display = "block";
 
       // the system mode changed, clear out old UI components
-      if (lastInfo !== null && lastInfo.sys_mode !== info.sys_mode) el("components").innerHTML = "";
+      if (lastInfo !== null && lastInfo.sys_mode !== info.sys_mode) {
+        el("components").innerHTML = "";
+      }
 
       for (let element in info) {
         updateElement(element, info[element], info);
       }
 
-      lastInfo = info;
-
-      el("homekit_container").style.display = "block";
-      el("gs_container").style.display = "block";
+      resolve(info);
     }).catch(function (err) {
-      alert(err);
       console.log(err);
+      infoLevel = 0;
       reject(err);
-    }).then(resolve);
+    });
   });
 }
 
-function getCookie(key) {
-  cookie = (document.cookie.match(`(^|;)\\s*${key}\\s*=\\s*([^;]+)`) || []).pop()
-  if (cookie === undefined) return;
-
-  return JSON.parse(cookie);
+function getVar(key) {
+  let vs = window.localStorage.getItem(key);
+  if (!vs) return undefined;
+  let v = JSON.parse(vs);
+  if (v.exp !== undefined && (new Date()).getTime() > v.exp) {
+    console.log("Expired", key);
+    localStorage.removeItem(key)
+    return undefined;
+  }
+  console.log("GetVar", key, v.value);
+  return v.value;
 }
 
-function setCookie(key, value) {
-  document.cookie = `${key}=${JSON.stringify(value)}`;
+function setVar(key, value, maxAge) {
+  if (value === undefined) {
+    console.log("Delete var", key);
+    localStorage.removeItem(key);
+    return;
+  }
+  let v = {value: value};
+  if (maxAge > 0) {
+    v.exp = (new Date()).getTime() + (maxAge * 1000);
+  }
+  console.log("SetVar", key, v, maxAge);
+  window.localStorage.setItem(key, JSON.stringify(v));
+  // Clear out cookie storage. Added: 2021/04/24.
+  document.cookie = `${key}=;max-age=1`;
 }
-
-var host = null;
-var socket = null;
-var connectionTries = 0;
 
 function setupHost() {
   host = (new URLSearchParams(location.search)).get("host") || location.host;
@@ -894,15 +938,15 @@ function setupHost() {
 function connectWebSocket() {
   setupHost();
 
-  return new Promise(function (resolve, reject) {
+  return new Promise(function(resolve, reject) {
     socket = new WebSocket(`ws://${host}/rpc`);
     connectionTries += 1;
 
-    socket.onclose = function (event) {
+    socket.onclose = function(event) {
       console.log(`[close] Connection died (code ${event.code})`);
       el("notify_disconnected").style.display = "inline"
       // attempt to reconnect
-      setTimeout(function () {
+      setTimeout(function() {
         connectWebSocket()
           // reload the page once we reconnect (the web ui could have changed)
           .then(() => location.reload())
@@ -910,85 +954,219 @@ function connectWebSocket() {
       }, Math.min(3000, connectionTries * 1000));
     };
 
-    socket.onerror = function (error) {
+    socket.onerror = function(error) {
       el("notify_disconnected").style.display = "inline"
+      for (let id in pendingRequests) {
+        let ri = pendingRequests[id];
+        ri.p.reject(error);
+      }
+      pendingRequests = {};
       reject(error);
     };
 
-    socket.onopen = function () {
+    socket.onopen = function() {
       console.log("[open] Connection established");
       el("notify_disconnected").style.display = "none";
       connectionTries = 0;
       resolve(socket);
     };
+
+    socket.onmessage = function(event) {
+      let resp = JSON.parse(event.data);
+      let id = resp.id;
+      let ri = pendingRequests[id];
+      if (!ri) return;
+      delete pendingRequests[id];
+      console.log(`[<-] ${id} ${ri.method}`, ri, resp);
+      if (resp.error && resp.error.code == 401) {
+        authResp = null;
+        let authReq = JSON.parse(resp.error.message);
+        let ai = null;
+        if (!ri.ai) {
+          ai = getAuthInfo(authReq);
+          console.log(`Auth required for ${ri.method}`, authReq, ai);
+        } else {
+          console.log(`Auth failed for ${ri.method}`, authReq);
+          setVar("auth_info", undefined);
+        }
+        if (ai) {
+          console.log(`Retrying with auth...`);
+          callDeviceAuth(ri.method, ri.params, ai)
+              .then(function (resp) { ri.resolve(resp); })
+              .catch(function (err) { ri.reject(err); });
+        } else {
+          if (lastInfo !== null) {
+            // Locked out, reload UI.
+            location.reload();
+          } else {
+            pauseAutoRefresh = true;
+            el("auth_container").style.display = "block";
+            if (el("auth_pass").value != "") {
+              el("auth_pass").value = "";
+              ri.reject(new Error("Incorrect password"));
+            } else {
+              ri.reject(new Error("Please log in"));
+            }
+          }
+        }
+      } else {
+        if (ri.ai) {
+          el("auth_container").style.display = "none";
+          pauseAutoRefresh = false;
+          setVar("auth_info", ri.ai, maxAuthAge);
+        }
+        ri.resolve(resp);
+      }
+    };
+
   });
 }
 
-let requestID = 0;
+function calcHA1(user, realm, pass) {
+  return sha256(`${user}:${realm}:${pass}`);
+}
 
-function sendMessageWebSocket(method, params = [], id = requestID) {
-  requestID += 1
-  return new Promise(function (resolve, reject) {
+// Digest auth algorithm is described in RFC 7616.
+function getAuthInfo(req) {
+  authResp = null;
+  const method = req.method || "dummy_method";
+  const uri = req.uri || "dummy_uri";
+  const cnonce = Math.ceil(Math.random() * 100000000);
+  const qop = "auth";
+  let ha1 = "";
+  if (el("auth_pass").value !== "") {
+    ha1 = calcHA1(authUser, req.realm, el("auth_pass").value);
+  } else {
+    let ai = getVar("auth_info");
+    if (ai && ai.realm == req.realm) {
+      ha1 = ai.ha1;
+    }
+  }
+  if (!ha1) return null;
+  if (req.algorithm != "SHA-256") return null;
+  const ha2 = sha256(`${method}:${uri}`);
+  const resp = sha256(`${ha1}:${req.nonce}:${req.nc}:${cnonce}:${qop}:${ha2}`);
+  authResp = {
+      realm: req.realm,
+      nonce: req.nonce,
+      username: authUser,
+      cnonce: cnonce,
+      algorithm: req.algorithm,
+      response: resp,
+  };
+  if (req.opaque) {
+    authResp.opaque = req.opaque;
+  };
+  return {realm: req.realm, ha1: ha1};
+}
+
+function callDeviceAuth(method, params, ai) {
+  let id = nextRequestID++;
+  return new Promise(function(resolve, reject) {
     try {
-      console.log(`[send] ${method} ${id}:`, params);
-      socket.send(JSON.stringify({"method": method, "id": id, "params": params}));
-      console.log(`[sent] ${method} ${id}`);
+      console.log(`[->] ${id} ${method}`, params, authResp);
+      let frame = {
+          "id": id,
+          "method": method,
+          "params": params,
+      };
+      if (authResp) {
+        frame.auth = authResp;
+      }
+      socket.send(JSON.stringify(frame));
+      pendingRequests[id] = {
+          method: method,
+          params: params,
+          ai: ai,
+          resolve: resolve,
+          reject: reject,
+      };
     } catch (e) {
       reject(e);
     }
-
-    socket.addEventListener("message", function (event) {
-      let data = JSON.parse(event.data);
-      if (data.id === id) {
-        console.log(`[received] ${method} ${id}:`, data);
-        resolve(data);
-        // clean up after ourselves, otherwise too many listeners!
-        socket.removeEventListener("message", arguments.callee);
-      }
-    });
-
-    socket.onerror = function (error) {
-      reject(error);
-    }
   });
 }
 
+function callDevice(method, params = []) {
+  return callDeviceAuth(method, params, null);
+}
+
+el("auth_log_in_btn").onclick = function () {
+  el("auth_log_in_spinner").className = "spin";
+  getInfo().finally(() => el("auth_log_in_spinner").className = "");
+  return true;
+};
+
+el("sec_log_out_btn").onclick = function () {
+  setVar("auth_info", undefined);
+  authResp = null;
+  location.reload();
+  return true;
+};
+
+el("sec_save_btn").onclick = function () {
+  if (authResp !== null) {
+    let oldHA1 = calcHA1(authUser, authResp.realm, el("sec_old_pass").value);
+    let goodHA1 = getVar("auth_info").ha1;
+    if (oldHA1 !== goodHA1) {
+      alert("Invalid old password!");
+      setVar("auth_info", undefined);
+      authResp = null;
+      return;
+    }
+  }
+  let newHA1 = "";
+  if (el("sec_new_pass").value !== "") {
+    newHA1 = calcHA1(authUser, lastInfo.auth_domain, el("sec_new_pass").value);
+    if (!newHA1) {
+      alert("No unicode in passwords please");
+      return true;
+    }
+  }
+  pauseAutoRefresh = true;
+  el("sec_save_spinner").className = "spin";
+  callDevice("Shelly.SetAuth", {ha1: newHA1}).then(function () {
+    setVar("auth_info", undefined);
+    location.reload();
+  }).catch(function (err) {
+    if (err.response) err = err.response.data.message;
+    pauseAutoRefresh = false;
+    alert(err);
+  }).finally(function() {
+    el("sec_save_spinner").className = "";
+    pauseAutoRefresh = false;
+  });
+  return true;
+};
 
 // noinspection JSUnusedGlobalSymbols
 function onLoad() {
   connectWebSocket().then(() => {
-    getInfo().then(() => {
+    getInfo().then((info) => {
       // check for update only once when loading the page (not each time in getInfo)
-      if (lastInfo.wifi_rssi !== 0) {
-        var last_update_check = parseInt(getCookie("last_update_check"));
+      if (info.wifi_rssi !== 0) {
+        var last_update_check = parseInt(getVar("last_update_check"));
         var now = new Date();
         console.log("Last update check:", last_update_check, new Date(last_update_check));
         if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
           checkUpdate();
         }
-        el("notify_update").style.display = (getCookie("update_available") ? "inline" : "none");
+        el("notify_update").style.display = (getVar("update_available") ? "inline" : "none");
       }
-
-      // auto-refresh if getInfo resolved (it rejects if in failsafe mode i.e. not auto-refresh)
-      setInterval(refreshUI, 1000);
-
-    }).catch(() => {
-      console.log("getInfo() rejected; failsafe mode?");
+    }).catch((err) => {
+      console.log("getInfo() rejected", err);
     });
   });
+  setInterval(refreshUI, 1000);
 }
-
-var pauseAutoRefresh = false;
-var pendingGetInfo = false;
 
 function refreshUI() {
   // if the socket is open and connected and the page is visible to the user
-  if (socket.readyState === 1 && !document.hidden && !pauseAutoRefresh && !pendingGetInfo) {
-    pendingGetInfo = true;
-    getInfo()
-      .then(() => pendingGetInfo = false)
-      .catch(() => pendingGetInfo = false);
-  }
+  if (document.hidden) return;
+  if (socket.readyState !== 1) return;
+  if (pauseAutoRefresh || pendingGetInfo) return;
+  pendingGetInfo = true;
+  getInfo().finally(() => pendingGetInfo = false);
 }
 
 function setValueIfNotModified(e, newValue) {
@@ -1071,7 +1249,7 @@ async function uploadFW(blob, spinner, status) {
       console.log("resp", resp, respText);
       spinner.className = "";
       status.innerText = respText;
-      setCookie("update_available", false);
+      setVar("update_available", false);
     }).catch((error) => {
     spinner.className = "";
     status.innerText = `Error uploading: ${error}`;
@@ -1121,7 +1299,7 @@ async function checkUpdate() {
     .then((resp) => {
       // save the cookie before anything else, so that if update not
       // found we still remember that we tried to check for an update
-      setCookie("last_update_check", (new Date()).getTime());
+      setVar("last_update_check", (new Date()).getTime());
 
       var cfg, latestVersion, updateURL, relNotesURL;
       for (var i in resp) {
@@ -1146,7 +1324,7 @@ async function checkUpdate() {
       var updateAvailable = isNewer(latestVersion, curVersion);
       el("notify_update").style.display = (updateAvailable ? "inline" : "none");
 
-      setCookie("update_available", updateAvailable);
+      setVar("update_available", updateAvailable);
       if (!updateAvailable) {
         e.innerText = "Up to date";
         se.className = "";
@@ -1225,3 +1403,6 @@ function hsv2rgb(h, s, v) {
     return [v, p, q];
   }
 }
+
+// https://github.com/geraintluff/sha256
+let sha256 = function a(b){function c(a,b){return a>>>b|a<<32-b}for(var d,e,f=Math.pow,g=f(2,32),h="length",i="",j=[],k=8*b[h],l=a.h=a.h||[],m=a.k=a.k||[],n=m[h],o={},p=2;64>n;p++)if(!o[p]){for(d=0;313>d;d+=p)o[d]=p;l[n]=f(p,.5)*g|0,m[n++]=f(p,1/3)*g|0}for(b+="\x80";b[h]%64-56;)b+="\x00";for(d=0;d<b[h];d++){if(e=b.charCodeAt(d),e>>8)return;j[d>>2]|=e<<(3-d)%4*8}for(j[j[h]]=k/g|0,j[j[h]]=k,e=0;e<j[h];){var q=j.slice(e,e+=16),r=l;for(l=l.slice(0,8),d=0;64>d;d++){var s=q[d-15],t=q[d-2],u=l[0],v=l[4],w=l[7]+(c(v,6)^c(v,11)^c(v,25))+(v&l[5]^~v&l[6])+m[d]+(q[d]=16>d?q[d]:q[d-16]+(c(s,7)^c(s,18)^s>>>3)+q[d-7]+(c(t,17)^c(t,19)^t>>>10)|0),x=(c(u,2)^c(u,13)^c(u,22))+(u&l[1]^u&l[2]^l[1]&l[2]);l=[w+x|0].concat(l),l[4]=l[4]+w|0}for(d=0;8>d;d++)l[d]=l[d]+r[d]|0}for(d=0;8>d;d++)for(e=3;e+1;e--){var y=l[d]>>8*e&255;i+=(16>y?0:"")+y.toString(16)}return i};

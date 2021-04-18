@@ -30,6 +30,11 @@
 #include "shelly_pm.hpp"
 #include "shelly_temp_sensor.hpp"
 
+#define AUTH_USER "admin"
+#define AUTH_FILE_NAME "passwd256"
+#define ACL_FILE_NAME "rpc_acl.json"
+#define KVS_FILE_NAME "kvs.json"
+
 namespace shelly {
 
 extern std::vector<std::unique_ptr<Component>> g_comps;
