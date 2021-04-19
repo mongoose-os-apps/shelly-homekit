@@ -30,11 +30,11 @@
 namespace shelly {
 namespace hap {
 
-class RGBWLight : public Component, public mgos::hap::Service {
+class LightBulb : public Component, public mgos::hap::Service {
  public:
-  RGBWLight(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
+  LightBulb(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
             Output *out_w, struct mgos_config_lb *cfg);
-  virtual ~RGBWLight();
+  virtual ~LightBulb();
 
   struct RGBW {
     float r;
