@@ -109,41 +109,37 @@ Status LightBulb::Init() {
   // Name
   AddNameChar(iid++, cfg_->name);
   // On
-  auto *on_char = new mgos::hap::BoolCharacteristic(
+  notification_characteristics_.on = new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_On,
       std::bind(&LightBulb::HandleOnRead, this, _1, _2, _3),
       true /* supports_notification */,
       std::bind(&LightBulb::HandleOnWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_On);
-  state_notify_chars_.push_back(on_char);
-  AddChar(on_char);
+  AddChar(notification_characteristics_.on);
   // Brightness
-  auto *brightness_char = new mgos::hap::UInt8Characteristic(
+  notification_characteristics_.brightness = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_Brightness, 0, 100, 1,
       std::bind(&LightBulb::HandleBrightnessRead, this, _1, _2, _3),
       true /* supports_notification */,
       std::bind(&LightBulb::HandleBrightnessWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_Brightness);
-  state_notify_chars_.push_back(brightness_char);
-  AddChar(brightness_char);
+  AddChar(notification_characteristics_.brightness);
   // Hue
-  auto *hue_char = new mgos::hap::UInt32Characteristic(
+  notification_characteristics_.hue = new mgos::hap::UInt32Characteristic(
       iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
       std::bind(&LightBulb::HandleHueRead, this, _1, _2, _3),
       true /* supports_notification */,
       std::bind(&LightBulb::HandleHueWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_Hue);
-  state_notify_chars_.push_back(hue_char);
-  AddChar(hue_char);
+  AddChar(notification_characteristics_.hue);
   // Saturation
-  auto *saturation_char = new mgos::hap::UInt32Characteristic(
+  notification_characteristics_.saturation = new mgos::hap::UInt32Characteristic(
       iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
       std::bind(&LightBulb::HandleSaturationRead, this, _1, _2, _3),
       true /* supports_notification */,
       std::bind(&LightBulb::HandleSaturationWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_Saturation);
-  state_notify_chars_.push_back(saturation_char);
-  AddChar(saturation_char);
+  AddChar(notification_characteristics_.saturation);
 
   return Status::OK();
 }
@@ -223,7 +219,7 @@ void LightBulb::UpdateOnOff(bool on, const std::string &source) {
 
   cfg_->state = on;
   dirty_ = true;
-  state_notify_chars_[0]->RaiseEvent();
+  notification_characteristics_.on->RaiseEvent();
 
   if (IsOff()) {
     DisableAutoOff();
@@ -239,7 +235,7 @@ void LightBulb::SetHue(int hue, const std::string &source) {
 
   cfg_->hue = hue;
   dirty_ = true;
-  state_notify_chars_[2]->RaiseEvent();
+  notification_characteristics_.hue->RaiseEvent();
 
   StartTransition();
 }
@@ -252,7 +248,7 @@ void LightBulb::SetSaturation(int saturation, const std::string &source) {
 
   cfg_->saturation = saturation;
   dirty_ = true;
-  state_notify_chars_[3]->RaiseEvent();
+  notification_characteristics_.saturation->RaiseEvent();
 
   StartTransition();
 }
@@ -265,7 +261,7 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
 
   cfg_->brightness = brightness;
   dirty_ = true;
-  state_notify_chars_[1]->RaiseEvent();
+  notification_characteristics_.brightness->RaiseEvent();
 
   StartTransition();
 }
