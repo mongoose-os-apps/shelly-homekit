@@ -413,6 +413,7 @@ class Device:
       local_ip = s.getsockname()[0]
       logger.debug(f"Host IP: {local_ip}")
       s.close()
+      manifest_file = None
       with zipfile.ZipFile(self.local_file, "r") as zfile:
         for name in zfile.namelist():
           if name.endswith('manifest.json'):
@@ -421,32 +422,38 @@ class Device:
             manifest_file = json.loads(mfile)
             logger.debug(f"manifest: {json.dumps(manifest_file, indent=2)}")
             break
-      manifest_version = manifest_file.get('version', '0.0.0')
-      manifest_name = manifest_file.get('name')
-      if manifest_version == '1.0':
-        self.version = self.parse_stock_version(manifest_file.get('build_id', '0.0.0'))
-        self.flash_fw_type_str = "Stock"
+      if manifest_file is not None:
+        manifest_version = manifest_file.get('version', '0.0.0')
+        manifest_name = manifest_file.get('name')
+        if manifest_version == '1.0':
+          self.version = self.parse_stock_version(manifest_file.get('build_id', '0.0.0'))
+          self.flash_fw_type_str = "Stock"
+        else:
+          self.version = manifest_version
+          self.flash_fw_type_str = "HomeKit"
+        logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
+        self.flash_fw_version = self.version
+        if self.is_homekit():
+          self.download_url = 'local'
+        else:
+          self.download_url = f'http://{local_ip}:{webserver_port}/{self.local_file}'
+        if self.is_stock() and self.info.get('stock_fw_model') == 'SHRGBW2' and self.info.get('color_mode'):
+          m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
+        else:
+          m_model = self.info.get('app')
+        if 'rgbw2' in m_model:
+          m_model = m_model.split('-')[0]
+        if 'rgbw2' in manifest_name:
+          manifest_name = manifest_name.split('-')[0]
+        if m_model != manifest_name:
+          self.flash_fw_version = '0.0.0'
+          self.download_url = None
+        return True
       else:
-        self.version = manifest_version
-        self.flash_fw_type_str = "HomeKit"
-      logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
-      self.flash_fw_version = self.version
-      if self.is_homekit():
-        self.download_url = 'local'
-      else:
-        self.download_url = f'http://{local_ip}:{webserver_port}/{self.local_file}'
-      if self.is_stock() and self.info.get('stock_fw_model') == 'SHRGBW2' and self.info.get('color_mode'):
-        m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
-      else:
-        m_model = self.info.get('app')
-      if 'rgbw2' in m_model:
-        m_model = m_model.split('-')[0]
-      if 'rgbw2' in manifest_name:
-        manifest_name = manifest_name.split('-')[0]
-      if m_model != manifest_name:
+        logger.info(f"Invalid file.")
         self.flash_fw_version = '0.0.0'
         self.download_url = None
-      return True
+        return False
     else:
       logger.info(f"File does not exist.")
       self.flash_fw_version = '0.0.0'
