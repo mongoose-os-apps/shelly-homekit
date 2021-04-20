@@ -128,7 +128,7 @@ except ImportError:
   subprocess.run([sys.executable, '-m', 'pip', 'install', 'requests'])
   import requests
 
-app_ver = "2.7.0"
+app_ver = "2.7.1"
 webserver_port = 8381
 http_server_started = False
 server = None
@@ -439,6 +439,10 @@ class Device:
         m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
       else:
         m_model = self.info.get('app')
+      if 'rgbw2' in m_model:
+        m_model = m_model.split('-')[0]
+      if 'rgbw2' in manifest_name:
+        manifest_name = manifest_name.split('-')[0]
       if m_model != manifest_name:
         self.flash_fw_version = '0.0.0'
         self.download_url = None
@@ -1083,6 +1087,8 @@ class Main:
         logger.info(f"{WHITE}Device ID: {NC}{device_id}")
         if sys_mode:
           logger.info(f"{WHITE}Mode: {NC}{sys_mode}")
+        elif color_mode:
+          logger.info(f"{WHITE}Mode: {NC}{color_mode.title()}")
         logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
         logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
         logger.info(f"{WHITE}RSSI: {NC}{wifi_rssi}")
@@ -1251,7 +1257,7 @@ class Main:
       if self.local_file:
         if device_info.is_homekit() and device_info.parse_local_file():
           got_info = True
-        if device_info.is_stock() and device_info.parse_local_file():
+        elif device_info.is_stock():
           if not stock_release_info and not tried_to_get_remote_stock:
             stock_release_info = self.get_release_info('stock')
             tried_to_get_remote_stock = True
@@ -1322,7 +1328,7 @@ class Main:
             device_info.get_info()
             self.parse_info(device_info)
           device_info.get_info()
-          if device_info.flash_fw_version != '0.0.0' and not self.is_newer(device_info.flash_fw_version, device_info.fw_version):
+          if device_info.flash_fw_version != '0.0.0' and (not self.is_newer(device_info.flash_fw_version, device_info.fw_version) or (device_info.is_stock() and self.flash_mode == 'homekit')):
             if self.local_file:
               device_info.parse_local_file()
             else:
