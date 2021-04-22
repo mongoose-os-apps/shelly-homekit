@@ -49,15 +49,6 @@ RGBWLight::~RGBWLight() {
     in_->RemoveHandler(handler_id_);
   }
 
-  // turn off all channels
-  out_r_->SetStatePWM(0.0f, "dtor");
-  out_g_->SetStatePWM(0.0f, "dtor");
-  out_b_->SetStatePWM(0.0f, "dtor");
-
-  if (out_w_ != nullptr) {
-    out_w_->SetStatePWM(0.0f, "dtor");
-  }
-
   SaveState();
 }
 
