@@ -855,10 +855,10 @@ class Main:
 
   @staticmethod
   def security_help(device_info=None, mode='Manual'):
-    # logger.info(f"Please use either command line security (--user | --password) or .netrc.")
-    # logger.info(f"for .netrc security create a file called '.netrc' in the tools folder.")
+    # logger.info(f"Please use either command line security (--user | --password) or netrc")
+    # logger.info(f"for netrc security create a file called '{netrc_file}'")
     # logger.info(f"{WHITE}Example.{NC}")
-    # logger.info(f"machine shelly-50029178B781.local")
+    # logger.info(f"machine shelly-????????.local")
     # logger.info(f"login admin")
     # logger.info(f"password fox1")
     if mode == 'Manual':
@@ -872,11 +872,6 @@ class Main:
   def get_login_info(host=None):
     username = main.username
     password = main.password
-    logger.trace(f"[login] host: {host}")
-    logger.trace(f'[login] username: {username}')
-    logger.trace(f'[login] password: {password}')
-    # username = 'admin'
-    # password = ''
     # netrc_file = f"{os.path.abspath(os.getcwd())}/.netrc"
     # if os.path.exists(netrc_file):
     #   try:
@@ -887,9 +882,12 @@ class Main:
     #       logger.trace(f'[.netrc] username: {username}')
     #       logger.trace(f'[.netrc] password: {password}')
     #     else:
-    #       raise netrc.NetrcParseError(f'No authenticators for {netrc_machine}')
+    #       raise netrc.NetrcParseError(f'No authenticators for {host}')
     #   except (IOError, netrc.NetrcParseError) as err:
     #     logger.trace(f"parsing .netrc: {err}")
+    logger.trace(f"[login] host: {host}")
+    logger.trace(f'[login] username: {username}')
+    logger.trace(f'[login] password: {password}')
     return username, password
 
   @staticmethod
