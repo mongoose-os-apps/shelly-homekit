@@ -651,7 +651,7 @@ void WindowCovering::HandleInputEvent01(Direction dir, Input::Event ev,
   bool stop = false;
   bool is_toggle = (cfg_->in_mode == (int) InMode::kSeparateToggle);
   if (state) {
-    if (moving_dir_ == Direction::kNone || moving_dir_ != dir) {
+    if (moving_dir_ == Direction::kNone) {
       float pos = (dir == Direction::kOpen ? kFullyOpen : kFullyClosed);
       last_ext_move_dir_ = dir;
       SetTgtPos(pos, "ext");
