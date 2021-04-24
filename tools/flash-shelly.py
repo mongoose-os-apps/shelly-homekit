@@ -84,7 +84,7 @@ import http.server
 import ipaddress
 import json
 import logging
-import netrc
+# import netrc
 import os
 import platform
 import queue
@@ -220,7 +220,7 @@ class ServiceListener:
       logger.trace(f'[Device Scan] info: {info}')
       logger.trace(f'[Device Scan] properties: {properties}')
       logger.trace('')
-      (username, password) = main.get_netrc_login_info(host)
+      (username, password) = main.get_login_info(host)
       self.queue.put(Device(host, username, password, socket.inet_ntoa(info.addresses[0])))
 
   @staticmethod
@@ -854,33 +854,42 @@ class Main:
       main.stop_scan()
 
   @staticmethod
-  def security_help(device_info=None):
-    logger.info(f"{device_info.friendly_host} is password protected, please check supplied details are correct.")
-    logger.info(f"Please use either command line security (--user | --password) or .netrc.")
-    logger.info(f"for .netrc security create a file called '.netrc' in the tools folder.")
-    logger.info(f"{WHITE}Example.{NC}")
-    logger.info(f"machine shelly-50029178B781.local")
-    logger.info(f"login admin")
-    logger.info(f"password fox1")
+  def security_help(device_info=None, mode='Manual'):
+    # logger.info(f"Please use either command line security (--user | --password) or .netrc.")
+    # logger.info(f"for .netrc security create a file called '.netrc' in the tools folder.")
+    # logger.info(f"{WHITE}Example.{NC}")
+    # logger.info(f"machine shelly-50029178B781.local")
+    # logger.info(f"login admin")
+    # logger.info(f"password fox1")
+    if mode == 'Manual':
+      logger.info(f"{device_info.friendly_host} is password protected, please check supplied details are correct.")
+      logger.info(f"commandline args are --user | --password")
+    else:
+      logger.info(f"{device_info.friendly_host} is password protected, security in scanner mode is not currently supported.")
+      logger.info(f"unless all devices use same password.")
 
   @staticmethod
-  def get_netrc_login_info(netrc_machine=None):
-    username = 'admin'
-    password = ''
-    netrc_machine = netrc_machine
-    netrc_file = f"{os.path.abspath(os.getcwd())}/.netrc"
-    if os.path.exists(netrc_file):
-      try:
-        info = netrc.netrc(netrc_file).authenticators(netrc_machine)
-        if info is not None:
-          username = info[0]
-          password = info[2]
-          logger.trace(f'[.netrc] username: {username}')
-          logger.trace(f'[.netrc] password: {password}')
-        else:
-          raise netrc.NetrcParseError(f'No authenticators for {netrc_machine}')
-      except (IOError, netrc.NetrcParseError) as err:
-        logger.trace(f'parsing .netrc: {err}')
+  def get_login_info(host=None):
+    username = main.username
+    password = main.password
+    logger.trace(f"[login] host: {host}")
+    logger.trace(f'[login] username: {username}')
+    logger.trace(f'[login] password: {password}')
+    # username = 'admin'
+    # password = ''
+    # netrc_file = f"{os.path.abspath(os.getcwd())}/.netrc"
+    # if os.path.exists(netrc_file):
+    #   try:
+    #     info = netrc.netrc(netrc_file).authenticators(host)
+    #     if info is not None:
+    #       username = info[0]
+    #       password = info[2]
+    #       logger.trace(f'[.netrc] username: {username}')
+    #       logger.trace(f'[.netrc] password: {password}')
+    #     else:
+    #       raise netrc.NetrcParseError(f'No authenticators for {netrc_machine}')
+    #   except (IOError, netrc.NetrcParseError) as err:
+    #     logger.trace(f"parsing .netrc: {err}")
     return username, password
 
   @staticmethod
@@ -1464,7 +1473,7 @@ class Main:
     for host in self.hosts:
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Manual Hosts] action {host}{NC}")
-      (username, password) = main.get_netrc_login_info(host) if self.password == "" else (self.username, self.password)
+      (username, password) = main.get_login_info(host)
       n = 1
       while n <= self.timeout:
         device_info = Device(host, username, password, no_error_message=True)
@@ -1501,12 +1510,7 @@ class Main:
       logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
       if device_info.info and device_info.info == 401:
         logger.info("")
-        logger.info(f"{device_info.friendly_host} is password protected, .netrc file is required for security in scanner mode.")
-        logger.info(f"please create a file called '.netrc' in the tools folder.")
-        logger.info(f"Example.")
-        logger.info(f"machine shelly-50029178B781.local")
-        logger.info(f"login admin")
-        logger.info(f"password fox1")
+        self.security_help(device_info, 'Scanner')
       elif device_info.info:
         fw_model = device_info.info.get('model') if device_info.is_homekit() else device_info.shelly_model(device_info.info.get('device').get('type'))[0]
         if self.is_fw_type(device_info.info.get('fw_type')) and self.is_model_type(fw_model) and self.is_device_name(device_info.info.get('device_name')):
