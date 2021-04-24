@@ -84,7 +84,6 @@ import http.server
 import ipaddress
 import json
 import logging
-# import netrc
 import os
 import platform
 import queue
@@ -855,12 +854,6 @@ class Main:
 
   @staticmethod
   def security_help(device_info=None, mode='Manual'):
-    # logger.info(f"Please use either command line security (--user | --password) or netrc")
-    # logger.info(f"for netrc security create a file called '{netrc_file}'")
-    # logger.info(f"{WHITE}Example.{NC}")
-    # logger.info(f"machine shelly-????????.local")
-    # logger.info(f"login admin")
-    # logger.info(f"password fox1")
     if mode == 'Manual':
       logger.info(f"{device_info.friendly_host} is password protected, please check supplied details are correct.")
       logger.info(f"commandline args are --user | --password")
@@ -872,19 +865,6 @@ class Main:
   def get_login_info(host=None):
     username = main.username
     password = main.password
-    # netrc_file = f"{os.path.abspath(os.getcwd())}/.netrc"
-    # if os.path.exists(netrc_file):
-    #   try:
-    #     info = netrc.netrc(netrc_file).authenticators(host)
-    #     if info is not None:
-    #       username = info[0]
-    #       password = info[2]
-    #       logger.trace(f'[.netrc] username: {username}')
-    #       logger.trace(f'[.netrc] password: {password}')
-    #     else:
-    #       raise netrc.NetrcParseError(f'No authenticators for {host}')
-    #   except (IOError, netrc.NetrcParseError) as err:
-    #     logger.trace(f"parsing .netrc: {err}")
     logger.trace(f"[login] host: {host}")
     logger.trace(f'[login] username: {username}')
     logger.trace(f'[login] password: {password}')
