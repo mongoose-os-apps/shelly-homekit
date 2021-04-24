@@ -952,9 +952,6 @@ class Main:
     logger.trace(f"security: {device_info.info.get('auth_en')}")
     logger.debug(f"requests.post(url='http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth('{self.user}', '{self.password}'), json={value})")
     response = requests.post(url=f'http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth(self.user, self.password), json={'code': self.hap_setup_code})
-    logger.trace(response.text)
-    logger.trace(f"{response.status_code}")
-    logger.trace((dir(response)))
     if response.status_code == 200:
       logger.trace(response.text)
       logger.info(f"HAP code successfully configured.")
