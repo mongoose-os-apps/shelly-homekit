@@ -1184,9 +1184,11 @@ class Main:
           logger.info(f"{WHITE}Mode: {NC}{sys_mode}")
         elif color_mode:
           logger.info(f"{WHITE}Mode: {NC}{color_mode.title()}")
-        logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
+        if wifi_ssid:
+          logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
         logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
-        logger.info(f"{WHITE}RSSI: {NC}{wifi_rssi}")
+        if wifi_rssi:
+          logger.info(f"{WHITE}RSSI: {NC}{wifi_rssi}")
         if sys_temp:
           logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
         if str(uptime) != '0:00:00':
