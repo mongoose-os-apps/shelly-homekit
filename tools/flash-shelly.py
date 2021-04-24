@@ -564,8 +564,7 @@ class HomeKitDevice(Device):
     response = requests.post(url=f'http://{self.wifi_ip}/update', auth=HTTPDigestAuth(self.username, self.password), files=files)
     logger.trace(response.text)
     if response.status_code == 401:
-      logger.info(f"{self.friendly_host} is password protected.")
-      main.security_help()
+      main.security_help(self)
     return response
 
   def preform_reboot(self):
@@ -574,8 +573,7 @@ class HomeKitDevice(Device):
     response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
     logger.trace(response.text)
     if response.status_code == 401:
-      logger.info(f"{self.friendly_host} is password protected.")
-      main.security_help()
+      main.security_help(self)
     return response
 
 
@@ -623,8 +621,7 @@ class StockDevice(Device):
         logger.info(f"flash failed")
     logger.trace(response.text)
     if response.status_code == 401:
-      logger.info(f"{self.friendly_host} is password protected.")
-      main.security_help()
+      main.security_help(self)
     return response
 
   def preform_reboot(self):
@@ -633,8 +630,7 @@ class StockDevice(Device):
     response = requests.get(url=f'http://{self.wifi_ip}/reboot', auth=(self.username, self.password))
     logger.trace(response.text)
     if response.status_code == 401:
-      logger.info(f"{self.friendly_host} is password protected.")
-      main.security_help()
+      main.security_help(self)
     return response
 
   def perform_mode_change(self, mode_color):
@@ -643,8 +639,7 @@ class StockDevice(Device):
     response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.username, self.password))
     logger.trace(response.text)
     if response.status_code == 401:
-      logger.info(f"{self.friendly_host} is password protected.")
-      main.security_help()
+      main.security_help(self)
     return response
 
 
@@ -859,10 +854,11 @@ class Main:
       main.stop_scan()
 
   @staticmethod
-  def security_help():
+  def security_help(device_info=None):
+    logger.info(f"{device_info.friendly_host} is password protected, please check supplied details are correct.")
     logger.info(f"Please use either command line security (--user | --password) or .netrc.")
     logger.info(f"for .netrc security create a file called '.netrc' in the tools folder.")
-    logger.info(f"Example.")
+    logger.info(f"{WHITE}Example.{NC}")
     logger.info(f"machine shelly-50029178B781.local")
     logger.info(f"login admin")
     logger.info(f"password fox1")
@@ -965,8 +961,7 @@ class Main:
         logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}, auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
         requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
       elif response.status_code == 401:
-        logger.info(f"{device_info.friendly_host} is password protected.")
-        self.security_help()
+        self.security_help(device_info)
     else:
       if self.network_type == 'static':
         log_message = f"Configuring static IP to {self.ipv4_ip}..."
@@ -981,8 +976,7 @@ class Main:
         logger.trace(response.text)
         logger.info(f"Saved...")
       elif response.status_code == 401:
-        logger.info(f"{device_info.friendly_host} is password protected.")
-        self.security_help()
+        self.security_help(device_info)
 
   def write_hap_setup_code(self, device_info):
     logger.info("Configuring HomeKit setup code...")
@@ -995,7 +989,7 @@ class Main:
       logger.info(f"HAP code successfully configured.")
     elif response.status_code == 401:
       logger.info(f"{device_info.friendly_host} is password protected.")
-      self.security_help()
+      self.security_help(device_info)
 
   @staticmethod
   def wait_for_reboot(device_info, before_reboot_uptime=-1, reboot_only=False):
@@ -1481,8 +1475,7 @@ class Main:
       if n > self.timeout:
         device_info = Device(host, username, password)
       if device_info.info and device_info.info == 401:
-        logger.info(f"{device_info.friendly_host} is password protected.")
-        self.security_help()
+        self.security_help(device_info)
       elif device_info.info:
         device = {'host': device_info.host, 'username': device_info.username, 'password': device_info.password, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
         self.probe_device(device)
