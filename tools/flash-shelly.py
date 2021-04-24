@@ -311,12 +311,12 @@ class Device:
           fw_type = "stock"
           device_url = f'http://{self.wifi_ip}/settings'
         else:
-          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
+          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
+          device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt'
           if fw_info.status_code == 401:
-            self.info = 401
-            return 401
+            fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
+            device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
           fw_type = "homekit"
-          device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
       except Exception:
         pass
       if fw_info is not None and fw_info.status_code == 200:
