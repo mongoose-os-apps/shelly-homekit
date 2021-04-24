@@ -72,6 +72,8 @@ optional arguments:
   --log-file LOG_FILENAME
                         Create output log file with chosen filename.
   --reboot              Preform a reboot of the device.
+  --user USER           Enter user for device security (default = admin).
+  --password PASSWORD   Enter password for device security.
 """
 
 import argparse
@@ -122,13 +124,15 @@ except ImportError:
   import zeroconf
 try:
   import requests
+  from requests.auth import HTTPDigestAuth
 except ImportError:
   logger.info("Installing requests...")
   upgrade_pip()
   subprocess.run([sys.executable, '-m', 'pip', 'install', 'requests'])
   import requests
+  from requests.auth import HTTPDigestAuth
 
-app_ver = "2.7.1"
+app_ver = "2.8.0"
 webserver_port = 8381
 http_server_started = False
 server = None
@@ -238,6 +242,8 @@ class Device:
   def __init__(self, host, wifi_ip=None, info=None, no_error_message=False):
     self.host = host
     self.friendly_host = host.replace('.local', '')
+    self.user = main.user
+    self.password = main.password
     self.wifi_ip = wifi_ip
     self.info = info if info is not None else {}
     self.variant = main.variant
@@ -290,17 +296,23 @@ class Device:
     fw_info = None
     if (not self.info or force_update) and self.is_host_reachable(self.host, no_error_message):
       try:
-        status_check = requests.get(f'http://{self.wifi_ip}/status', timeout=10)
+        status_check = requests.get(f'http://{self.wifi_ip}/status', auth=(self.user, self.password), timeout=10)
         if status_check.status_code == 200:
           status = json.loads(status_check.content)
           if status.get('status', '') != '':
             self.info = {}
             return self.info
-          fw_info = requests.get(f'http://{self.wifi_ip}/settings', timeout=3)
+          fw_info = requests.get(f'http://{self.wifi_ip}/settings', auth=(self.user, self.password), timeout=3)
+          if fw_info.status_code == 401:
+            self.info = 401
+            return 401
           fw_type = "stock"
           device_url = f'http://{self.wifi_ip}/settings'
         else:
-          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
+          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', auth=HTTPDigestAuth(self.user, self.password), timeout=3)
+          if fw_info.status_code == 401:
+            self.info = 401
+            return 401
           fw_type = "homekit"
           device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
       except Exception:
@@ -546,15 +558,21 @@ class HomeKitDevice(Device):
       else:
         logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
       files = {'file': ('shelly-flash.zip', my_file.content)}
-    logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
-    response = requests.post(f'http://{self.wifi_ip}/update', files=files)
+    logger.debug(f"requests.post(url='http://{self.wifi_ip}/update', auth=HTTPDigestAuth('{self.user}', '{self.password}'), files=files)")
+    response = requests.post(url=f'http://{self.wifi_ip}/update', auth=HTTPDigestAuth(self.user, self.password), files=files)
     logger.trace(response.text)
+    if response.status_code == 401:
+      logger.info(f"{self.friendly_host} is password protected, please try again with '--password=??????'.")
+    return response
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
-    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/rpc/SyS.Reboot'}")
-    response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot')
+    logger.debug(f"requests.post(url='http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth('{self.user}', '{self.password}'))")
+    response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.user, self.password))
     logger.trace(response.text)
+    if response.status_code == 401:
+      logger.info(f"{self.friendly_host} is password protected, please try again with '--password=??????'.")
+    return response
 
 
 class StockDevice(Device):
@@ -591,34 +609,44 @@ class StockDevice(Device):
     else:
       logger.debug(f"Remote Download URL: {download_url}")
     if self.fw_version == '0.0.0':
-      logger.debug(f"http://{self.wifi_ip}/ota?update=true")
-      response = requests.get(f'http://{self.wifi_ip}/ota?update=true')
+      logger.debug(f"requests.get(url=http://{self.wifi_ip}/ota?update=true, auth=('{self.user}', '{self.password}')")
+      response = requests.get(url=f'http://{self.wifi_ip}/ota?update=true', auth=(self.user, self.password))
     else:
-      logger.debug(f"http://{self.wifi_ip}/ota?url={download_url}")
+      logger.debug(f"requests.get(url=http://{self.wifi_ip}/ota?url={download_url}, auth=('{self.user}', '{self.password}')")
       try:
-        response = requests.get(f'http://{self.wifi_ip}/ota?url={download_url}')
+        response = requests.get(url=f'http://{self.wifi_ip}/ota?url={download_url}', auth=(self.user, self.password))
       except Exception:
         logger.info(f"flash failed")
-    if response:
-      logger.trace(response.text)
+    logger.trace(response.text)
+    if response.status_code == 401:
+      logger.info(f"{self.friendly_host} is password protected, please try again with '--user=?????? --password=??????'.")
+    return response
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
-    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}")
-    response = requests.get(url=f'http://{self.wifi_ip}/reboot')
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}, auth=('{self.user}', '{self.password}'d)")
+    response = requests.get(url=f'http://{self.wifi_ip}/reboot', auth=(self.user, self.password))
     logger.trace(response.text)
+    if response.status_code == 401:
+      logger.info(f"{self.friendly_host} is password protected, please try again with '--user=?????? --password=??????'.")
+    return response
 
   def perform_mode_change(self, mode_color):
     logger.info("Performing mode change...")
-    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}")
-    response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}')
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}, auth=('{self.user}', '{self.password}'))")
+    response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.user, self.password))
     logger.trace(response.text)
+    if response.status_code == 401:
+      logger.info(f"{self.friendly_host} is password protected, please try again with '--user=?????? --password=??????'.")
+    return response
 
 
 # noinspection PyUnboundLocalVariable,PyUnresolvedReferences
 class Main:
   def __init__(self):
     self.hosts = None
+    self.user = None
+    self.password = None
     self.run_action = None
     self.timeout = None
     self.log_filename = None
@@ -672,6 +700,8 @@ class Main:
     parser.add_argument('--timeout', type=int, default=20, help="Scan: Time of seconds to wait after last detected device before quitting.  Manual: Time of seconds to keeping to connect.")
     parser.add_argument('--log-file', dest="log_filename", default='', help="Create output log file with chosen filename.")
     parser.add_argument('--reboot', action="store_true", help="Preform a reboot of the device.")
+    parser.add_argument('--user', default='admin', help="Enter user for device security (default = admin).")
+    parser.add_argument('--password', default='', help="Enter password for device security.")
     parser.add_argument('hosts', type=str, nargs='*', default='')
     args = parser.parse_args()
 
@@ -719,6 +749,8 @@ class Main:
     logger.debug(f"OS: {PURPLE}{arch}{NC}")
     logger.debug(f"app_version: {app_ver}")
     logger.debug(f"manual_hosts: {args.hosts} ({len(args.hosts)})")
+    logger.debug(f"user: {args.user}")
+    logger.debug(f"password: {args.password}")
     logger.debug(f"action: {action}")
     logger.debug(f"mode: {args.mode}")
     logger.debug(f"timeout: {args.timeout}")
@@ -765,6 +797,8 @@ class Main:
     self.ipv4_mask = args.ipv4_mask
     self.ipv4_gw = args.ipv4_gw
     self.ipv4_dns = args.ipv4_dns
+    self.user = args.user
+    self.password = args.password
 
     message = None
     if not args.hosts and not args.do_all:
@@ -886,14 +920,16 @@ class Main:
         value = {'config': {'wifi': {'sta': {'ip': ''}}}}
       config_set_url = f'http://{wifi_ip}/rpc/Config.Set'
       logger.info(log_message)
-      logger.debug(f"requests.post(url={config_set_url}, json={value}")
-      response = requests.post(url=config_set_url, json=value)
+      logger.debug(f"requests.post(url={config_set_url}, json={value}, auth=HTTPDigestAuth('{self.user}', '{self.password}'))")
+      response = requests.post(url=config_set_url, json=value, auth=HTTPDigestAuth(self.user, self.password))
       logger.trace(response.text)
-      if response.text.find('"saved": true') > 0:
-        logger.info(f"Saved, Rebooting...")
-        logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}")
-        response = requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot')
+      if response.status_code == 200:
         logger.trace(response.text)
+        logger.info(f"Saved, Rebooting...")
+        logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}, auth=HTTPDigestAuth('{self.user}', '{self.password}'))")
+        requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.user, self.password))
+      elif response.status_code == 401:
+        logger.info(f"{device_info.friendly_host} is password protected, please try again with '--password=??????'.")
     else:
       if self.network_type == 'static':
         log_message = f"Configuring static IP to {self.ipv4_ip}..."
@@ -902,19 +938,28 @@ class Main:
         log_message = f"Configuring IP to use DHCP..."
         config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=dhcp'
       logger.info(log_message)
-      logger.debug(f"requests.post(url={config_set_url}")
+      logger.debug(f"requests.post(url={config_set_url})")
       response = requests.post(url=config_set_url)
-      logger.trace(response.text)
-      logger.info(f"Saved...")
+      if response.status_code == 200:
+        logger.trace(response.text)
+        logger.info(f"Saved...")
+      elif response.status_code == 401:
+        logger.info(f"{device_info.friendly_host} is password protected, please try again with '--user=?????? --password=??????'.")
 
-  def write_hap_setup_code(self, wifi_ip):
+  def write_hap_setup_code(self, device_info):
     logger.info("Configuring HomeKit setup code...")
     value = {'code': self.hap_setup_code}
-    logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/HAP.Setup', json={value}")
-    response = requests.post(url=f'http://{wifi_ip}/rpc/HAP.Setup', json={'code': self.hap_setup_code})
+    logger.trace(f"security: {device_info.info.get('auth_en')}")
+    logger.debug(f"requests.post(url='http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth('{self.user}', '{self.password}'), json={value})")
+    response = requests.post(url=f'http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth(self.user, self.password), json={'code': self.hap_setup_code})
     logger.trace(response.text)
-    if response.text.startswith('null'):
-      logger.info(f"Done.")
+    logger.trace(f"{response.status_code}")
+    logger.trace((dir(response)))
+    if response.status_code == 200:
+      logger.trace(response.text)
+      logger.info(f"HAP code successfully configured.")
+    elif response.status_code == 401:
+      logger.info(f"{device_info.friendly_host} is password protected, please try again with '--password=??????'.")
 
   @staticmethod
   def wait_for_reboot(device_info, before_reboot_uptime=-1, reboot_only=False):
@@ -951,52 +996,56 @@ class Main:
   def write_flash(self, device_info, revert=False):
     logger.debug(f"{PURPLE}[Write Flash]{NC}")
     uptime = device_info.get_uptime(True)
-    device_info.flash_firmware(revert)
-    message = f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}"
-    if revert is True:
-      self.wait_for_reboot(device_info, uptime)
-      reboot_check = device_info.is_stock()
-      flash_fw = 'stock revert'
-      message = f"{GREEN}Successfully reverted {device_info.friendly_host} to stock firmware{NC}"
-    else:
-      reboot_check = self.parse_version(self.wait_for_reboot(device_info, uptime))
-      flash_fw = self.parse_version(device_info.flash_fw_version)
-    if (reboot_check == flash_fw) or (revert is True and reboot_check is True):
-      global flashed_devices, requires_upgrade
-      if device_info.already_processed is False:
-        flashed_devices += 1
-      if requires_upgrade is True:
-        requires_upgrade = 'Done'
-      device_info.already_processed = True
-      logger.critical(f"{message}")
-    else:
-      if reboot_check == '0.0.0':
-        logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
+    response = device_info.flash_firmware(revert)
+    logger.trace(response)
+    if response and response.status_code == 200:
+      message = f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}"
+      if revert is True:
+        self.wait_for_reboot(device_info, uptime)
+        reboot_check = device_info.is_stock()
+        flash_fw = 'stock revert'
+        message = f"{GREEN}Successfully reverted {device_info.friendly_host} to stock firmware{NC}"
       else:
-        global failed_flashed_devices
-        failed_flashed_devices += 1
-        logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}")
-      logger.debug(f"Current: {reboot_check}")
-      logger.debug(f"flash_fw_version: {flash_fw}")
+        reboot_check = self.parse_version(self.wait_for_reboot(device_info, uptime))
+        flash_fw = self.parse_version(device_info.flash_fw_version)
+      if (reboot_check == flash_fw) or (revert is True and reboot_check is True):
+        global flashed_devices, requires_upgrade
+        if device_info.already_processed is False:
+          flashed_devices += 1
+        if requires_upgrade is True:
+          requires_upgrade = 'Done'
+        device_info.already_processed = True
+        logger.critical(f"{message}")
+      else:
+        if reboot_check == '0.0.0':
+          logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
+        else:
+          global failed_flashed_devices
+          failed_flashed_devices += 1
+          logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}")
+        logger.debug(f"Current: {reboot_check}")
+        logger.debug(f"flash_fw_version: {flash_fw}")
 
   def reboot_device(self, device_info):
     logger.debug(f"{PURPLE}[Reboot Device]{NC}")
-    device_info.preform_reboot()
-    self.wait_for_reboot(device_info, reboot_only=True)
-    logger.info(f"Device has rebooted...")
+    response = device_info.preform_reboot()
+    if response.status_code == 200:
+      self.wait_for_reboot(device_info, reboot_only=True)
+      logger.info(f"Device has rebooted...")
 
   def mode_change(self, device_info, mode_color):
     logger.debug(f"{PURPLE}[Color Mode Change] change from {device_info.info.get('color_mode')} to {mode_color}{NC}")
     uptime = device_info.get_uptime(True)
-    device_info.perform_mode_change(mode_color)
-    self.wait_for_reboot(device_info, uptime)
-    current_color_mode = device_info.get_color_mode()
-    logger.debug(f"mode_color: {mode_color}")
-    if current_color_mode == mode_color:
-      device_info.already_processed = True
-      logger.critical(f"{GREEN}Successfully changed {device_info.friendly_host} to mode: {current_color_mode}{NC}")
-      global requires_mode_change
-      requires_mode_change = 'Done'
+    response = device_info.perform_mode_change(mode_color)
+    if response.status_code == 200:
+      self.wait_for_reboot(device_info, uptime)
+      current_color_mode = device_info.get_color_mode()
+      logger.debug(f"mode_color: {mode_color}")
+      if current_color_mode == mode_color:
+        device_info.already_processed = True
+        logger.critical(f"{GREEN}Successfully changed {device_info.friendly_host} to mode: {current_color_mode}{NC}")
+        global requires_mode_change
+        requires_mode_change = 'Done'
 
   def parse_info(self, device_info, hk_ver=None):
     logger.debug(f"")
@@ -1197,7 +1246,7 @@ class Main:
           self.write_flash(device_info)
 
     if device_info.is_homekit() and self.hap_setup_code:
-      self.write_hap_setup_code(device_info.wifi_ip)
+      self.write_hap_setup_code(device_info)
     if self.network_type:
       if self.network_type == 'static':
         action_message = f"Do you wish to set your IP address to {self.ipv4_ip}"
@@ -1394,7 +1443,9 @@ class Main:
           break
       if n > self.timeout:
         device_info = Device(host)
-      if device_info.info:
+      if device_info.info and device_info.info == 401:
+        logger.info(f"{device_info.friendly_host} is password protected, please try again with '--user=?????? --password=??????'.")
+      elif device_info.info:
         device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
         self.probe_device(device)
     if http_server_started and server is not None:
@@ -1417,7 +1468,11 @@ class Main:
         break
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
-      if device_info.info:
+      if device_info.info and device_info.info == 401:
+        logger.info("")
+        logger.info(f"{device_info.friendly_host} is password protected, security in scaner mode is not currently supported.")
+        logger.info(f"unless all devices use same password.")
+      elif device_info.info:
         fw_model = device_info.info.get('model') if device_info.is_homekit() else device_info.shelly_model(device_info.info.get('device').get('type'))[0]
         if self.is_fw_type(device_info.info.get('fw_type')) and self.is_model_type(fw_model) and self.is_device_name(device_info.info.get('device_name')):
           device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
