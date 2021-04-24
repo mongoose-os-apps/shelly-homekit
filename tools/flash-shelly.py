@@ -84,6 +84,7 @@ import http.server
 import ipaddress
 import json
 import logging
+import netrc
 import os
 import platform
 import queue
@@ -219,7 +220,8 @@ class ServiceListener:
       logger.trace(f'[Device Scan] info: {info}')
       logger.trace(f'[Device Scan] properties: {properties}')
       logger.trace('')
-      self.queue.put(Device(host, socket.inet_ntoa(info.addresses[0])))
+      (username, password) = main.get_netrc_login_info(host)
+      self.queue.put(Device(host, username, password, socket.inet_ntoa(info.addresses[0])))
 
   @staticmethod
   def remove_service(zc, service_type, device):
@@ -239,11 +241,11 @@ class ServiceListener:
 
 
 class Device:
-  def __init__(self, host, wifi_ip=None, info=None, no_error_message=False):
+  def __init__(self, host, username=None, password=None, wifi_ip=None, info=None, no_error_message=False):
     self.host = host
     self.friendly_host = host.replace('.local', '')
-    self.user = main.user
-    self.password = main.password
+    self.username = username
+    self.password = password
     self.wifi_ip = wifi_ip
     self.info = info if info is not None else {}
     self.variant = main.variant
@@ -296,20 +298,20 @@ class Device:
     fw_info = None
     if (not self.info or force_update) and self.is_host_reachable(self.host, no_error_message):
       try:
-        status_check = requests.get(f'http://{self.wifi_ip}/status', auth=(self.user, self.password), timeout=10)
+        status_check = requests.get(f'http://{self.wifi_ip}/status', auth=(self.username, self.password), timeout=10)
         if status_check.status_code == 200:
           status = json.loads(status_check.content)
           if status.get('status', '') != '':
             self.info = {}
             return self.info
-          fw_info = requests.get(f'http://{self.wifi_ip}/settings', auth=(self.user, self.password), timeout=3)
+          fw_info = requests.get(f'http://{self.wifi_ip}/settings', auth=(self.username, self.password), timeout=3)
           if fw_info.status_code == 401:
             self.info = 401
             return 401
           fw_type = "stock"
           device_url = f'http://{self.wifi_ip}/settings'
         else:
-          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', auth=HTTPDigestAuth(self.user, self.password), timeout=3)
+          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
           if fw_info.status_code == 401:
             self.info = 401
             return 401
@@ -558,8 +560,8 @@ class HomeKitDevice(Device):
       else:
         logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
       files = {'file': ('shelly-flash.zip', my_file.content)}
-    logger.debug(f"requests.post(url='http://{self.wifi_ip}/update', auth=HTTPDigestAuth('{self.user}', '{self.password}'), files=files)")
-    response = requests.post(url=f'http://{self.wifi_ip}/update', auth=HTTPDigestAuth(self.user, self.password), files=files)
+    logger.debug(f"requests.post(url='http://{self.wifi_ip}/update', auth=HTTPDigestAuth('{self.username}', '{self.password}'), files=files)")
+    response = requests.post(url=f'http://{self.wifi_ip}/update', auth=HTTPDigestAuth(self.username, self.password), files=files)
     logger.trace(response.text)
     if response.status_code == 401:
       logger.info(f"{self.friendly_host} is password protected, please try again with '--password=??????'.")
@@ -567,8 +569,8 @@ class HomeKitDevice(Device):
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
-    logger.debug(f"requests.post(url='http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth('{self.user}', '{self.password}'))")
-    response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.user, self.password))
+    logger.debug(f"requests.post(url='http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
+    response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
     logger.trace(response.text)
     if response.status_code == 401:
       logger.info(f"{self.friendly_host} is password protected, please try again with '--password=??????'.")
@@ -609,12 +611,12 @@ class StockDevice(Device):
     else:
       logger.debug(f"Remote Download URL: {download_url}")
     if self.fw_version == '0.0.0':
-      logger.debug(f"requests.get(url=http://{self.wifi_ip}/ota?update=true, auth=('{self.user}', '{self.password}')")
-      response = requests.get(url=f'http://{self.wifi_ip}/ota?update=true', auth=(self.user, self.password))
+      logger.debug(f"requests.get(url=http://{self.wifi_ip}/ota?update=true, auth=('{self.username}', '{self.password}')")
+      response = requests.get(url=f'http://{self.wifi_ip}/ota?update=true', auth=(self.username, self.password))
     else:
-      logger.debug(f"requests.get(url=http://{self.wifi_ip}/ota?url={download_url}, auth=('{self.user}', '{self.password}')")
+      logger.debug(f"requests.get(url=http://{self.wifi_ip}/ota?url={download_url}, auth=('{self.username}', '{self.password}')")
       try:
-        response = requests.get(url=f'http://{self.wifi_ip}/ota?url={download_url}', auth=(self.user, self.password))
+        response = requests.get(url=f'http://{self.wifi_ip}/ota?url={download_url}', auth=(self.username, self.password))
       except Exception:
         logger.info(f"flash failed")
     logger.trace(response.text)
@@ -624,8 +626,8 @@ class StockDevice(Device):
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
-    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}, auth=('{self.user}', '{self.password}'d)")
-    response = requests.get(url=f'http://{self.wifi_ip}/reboot', auth=(self.user, self.password))
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}, auth=('{self.username}', '{self.password}'d)")
+    response = requests.get(url=f'http://{self.wifi_ip}/reboot', auth=(self.username, self.password))
     logger.trace(response.text)
     if response.status_code == 401:
       logger.info(f"{self.friendly_host} is password protected, please try again with '--user=?????? --password=??????'.")
@@ -633,8 +635,8 @@ class StockDevice(Device):
 
   def perform_mode_change(self, mode_color):
     logger.info("Performing mode change...")
-    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}, auth=('{self.user}', '{self.password}'))")
-    response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.user, self.password))
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}, auth=('{self.username}', '{self.password}'))")
+    response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.username, self.password))
     logger.trace(response.text)
     if response.status_code == 401:
       logger.info(f"{self.friendly_host} is password protected, please try again with '--user=?????? --password=??????'.")
@@ -645,7 +647,7 @@ class StockDevice(Device):
 class Main:
   def __init__(self):
     self.hosts = None
-    self.user = None
+    self.username = None
     self.password = None
     self.run_action = None
     self.timeout = None
@@ -700,7 +702,7 @@ class Main:
     parser.add_argument('--timeout', type=int, default=20, help="Scan: Time of seconds to wait after last detected device before quitting.  Manual: Time of seconds to keeping to connect.")
     parser.add_argument('--log-file', dest="log_filename", default='', help="Create output log file with chosen filename.")
     parser.add_argument('--reboot', action="store_true", help="Preform a reboot of the device.")
-    parser.add_argument('--user', default='admin', help="Enter user for device security (default = admin).")
+    parser.add_argument('--user', default='admin', help="Enter username for device security (default = admin).")
     parser.add_argument('--password', default='', help="Enter password for device security.")
     parser.add_argument('hosts', type=str, nargs='*', default='')
     args = parser.parse_args()
@@ -797,7 +799,7 @@ class Main:
     self.ipv4_mask = args.ipv4_mask
     self.ipv4_gw = args.ipv4_gw
     self.ipv4_dns = args.ipv4_dns
-    self.user = args.user
+    self.username = args.user
     self.password = args.password
 
     message = None
@@ -850,6 +852,26 @@ class Main:
       logger.info(f'{NC}')
     except KeyboardInterrupt:
       main.stop_scan()
+
+  @staticmethod
+  def get_netrc_login_info(netrc_machine=None):
+    username = 'admin'
+    password = ''
+    netrc_machine = netrc_machine
+    netrc_file = f"{os.path.abspath(os.getcwd())}/.netrc"
+    if os.path.exists(netrc_file):
+      try:
+        info = netrc.netrc(netrc_file).authenticators(netrc_machine)
+        if info is not None:
+          username = info[0]
+          password = info[2]
+          logger.trace(f'[.netrc] username: {username}')
+          logger.trace(f'[.netrc] password: {password}')
+        else:
+          raise netrc.NetrcParseError(f'No authenticators for {netrc_machine}')
+      except (IOError, netrc.NetrcParseError) as err:
+        logger.trace(f'parsing .netrc: {err}')
+    return username, password
 
   @staticmethod
   def get_release_info(info_type):
@@ -920,14 +942,14 @@ class Main:
         value = {'config': {'wifi': {'sta': {'ip': ''}}}}
       config_set_url = f'http://{wifi_ip}/rpc/Config.Set'
       logger.info(log_message)
-      logger.debug(f"requests.post(url={config_set_url}, json={value}, auth=HTTPDigestAuth('{self.user}', '{self.password}'))")
-      response = requests.post(url=config_set_url, json=value, auth=HTTPDigestAuth(self.user, self.password))
+      logger.debug(f"requests.post(url={config_set_url}, json={value}, auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
+      response = requests.post(url=config_set_url, json=value, auth=HTTPDigestAuth(self.username, self.password))
       logger.trace(response.text)
       if response.status_code == 200:
         logger.trace(response.text)
         logger.info(f"Saved, Rebooting...")
-        logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}, auth=HTTPDigestAuth('{self.user}', '{self.password}'))")
-        requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.user, self.password))
+        logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}, auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
+        requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
       elif response.status_code == 401:
         logger.info(f"{device_info.friendly_host} is password protected, please try again with '--password=??????'.")
     else:
@@ -950,8 +972,8 @@ class Main:
     logger.info("Configuring HomeKit setup code...")
     value = {'code': self.hap_setup_code}
     logger.trace(f"security: {device_info.info.get('auth_en')}")
-    logger.debug(f"requests.post(url='http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth('{self.user}', '{self.password}'), json={value})")
-    response = requests.post(url=f'http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth(self.user, self.password), json={'code': self.hap_setup_code})
+    logger.debug(f"requests.post(url='http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth('{self.username}', '{self.password}'), json={value})")
+    response = requests.post(url=f'http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth(self.username, self.password), json={'code': self.hap_setup_code})
     if response.status_code == 200:
       logger.trace(response.text)
       logger.info(f"HAP code successfully configured.")
@@ -1283,9 +1305,9 @@ class Main:
     else:
       self.flash_mode = self.mode
     if device.get('fw_type') == 'homekit':
-      device_info = HomeKitDevice(device.get('host'), device.get('wifi_ip'), device.get('info'))
+      device_info = HomeKitDevice(device.get('host'), device.get('username'), device.get('password'), device.get('wifi_ip'), device.get('info'))
     else:
-      device_info = StockDevice(device.get('host'), device.get('wifi_ip'), device.get('info'))
+      device_info = StockDevice(device.get('host'), device.get('username'), device.get('password'), device.get('wifi_ip'), device.get('info'))
     if not device_info.get_info():
       logger.warning("")
       logger.warning(f"{RED}Failed to lookup local information of {device.get('host')}{NC}")
@@ -1431,19 +1453,20 @@ class Main:
     for host in self.hosts:
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Manual Hosts] action {host}{NC}")
+      (username, password) = main.get_netrc_login_info(host) if self.password == "" else (self.username, self.password)
       n = 1
       while n <= self.timeout:
-        device_info = Device(host, no_error_message=True)
+        device_info = Device(host, username, password, no_error_message=True)
         time.sleep(1)
         n += 1
         if device_info.info:
           break
       if n > self.timeout:
-        device_info = Device(host)
+        device_info = Device(host, username, password)
       if device_info.info and device_info.info == 401:
         logger.info(f"{device_info.friendly_host} is password protected, please try again with '--user=?????? --password=??????'.")
       elif device_info.info:
-        device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
+        device = {'host': device_info.host, 'username': device_info.username, 'password': device_info.password, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
         self.probe_device(device)
     if http_server_started and server is not None:
       logger.trace("Shutting down webserver")
