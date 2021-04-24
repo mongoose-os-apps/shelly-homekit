@@ -906,7 +906,7 @@ class Main:
     logger.trace(f"{info_type} release_info: {json.dumps(release_info, indent=2)}")
     if not release_info:
       logger.error("")
-      logger.error(f"{RED}Failed to lookup online stock firmware information{NC}")
+      logger.error(f"{RED}Failed to lookup online firmware information{NC}")
       logger.error("For more information please point your web browser to:")
       logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
     return release_info
