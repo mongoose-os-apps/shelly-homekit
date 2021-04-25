@@ -312,7 +312,7 @@ class Device:
         else:
           fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
           device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt'
-          if fw_info.status_code == 401:
+          if fw_info.status_code == 401 or fw_info.status_code != 200:
             fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
             device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
           fw_type = "homekit"
