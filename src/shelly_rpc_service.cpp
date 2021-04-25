@@ -340,6 +340,32 @@ static void AbortHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) ri;
 }
 
+static Status SetAuthFileName(const char *passwd_fname, const char *acl_fname) {
+  mgos_sys_config_set_http_auth_file(passwd_fname);
+  mgos_sys_config_set_rpc_auth_file(passwd_fname);
+  mgos_sys_config_set_rpc_acl_file(acl_fname);
+  char *err = nullptr;
+  if (!mgos_sys_config_save(&mgos_sys_config, false /* try once */, &err)) {
+    return mgos::Errorf(STATUS_UNAVAILABLE, "Failed to save config: %s", err);
+  }
+  struct mg_http_endpoint *ep =
+      mg_get_http_endpoints(mgos_get_sys_http_server());
+  for (; ep != NULL; ep = ep->next) {
+    if (mg_vcmp(&ep->uri_pattern, "/") == 0) continue;  // No auth for root.
+    free(ep->auth_file);
+    free(ep->auth_domain);
+    if (passwd_fname == nullptr) {
+      ep->auth_file = nullptr;
+      ep->auth_domain = nullptr;
+    } else {
+      ep->auth_file = strdup(passwd_fname);
+      ep->auth_domain = strdup(mgos_sys_config_get_http_auth_domain());
+      ep->auth_algo = (enum mg_auth_algo) mgos_sys_config_get_http_auth_algo();
+    }
+  }
+  return Status::OK();
+}
+
 static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                            struct mg_rpc_frame_info *fi, struct mg_str args) {
   char *ha1 = nullptr;
@@ -353,16 +379,9 @@ static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 
   size_t l = std::string(ha1).length();
   if (l == 0) {
-    mgos_sys_config_set_rpc_acl_file(nullptr);
-    mgos_sys_config_set_rpc_auth_file(nullptr);
-    mgos_sys_config_set_http_auth_file(nullptr);
-    if (!mgos_sys_config_save(&mgos_sys_config, false /* try once */,
-                              nullptr)) {
-      mg_rpc_send_errorf(ri, 500, "failed to %s", "save config");
-      return;
-    }
-    remove(AUTH_FILE_NAME);
-    mg_rpc_send_responsef(ri, nullptr);
+    auto st = SetAuthFileName(nullptr, nullptr);
+    if (st.ok()) remove(AUTH_FILE_NAME);
+    SendStatusResp(ri, st);
     return;
   } else if (l != 64) {
     mg_rpc_send_errorf(ri, 400, "invalid %s", "ha1");
@@ -378,14 +397,8 @@ static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   fprintf(fp, "%s:%s:%s\n", AUTH_USER, realm, ha1);
   fclose(fp);
 
-  mgos_sys_config_set_rpc_auth_file(AUTH_FILE_NAME);
-  mgos_sys_config_set_rpc_acl_file(ACL_FILE_NAME);
-  if (!mgos_sys_config_save(&mgos_sys_config, false /* try once */, nullptr)) {
-    mg_rpc_send_errorf(ri, 500, "failed to %s", "save config");
-    return;
-  }
-
-  mg_rpc_send_responsef(ri, nullptr);
+  auto st = SetAuthFileName(AUTH_FILE_NAME, ACL_FILE_NAME);
+  SendStatusResp(ri, st);
 
   (void) cb_arg;
   (void) fi;

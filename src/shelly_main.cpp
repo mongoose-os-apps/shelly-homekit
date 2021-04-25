@@ -877,7 +877,34 @@ bool IsSoftReboot() {
 #endif
 }
 
+static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
+                        void *user_data) {
+  if (ev != MG_EV_HTTP_REQUEST) return;
+  struct http_message *hm = (struct http_message *) ev_data;
+  const char *file = nullptr, *type = nullptr;
+  if (mg_vcasecmp(&hm->method, "GET") == 0) {
+    if (mg_vcmp(&hm->uri, "/") == 0) {
+      file = "index.html.gz";
+      type = "text/html";
+    } else if (mg_vcmp(&hm->uri, "/favicon.ico") == 0) {
+      file = "favicon.ico.gz";
+      type = "image/x-icon";
+    }
+  }
+  if (file == nullptr) {
+    mg_http_send_error(nc, 404, nullptr);
+    nc->flags |= MG_F_SEND_AND_CLOSE;
+    return;
+  }
+  mg_http_serve_file(nc, hm, file, mg_mk_str(type),
+                     mg_mk_str("Content-Encoding: gzip\r\nPragma: no-cache"));
+  (void) user_data;
+}
+
 void InitApp() {
+  struct mg_http_endpoint_opts opts = {};
+  mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
+
   if (s_failsafe_mode) {
     if (WipeDevice()) {
       LOG(LL_INFO, ("== Wiped config, rebooting"));

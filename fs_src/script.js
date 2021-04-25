@@ -32,9 +32,11 @@ var pendingRequests = {};  // id -> Promise.
 
 let nextRequestID = Math.ceil(Math.random() * 10000);
 let authRequired = false;
-let authResp = null;
 
+const authInfoKey = "auth_info";
 const authUser = "admin";
+var authRealm = null;
+var rpcAuth = null;
 
 function el(container, id) {
   if (id === undefined) {
@@ -114,9 +116,13 @@ el("hap_reset_btn").onclick = function () {
     });
 };
 
-el("fw_upload_btn").onclick = function () {
-  el("fw_spinner").className = "spin";
-  el("fw_upload_form").submit();
+el("fw_upload_btn").onclick = async function () {
+  let ff = el("fw_select_file").files;
+  if (ff.length == 0) {
+    alert("No files selected");
+    return true;
+  }
+  uploadFW(ff[0], el("fw_spinner"), el("update_status"));
   return true;
 };
 
@@ -902,7 +908,6 @@ function getVar(key) {
     localStorage.removeItem(key)
     return undefined;
   }
-  console.log("GetVar", key, v.value);
   return v.value;
 }
 
@@ -979,19 +984,20 @@ function connectWebSocket() {
       delete pendingRequests[id];
       console.log(`[<-] ${id} ${ri.method}`, ri, resp);
       if (resp.error && resp.error.code == 401) {
-        authResp = null;
+        rpcAuth = null;
         let authReq = JSON.parse(resp.error.message);
-        let ai = null;
-        if (!ri.ai) {
-          ai = getAuthInfo(authReq);
-          console.log(`Auth required for ${ri.method}`, authReq, ai);
+        let ar = null;
+        if (!ri.ar) {
+          authRealm = authReq.realm;
+          ar = getAuthResp(authReq);
+          console.log(`Auth required for ${ri.method}`, authReq, ar);
         } else {
           console.log(`Auth failed for ${ri.method}`, authReq);
-          setVar("auth_info", undefined);
+          setVar(authInfoKey, undefined);
         }
-        if (ai) {
-          console.log(`Retrying with auth...`);
-          callDeviceAuth(ri.method, ri.params, ai)
+        if (ar) {
+          console.log("Retrying with auth...");
+          callDeviceAuth(ri.method, ri.params, ar)
               .then(function (resp) { ri.resolve(resp); })
               .catch(function (err) { ri.reject(err); });
         } else {
@@ -1002,7 +1008,6 @@ function connectWebSocket() {
             pauseAutoRefresh = true;
             el("auth_container").style.display = "block";
             if (el("auth_pass").value != "") {
-              el("auth_pass").value = "";
               ri.reject(new Error("Incorrect password"));
             } else {
               ri.reject(new Error("Please log in"));
@@ -1010,10 +1015,11 @@ function connectWebSocket() {
           }
         }
       } else {
-        if (ri.ai) {
+        if (ri.ar) {
           el("auth_container").style.display = "none";
           pauseAutoRefresh = false;
-          setVar("auth_info", ri.ai, maxAuthAge);
+          setVar(authInfoKey, ri.ar.ai, maxAuthAge);
+          rpcAuth = ri.ar.rpcAuth;
         }
         ri.resolve(resp);
       }
@@ -1022,22 +1028,23 @@ function connectWebSocket() {
   });
 }
 
+// Implementation of the digest auth algorithm with SHA-256 (RFC 7616).
+// We have to do it manually because browsers still don't support it natively.
 function calcHA1(user, realm, pass) {
   return sha256(`${user}:${realm}:${pass}`);
 }
 
-// Digest auth algorithm is described in RFC 7616.
-function getAuthInfo(req) {
-  authResp = null;
+function getAuthResp(req) {
   const method = req.method || "dummy_method";
   const uri = req.uri || "dummy_uri";
-  const cnonce = Math.ceil(Math.random() * 100000000);
+  const cnonce = "" + Math.ceil(Math.random() * 100000000);
   const qop = "auth";
   let ha1 = "";
   if (el("auth_pass").value !== "") {
     ha1 = calcHA1(authUser, req.realm, el("auth_pass").value);
+    el("auth_pass").value = "";
   } else {
-    let ai = getVar("auth_info");
+    let ai = getVar(authInfoKey);
     if (ai && ai.realm == req.realm) {
       ha1 = ai.ha1;
     }
@@ -1046,38 +1053,66 @@ function getAuthInfo(req) {
   if (req.algorithm != "SHA-256") return null;
   const ha2 = sha256(`${method}:${uri}`);
   const resp = sha256(`${ha1}:${req.nonce}:${req.nc}:${cnonce}:${qop}:${ha2}`);
-  authResp = {
+  let authResp = {
+    rpcAuth: {
       realm: req.realm,
       nonce: req.nonce,
       username: authUser,
       cnonce: cnonce,
       algorithm: req.algorithm,
       response: resp,
+    },
+    httpAuth: (`Digest realm="${req.realm}", uri="${uri}", username="${authUser}", ` +
+               `cnonce="${cnonce}", qop=${qop}, nc=${req.nc}, nonce="${req.nonce}", ` +
+               `response="${resp}", algorithm=${req.algorithm}`),
+    ai: {
+      realm: req.realm,
+      ha1: ha1,
+    },
   };
   if (req.opaque) {
-    authResp.opaque = req.opaque;
+    authResp.rpcAuth.opaque = req.opaque;
+    authResp.http_auth += `, opaque="${req.opaque}"`;
   };
-  return {realm: req.realm, ha1: ha1};
+  return authResp;
 }
 
-function callDeviceAuth(method, params, ai) {
+function authHeaderToReq(method, uri, hdr, nc) {
+  let authReq = {
+      method: method,
+      uri: uri,
+      nc: nc,
+      realm: /realm="([^"]+)"/.exec(hdr)[1],
+      nonce: /nonce="([^"]+)"/.exec(hdr)[1],
+      algorithm: /algorithm=([A-Za-z0-9-]+)/.exec(hdr)[1],
+  };
+  let opq = /opaque="([^"]+)"/.exec(hdr);
+  if (opq !== null) {
+    authReq.opaque = opq[1];
+  }
+  return authReq;
+}
+
+function callDeviceAuth(method, params, ar) {
   let id = nextRequestID++;
   return new Promise(function(resolve, reject) {
     try {
-      console.log(`[->] ${id} ${method}`, params, authResp);
+      console.log(`[->] ${id} ${method}`, params, ar);
       let frame = {
           "id": id,
           "method": method,
           "params": params,
       };
-      if (authResp) {
-        frame.auth = authResp;
+      if (ar) {
+        frame.auth = ar.rpcAuth;
+      } else if (rpcAuth) {
+        frame.auth = rpcAuth;
       }
       socket.send(JSON.stringify(frame));
       pendingRequests[id] = {
           method: method,
           params: params,
-          ai: ai,
+          ar: ar,
           resolve: resolve,
           reject: reject,
       };
@@ -1098,20 +1133,19 @@ el("auth_log_in_btn").onclick = function () {
 };
 
 el("sec_log_out_btn").onclick = function () {
-  setVar("auth_info", undefined);
-  authResp = null;
+  setVar(authInfoKey, undefined);
   location.reload();
   return true;
 };
 
 el("sec_save_btn").onclick = function () {
-  if (authResp !== null) {
-    let oldHA1 = calcHA1(authUser, authResp.realm, el("sec_old_pass").value);
-    let goodHA1 = getVar("auth_info").ha1;
+  if (authRealm !== null) {
+    let oldHA1 = calcHA1(authUser, authRealm, el("sec_old_pass").value);
+    let goodHA1 = getVar(authInfoKey).ha1;
     if (oldHA1 !== goodHA1) {
       alert("Invalid old password!");
-      setVar("auth_info", undefined);
-      authResp = null;
+      setVar(authInfoKey, undefined);
+      rpcAuth = null;
       return;
     }
   }
@@ -1126,7 +1160,7 @@ el("sec_save_btn").onclick = function () {
   pauseAutoRefresh = true;
   el("sec_save_spinner").className = "spin";
   callDevice("Shelly.SetAuth", {ha1: newHA1}).then(function () {
-    setVar("auth_info", undefined);
+    setVar(authInfoKey, undefined);
     location.reload();
   }).catch(function (err) {
     if (err.response) err = err.response.data.message;
@@ -1143,16 +1177,14 @@ el("sec_save_btn").onclick = function () {
 function onLoad() {
   connectWebSocket().then(() => {
     getInfo().then((info) => {
-      // check for update only once when loading the page (not each time in getInfo)
-      if (info.wifi_rssi !== 0) {
-        var last_update_check = parseInt(getVar("last_update_check"));
-        var now = new Date();
-        console.log("Last update check:", last_update_check, new Date(last_update_check));
-        if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
-          checkUpdate();
-        }
-        el("notify_update").style.display = (getVar("update_available") ? "inline" : "none");
+      if (info.wifi_rssi == 0) return;
+      var last_update_check = parseInt(getVar("last_update_check"));
+      var now = new Date();
+      console.log("Last update check:", last_update_check, new Date(last_update_check));
+      if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
+        checkUpdate();
       }
+      el("notify_update").style.display = (getVar("update_available") ? "inline" : "none");
     }).catch((err) => {
       console.log("getInfo() rejected", err);
     });
@@ -1234,26 +1266,43 @@ async function downloadUpdate(fwURL, spinner, status) {
   });
 }
 
-async function uploadFW(blob, spinner, status) {
+async function uploadFW(blob, spinner, status, ar) {
   spinner.className = "spin";
   status.innerText = `Uploading ${blob.size} bytes...`;
-  var fd = new FormData();
+  let fd = new FormData();
   fd.append("file", blob);
+  let hd = new Headers();
+  if (ar) {
+    hd.append("Authorization", ar.httpAuth);
+  }
   fetch("/update", {
-    method: "POST",
-    mode: "cors",
-    body: fd,
+      method: "POST",
+      mode: "cors",
+      headers: hd,
+      body: fd,
+      cache: "no-cache",
   })
     .then(async (resp) => {
-      var respText = await resp.text();
-      console.log("resp", resp, respText);
-      spinner.className = "";
-      status.innerText = respText;
+      let respText = await resp.text();
+      console.log("resp", resp, respText, resp.status, ar);
+      if (resp.status == 401 && !ar) {
+        let authHdr = resp.headers.get("www-authenticate");
+        if (authHdr !== null) {
+          let authReq = authHeaderToReq("POST", "/update", authHdr, "00000001");
+          let authResp = getAuthResp(authReq);
+          console.log("Retrying with auth...");
+          return uploadFW(blob, spinner, status, authResp);
+        }
+      }
+      status.innerText = (respText ? respText : resp.statusText);
       setVar("update_available", false);
-    }).catch((error) => {
-    spinner.className = "";
-    status.innerText = `Error uploading: ${error}`;
-  });
+    })
+    .catch((error) => {
+      console.log("Fetch erorr:", error);
+      status.innerText = `Error uploading: ${error}`;
+    }).finally(() => {
+      spinner.className = "";
+    });
 }
 
 // major.minor.patch-variantN
