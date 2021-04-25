@@ -562,6 +562,7 @@ class HomeKitDevice(Device):
     logger.debug(f"requests.post(url='http://{self.wifi_ip}/update', auth=HTTPDigestAuth('{self.username}', '{self.password}'), files=files)")
     response = requests.post(url=f'http://{self.wifi_ip}/update', auth=HTTPDigestAuth(self.username, self.password), files=files)
     logger.trace(response.text)
+    logger.trace(f"response.status_code: {response.status_code}")
     if response.status_code == 401:
       main.security_help(self)
     return response
@@ -602,7 +603,6 @@ class StockDevice(Device):
   def flash_firmware(self, revert=False):
     logger.trace(f"revert {revert}")
     logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
-    response = None
     download_url = self.download_url.replace('https', 'http')
     if self.local_file:
       logger.debug(f"Local file: {self.local_file}")
@@ -610,14 +610,11 @@ class StockDevice(Device):
     else:
       logger.debug(f"Remote Download URL: {download_url}")
     if self.fw_version == '0.0.0':
-      logger.debug(f"requests.get(url=http://{self.wifi_ip}/ota?update=true, auth=('{self.username}', '{self.password}')")
-      response = requests.get(url=f'http://{self.wifi_ip}/ota?update=true', auth=(self.username, self.password))
+      flash_url = f'http://{self.wifi_ip}/ota?update=true'
     else:
-      logger.debug(f"requests.get(url=http://{self.wifi_ip}/ota?url={download_url}, auth=('{self.username}', '{self.password}')")
-      try:
-        response = requests.get(url=f'http://{self.wifi_ip}/ota?url={download_url}', auth=(self.username, self.password))
-      except Exception:
-        logger.info(f"flash failed")
+      flash_url = f'http://{self.wifi_ip}/ota?url={download_url}'
+    logger.debug(f"requests.get(url={flash_url}, auth=('{self.username}', '{self.password}')")
+    response = requests.get(url=flash_url, auth=(self.username, self.password))
     logger.trace(response.text)
     if response.status_code == 401:
       main.security_help(self)
@@ -639,6 +636,13 @@ class StockDevice(Device):
     logger.trace(response.text)
     if response.status_code == 401:
       main.security_help(self)
+    while response.status_code == 400:
+      time.sleep(2)
+      try:
+        response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.username, self.password))
+        logger.trace(f"response.status_code: {response.status_code}")
+      except ConnectionResetError:
+        pass
     return response
 
 
@@ -927,6 +931,40 @@ class Main:
     logger.trace(f"is {v1} newer than {v2}: {value}")
     return value
 
+  @staticmethod
+  def wait_for_reboot(device_info, before_reboot_uptime=-1, reboot_only=False):
+    logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
+    logger.info(f"waiting for {device_info.friendly_host} to reboot[!n]")
+    logger.debug("")
+    time.sleep(5)
+    current_version = None
+    current_uptime = device_info.get_uptime(True)
+    n = 1
+    if not reboot_only:
+      while current_uptime >= before_reboot_uptime and n < 90 or current_version is None:
+        logger.trace(f"loop number: {n}")
+        logger.debug(f"current_uptime: {current_uptime}")
+        logger.debug(f"before_reboot_uptime: {before_reboot_uptime}")
+        logger.info(f".[!n]")
+        logger.debug("")
+        if n == 30:
+          logger.info("")
+          logger.info(f"still waiting for {device_info.friendly_host} to reboot[!n]")
+          logger.debug("")
+        elif n == 60:
+          logger.info("")
+          logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
+          logger.debug("")
+        current_uptime = device_info.get_uptime(True)
+        current_version = device_info.get_current_version(no_error_message=True)
+        logger.debug(f"current_version: {current_version}")
+        n += 1
+    else:
+      while device_info.get_uptime(True) < 3:
+        time.sleep(1)  # wait 1 second before retrying.
+    logger.info("")
+    return current_version
+
   def write_network_type(self, device_info):
     logger.debug(f"{PURPLE}[Write Network Type]{NC}")
     wifi_ip = device_info.wifi_ip
@@ -978,41 +1016,17 @@ class Main:
       logger.info(f"{device_info.friendly_host} is password protected.")
       self.security_help(device_info)
 
-  @staticmethod
-  def wait_for_reboot(device_info, before_reboot_uptime=-1, reboot_only=False):
-    time.sleep(5)
-    logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
-    logger.info(f"waiting for {device_info.friendly_host} to reboot[!n]")
-    logger.trace("")
-    current_version = None
-    current_uptime = device_info.get_uptime(True)
-    n = 1
-    if not reboot_only:
-      while current_uptime >= before_reboot_uptime and n < 90 or current_version is None:
-        logger.trace(f"loop number: {n}")
-        logger.debug(f"current_uptime: {current_uptime}")
-        logger.debug(f"before_reboot_uptime: {before_reboot_uptime}")
-        logger.info(f".[!n]")
-        if n == 30:
-          logger.info("")
-          logger.info(f"still waiting for {device_info.friendly_host} to reboot[!n]")
-        elif n == 60:
-          logger.info("")
-          logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
-        current_uptime = device_info.get_uptime(True)
-        current_version = device_info.get_current_version(no_error_message=True)
-        logger.debug("")
-        logger.debug(f"current_version: {current_version}")
-        n += 1
-    else:
-      while device_info.get_uptime(True) < 3:
-        time.sleep(1)  # wait 1 second before retrying.
-    logger.info("")
-    return current_version
-
   def write_flash(self, device_info, revert=False):
     logger.debug(f"{PURPLE}[Write Flash]{NC}")
     uptime = device_info.get_uptime(True)
+    waiting_shown = False
+    while uptime <= 25:  # make sure device has not just booted up.
+      logger.trace("seems like we just booted, delay a few seconds")
+      if waiting_shown is not True:
+        logger.info("Waiting for device.")
+        waiting_shown = True
+      time.sleep(5)
+      uptime = device_info.get_uptime(True)
     response = device_info.flash_firmware(revert)
     logger.trace(response)
     if response and response.status_code == 200:
@@ -1058,6 +1072,7 @@ class Main:
       self.wait_for_reboot(device_info, uptime)
       current_color_mode = device_info.get_color_mode()
       logger.debug(f"mode_color: {mode_color}")
+      logger.debug(f"current_color_mode: {current_color_mode}")
       if current_color_mode == mode_color:
         device_info.already_processed = True
         logger.critical(f"{GREEN}Successfully changed {device_info.friendly_host} to mode: {current_color_mode}{NC}")
@@ -1395,11 +1410,6 @@ class Main:
         self.parse_info(device_info, hk_flash_fw_version)
         if self.run_action == 'flash' and (requires_upgrade in ('Done', True) or requires_mode_change in ('Done', True)) and flash_question is True:
           if requires_mode_change is True:
-            logger.info(f"Waiting for device...")
-            if device_info.info.get('device', {}).get('type', '') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
-              time.sleep(30)  # need to allow time for previous flash reboot to fully boot, SHRGBW2 needs extra time due to firmware self updating.
-            else:
-              time.sleep(15)  # need to allow time for previous flash reboot to fully boot.
             device_info.get_info()
             self.parse_info(device_info)
           device_info.get_info()
@@ -1408,11 +1418,6 @@ class Main:
               device_info.parse_local_file()
             else:
               device_info.update_homekit(homekit_release_info)
-            logger.info(f"Waiting for device...")
-            if device_info.info.get('device', {}).get('type', '') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
-              time.sleep(30)  # need to allow time for previous flash reboot to fully boot, SHRGBW2 needs extra time due to firmware self updating.
-            else:
-              time.sleep(15)  # need to allow time for previous flash reboot to fully boot.
             self.parse_info(device_info)
 
   def stop_scan(self):
