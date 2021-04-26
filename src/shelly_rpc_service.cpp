@@ -44,6 +44,26 @@ static void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st) {
 
 static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                            struct mg_rpc_frame_info *fi, struct mg_str args) {
+  mg_rpc_send_responsef(
+      ri,
+      "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
+      "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
+      "auth_en: %B}",
+      mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
+      MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
+      CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
+      mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
+      (int) mgos_uptime(), (s_server == nullptr) /* failsafe_mode */,
+      !mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_file()) /* auth_en */
+  );
+  (void) cb_arg;
+  (void) fi;
+  (void) args;
+}
+
+static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                              struct mg_rpc_frame_info *fi,
+                              struct mg_str args) {
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
   bool hap_running = (HAPAccessoryServerGetState(s_server) ==
                       kHAPAccessoryServerState_Running);
@@ -70,6 +90,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   std::string res = mgos::JSONPrintStringf(
       "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
       "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
+      "auth_en: %B, auth_domain: %Q, "
 #ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
       "wifi_rssi: %d, wifi_ip: %Q, wifi_ap_ssid: %Q, wifi_ap_ip: %Q, "
@@ -83,6 +104,8 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
       (int) mgos_uptime(), false /* failsafe_mode */,
+      !mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_file()), /* auth_en */
+      mgos_sys_config_get_rpc_auth_domain(),
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (wifi_ssid ? wifi_ssid : ""),
       (mgos_sys_config_get_wifi_sta_pass() ? "***" : ""), wifi_rssi, wifi_ip,
@@ -129,24 +152,6 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) args;
 }
 
-static void GetInfoFailsafeHandler(struct mg_rpc_request_info *ri, void *cb_arg,
-                                   struct mg_rpc_frame_info *fi,
-                                   struct mg_str args) {
-  mg_rpc_send_responsef(
-      ri,
-      "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
-      "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B}",
-      mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
-      MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
-      CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
-      mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
-      (int) mgos_uptime(), true /* failsafe_mode */);
-
-  (void) cb_arg;
-  (void) fi;
-  (void) args;
-}
-
 static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                              struct mg_rpc_frame_info *fi, struct mg_str args) {
   int id = -1;
@@ -164,7 +169,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   bool restart_required = false;
   if (id == -1 && type == -1) {
     // System settings.
-    char *name_c = NULL;
+    char *name_c = nullptr;
     int sys_mode = -1;
     int8_t debug_en = -1;
     json_scanf(config_tok.ptr, config_tok.len,
@@ -335,15 +340,68 @@ static void AbortHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) ri;
 }
 
+static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                           struct mg_rpc_frame_info *fi, struct mg_str args) {
+  char *ha1 = nullptr;
+  json_scanf(args.p, args.len, ri->args_fmt, &ha1);
+  mgos::ScopedCPtr ha1_owner(ha1);
+
+  if (ha1 == nullptr) {
+    mg_rpc_send_errorf(ri, 400, "%s is required", "ha1");
+    return;
+  }
+
+  size_t l = std::string(ha1).length();
+  if (l == 0) {
+    mgos_sys_config_set_rpc_acl_file(nullptr);
+    mgos_sys_config_set_rpc_auth_file(nullptr);
+    mgos_sys_config_set_http_auth_file(nullptr);
+    if (!mgos_sys_config_save(&mgos_sys_config, false /* try once */,
+                              nullptr)) {
+      mg_rpc_send_errorf(ri, 500, "failed to %s", "save config");
+      return;
+    }
+    remove(AUTH_FILE_NAME);
+    mg_rpc_send_responsef(ri, nullptr);
+    return;
+  } else if (l != 64) {
+    mg_rpc_send_errorf(ri, 400, "invalid %s", "ha1");
+    return;
+  }
+
+  FILE *fp = fopen(AUTH_FILE_NAME, "w");
+  if (fp == nullptr) {
+    mg_rpc_send_errorf(ri, 500, "failed to %s", "save file");
+    return;
+  }
+  const char *realm = mgos_sys_config_get_rpc_auth_domain();
+  fprintf(fp, "%s:%s:%s\n", AUTH_USER, realm, ha1);
+  fclose(fp);
+
+  mgos_sys_config_set_rpc_auth_file(AUTH_FILE_NAME);
+  mgos_sys_config_set_rpc_acl_file(ACL_FILE_NAME);
+  if (!mgos_sys_config_save(&mgos_sys_config, false /* try once */, nullptr)) {
+    mg_rpc_send_errorf(ri, 500, "failed to %s", "save config");
+    return;
+  }
+
+  mg_rpc_send_responsef(ri, nullptr);
+
+  (void) cb_arg;
+  (void) fi;
+}
+
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm) {
   s_server = server;
   s_kvs = kvs;
   s_tcpm = tcpm;
+  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
+                     GetInfoHandler, nullptr);
   if (server != nullptr) {
-    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
-                       GetInfoHandler, nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfoExt", "",
+                       GetInfoExtHandler, nullptr);
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetConfig",
                        "{id: %d, type: %d, config: %T}", SetConfigHandler,
                        nullptr);
@@ -354,9 +412,8 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                        "{id: %d, event: %d}", InjectInputEventHandler, nullptr);
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.Abort", "", AbortHandler,
                        nullptr);
-  } else {
-    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetInfo", "",
-                       GetInfoFailsafeHandler, nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetAuth", "{ha1: %Q}",
+                       SetAuthHandler, nullptr);
   }
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
                      GetDebugInfoHandler, nullptr);

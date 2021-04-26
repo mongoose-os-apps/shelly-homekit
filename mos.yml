@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.9.0-alpha2
+version: 2.9.0-alpha3
 platform: esp8266
 
 libs_version: latest
@@ -20,16 +20,20 @@ filesystem:
   - fs
 
 config_schema:
-  - ["http.index_files", "index.html.gz"]
-  - ["http.extra_headers", "Pragma: no-cache"]
-  - ["sntp.enable", true]
   - ["debug.event_level", 3]
+  - ["dns_sd.txt", "fw_type=homekit"]  # To be easily distinguishable from stock.
   - ["file_logger.level", 3]
   - ["file_logger.max_num_files", 1]
   - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
+  - ["http.index_files", "index.html.gz"]
+  - ["http.extra_headers", "Pragma: no-cache"]
+  - ["http.auth_algo", 1]  # SHA-256
+  - ["http.auth_domain", "Shelly"]
+  - ["sntp.enable", true]
+  - ["rpc.auth_algo", 1]  # SHA-256
+  - ["rpc.auth_domain", "Shelly"]
   - ["wifi.sta_all_chan_scan", true]
-  - ["dns_sd.txt", "fw_type=homekit"]  # To be easily distinguishable from stock.
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
   - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported)"}]

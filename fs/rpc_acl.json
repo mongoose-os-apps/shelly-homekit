@@ -1,0 +1,6 @@
+[
+  {"ch_type": "UART", "acl": "*"},
+  {"method": "Shelly.GetInfo", "acl": "*"},
+  {"method": "*", "ch_type": "HTTP", "acl": "admin"},
+  {"method": "*", "ch_type": "WS_in", "acl": "admin"}
+]

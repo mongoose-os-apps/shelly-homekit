@@ -67,7 +67,7 @@ class LightBulb : public Component, public mgos::hap::Service {
   void AutoOffTimerCB();
   void TransitionTimerCB();
 
-  void UpdateOnOff(bool on, const std::string &source);
+  void UpdateOnOff(bool on, const std::string &source, bool force = false);
   void SetHue(int hue, const std::string &source);
   void SetSaturation(int saturation, const std::string &source);
   void SetBrightness(int brightness, const std::string &source);
