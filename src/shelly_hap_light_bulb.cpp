@@ -95,12 +95,13 @@ Status LightBulb::Init() {
       kHAPCharacteristicDebugDescription_Hue);
   AddChar(notification_characteristics_.hue);
   // Saturation
-  notification_characteristics_.saturation = new mgos::hap::UInt32Characteristic(
-      iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
-      std::bind(&LightBulb::HandleSaturationRead, this, _1, _2, _3),
-      true /* supports_notification */,
-      std::bind(&LightBulb::HandleSaturationWrite, this, _1, _2, _3),
-      kHAPCharacteristicDebugDescription_Saturation);
+  notification_characteristics_.saturation =
+      new mgos::hap::UInt32Characteristic(
+          iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
+          std::bind(&LightBulb::HandleSaturationRead, this, _1, _2, _3),
+          true /* supports_notification */,
+          std::bind(&LightBulb::HandleSaturationWrite, this, _1, _2, _3),
+          kHAPCharacteristicDebugDescription_Saturation);
   AddChar(notification_characteristics_.saturation);
 
   if (in_ != nullptr) {

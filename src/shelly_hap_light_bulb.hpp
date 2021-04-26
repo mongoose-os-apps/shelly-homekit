@@ -44,10 +44,10 @@ class LightBulb : public Component, public mgos::hap::Service {
   };
 
   struct NotificationCharacteristics {
-    mgos::hap::BoolCharacteristic* on;
-    mgos::hap::UInt8Characteristic* brightness;
-    mgos::hap::UInt32Characteristic* hue;
-    mgos::hap::UInt32Characteristic* saturation;
+    mgos::hap::BoolCharacteristic *on;
+    mgos::hap::UInt8Characteristic *brightness;
+    mgos::hap::UInt32Characteristic *hue;
+    mgos::hap::UInt32Characteristic *saturation;
   };
 
   // Component interface impl.
