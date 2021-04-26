@@ -961,11 +961,11 @@ function connectWebSocket() {
 
     socket.onerror = function(error) {
       el("notify_disconnected").style.display = "inline"
-      for (let id in pendingRequests) {
-        let ri = pendingRequests[id];
-        ri.p.reject(error);
-      }
+      let pr = pendingRequests;
       pendingRequests = {};
+      for (let id in pr) {
+        pendingRequests[id].reject(error);
+      }
       reject(error);
     };
 
@@ -1150,8 +1150,9 @@ el("sec_save_btn").onclick = function () {
     }
   }
   let newHA1 = "";
+  let realm = lastInfo.device_id;
   if (el("sec_new_pass").value !== "") {
-    newHA1 = calcHA1(authUser, lastInfo.auth_domain, el("sec_new_pass").value);
+    newHA1 = calcHA1(authUser, realm, el("sec_new_pass").value);
     if (!newHA1) {
       alert("No unicode in passwords please");
       return true;
@@ -1159,12 +1160,11 @@ el("sec_save_btn").onclick = function () {
   }
   pauseAutoRefresh = true;
   el("sec_save_spinner").className = "spin";
-  callDevice("Shelly.SetAuth", {ha1: newHA1}).then(function () {
+  callDevice("Shelly.SetAuth", {user: authUser, realm: realm, ha1: newHA1}).then(function () {
     setVar(authInfoKey, undefined);
     location.reload();
   }).catch(function (err) {
     if (err.response) err = err.response.data.message;
-    pauseAutoRefresh = false;
     alert(err);
   }).finally(function() {
     el("sec_save_spinner").className = "";

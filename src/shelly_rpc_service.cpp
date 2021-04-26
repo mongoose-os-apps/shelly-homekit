@@ -340,10 +340,14 @@ static void AbortHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) ri;
 }
 
-static Status SetAuthFileName(const char *passwd_fname, const char *acl_fname) {
-  mgos_sys_config_set_http_auth_file(passwd_fname);
-  mgos_sys_config_set_rpc_auth_file(passwd_fname);
-  mgos_sys_config_set_rpc_acl_file(acl_fname);
+static Status SetAuthFileName(const std::string &passwd_fname,
+                              const std::string &auth_domain,
+                              const std::string &acl_fname) {
+  mgos_sys_config_set_http_auth_file(passwd_fname.c_str());
+  mgos_sys_config_set_http_auth_domain(auth_domain.c_str());
+  mgos_sys_config_set_rpc_auth_file(passwd_fname.c_str());
+  mgos_sys_config_set_rpc_auth_domain(auth_domain.c_str());
+  mgos_sys_config_set_rpc_acl_file(acl_fname.c_str());
   char *err = nullptr;
   if (!mgos_sys_config_save(&mgos_sys_config, false /* try once */, &err)) {
     return mgos::Errorf(STATUS_UNAVAILABLE, "Failed to save config: %s", err);
@@ -354,12 +358,12 @@ static Status SetAuthFileName(const char *passwd_fname, const char *acl_fname) {
     if (mg_vcmp(&ep->uri_pattern, "/") == 0) continue;  // No auth for root.
     free(ep->auth_file);
     free(ep->auth_domain);
-    if (passwd_fname == nullptr) {
+    if (passwd_fname.empty()) {
       ep->auth_file = nullptr;
       ep->auth_domain = nullptr;
     } else {
-      ep->auth_file = strdup(passwd_fname);
-      ep->auth_domain = strdup(mgos_sys_config_get_http_auth_domain());
+      ep->auth_file = strdup(passwd_fname.c_str());
+      ep->auth_domain = strdup(auth_domain.c_str());
       ep->auth_algo = (enum mg_auth_algo) mgos_sys_config_get_http_auth_algo();
     }
   }
@@ -368,18 +372,31 @@ static Status SetAuthFileName(const char *passwd_fname, const char *acl_fname) {
 
 static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                            struct mg_rpc_frame_info *fi, struct mg_str args) {
-  char *ha1 = nullptr;
-  json_scanf(args.p, args.len, ri->args_fmt, &ha1);
-  mgos::ScopedCPtr ha1_owner(ha1);
+  char *user = nullptr, *realm = nullptr, *ha1 = nullptr;
+  json_scanf(args.p, args.len, ri->args_fmt, &user, &realm, &ha1);
+  mgos::ScopedCPtr user_owner(user), realm_owner(realm), ha1_owner(ha1);
 
+  if (user == nullptr) {
+    mg_rpc_send_errorf(ri, 400, "%s is required", "user");
+    return;
+  }
+  if (realm == nullptr) {
+    mg_rpc_send_errorf(ri, 400, "%s is required", "realm");
+    return;
+  }
   if (ha1 == nullptr) {
     mg_rpc_send_errorf(ri, 400, "%s is required", "ha1");
+    return;
+  }
+  // Must be AUTH_USER or ACLs won't work.
+  if (std::string(user) != AUTH_USER) {
+    mg_rpc_send_errorf(ri, 400, "incorrect %s", "user");
     return;
   }
 
   size_t l = std::string(ha1).length();
   if (l == 0) {
-    auto st = SetAuthFileName(nullptr, nullptr);
+    auto st = SetAuthFileName("", "", "");
     if (st.ok()) remove(AUTH_FILE_NAME);
     SendStatusResp(ri, st);
     return;
@@ -393,11 +410,10 @@ static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     mg_rpc_send_errorf(ri, 500, "failed to %s", "save file");
     return;
   }
-  const char *realm = mgos_sys_config_get_rpc_auth_domain();
   fprintf(fp, "%s:%s:%s\n", AUTH_USER, realm, ha1);
   fclose(fp);
 
-  auto st = SetAuthFileName(AUTH_FILE_NAME, ACL_FILE_NAME);
+  auto st = SetAuthFileName(AUTH_FILE_NAME, realm, ACL_FILE_NAME);
   SendStatusResp(ri, st);
 
   (void) cb_arg;
@@ -425,8 +441,9 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                        "{id: %d, event: %d}", InjectInputEventHandler, nullptr);
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.Abort", "", AbortHandler,
                        nullptr);
-    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetAuth", "{ha1: %Q}",
-                       SetAuthHandler, nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetAuth",
+                       "{user: %Q, realm: %Q, ha1: %Q}", SetAuthHandler,
+                       nullptr);
   }
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
                      GetDebugInfoHandler, nullptr);
