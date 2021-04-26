@@ -993,6 +993,7 @@ function connectWebSocket() {
           console.log(`Auth required for ${ri.method}`, authReq, ar);
         } else {
           console.log(`Auth failed for ${ri.method}`, authReq);
+          el("forgot_password").style.display = "block";
           setVar(authInfoKey, undefined);
         }
         if (ar) {
@@ -1007,11 +1008,8 @@ function connectWebSocket() {
           } else {
             pauseAutoRefresh = true;
             el("auth_container").style.display = "block";
-            if (el("auth_pass").value != "") {
-              ri.reject(new Error("Incorrect password"));
-            } else {
-              ri.reject(new Error("Please log in"));
-            }
+            el("auth_pass").focus();
+            ri.reject(new Error("Please log in"));
           }
         }
       } else {
