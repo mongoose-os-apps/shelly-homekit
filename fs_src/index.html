@@ -26,11 +26,16 @@
 </div>
 
 <div class="container" id="auth_container" style="display: none">
+  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Security-Settings"
+     target="_blank">?</a>
   <div class="form">
     <div>
       <div class="form-control">
         <label>Password:</label>
         <input type="password" id="auth_pass">
+      </div>
+      <div class="form-control" id="forgot_password" style="display: none">
+        <a href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Security-Settings#password-recovery" target="_blank">Forgot password?</a>
       </div>
       <div class="button-container">
         <button id="auth_log_in_btn">
@@ -248,7 +253,7 @@
           <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">on GitHub</a>.
         </div>
       </div>
-      <form id="fw_upload_form" method="POST" action="/update" enctype="multipart/form-data" style="display: inline">
+      <form style="display: inline">
         <div class="form-control">
           <label>Update from file:</label>
           <input type="file" id="fw_select_file" name="file" accept=".zip" style="width: 200px;">

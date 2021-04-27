@@ -118,15 +118,15 @@ Status LightBulb::Init() {
   } else {
     switch (static_cast<InitialState>(cfg_->initial_state)) {
       case InitialState::kOff:
-        UpdateOnOff(false, "init");
+        UpdateOnOff(false, "init", true /* force */);
         break;
       case InitialState::kOn:
-        UpdateOnOff(true, "init");
+        UpdateOnOff(true, "init", true /* force */);
         break;
       case InitialState::kInput:
         if (in_ != nullptr &&
             cfg_->in_mode == static_cast<int>(InMode::kToggle)) {
-          UpdateOnOff(in_->GetState(), "init");
+          UpdateOnOff(in_->GetState(), "init", true /* force */);
         }
         break;
       case InitialState::kLast:

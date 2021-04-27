@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.9.0-alpha3
+version: 2.9.0-alpha4
 platform: esp8266
 
 libs_version: latest
@@ -26,13 +26,11 @@ config_schema:
   - ["file_logger.max_num_files", 1]
   - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
-  - ["http.index_files", "index.html.gz"]
-  - ["http.extra_headers", "Pragma: no-cache"]
   - ["http.auth_algo", 1]  # SHA-256
   - ["http.auth_domain", "Shelly"]
-  - ["sntp.enable", true]
   - ["rpc.auth_algo", 1]  # SHA-256
   - ["rpc.auth_domain", "Shelly"]
+  - ["sntp.enable", true]
   - ["wifi.sta_all_chan_scan", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
@@ -506,7 +504,6 @@ conds:
         - ["device.id", "ShellyU-????"]
         - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
-        - ["http.document_root", "."]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -531,7 +528,6 @@ conds:
         - ["device.id", "ShellyU25-????"]
         - ["shelly.name", "ShellyU25-????"]
         - ["file_logger.dir", "./"]
-        - ["http.document_root", "."]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU25 SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -548,4 +544,3 @@ conds:
         - ["gdo1.name", "ShellyU25 GDO"]
 
 manifest_version: 2020-01-29
-  
