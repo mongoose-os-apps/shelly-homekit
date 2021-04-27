@@ -680,6 +680,13 @@ static bool shelly_cfg_migrate(void) {
     mgos_sys_config_set_shelly_cfg_version(5);
     changed = true;
   }
+  // 2.9.0-alpha3 -> alpha3 ACL settings workaround. Can be removed after 2.9.0.
+  if (mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_domain()) &&
+      !mgos_conf_str_empty(mgos_sys_config_get_rpc_acl_file())) {
+    mgos_sys_config_set_rpc_acl_file(NULL);
+    mgos_sys_config_set_rpc_auth_file(NULL);
+    changed = true;
+  }
   return changed;
 }
 
