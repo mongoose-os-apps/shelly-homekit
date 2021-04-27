@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.9.0-alpha4
+version: 2.9.0-alpha5
 platform: esp8266
 
 libs_version: latest
@@ -27,9 +27,7 @@ config_schema:
   - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
   - ["http.auth_algo", 1]  # SHA-256
-  - ["http.auth_domain", "Shelly"]
   - ["rpc.auth_algo", 1]  # SHA-256
-  - ["rpc.auth_domain", "Shelly"]
   - ["sntp.enable", true]
   - ["wifi.sta_all_chan_scan", true]
 
