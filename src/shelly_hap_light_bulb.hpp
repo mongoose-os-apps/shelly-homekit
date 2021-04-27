@@ -43,13 +43,6 @@ class LightBulb : public Component, public mgos::hap::Service {
     float w;
   };
 
-  struct NotificationCharacteristics {
-    mgos::hap::BoolCharacteristic *on;
-    mgos::hap::UInt8Characteristic *brightness;
-    mgos::hap::UInt32Characteristic *hue;
-    mgos::hap::UInt32Characteristic *saturation;
-  };
-
   // Component interface impl.
   Type type() const override;
   std::string name() const override;
@@ -87,7 +80,10 @@ class LightBulb : public Component, public mgos::hap::Service {
   struct mgos_config_lb *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
-  NotificationCharacteristics notification_characteristics_{};
+  mgos::hap::BoolCharacteristic *on_characteristic;
+  mgos::hap::UInt8Characteristic *brightness_characteristic;
+  mgos::hap::UInt32Characteristic *hue_characteristic;
+  mgos::hap::UInt32Characteristic *saturation_characteristic;
 
   mgos::Timer auto_off_timer_;
   bool dirty_ = false;
