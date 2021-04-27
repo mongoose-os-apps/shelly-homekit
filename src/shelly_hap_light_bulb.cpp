@@ -95,13 +95,12 @@ Status LightBulb::Init() {
       kHAPCharacteristicDebugDescription_Hue);
   AddChar(hue_characteristic);
   // Saturation
-  saturation_characteristic =
-      new mgos::hap::UInt32Characteristic(
-          iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
-          std::bind(&LightBulb::HandleSaturationRead, this, _1, _2, _3),
-          true /* supports_notification */,
-          std::bind(&LightBulb::HandleSaturationWrite, this, _1, _2, _3),
-          kHAPCharacteristicDebugDescription_Saturation);
+  saturation_characteristic = new mgos::hap::UInt32Characteristic(
+      iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
+      std::bind(&LightBulb::HandleSaturationRead, this, _1, _2, _3),
+      true /* supports_notification */,
+      std::bind(&LightBulb::HandleSaturationWrite, this, _1, _2, _3),
+      kHAPCharacteristicDebugDescription_Saturation);
   AddChar(saturation_characteristic);
 
   if (in_ != nullptr) {
