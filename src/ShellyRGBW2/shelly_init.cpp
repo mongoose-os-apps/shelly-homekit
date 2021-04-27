@@ -16,7 +16,7 @@
  */
 
 #include "shelly_hap_input.hpp"
-#include "shelly_hap_rgb.hpp"
+#include "shelly_hap_light_bulb.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 
@@ -43,14 +43,14 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       HAPAccessoryServerRef *svr) {
   auto *lb_cfg = (struct mgos_config_lb *) mgos_sys_config_get_lb1();
 
-  std::unique_ptr<hap::RGBWLight> rgbw_light;
+  std::unique_ptr<hap::LightBulb> rgbw_light;
 
   if (mgos_sys_config_get_shelly_mode() == 4) {
-    rgbw_light.reset(new hap::RGBWLight(1, FindInput(1), FindOutput(1),
+    rgbw_light.reset(new hap::LightBulb(1, FindInput(1), FindOutput(1),
                                         FindOutput(2), FindOutput(3),
                                         FindOutput(4), lb_cfg));
   } else {
-    rgbw_light.reset(new hap::RGBWLight(1, FindInput(1), FindOutput(1),
+    rgbw_light.reset(new hap::LightBulb(1, FindInput(1), FindOutput(1),
                                         FindOutput(2), FindOutput(3), nullptr,
                                         lb_cfg));
 

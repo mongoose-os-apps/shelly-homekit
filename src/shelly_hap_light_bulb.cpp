@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_rgb.hpp"
+#include "shelly_hap_light_bulb.hpp"
 #include "shelly_main.hpp"
 #include "shelly_switch.hpp"
 
@@ -27,7 +27,7 @@
 namespace shelly {
 namespace hap {
 
-RGBWLight::RGBWLight(int id, Input *in, Output *out_r, Output *out_g,
+LightBulb::LightBulb(int id, Input *in, Output *out_r, Output *out_g,
                      Output *out_b, Output *out_w, struct mgos_config_lb *cfg)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_LIGHTING +
@@ -40,11 +40,11 @@ RGBWLight::RGBWLight(int id, Input *in, Output *out_r, Output *out_g,
       out_b_(out_b),
       out_w_(out_w),
       cfg_(cfg),
-      auto_off_timer_(std::bind(&RGBWLight::AutoOffTimerCB, this)),
-      transition_timer_(std::bind(&RGBWLight::TransitionTimerCB, this)) {
+      auto_off_timer_(std::bind(&LightBulb::AutoOffTimerCB, this)),
+      transition_timer_(std::bind(&LightBulb::TransitionTimerCB, this)) {
 }
 
-RGBWLight::~RGBWLight() {
+LightBulb::~LightBulb() {
   if (in_ != nullptr) {
     in_->RemoveHandler(handler_id_);
   }
@@ -52,15 +52,15 @@ RGBWLight::~RGBWLight() {
   SaveState();
 }
 
-Component::Type RGBWLight::type() const {
+Component::Type LightBulb::type() const {
   return Type::kLightBulb;
 }
 
-std::string RGBWLight::name() const {
+std::string LightBulb::name() const {
   return cfg_->name;
 }
 
-Status RGBWLight::Init() {
+Status LightBulb::Init() {
   if (!cfg_->enable) {
     LOG(LL_INFO, ("'%s' is disabled", cfg_->name));
     return Status::OK();
@@ -71,45 +71,41 @@ Status RGBWLight::Init() {
   // Name
   AddNameChar(iid++, cfg_->name);
   // On
-  auto *on_char = new mgos::hap::BoolCharacteristic(
+  on_characteristic = new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_On,
-      std::bind(&RGBWLight::HandleOnRead, this, _1, _2, _3),
+      std::bind(&LightBulb::HandleOnRead, this, _1, _2, _3),
       true /* supports_notification */,
-      std::bind(&RGBWLight::HandleOnWrite, this, _1, _2, _3),
+      std::bind(&LightBulb::HandleOnWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_On);
-  state_notify_chars_.push_back(on_char);
-  AddChar(on_char);
+  AddChar(on_characteristic);
   // Brightness
-  auto *brightness_char = new mgos::hap::UInt8Characteristic(
+  brightness_characteristic = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_Brightness, 0, 100, 1,
-      std::bind(&RGBWLight::HandleBrightnessRead, this, _1, _2, _3),
+      std::bind(&LightBulb::HandleBrightnessRead, this, _1, _2, _3),
       true /* supports_notification */,
-      std::bind(&RGBWLight::HandleBrightnessWrite, this, _1, _2, _3),
+      std::bind(&LightBulb::HandleBrightnessWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_Brightness);
-  state_notify_chars_.push_back(brightness_char);
-  AddChar(brightness_char);
+  AddChar(brightness_characteristic);
   // Hue
-  auto *hue_char = new mgos::hap::UInt32Characteristic(
+  hue_characteristic = new mgos::hap::UInt32Characteristic(
       iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
-      std::bind(&RGBWLight::HandleHueRead, this, _1, _2, _3),
+      std::bind(&LightBulb::HandleHueRead, this, _1, _2, _3),
       true /* supports_notification */,
-      std::bind(&RGBWLight::HandleHueWrite, this, _1, _2, _3),
+      std::bind(&LightBulb::HandleHueWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_Hue);
-  state_notify_chars_.push_back(hue_char);
-  AddChar(hue_char);
+  AddChar(hue_characteristic);
   // Saturation
-  auto *saturation_char = new mgos::hap::UInt32Characteristic(
+  saturation_characteristic = new mgos::hap::UInt32Characteristic(
       iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
-      std::bind(&RGBWLight::HandleSaturationRead, this, _1, _2, _3),
+      std::bind(&LightBulb::HandleSaturationRead, this, _1, _2, _3),
       true /* supports_notification */,
-      std::bind(&RGBWLight::HandleSaturationWrite, this, _1, _2, _3),
+      std::bind(&LightBulb::HandleSaturationWrite, this, _1, _2, _3),
       kHAPCharacteristicDebugDescription_Saturation);
-  state_notify_chars_.push_back(saturation_char);
-  AddChar(saturation_char);
+  AddChar(saturation_characteristic);
 
   if (in_ != nullptr) {
     handler_id_ =
-        in_->AddHandler(std::bind(&RGBWLight::InputEventHandler, this, _1, _2));
+        in_->AddHandler(std::bind(&LightBulb::InputEventHandler, this, _1, _2));
     in_->SetInvert(cfg_->in_inverted);
   }
 
@@ -141,7 +137,7 @@ Status RGBWLight::Init() {
   return Status::OK();
 }
 
-void RGBWLight::HSVtoRGBW(RGBW &rgbw) const {
+void LightBulb::HSVtoRGBW(RGBW &rgbw) const {
   float h = cfg_->hue / 360.0f;
   float s = cfg_->saturation / 100.0f;
   float v = cfg_->brightness / 100.0f;
@@ -208,7 +204,7 @@ void RGBWLight::HSVtoRGBW(RGBW &rgbw) const {
   }
 }
 
-void RGBWLight::UpdateOnOff(bool on, const std::string &source, bool force) {
+void LightBulb::UpdateOnOff(bool on, const std::string &source, bool force) {
   if (!force && cfg_->state == static_cast<int>(on)) return;
 
   LOG(LL_INFO, ("State changed (%s): %s => %s", source.c_str(),
@@ -216,7 +212,7 @@ void RGBWLight::UpdateOnOff(bool on, const std::string &source, bool force) {
 
   cfg_->state = on;
   dirty_ = true;
-  state_notify_chars_[0]->RaiseEvent();
+  on_characteristic->RaiseEvent();
 
   if (IsOff()) {
     DisableAutoOff();
@@ -225,19 +221,19 @@ void RGBWLight::UpdateOnOff(bool on, const std::string &source, bool force) {
   StartTransition();
 }
 
-void RGBWLight::SetHue(int hue, const std::string &source) {
+void LightBulb::SetHue(int hue, const std::string &source) {
   if (cfg_->hue == hue) return;
 
   LOG(LL_INFO, ("Hue changed (%s): %d => %d", source.c_str(), cfg_->hue, hue));
 
   cfg_->hue = hue;
   dirty_ = true;
-  state_notify_chars_[2]->RaiseEvent();
+  hue_characteristic->RaiseEvent();
 
   StartTransition();
 }
 
-void RGBWLight::SetSaturation(int saturation, const std::string &source) {
+void LightBulb::SetSaturation(int saturation, const std::string &source) {
   if (cfg_->saturation == saturation) return;
 
   LOG(LL_INFO, ("Saturation changed (%s): %d => %d", source.c_str(),
@@ -245,12 +241,12 @@ void RGBWLight::SetSaturation(int saturation, const std::string &source) {
 
   cfg_->saturation = saturation;
   dirty_ = true;
-  state_notify_chars_[3]->RaiseEvent();
+  saturation_characteristic->RaiseEvent();
 
   StartTransition();
 }
 
-void RGBWLight::SetBrightness(int brightness, const std::string &source) {
+void LightBulb::SetBrightness(int brightness, const std::string &source) {
   if (cfg_->brightness == brightness) return;
 
   LOG(LL_INFO, ("Brightness changed (%s): %d => %d", source.c_str(),
@@ -258,12 +254,12 @@ void RGBWLight::SetBrightness(int brightness, const std::string &source) {
 
   cfg_->brightness = brightness;
   dirty_ = true;
-  state_notify_chars_[1]->RaiseEvent();
+  brightness_characteristic->RaiseEvent();
 
   StartTransition();
 }
 
-void RGBWLight::StartTransition() {
+void LightBulb::StartTransition() {
   rgbw_start_ = rgbw_now_;
 
   if (IsOn()) {
@@ -281,13 +277,13 @@ void RGBWLight::StartTransition() {
   transition_timer_.Reset(10, MGOS_TIMER_REPEAT);
 }
 
-StatusOr<std::string> RGBWLight::GetInfo() const {
-  const_cast<RGBWLight *>(this)->SaveState();
+StatusOr<std::string> LightBulb::GetInfo() const {
+  const_cast<LightBulb *>(this)->SaveState();
   return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i", OnOff(IsOn()),
                        cfg_->brightness, cfg_->hue, cfg_->saturation);
 }
 
-StatusOr<std::string> RGBWLight::GetInfoJSON() const {
+StatusOr<std::string> LightBulb::GetInfoJSON() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, state: %B, "
       " brightness: %d, hue: %d, saturation: %d, "
@@ -298,7 +294,7 @@ StatusOr<std::string> RGBWLight::GetInfoJSON() const {
       cfg_->auto_off, cfg_->auto_off_delay, cfg_->transition_time);
 }
 
-Status RGBWLight::SetConfig(const std::string &config_json,
+Status LightBulb::SetConfig(const std::string &config_json,
                             bool *restart_required) {
   struct mgos_config_lb cfg = *cfg_;
   int8_t in_inverted = -1;
@@ -353,13 +349,13 @@ Status RGBWLight::SetConfig(const std::string &config_json,
   return Status::OK();
 }
 
-void RGBWLight::SaveState() {
+void LightBulb::SaveState() {
   if (!dirty_) return;
   mgos_sys_config_save(&mgos_sys_config, false /* try_once */, NULL /* msg */);
   dirty_ = false;
 }
 
-Status RGBWLight::SetState(const std::string &state_json) {
+Status LightBulb::SetState(const std::string &state_json) {
   int8_t state = -1;
   int brightness = -1, hue = -1, saturation = -1;
 
@@ -390,27 +386,27 @@ Status RGBWLight::SetState(const std::string &state_json) {
   return Status::OK();
 }
 
-void RGBWLight::ResetAutoOff() {
+void LightBulb::ResetAutoOff() {
   auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
 }
 
-void RGBWLight::DisableAutoOff() {
+void LightBulb::DisableAutoOff() {
   auto_off_timer_.Clear();
 }
 
-bool RGBWLight::IsOn() const {
+bool LightBulb::IsOn() const {
   return cfg_->state != 0;
 }
 
-bool RGBWLight::IsOff() const {
+bool LightBulb::IsOff() const {
   return cfg_->state == 0;
 }
 
-bool RGBWLight::IsAutoOffEnabled() const {
+bool LightBulb::IsAutoOffEnabled() const {
   return cfg_->auto_off != 0;
 }
 
-void RGBWLight::AutoOffTimerCB() {
+void LightBulb::AutoOffTimerCB() {
   // Don't set state if auto off has been disabled during timer run
   if (!IsAutoOffEnabled()) return;
   if (static_cast<InMode>(cfg_->in_mode) == InMode::kActivation &&
@@ -423,7 +419,7 @@ void RGBWLight::AutoOffTimerCB() {
   UpdateOnOff(false, "auto_off");
 }
 
-void RGBWLight::TransitionTimerCB() {
+void LightBulb::TransitionTimerCB() {
   int64_t elapsed = mgos_uptime_micros() - transition_start_;
   int64_t duration = cfg_->transition_time * 1000;
 
@@ -447,7 +443,7 @@ void RGBWLight::TransitionTimerCB() {
   }
 }
 
-void RGBWLight::InputEventHandler(Input::Event ev, bool state) {
+void LightBulb::InputEventHandler(Input::Event ev, bool state) {
   InMode in_mode = static_cast<InMode>(cfg_->in_mode);
   if (in_mode == InMode::kDetached) {
     // Nothing to do
@@ -497,7 +493,7 @@ void RGBWLight::InputEventHandler(Input::Event ev, bool state) {
   }
 }
 
-HAPError RGBWLight::HandleOnRead(
+HAPError LightBulb::HandleOnRead(
     HAPAccessoryServerRef *server,
     const HAPBoolCharacteristicReadRequest *request, bool *value) {
   LOG(LL_INFO, ("On read %d: %s", id(), OnOff(value)));
@@ -507,7 +503,7 @@ HAPError RGBWLight::HandleOnRead(
   return kHAPError_None;
 }
 
-HAPError RGBWLight::HandleOnWrite(
+HAPError LightBulb::HandleOnWrite(
     HAPAccessoryServerRef *server,
     const HAPBoolCharacteristicWriteRequest *request, bool value) {
   LOG(LL_INFO, ("On write %d: %s", id(), OnOff(value)));
@@ -517,7 +513,7 @@ HAPError RGBWLight::HandleOnWrite(
   return kHAPError_None;
 }
 
-HAPError RGBWLight::HandleBrightnessRead(
+HAPError LightBulb::HandleBrightnessRead(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
   LOG(LL_INFO, ("Brightness read %d: %d", id(), cfg_->brightness));
@@ -527,7 +523,7 @@ HAPError RGBWLight::HandleBrightnessRead(
   return kHAPError_None;
 }
 
-HAPError RGBWLight::HandleBrightnessWrite(
+HAPError LightBulb::HandleBrightnessWrite(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
   LOG(LL_INFO, ("Brightness write %d: %d", id(), static_cast<int>(value)));
@@ -537,7 +533,7 @@ HAPError RGBWLight::HandleBrightnessWrite(
   return kHAPError_None;
 }
 
-HAPError RGBWLight::HandleHueRead(
+HAPError LightBulb::HandleHueRead(
     HAPAccessoryServerRef *server,
     const HAPUInt32CharacteristicReadRequest *request, uint32_t *value) {
   LOG(LL_INFO, ("Hue read %d: %d", id(), cfg_->hue));
@@ -547,7 +543,7 @@ HAPError RGBWLight::HandleHueRead(
   return kHAPError_None;
 }
 
-HAPError RGBWLight::HandleHueWrite(
+HAPError LightBulb::HandleHueWrite(
     HAPAccessoryServerRef *server,
     const HAPUInt32CharacteristicWriteRequest *request, uint32_t value) {
   LOG(LL_INFO, ("Hue write %d: %d", id(), static_cast<int>(value)));
@@ -557,7 +553,7 @@ HAPError RGBWLight::HandleHueWrite(
   return kHAPError_None;
 }
 
-HAPError RGBWLight::HandleSaturationRead(
+HAPError LightBulb::HandleSaturationRead(
     HAPAccessoryServerRef *server,
     const HAPUInt32CharacteristicReadRequest *request, uint32_t *value) {
   LOG(LL_INFO, ("Saturation read %d: %d", id(), cfg_->saturation));
@@ -567,7 +563,7 @@ HAPError RGBWLight::HandleSaturationRead(
   return kHAPError_None;
 }
 
-HAPError RGBWLight::HandleSaturationWrite(
+HAPError LightBulb::HandleSaturationWrite(
     HAPAccessoryServerRef *server,
     const HAPUInt32CharacteristicWriteRequest *request, uint32_t value) {
   LOG(LL_INFO, ("Saturation write %d: %d", id(), static_cast<int>(value)));

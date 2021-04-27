@@ -30,11 +30,11 @@
 namespace shelly {
 namespace hap {
 
-class RGBWLight : public Component, public mgos::hap::Service {
+class LightBulb : public Component, public mgos::hap::Service {
  public:
-  RGBWLight(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
+  LightBulb(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
             Output *out_w, struct mgos_config_lb *cfg);
-  virtual ~RGBWLight();
+  virtual ~LightBulb();
 
   struct RGBW {
     float r;
@@ -80,7 +80,10 @@ class RGBWLight : public Component, public mgos::hap::Service {
   struct mgos_config_lb *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
-  std::vector<mgos::hap::Characteristic *> state_notify_chars_;
+  mgos::hap::BoolCharacteristic *on_characteristic;
+  mgos::hap::UInt8Characteristic *brightness_characteristic;
+  mgos::hap::UInt32Characteristic *hue_characteristic;
+  mgos::hap::UInt32Characteristic *saturation_characteristic;
 
   mgos::Timer auto_off_timer_;
   bool dirty_ = false;
