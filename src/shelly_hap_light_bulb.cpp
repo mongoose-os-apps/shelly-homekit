@@ -272,6 +272,11 @@ void LightBulb::StartTransition() {
 
   LOG(LL_INFO, ("Transition started... %d [ms]", cfg_->transition_time));
 
+  LOG(LL_INFO, ("Output 1: %.2f => %.2f", rgbw_start_.r, rgbw_end_.r));
+  LOG(LL_INFO, ("Output 2: %.2f => %.2f", rgbw_start_.g, rgbw_end_.g));
+  LOG(LL_INFO, ("Output 3: %.2f => %.2f", rgbw_start_.b, rgbw_end_.b));
+  LOG(LL_INFO, ("Output 4: %.2f => %.2f", rgbw_start_.w, rgbw_end_.w));
+
   // restarting transition timer to fade
   transition_start_ = mgos_uptime_micros();
   transition_timer_.Reset(10, MGOS_TIMER_REPEAT);
@@ -426,6 +431,7 @@ void LightBulb::TransitionTimerCB() {
   if (elapsed > duration) {
     transition_timer_.Clear();
     rgbw_now_ = rgbw_end_;
+    LOG(LL_INFO, ("Transition ready"));
   } else {
     float alpha = static_cast<float>(elapsed) / static_cast<float>(duration);
     rgbw_now_.r = alpha * rgbw_end_.r + (1 - alpha) * rgbw_start_.r;

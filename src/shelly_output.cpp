@@ -68,10 +68,10 @@ Status OutputPin::SetState(bool on, const char *source) {
 Status OutputPin::SetStatePWM(float duty, const char *source) {
   if (duty != 0) {
     mgos_pwm_set(pin_, 400, duty);
-    LOG(LL_INFO, ("Output %d: %f (%s)", id(), duty, source));
+    LOG(LL_DEBUG, ("Output %d: %f (%s)", id(), duty, source));
   } else {
     mgos_pwm_set(pin_, 0, 0);
-    LOG(LL_INFO, ("Output %d: OFF (%s)", id(), source));
+    LOG(LL_DEBUG, ("Output %d: OFF (%s)", id(), source));
   }
   return Status::OK();
 }
