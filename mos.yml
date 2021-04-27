@@ -129,8 +129,7 @@ cdefs:
 libs:
   - origin: https://github.com/mongoose-os-libs/core
   - origin: https://github.com/mongoose-os-libs/file-logger
-  - origin: https://github.com/timoschilling/homekit-adk # TODO: revert after merged
-    version: char-class
+  - origin: https://github.com/mongoose-os-libs/homekit-adk
   - origin: https://github.com/mongoose-os-libs/mqtt
   - origin: https://github.com/mongoose-os-libs/ota-http-server
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
