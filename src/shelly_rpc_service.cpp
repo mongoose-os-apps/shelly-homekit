@@ -355,7 +355,11 @@ static Status SetAuthFileName(const std::string &passwd_fname,
   struct mg_http_endpoint *ep =
       mg_get_http_endpoints(mgos_get_sys_http_server());
   for (; ep != NULL; ep = ep->next) {
-    if (mg_vcmp(&ep->uri_pattern, "/") == 0) continue;  // No auth for root.
+    // No auth for root and /rpc (auth handled by RPC itself).
+    if (mg_vcmp(&ep->uri_pattern, "/") == 0 ||
+        mg_vcmp(&ep->uri_pattern, MGOS_RPC_HTTP_URI_PREFIX) == 0) {
+      continue;
+    }
     free(ep->auth_file);
     free(ep->auth_domain);
     if (passwd_fname.empty()) {
