@@ -709,7 +709,7 @@ class Main:
         logger.info(f"username: {self.security_data.get(device_info.host).get('user')}")
         logger.info(f"password: {self.security_data.get(device_info.host).get('password')}{NC}")
     else:
-      example_dict = {'security_data': {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}}
+      example_dict = {'security': {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}}
       logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
       logger.info(f"Please use either command line security (--user | --password) or '{config_file}'")
       logger.info(f"for '{config_file}', create a file called '{config_file}' in tools folder")
