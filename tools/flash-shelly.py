@@ -216,9 +216,9 @@ class ServiceListener:
       properties = info.properties
       properties = {y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys()}
       logger.trace(f"[Device Scan] found device: {host} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
-      logger.trace(f'[Device Scan] info: {info}')
-      logger.trace(f'[Device Scan] properties: {properties}')
-      logger.trace('')
+      logger.trace(f"[Device Scan] info: {info}")
+      logger.trace(f"[Device Scan] properties: {properties}")
+      logger.trace("")
       (username, password) = main.get_login_info(host)
       self.queue.put(Device(host, username, password, socket.inet_ntoa(info.addresses[0])))
 
@@ -365,13 +365,13 @@ class Device:
   def get_uptime(self, no_error_message=False):
     uptime = -1
     if not self.get_device_info(True, no_error_message):
-      logger.trace(f'get_uptime: -1')
+      logger.trace(f"get_uptime: -1")
       return -1
     if self.is_homekit():
       uptime = self.info.get('uptime', -1)
     elif self.is_stock():
       uptime = self.info.get('status', {}).get('uptime', -1)
-    logger.trace(f'get_uptime: {uptime}')
+    logger.trace(f"get_uptime: {uptime}")
     time.sleep(1)  # wait for time check to fall behind
     return uptime
 
@@ -847,12 +847,12 @@ class Main:
       else:
         self.device_scan()
     except Exception:
-      logger.info(f'{RED}')
-      logger.info(f'flash-shelly version: {app_ver}')
+      logger.info(f"{RED}")
+      logger.info(f"flash-shelly version: {app_ver}")
       logger.info("Try to update your script, maybe the bug is already fixed!")
       exc_type, exc_value, exc_traceback = sys.exc_info()
       traceback.trace_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
-      logger.info(f'{NC}')
+      logger.info(f"{NC}")
     except KeyboardInterrupt:
       main.stop_scan()
 
