@@ -693,24 +693,26 @@ class Main:
       self.security_data = self.config_data.get('security', {})
 
   def security_help(self, device_info, mode='Manual'):
+    example_dict = {'security': {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}}
+    logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
     if self.security_data:
       if self.security_data.get(device_info.host) is None:
-        if mode == 'Manual':
-          logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
+        if mode == 'Manual' and self.password:
+          logger.info(f"Invalid user or password, please check supplied details are correct.")
+          logger.info(f"username: {self.username}")
+          logger.info(f"password: {self.password}")
+        elif mode == 'Manual' and not self.password:
           logger.info(f"{device_info.host} is not found in '{config_file}' config file,")
           logger.info(f"please add or use commandline args --user | --password")
         else:
-          logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
+          logger.info(f"{device_info.host} is not found in '{config_file}' config file,")
           logger.info(f"'{config_file}' security file is required in scanner mode.")
           logger.info(f"unless all devices use same password.{NC}")
       else:
-        logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}Invalid user or password found in '{config_file}'{NC}")
-        logger.info(f"please check supplied details are correct.")
+        logger.info(f"Invalid user or password found in '{config_file}',please check supplied details are correct.")
         logger.info(f"username: {self.security_data.get(device_info.host).get('user')}")
         logger.info(f"password: {self.security_data.get(device_info.host).get('password')}{NC}")
     else:
-      example_dict = {'security': {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}}
-      logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
       logger.info(f"Please use either command line security (--user | --password) or '{config_file}'")
       logger.info(f"for '{config_file}', create a file called '{config_file}' in tools folder")
       logger.info(f"{WHITE}Example {config_file}:{NC}")
