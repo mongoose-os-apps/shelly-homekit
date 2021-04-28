@@ -131,9 +131,14 @@ except ImportError:
   install_import('requests')
   import requests
   from requests.auth import HTTPDigestAuth
+try:
+  import yaml
+except ImportError:
+  install_import('pyyaml')
+  import yaml
 
 app_ver = '2.8.0'
-config_file = 'flashscript.json'
+security_file = 'flash-shelly.auth.yaml'
 webserver_port = 8381
 http_server_started = False
 server = None
@@ -681,44 +686,17 @@ class Main:
     self.config_data = {}
     self.security_data = {}
 
-  def load_config(self):
-    logger.trace(f"load_config")
+  def load_security(self):
+    logger.trace(f"load_security")
     data = {}
-    if os.path.exists(config_file):
-      with open(config_file) as fp:
-        data = json.load(fp)
-      logger.trace(f"config: {json.dumps(data, indent=2)}")
-    self.config_data = data
-    if self.config_data is not None:
-      self.security_data = self.config_data.get('security', {})
-
-  def security_help(self, device_info, mode='Manual'):
-    example_dict = {'security': {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}}
-    logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
-    if self.security_data:
-      if self.security_data.get(device_info.host) is None:
-        if mode == 'Manual' and self.password:
-          logger.info(f"Invalid user or password, please check supplied details are correct.")
-          logger.info(f"username: {self.username}")
-          logger.info(f"password: {self.password}")
-        elif mode == 'Manual' and not self.password:
-          logger.info(f"{device_info.host} is not found in '{config_file}' config file,")
-          logger.info(f"please add or use commandline args --user | --password")
-        else:
-          logger.info(f"{device_info.host} is not found in '{config_file}' config file,")
-          logger.info(f"'{config_file}' security file is required in scanner mode.")
-          logger.info(f"unless all devices use same password.{NC}")
-      else:
-        logger.info(f"Invalid user or password found in '{config_file}',please check supplied details are correct.")
-        logger.info(f"username: {self.security_data.get(device_info.host).get('user')}")
-        logger.info(f"password: {self.security_data.get(device_info.host).get('password')}{NC}")
-    else:
-      logger.info(f"Please use either command line security (--user | --password) or '{config_file}'")
-      logger.info(f"for '{config_file}', create a file called '{config_file}' in tools folder")
-      logger.info(f"{WHITE}Example {config_file}:{NC}")
-      logger.info(f"{YELLOW}{json.dumps(example_dict, indent=2)}{NC}")
+    if os.path.exists(security_file):
+      with open(security_file) as fp:
+        data = yaml.load(fp, Loader=yaml.FullLoader)
+      logger.trace(f"security: {yaml.dump(data, indent=2)}")
+    self.security_data = data
 
   def get_security_data(self, host):
+    logger.trace(f"load_security")
     host = self.host_check(host)
     if not self.password and self.security_data.get(host):
       username = self.security_data.get(host).get('user')
@@ -730,6 +708,51 @@ class Main:
     logger.debug(f"[login] username: {username}")
     logger.debug(f"[login] password: {password}")
     return username, password
+
+  def save_security(self, device_info):
+    logger.trace(f"save_security")
+    current_user = self.security_data.get(device_info.host, {}).get('user')
+    current_password = self.security_data.get(device_info.host, {}).get('password')
+    if not current_user or not current_password:
+      save_security = True
+      logger.debug(f"")
+      logger.debug(f"{WHITE}Security:{NC} Saving data for {device_info.host}[!n]")
+    elif current_user != device_info.username or current_password != device_info.password:
+      logger.debug(f"")
+      logger.debug(f"{WHITE}Security:{NC} Updating data for {device_info.host}{NC}[!n]")
+      save_security = True
+    if save_security:
+      data = {'user': device_info.username, 'password': device_info.password}
+      self.security_data[device_info.host] = data
+      logger.trace(yaml.dump(self.security_data[device_info.host]))
+      with open(security_file, 'w') as yaml_file:
+        yaml.dump(self.security_data, yaml_file)
+
+  def security_help(self, device_info, mode='Manual'):
+    example_dict = {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}
+    logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
+    if self.security_data:
+      if self.security_data.get(device_info.host) is None:
+        if mode == 'Manual' and self.password:
+          logger.info(f"Invalid user or password, please check supplied details are correct.")
+          logger.info(f"username: {self.username}")
+          logger.info(f"password: {self.password}")
+        elif mode == 'Manual' and not self.password:
+          logger.info(f"{device_info.host} is not found in '{security_file}' config file,")
+          logger.info(f"please add or use commandline args --user | --password")
+        else:
+          logger.info(f"{device_info.host} is not found in '{security_file}' config file,")
+          logger.info(f"'{config_file}' security file is required in scanner mode.")
+          logger.info(f"unless all devices use same password.{NC}")
+      else:
+        logger.info(f"Invalid user or password found in '{security_file}',please check supplied details are correct.")
+        logger.info(f"username: {self.security_data.get(device_info.host).get('user')}")
+        logger.info(f"password: {self.security_data.get(device_info.host).get('password')}{NC}")
+    else:
+      logger.info(f"Please use either command line security (--user | --password) or '{security_file}'")
+      logger.info(f"for '{security_file}', create a file called '{security_file}' in tools folder")
+      logger.info(f"{WHITE}Example {security_file}:{NC}")
+      logger.info(f"{YELLOW}{yaml.dump(example_dict, indent=2)}{NC}[!n]")
 
   @staticmethod
   def host_check(host):
@@ -778,7 +801,7 @@ class Main:
       logger.info(f"Version: {app_ver}")
       sys.exit(0)
 
-    self.load_config()
+    self.load_security()
 
     if args.flash:
       action = 'flash'
