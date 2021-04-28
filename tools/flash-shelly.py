@@ -114,21 +114,21 @@ def upgrade_pip():
   logger.info("Updating pip...")
   subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
 
+def install_import(library):
+    logger.info(f"Installing {library}...")
+    upgrade_pip()
+    subprocess.run([sys.executable, '-m', 'pip', 'install', library])
 
 try:
   import zeroconf
 except ImportError:
-  logger.info("Installing zeroconf...")
-  upgrade_pip()
-  subprocess.run([sys.executable, '-m', 'pip', 'install', 'zeroconf'])
+  install_import('zeroconf')
   import zeroconf
 try:
   import requests
   from requests.auth import HTTPDigestAuth
 except ImportError:
-  logger.info("Installing requests...")
-  upgrade_pip()
-  subprocess.run([sys.executable, '-m', 'pip', 'install', 'requests'])
+  install_import('requests')
   import requests
   from requests.auth import HTTPDigestAuth
 
