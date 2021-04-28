@@ -132,7 +132,8 @@ except ImportError:
   import requests
   from requests.auth import HTTPDigestAuth
 
-app_ver = "2.8.0"
+app_ver = '2.8.0'
+config_file = 'flashscript.json'
 webserver_port = 8381
 http_server_started = False
 server = None
@@ -142,10 +143,10 @@ upgradeable_devices = 0
 flashed_devices = 0
 failed_flashed_devices = 0
 arch = platform.system()
-stock_info_url = "https://api.shelly.cloud/files/firmware"
+stock_info_url = 'https://api.shelly.cloud/files/firmware'
 stock_release_info = None
 tried_to_get_remote_homekit = False
-homekit_info_url = "https://rojer.me/files/shelly/update.json"
+homekit_info_url = 'https://rojer.me/files/shelly/update.json'
 homekit_release_info = None
 tried_to_get_remote_stock = False
 flash_question = None
@@ -219,7 +220,7 @@ class ServiceListener:
       logger.trace(f"[Device Scan] info: {info}")
       logger.trace(f"[Device Scan] properties: {properties}")
       logger.trace("")
-      (username, password) = main.get_login_info(host)
+      (username, password) = main.get_security_data(host)
       self.queue.put(Device(host, username, password, socket.inet_ntoa(info.addresses[0])))
 
   @staticmethod
@@ -260,8 +261,7 @@ class Device:
 
   def is_host_reachable(self, host, no_error_message=False):
     # check if host is reachable
-    host_check = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host)
-    self.host = f'{host}.local' if '.local' not in host and not host_check else host
+    self.host = main.host_check(host)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
     if not self.wifi_ip:
@@ -299,25 +299,27 @@ class Device:
       try:
         status_check = requests.get(f'http://{self.wifi_ip}/status', auth=(self.username, self.password), timeout=10)
         if status_check.status_code == 200:
+          fw_type = "stock"
           status = json.loads(status_check.content)
           if status.get('status', '') != '':
             self.info = {}
             return self.info
           fw_info = requests.get(f'http://{self.wifi_ip}/settings', auth=(self.username, self.password), timeout=3)
-          if fw_info.status_code == 401:
-            self.info = 401
-            return 401
-          fw_type = "stock"
           device_url = f'http://{self.wifi_ip}/settings'
         else:
+          fw_type = "homekit"
           fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
           device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt'
-          if fw_info.status_code == 401 or fw_info.status_code != 200:
+          if fw_info.status_code in (401, 404):
+            logger.debug("Invalid password or security not enabled.")
             fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
             device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
-          fw_type = "homekit"
       except Exception:
         pass
+      logger.trace(f"status code: {fw_info.status_code}")
+      if fw_info.status_code == 401:
+        self.info = 401
+        return 401
       if fw_info is not None and fw_info.status_code == 200:
         info = json.loads(fw_info.content)
         info['fw_type'] = fw_type
@@ -676,6 +678,61 @@ class Main:
     self.flash_mode = None
     self.zc = None
     self.listener = None
+    self.config_data = {}
+    self.security_data = {}
+
+  def load_config(self):
+    logger.trace(f"load_config")
+    data = {}
+    if os.path.exists(config_file):
+      with open(config_file) as fp:
+        data = json.load(fp)
+      logger.trace(f"config: {json.dumps(data, indent=2)}")
+    self.config_data = data
+    if self.config_data is not None:
+      self.security_data = self.config_data.get('security', {})
+
+  def security_help(self, device_info, mode='Manual'):
+    if self.security_data:
+      if self.security_data.get(device_info.host) is None:
+        if mode == 'Manual':
+          logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
+          logger.info(f"{device_info.host} is not found in '{config_file}' config file,")
+          logger.info(f"please add or use commandline args --user | --password")
+        else:
+          logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
+          logger.info(f"'{config_file}' security file is required in scanner mode.")
+          logger.info(f"unless all devices use same password.{NC}")
+      else:
+        logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}Invalid user or password found in '{config_file}'{NC}")
+        logger.info(f"please check supplied details are correct.")
+        logger.info(f"username: {self.security_data.get(device_info.host).get('user')}")
+        logger.info(f"password: {self.security_data.get(device_info.host).get('password')}{NC}")
+    else:
+      example_dict = {'security_data': {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}}
+      logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
+      logger.info(f"Please use either command line security (--user | --password) or '{config_file}'")
+      logger.info(f"for '{config_file}', create a file called '{config_file}' in tools folder")
+      logger.info(f"{WHITE}Example {config_file}:{NC}")
+      logger.info(f"{YELLOW}{json.dumps(example_dict, indent=2)}{NC}")
+
+  def get_security_data(self, host):
+    host = self.host_check(host)
+    if not self.password and self.security_data.get(host):
+      username = self.security_data.get(host).get('user')
+      password = self.security_data.get(host).get('password')
+    else:
+      username = main.username
+      password = main.password
+    logger.debug(f"[login] {host} {self.security_data.get(host)}")
+    logger.debug(f"[login] username: {username}")
+    logger.debug(f"[login] password: {password}")
+    return username, password
+
+  @staticmethod
+  def host_check(host):
+    host_check = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host)
+    return f'{host}.local' if '.local' not in host and not host_check else host
 
   def run_app(self):
     parser = argparse.ArgumentParser(prog='flash-shelly.py', fromfile_prefix_chars='@', description='Shelly HomeKit flashing script utility')
@@ -718,6 +775,8 @@ class Main:
     if args.app_version:
       logger.info(f"Version: {app_ver}")
       sys.exit(0)
+
+    self.load_config()
 
     if args.flash:
       action = 'flash'
@@ -855,24 +914,6 @@ class Main:
       logger.info(f"{NC}")
     except KeyboardInterrupt:
       main.stop_scan()
-
-  @staticmethod
-  def security_help(device_info=None, mode='Manual'):
-    if mode == 'Manual':
-      logger.info(f"{device_info.friendly_host} is password protected, please check supplied details are correct.")
-      logger.info(f"commandline args are --user | --password")
-    else:
-      logger.info(f"{device_info.friendly_host} is password protected, security in scanner mode is not currently supported.")
-      logger.info(f"unless all devices use same password.")
-
-  @staticmethod
-  def get_login_info(host=None):
-    username = main.username
-    password = main.password
-    logger.trace(f"[login] host: {host}")
-    logger.trace(f'[login] username: {username}')
-    logger.trace(f'[login] password: {password}')
-    return username, password
 
   @staticmethod
   def get_release_info(info_type):
@@ -1458,7 +1499,7 @@ class Main:
     for host in self.hosts:
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Manual Hosts] action {host}{NC}")
-      (username, password) = main.get_login_info(host)
+      (username, password) = main.get_security_data(host)
       n = 1
       while n <= self.timeout:
         device_info = Device(host, username, password, no_error_message=True)
