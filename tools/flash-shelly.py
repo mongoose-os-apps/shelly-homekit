@@ -715,9 +715,13 @@ class Main:
   def save_security(self, device_info):
     logger.trace(f"save_security")
     save_security = False
-    logger.trace(f"save_security")
     current_user = self.security_data.get(device_info.host, {}).get('user')
     current_password = self.security_data.get(device_info.host, {}).get('password')
+    # print(f"current_user: {current_user}")
+    # print(f"current_password: {current_password}")
+    # print(f"device_user: {device_info.username}")
+    # print(f"device_password: {device_info.password}")
+    # print(f"device: {self.security_data.get(device_info.host)}")
     if not self.security_data.get(device_info.host) and not current_user or not current_password:
       save_security = True
       logger.debug(f"")
