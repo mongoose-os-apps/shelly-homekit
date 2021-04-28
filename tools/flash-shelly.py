@@ -114,10 +114,12 @@ def upgrade_pip():
   logger.info("Updating pip...")
   subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
 
+
 def install_import(library):
     logger.info(f"Installing {library}...")
     upgrade_pip()
     subprocess.run([sys.executable, '-m', 'pip', 'install', library])
+
 
 try:
   import zeroconf
