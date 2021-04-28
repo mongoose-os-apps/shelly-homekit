@@ -746,7 +746,7 @@ class Main:
           logger.info(f"please add or use commandline args --user | --password")
         else:
           logger.info(f"{device_info.host} is not found in '{security_file}' config file,")
-          logger.info(f"'{config_file}' security file is required in scanner mode.")
+          logger.info(f"'{security_file}' security file is required in scanner mode.")
           logger.info(f"unless all devices use same password.{NC}")
       else:
         logger.info(f"Invalid user or password found in '{security_file}',please check supplied details are correct.")
