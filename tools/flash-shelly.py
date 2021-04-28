@@ -317,6 +317,8 @@ class Device:
           fw_type = "homekit"
           fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
           device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt'
+          if fw_info.status_code == 200:
+            main.save_security(self)
           if fw_info.status_code in (401, 404):
             logger.debug("Invalid password or security not enabled.")
             fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
@@ -690,12 +692,11 @@ class Main:
 
   def load_security(self):
     logger.trace(f"load_security")
-    data = {}
     if os.path.exists(security_file):
       with open(security_file) as fp:
         data = yaml.load(fp, Loader=yaml.FullLoader)
       logger.trace(f"security: {yaml.dump(data, indent=2)}")
-    self.security_data = data
+    self.security_data = data if data is not None else {}
 
   def get_security_data(self, host):
     logger.trace(f"load_security")
@@ -713,9 +714,11 @@ class Main:
 
   def save_security(self, device_info):
     logger.trace(f"save_security")
+    save_security = False
+    logger.trace(f"save_security")
     current_user = self.security_data.get(device_info.host, {}).get('user')
     current_password = self.security_data.get(device_info.host, {}).get('password')
-    if not current_user or not current_password:
+    if not self.security_data.get(device_info.host) and not current_user or not current_password:
       save_security = True
       logger.debug(f"")
       logger.debug(f"{WHITE}Security:{NC} Saving data for {device_info.host}[!n]")
