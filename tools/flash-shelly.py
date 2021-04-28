@@ -1505,7 +1505,8 @@ class Main:
       else:
         logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices}{NC}")
     else:
-      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
+      if total_devices > 0:
+        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
     if self.log_filename:
       logger.info(f"Log file created: {self.log_filename}")
 
