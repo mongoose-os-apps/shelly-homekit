@@ -24,7 +24,7 @@ https://github.com/mongoose-os-apps/shelly-homekit/wiki
 
 usage: flash-shelly.py [-h] [--app-version] [-f] [-l] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION]
                        [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT]
-                       [--log-file LOG_FILENAME] [--reboot]
+                       [--log-file LOG_FILENAME] [--reboot] [--user USER] [--password PASSWORD]
                        [hosts ...]
 
 Shelly HomeKit flashing script utility
@@ -72,6 +72,8 @@ optional arguments:
   --log-file LOG_FILENAME
                         Create output log file with chosen filename.
   --reboot              Preform a reboot of the device.
+  --user USER           Enter username for device security (default = admin).
+  --password PASSWORD   Enter password for device security.
 """
 
 import argparse
@@ -113,22 +115,32 @@ def upgrade_pip():
   subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
 
 
-try:
-  import zeroconf
-except ImportError:
-  logger.info("Installing zeroconf...")
-  upgrade_pip()
-  subprocess.run([sys.executable, '-m', 'pip', 'install', 'zeroconf'])
-  import zeroconf
-try:
-  import requests
-except ImportError:
-  logger.info("Installing requests...")
-  upgrade_pip()
-  subprocess.run([sys.executable, '-m', 'pip', 'install', 'requests'])
-  import requests
+def install_import(library):
+    logger.info(f"Installing {library}...")
+    upgrade_pip()
+    subprocess.run([sys.executable, '-m', 'pip', 'install', library])
 
-app_ver = "2.7.0"
+
+try:
+  import zeroconf
+except ImportError:
+  install_import('zeroconf')
+  import zeroconf
+try:
+  import requests
+  from requests.auth import HTTPDigestAuth
+except ImportError:
+  install_import('requests')
+  import requests
+  from requests.auth import HTTPDigestAuth
+try:
+  import yaml
+except ImportError:
+  install_import('pyyaml')
+  import yaml
+
+app_ver = '2.8.0'
+security_file = 'flash-shelly.auth.yaml'
 webserver_port = 8381
 http_server_started = False
 server = None
@@ -138,10 +150,10 @@ upgradeable_devices = 0
 flashed_devices = 0
 failed_flashed_devices = 0
 arch = platform.system()
-stock_info_url = "https://api.shelly.cloud/files/firmware"
+stock_info_url = 'https://api.shelly.cloud/files/firmware'
 stock_release_info = None
 tried_to_get_remote_homekit = False
-homekit_info_url = "https://rojer.me/files/shelly/update.json"
+homekit_info_url = 'https://rojer.me/files/shelly/update.json'
 homekit_release_info = None
 tried_to_get_remote_stock = False
 flash_question = None
@@ -212,10 +224,11 @@ class ServiceListener:
       properties = info.properties
       properties = {y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys()}
       logger.trace(f"[Device Scan] found device: {host} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
-      logger.trace(f'[Device Scan] info: {info}')
-      logger.trace(f'[Device Scan] properties: {properties}')
-      logger.trace('')
-      self.queue.put(Device(host, socket.inet_ntoa(info.addresses[0])))
+      logger.trace(f"[Device Scan] info: {info}")
+      logger.trace(f"[Device Scan] properties: {properties}")
+      logger.trace("")
+      (username, password) = main.get_security_data(host)
+      self.queue.put(Device(host, username, password, socket.inet_ntoa(info.addresses[0])))
 
   @staticmethod
   def remove_service(zc, service_type, device):
@@ -235,9 +248,11 @@ class ServiceListener:
 
 
 class Device:
-  def __init__(self, host, wifi_ip=None, info=None, no_error_message=False):
+  def __init__(self, host, username=None, password=None, wifi_ip=None, info=None, no_error_message=False):
     self.host = host
     self.friendly_host = host.replace('.local', '')
+    self.username = username
+    self.password = password
     self.wifi_ip = wifi_ip
     self.info = info if info is not None else {}
     self.variant = main.variant
@@ -253,8 +268,7 @@ class Device:
 
   def is_host_reachable(self, host, no_error_message=False):
     # check if host is reachable
-    host_check = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host)
-    self.host = f'{host}.local' if '.local' not in host and not host_check else host
+    self.host = main.host_check(host)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(3)
     if not self.wifi_ip:
@@ -290,21 +304,31 @@ class Device:
     fw_info = None
     if (not self.info or force_update) and self.is_host_reachable(self.host, no_error_message):
       try:
-        status_check = requests.get(f'http://{self.wifi_ip}/status', timeout=10)
+        status_check = requests.get(f'http://{self.wifi_ip}/status', auth=(self.username, self.password), timeout=10)
         if status_check.status_code == 200:
+          fw_type = "stock"
           status = json.loads(status_check.content)
           if status.get('status', '') != '':
             self.info = {}
             return self.info
-          fw_info = requests.get(f'http://{self.wifi_ip}/settings', timeout=3)
-          fw_type = "stock"
+          fw_info = requests.get(f'http://{self.wifi_ip}/settings', auth=(self.username, self.password), timeout=3)
           device_url = f'http://{self.wifi_ip}/settings'
         else:
-          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
           fw_type = "homekit"
-          device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
+          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
+          device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt'
+          if fw_info.status_code == 200:
+            main.save_security(self)
+          if fw_info.status_code in (401, 404):
+            logger.debug("Invalid password or security not enabled.")
+            fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
+            device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
       except Exception:
         pass
+      logger.trace(f"status code: {fw_info.status_code}")
+      if fw_info.status_code == 401:
+        self.info = 401
+        return 401
       if fw_info is not None and fw_info.status_code == 200:
         info = json.loads(fw_info.content)
         info['fw_type'] = fw_type
@@ -352,13 +376,13 @@ class Device:
   def get_uptime(self, no_error_message=False):
     uptime = -1
     if not self.get_device_info(True, no_error_message):
-      logger.trace(f'get_uptime: -1')
+      logger.trace(f"get_uptime: -1")
       return -1
     if self.is_homekit():
       uptime = self.info.get('uptime', -1)
     elif self.is_stock():
       uptime = self.info.get('status', {}).get('uptime', -1)
-    logger.trace(f'get_uptime: {uptime}')
+    logger.trace(f"get_uptime: {uptime}")
     time.sleep(1)  # wait for time check to fall behind
     return uptime
 
@@ -413,6 +437,7 @@ class Device:
       local_ip = s.getsockname()[0]
       logger.debug(f"Host IP: {local_ip}")
       s.close()
+      manifest_file = None
       with zipfile.ZipFile(self.local_file, "r") as zfile:
         for name in zfile.namelist():
           if name.endswith('manifest.json'):
@@ -421,28 +446,38 @@ class Device:
             manifest_file = json.loads(mfile)
             logger.debug(f"manifest: {json.dumps(manifest_file, indent=2)}")
             break
-      manifest_version = manifest_file.get('version', '0.0.0')
-      manifest_name = manifest_file.get('name')
-      if manifest_version == '1.0':
-        self.version = self.parse_stock_version(manifest_file.get('build_id', '0.0.0'))
-        self.flash_fw_type_str = "Stock"
+      if manifest_file is not None:
+        manifest_version = manifest_file.get('version', '0.0.0')
+        manifest_name = manifest_file.get('name')
+        if manifest_version == '1.0':
+          self.version = self.parse_stock_version(manifest_file.get('build_id', '0.0.0'))
+          self.flash_fw_type_str = "Stock"
+        else:
+          self.version = manifest_version
+          self.flash_fw_type_str = "HomeKit"
+        logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
+        self.flash_fw_version = self.version
+        if self.is_homekit():
+          self.download_url = 'local'
+        else:
+          self.download_url = f'http://{local_ip}:{webserver_port}/{self.local_file}'
+        if self.is_stock() and self.info.get('stock_fw_model') == 'SHRGBW2' and self.info.get('color_mode'):
+          m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
+        else:
+          m_model = self.info.get('app')
+        if 'rgbw2' in m_model:
+          m_model = m_model.split('-')[0]
+        if 'rgbw2' in manifest_name:
+          manifest_name = manifest_name.split('-')[0]
+        if m_model != manifest_name:
+          self.flash_fw_version = '0.0.0'
+          self.download_url = None
+        return True
       else:
-        self.version = manifest_version
-        self.flash_fw_type_str = "HomeKit"
-      logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
-      self.flash_fw_version = self.version
-      if self.is_homekit():
-        self.download_url = 'local'
-      else:
-        self.download_url = f'http://{local_ip}:{webserver_port}/{self.local_file}'
-      if self.is_stock() and self.info.get('stock_fw_model') == 'SHRGBW2' and self.info.get('color_mode'):
-        m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
-      else:
-        m_model = self.info.get('app')
-      if m_model != manifest_name:
+        logger.info(f"Invalid file.")
         self.flash_fw_version = '0.0.0'
         self.download_url = None
-      return True
+        return False
     else:
       logger.info(f"File does not exist.")
       self.flash_fw_version = '0.0.0'
@@ -535,15 +570,22 @@ class HomeKitDevice(Device):
       else:
         logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
       files = {'file': ('shelly-flash.zip', my_file.content)}
-    logger.debug(f"requests.post('http://{self.wifi_ip}/update', files=files")
-    response = requests.post(f'http://{self.wifi_ip}/update', files=files)
+    logger.debug(f"requests.post(url='http://{self.wifi_ip}/update', auth=HTTPDigestAuth('{self.username}', '{self.password}'), files=files)")
+    response = requests.post(url=f'http://{self.wifi_ip}/update', auth=HTTPDigestAuth(self.username, self.password), files=files)
     logger.trace(response.text)
+    logger.trace(f"response.status_code: {response.status_code}")
+    if response.status_code == 401:
+      main.security_help(self)
+    return response
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
-    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/rpc/SyS.Reboot'}")
-    response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot')
+    logger.debug(f"requests.post(url='http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
+    response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
     logger.trace(response.text)
+    if response.status_code == 401:
+      main.security_help(self)
+    return response
 
 
 class StockDevice(Device):
@@ -572,7 +614,6 @@ class StockDevice(Device):
   def flash_firmware(self, revert=False):
     logger.trace(f"revert {revert}")
     logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
-    response = None
     download_url = self.download_url.replace('https', 'http')
     if self.local_file:
       logger.debug(f"Local file: {self.local_file}")
@@ -580,34 +621,48 @@ class StockDevice(Device):
     else:
       logger.debug(f"Remote Download URL: {download_url}")
     if self.fw_version == '0.0.0':
-      logger.debug(f"http://{self.wifi_ip}/ota?update=true")
-      response = requests.get(f'http://{self.wifi_ip}/ota?update=true')
+      flash_url = f'http://{self.wifi_ip}/ota?update=true'
     else:
-      logger.debug(f"http://{self.wifi_ip}/ota?url={download_url}")
-      try:
-        response = requests.get(f'http://{self.wifi_ip}/ota?url={download_url}')
-      except Exception:
-        logger.info(f"flash failed")
-    if response:
-      logger.trace(response.text)
+      flash_url = f'http://{self.wifi_ip}/ota?url={download_url}'
+    logger.debug(f"requests.get(url={flash_url}, auth=('{self.username}', '{self.password}')")
+    response = requests.get(url=flash_url, auth=(self.username, self.password))
+    logger.trace(response.text)
+    if response.status_code == 401:
+      main.security_help(self)
+    return response
 
   def preform_reboot(self):
     logger.info(f"Rebooting...")
-    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}")
-    response = requests.get(url=f'http://{self.wifi_ip}/reboot')
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}, auth=('{self.username}', '{self.password}'d)")
+    response = requests.get(url=f'http://{self.wifi_ip}/reboot', auth=(self.username, self.password))
     logger.trace(response.text)
+    if response.status_code == 401:
+      main.security_help(self)
+    return response
 
   def perform_mode_change(self, mode_color):
     logger.info("Performing mode change...")
-    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}")
-    response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}')
+    logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}, auth=('{self.username}', '{self.password}'))")
+    response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.username, self.password))
     logger.trace(response.text)
+    if response.status_code == 401:
+      main.security_help(self)
+    while response.status_code == 400:
+      time.sleep(2)
+      try:
+        response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.username, self.password))
+        logger.trace(f"response.status_code: {response.status_code}")
+      except ConnectionResetError:
+        pass
+    return response
 
 
 # noinspection PyUnboundLocalVariable,PyUnresolvedReferences
 class Main:
   def __init__(self):
     self.hosts = None
+    self.username = None
+    self.password = None
     self.run_action = None
     self.timeout = None
     self.log_filename = None
@@ -632,6 +687,81 @@ class Main:
     self.flash_mode = None
     self.zc = None
     self.listener = None
+    self.config_data = {}
+    self.security_data = {}
+
+  def load_security(self):
+    logger.trace(f"load_security")
+    if os.path.exists(security_file):
+      with open(security_file) as fp:
+        data = yaml.load(fp, Loader=yaml.FullLoader)
+      logger.trace(f"security: {yaml.dump(data, indent=2)}")
+    self.security_data = data if data is not None else {}
+
+  def get_security_data(self, host):
+    logger.trace(f"load_security")
+    host = self.host_check(host)
+    if not self.password and self.security_data.get(host):
+      username = self.security_data.get(host).get('user')
+      password = self.security_data.get(host).get('password')
+    else:
+      username = main.username
+      password = main.password
+    logger.debug(f"[login] {host} {self.security_data.get(host)}")
+    logger.debug(f"[login] username: {username}")
+    logger.debug(f"[login] password: {password}")
+    return username, password
+
+  def save_security(self, device_info):
+    logger.trace(f"save_security")
+    save_security = False
+    current_user = self.security_data.get(device_info.host, {}).get('user')
+    current_password = self.security_data.get(device_info.host, {}).get('password')
+    if not self.security_data.get(device_info.host) and not current_user or not current_password:
+      save_security = True
+      logger.debug(f"")
+      logger.debug(f"{WHITE}Security:{NC} Saving data for {device_info.host}[!n]")
+    elif current_user != device_info.username or current_password != device_info.password:
+      logger.debug(f"")
+      logger.debug(f"{WHITE}Security:{NC} Updating data for {device_info.host}{NC}[!n]")
+      save_security = True
+    if save_security:
+      data = {'user': device_info.username, 'password': device_info.password}
+      self.security_data[device_info.host] = data
+      logger.trace(yaml.dump(self.security_data[device_info.host]))
+      with open(security_file, 'w') as yaml_file:
+        yaml.dump(self.security_data, yaml_file)
+
+  def security_help(self, device_info, mode='Manual'):
+    example_dict = {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}
+    logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
+    if self.security_data:
+      if self.security_data.get(device_info.host) is None:
+        if mode == 'Manual' and self.password:
+          logger.info(f"Invalid user or password, please check supplied details are correct.")
+          logger.info(f"username: {self.username}")
+          logger.info(f"password: {self.password}")
+        elif mode == 'Manual' and not self.password:
+          logger.info(f"{device_info.host} is not found in '{security_file}' config file,")
+          logger.info(f"please add or use commandline args --user | --password")
+        else:
+          logger.info(f"{device_info.host} is not found in '{security_file}' config file,")
+          logger.info(f"'{security_file}' security file is required in scanner mode.")
+          logger.info(f"unless all devices use same password.{NC}")
+      else:
+        logger.info(f"Invalid user or password found in '{security_file}',please check supplied details are correct.")
+        logger.info(f"username: {self.security_data.get(device_info.host).get('user')}")
+        logger.info(f"password: {self.security_data.get(device_info.host).get('password')}{NC}")
+    else:
+      logger.info(f"Please use either command line security (--user | --password) or '{security_file}'")
+      logger.info(f"for '{security_file}', create a file called '{security_file}' in tools folder")
+      logger.info(f"{WHITE}Example {security_file}:{NC}")
+      logger.info(f"{YELLOW}{yaml.dump(example_dict, indent=2)}{NC}[!n]")
+
+  @staticmethod
+  def host_check(host):
+    host_check = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host)
+    return f'{host}.local' if '.local' not in host and not host_check else host
 
   def run_app(self):
     parser = argparse.ArgumentParser(prog='flash-shelly.py', fromfile_prefix_chars='@', description='Shelly HomeKit flashing script utility')
@@ -661,6 +791,8 @@ class Main:
     parser.add_argument('--timeout', type=int, default=20, help="Scan: Time of seconds to wait after last detected device before quitting.  Manual: Time of seconds to keeping to connect.")
     parser.add_argument('--log-file', dest="log_filename", default='', help="Create output log file with chosen filename.")
     parser.add_argument('--reboot', action="store_true", help="Preform a reboot of the device.")
+    parser.add_argument('--user', default='admin', help="Enter username for device security (default = admin).")
+    parser.add_argument('--password', default='', help="Enter password for device security.")
     parser.add_argument('hosts', type=str, nargs='*', default='')
     args = parser.parse_args()
 
@@ -672,6 +804,8 @@ class Main:
     if args.app_version:
       logger.info(f"Version: {app_ver}")
       sys.exit(0)
+
+    self.load_security()
 
     if args.flash:
       action = 'flash'
@@ -708,6 +842,8 @@ class Main:
     logger.debug(f"OS: {PURPLE}{arch}{NC}")
     logger.debug(f"app_version: {app_ver}")
     logger.debug(f"manual_hosts: {args.hosts} ({len(args.hosts)})")
+    logger.debug(f"user: {args.user}")
+    logger.debug(f"password: {args.password}")
     logger.debug(f"action: {action}")
     logger.debug(f"mode: {args.mode}")
     logger.debug(f"timeout: {args.timeout}")
@@ -754,6 +890,8 @@ class Main:
     self.ipv4_mask = args.ipv4_mask
     self.ipv4_gw = args.ipv4_gw
     self.ipv4_dns = args.ipv4_dns
+    self.username = args.user
+    self.password = args.password
 
     message = None
     if not args.hosts and not args.do_all:
@@ -787,7 +925,7 @@ class Main:
 
     if message:
       logger.info(message)
-      parser.logger.trace_help()
+      parser.print_help()
       sys.exit(1)
 
     atexit.register(main.exit_app)
@@ -797,12 +935,12 @@ class Main:
       else:
         self.device_scan()
     except Exception:
-      logger.info(f'{RED}')
-      logger.info(f'flash-shelly version: {app_ver}')
+      logger.info(f"{RED}")
+      logger.info(f"flash-shelly version: {app_ver}")
       logger.info("Try to update your script, maybe the bug is already fixed!")
       exc_type, exc_value, exc_traceback = sys.exc_info()
-      traceback.logger.trace_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
-      logger.info(f'{NC}')
+      traceback.trace_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
+      logger.info(f"{NC}")
     except KeyboardInterrupt:
       main.stop_scan()
 
@@ -820,7 +958,7 @@ class Main:
     logger.trace(f"{info_type} release_info: {json.dumps(release_info, indent=2)}")
     if not release_info:
       logger.error("")
-      logger.error(f"{RED}Failed to lookup online stock firmware information{NC}")
+      logger.error(f"{RED}Failed to lookup online firmware information{NC}")
       logger.error("For more information please point your web browser to:")
       logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
     return release_info
@@ -863,6 +1001,40 @@ class Main:
     logger.trace(f"is {v1} newer than {v2}: {value}")
     return value
 
+  @staticmethod
+  def wait_for_reboot(device_info, before_reboot_uptime=-1, reboot_only=False):
+    logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
+    logger.info(f"waiting for {device_info.friendly_host} to reboot[!n]")
+    logger.debug("")
+    time.sleep(5)
+    current_version = None
+    current_uptime = device_info.get_uptime(True)
+    n = 1
+    if not reboot_only:
+      while current_uptime >= before_reboot_uptime and n < 90 or current_version is None:
+        logger.trace(f"loop number: {n}")
+        logger.debug(f"current_uptime: {current_uptime}")
+        logger.debug(f"before_reboot_uptime: {before_reboot_uptime}")
+        logger.info(f".[!n]")
+        logger.debug("")
+        if n == 30:
+          logger.info("")
+          logger.info(f"still waiting for {device_info.friendly_host} to reboot[!n]")
+          logger.debug("")
+        elif n == 60:
+          logger.info("")
+          logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
+          logger.debug("")
+        current_uptime = device_info.get_uptime(True)
+        current_version = device_info.get_current_version(no_error_message=True)
+        logger.debug(f"current_version: {current_version}")
+        n += 1
+    else:
+      while device_info.get_uptime(True) < 3:
+        time.sleep(1)  # wait 1 second before retrying.
+    logger.info("")
+    return current_version
+
   def write_network_type(self, device_info):
     logger.debug(f"{PURPLE}[Write Network Type]{NC}")
     wifi_ip = device_info.wifi_ip
@@ -875,14 +1047,16 @@ class Main:
         value = {'config': {'wifi': {'sta': {'ip': ''}}}}
       config_set_url = f'http://{wifi_ip}/rpc/Config.Set'
       logger.info(log_message)
-      logger.debug(f"requests.post(url={config_set_url}, json={value}")
-      response = requests.post(url=config_set_url, json=value)
+      logger.debug(f"requests.post(url={config_set_url}, json={value}, auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
+      response = requests.post(url=config_set_url, json=value, auth=HTTPDigestAuth(self.username, self.password))
       logger.trace(response.text)
-      if response.text.find('"saved": true') > 0:
-        logger.info(f"Saved, Rebooting...")
-        logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}")
-        response = requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot')
+      if response.status_code == 200:
         logger.trace(response.text)
+        logger.info(f"Saved, Rebooting...")
+        logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}, auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
+        requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
+      elif response.status_code == 401:
+        self.security_help(device_info)
     else:
       if self.network_type == 'static':
         log_message = f"Configuring static IP to {self.ipv4_ip}..."
@@ -891,101 +1065,89 @@ class Main:
         log_message = f"Configuring IP to use DHCP..."
         config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=dhcp'
       logger.info(log_message)
-      logger.debug(f"requests.post(url={config_set_url}")
+      logger.debug(f"requests.post(url={config_set_url})")
       response = requests.post(url=config_set_url)
-      logger.trace(response.text)
-      logger.info(f"Saved...")
+      if response.status_code == 200:
+        logger.trace(response.text)
+        logger.info(f"Saved...")
+      elif response.status_code == 401:
+        self.security_help(device_info)
 
-  def write_hap_setup_code(self, wifi_ip):
+  def write_hap_setup_code(self, device_info):
     logger.info("Configuring HomeKit setup code...")
     value = {'code': self.hap_setup_code}
-    logger.debug(f"requests.post(url='http://{wifi_ip}/rpc/HAP.Setup', json={value}")
-    response = requests.post(url=f'http://{wifi_ip}/rpc/HAP.Setup', json={'code': self.hap_setup_code})
-    logger.trace(response.text)
-    if response.text.startswith('null'):
-      logger.info(f"Done.")
-
-  @staticmethod
-  def wait_for_reboot(device_info, before_reboot_uptime=-1, reboot_only=False):
-    time.sleep(5)
-    logger.debug(f"{PURPLE}[Wait For Reboot]{NC}")
-    logger.info(f"waiting for {device_info.friendly_host} to reboot[!n]")
-    logger.trace("")
-    current_version = None
-    current_uptime = device_info.get_uptime(True)
-    n = 1
-    if not reboot_only:
-      while current_uptime >= before_reboot_uptime and n < 90 or current_version is None:
-        logger.trace(f"loop number: {n}")
-        logger.debug(f"current_uptime: {current_uptime}")
-        logger.debug(f"before_reboot_uptime: {before_reboot_uptime}")
-        logger.info(f".[!n]")
-        if n == 30:
-          logger.info("")
-          logger.info(f"still waiting for {device_info.friendly_host} to reboot[!n]")
-        elif n == 60:
-          logger.info("")
-          logger.info(f"we'll wait just a little longer for {device_info.friendly_host} to reboot[!n]")
-        current_uptime = device_info.get_uptime(True)
-        current_version = device_info.get_current_version(no_error_message=True)
-        logger.debug("")
-        logger.debug(f"current_version: {current_version}")
-        n += 1
-    else:
-      while device_info.get_uptime(True) < 3:
-        time.sleep(1)  # wait 1 second before retrying.
-    logger.info("")
-    return current_version
+    logger.trace(f"security: {device_info.info.get('auth_en')}")
+    logger.debug(f"requests.post(url='http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth('{self.username}', '{self.password}'), json={value})")
+    response = requests.post(url=f'http://{device_info.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth(self.username, self.password), json={'code': self.hap_setup_code})
+    if response.status_code == 200:
+      logger.trace(response.text)
+      logger.info(f"HAP code successfully configured.")
+    elif response.status_code == 401:
+      logger.info(f"{device_info.friendly_host} is password protected.")
+      self.security_help(device_info)
 
   def write_flash(self, device_info, revert=False):
     logger.debug(f"{PURPLE}[Write Flash]{NC}")
     uptime = device_info.get_uptime(True)
-    device_info.flash_firmware(revert)
-    message = f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}"
-    if revert is True:
-      self.wait_for_reboot(device_info, uptime)
-      reboot_check = device_info.is_stock()
-      flash_fw = 'stock revert'
-      message = f"{GREEN}Successfully reverted {device_info.friendly_host} to stock firmware{NC}"
-    else:
-      reboot_check = self.parse_version(self.wait_for_reboot(device_info, uptime))
-      flash_fw = self.parse_version(device_info.flash_fw_version)
-    if (reboot_check == flash_fw) or (revert is True and reboot_check is True):
-      global flashed_devices, requires_upgrade
-      if device_info.already_processed is False:
-        flashed_devices += 1
-      if requires_upgrade is True:
-        requires_upgrade = 'Done'
-      device_info.already_processed = True
-      logger.critical(f"{message}")
-    else:
-      if reboot_check == '0.0.0':
-        logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
+    waiting_shown = False
+    while uptime <= 25:  # make sure device has not just booted up.
+      logger.trace("seems like we just booted, delay a few seconds")
+      if waiting_shown is not True:
+        logger.info("Waiting for device.")
+        waiting_shown = True
+      time.sleep(5)
+      uptime = device_info.get_uptime(True)
+    response = device_info.flash_firmware(revert)
+    logger.trace(response)
+    if response and response.status_code == 200:
+      message = f"{GREEN}Successfully flashed {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}"
+      if revert is True:
+        self.wait_for_reboot(device_info, uptime)
+        reboot_check = device_info.is_stock()
+        flash_fw = 'stock revert'
+        message = f"{GREEN}Successfully reverted {device_info.friendly_host} to stock firmware{NC}"
       else:
-        global failed_flashed_devices
-        failed_flashed_devices += 1
-        logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}")
-      logger.debug(f"Current: {reboot_check}")
-      logger.debug(f"flash_fw_version: {flash_fw}")
+        reboot_check = self.parse_version(self.wait_for_reboot(device_info, uptime))
+        flash_fw = self.parse_version(device_info.flash_fw_version)
+      if (reboot_check == flash_fw) or (revert is True and reboot_check is True):
+        global flashed_devices, requires_upgrade
+        if device_info.already_processed is False:
+          flashed_devices += 1
+        if requires_upgrade is True:
+          requires_upgrade = 'Done'
+        device_info.already_processed = True
+        logger.critical(f"{message}")
+      else:
+        if reboot_check == '0.0.0':
+          logger.info(f"{RED}Flash may have failed, please manually check version{NC}")
+        else:
+          global failed_flashed_devices
+          failed_flashed_devices += 1
+          logger.info(f"{RED}Failed to flash {device_info.friendly_host} to {device_info.flash_fw_type_str} {device_info.flash_fw_version}{NC}")
+        logger.debug(f"Current: {reboot_check}")
+        logger.debug(f"flash_fw_version: {flash_fw}")
 
   def reboot_device(self, device_info):
     logger.debug(f"{PURPLE}[Reboot Device]{NC}")
-    device_info.preform_reboot()
-    self.wait_for_reboot(device_info, reboot_only=True)
-    logger.info(f"Device has rebooted...")
+    response = device_info.preform_reboot()
+    if response.status_code == 200:
+      self.wait_for_reboot(device_info, reboot_only=True)
+      logger.info(f"Device has rebooted...")
 
   def mode_change(self, device_info, mode_color):
     logger.debug(f"{PURPLE}[Color Mode Change] change from {device_info.info.get('color_mode')} to {mode_color}{NC}")
     uptime = device_info.get_uptime(True)
-    device_info.perform_mode_change(mode_color)
-    self.wait_for_reboot(device_info, uptime)
-    current_color_mode = device_info.get_color_mode()
-    logger.debug(f"mode_color: {mode_color}")
-    if current_color_mode == mode_color:
-      device_info.already_processed = True
-      logger.critical(f"{GREEN}Successfully changed {device_info.friendly_host} to mode: {current_color_mode}{NC}")
-      global requires_mode_change
-      requires_mode_change = 'Done'
+    response = device_info.perform_mode_change(mode_color)
+    if response.status_code == 200:
+      self.wait_for_reboot(device_info, uptime)
+      current_color_mode = device_info.get_color_mode()
+      logger.debug(f"mode_color: {mode_color}")
+      logger.debug(f"current_color_mode: {current_color_mode}")
+      if current_color_mode == mode_color:
+        device_info.already_processed = True
+        logger.critical(f"{GREEN}Successfully changed {device_info.friendly_host} to mode: {current_color_mode}{NC}")
+        global requires_mode_change
+        requires_mode_change = 'Done'
 
   def parse_info(self, device_info, hk_ver=None):
     logger.debug(f"")
@@ -1083,9 +1245,13 @@ class Main:
         logger.info(f"{WHITE}Device ID: {NC}{device_id}")
         if sys_mode:
           logger.info(f"{WHITE}Mode: {NC}{sys_mode}")
-        logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
+        elif color_mode:
+          logger.info(f"{WHITE}Mode: {NC}{color_mode.title()}")
+        if wifi_ssid:
+          logger.info(f"{WHITE}SSID: {NC}{wifi_ssid}")
         logger.info(f"{WHITE}IP: {NC}{wifi_ip}")
-        logger.info(f"{WHITE}RSSI: {NC}{wifi_rssi}")
+        if wifi_rssi:
+          logger.info(f"{WHITE}RSSI: {NC}{wifi_rssi}")
         if sys_temp:
           logger.info(f"{WHITE}Sys Temp: {NC}{sys_temp}˚c{NC}")
         if str(uptime) != '0:00:00':
@@ -1184,7 +1350,7 @@ class Main:
           self.write_flash(device_info)
 
     if device_info.is_homekit() and self.hap_setup_code:
-      self.write_hap_setup_code(device_info.wifi_ip)
+      self.write_hap_setup_code(device_info)
     if self.network_type:
       if self.network_type == 'static':
         action_message = f"Do you wish to set your IP address to {self.ipv4_ip}"
@@ -1224,9 +1390,9 @@ class Main:
     else:
       self.flash_mode = self.mode
     if device.get('fw_type') == 'homekit':
-      device_info = HomeKitDevice(device.get('host'), device.get('wifi_ip'), device.get('info'))
+      device_info = HomeKitDevice(device.get('host'), device.get('username'), device.get('password'), device.get('wifi_ip'), device.get('info'))
     else:
-      device_info = StockDevice(device.get('host'), device.get('wifi_ip'), device.get('info'))
+      device_info = StockDevice(device.get('host'), device.get('username'), device.get('password'), device.get('wifi_ip'), device.get('info'))
     if not device_info.get_info():
       logger.warning("")
       logger.warning(f"{RED}Failed to lookup local information of {device.get('host')}{NC}")
@@ -1251,7 +1417,7 @@ class Main:
       if self.local_file:
         if device_info.is_homekit() and device_info.parse_local_file():
           got_info = True
-        if device_info.is_stock() and device_info.parse_local_file():
+        elif device_info.is_stock():
           if not stock_release_info and not tried_to_get_remote_stock:
             stock_release_info = self.get_release_info('stock')
             tried_to_get_remote_stock = True
@@ -1314,24 +1480,14 @@ class Main:
         self.parse_info(device_info, hk_flash_fw_version)
         if self.run_action == 'flash' and (requires_upgrade in ('Done', True) or requires_mode_change in ('Done', True)) and flash_question is True:
           if requires_mode_change is True:
-            logger.info(f"Waiting for device...")
-            if device_info.info.get('device', {}).get('type', '') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
-              time.sleep(30)  # need to allow time for previous flash reboot to fully boot, SHRGBW2 needs extra time due to firmware self updating.
-            else:
-              time.sleep(15)  # need to allow time for previous flash reboot to fully boot.
             device_info.get_info()
             self.parse_info(device_info)
           device_info.get_info()
-          if device_info.flash_fw_version != '0.0.0' and not self.is_newer(device_info.flash_fw_version, device_info.fw_version):
+          if device_info.flash_fw_version != '0.0.0' and (not self.is_newer(device_info.flash_fw_version, device_info.fw_version) or (device_info.is_stock() and self.flash_mode == 'homekit')):
             if self.local_file:
               device_info.parse_local_file()
             else:
               device_info.update_homekit(homekit_release_info)
-            logger.info(f"Waiting for device...")
-            if device_info.info.get('device', {}).get('type', '') == 'SHRGBW2':  # TODO check if this is still required once stock fw gets past 1.10.0-34
-              time.sleep(30)  # need to allow time for previous flash reboot to fully boot, SHRGBW2 needs extra time due to firmware self updating.
-            else:
-              time.sleep(15)  # need to allow time for previous flash reboot to fully boot.
             self.parse_info(device_info)
 
   def stop_scan(self):
@@ -1351,7 +1507,8 @@ class Main:
       else:
         logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices} Flashed: {flashed_devices}{NC}")
     else:
-      logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
+      if total_devices > 0:
+        logger.info(f"{GREEN}Devices found: {total_devices} Upgradeable: {upgradeable_devices}{NC}")
     if self.log_filename:
       logger.info(f"Log file created: {self.log_filename}")
 
@@ -1372,17 +1529,20 @@ class Main:
     for host in self.hosts:
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Manual Hosts] action {host}{NC}")
+      (username, password) = main.get_security_data(host)
       n = 1
       while n <= self.timeout:
-        device_info = Device(host, no_error_message=True)
+        device_info = Device(host, username, password, no_error_message=True)
         time.sleep(1)
         n += 1
         if device_info.info:
           break
       if n > self.timeout:
-        device_info = Device(host)
-      if device_info.info:
-        device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
+        device_info = Device(host, username, password)
+      if device_info.info and device_info.info == 401:
+        self.security_help(device_info)
+      elif device_info.info:
+        device = {'host': device_info.host, 'username': device_info.username, 'password': device_info.password, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
         self.probe_device(device)
     if http_server_started and server is not None:
       logger.trace("Shutting down webserver")
@@ -1404,7 +1564,10 @@ class Main:
         break
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
-      if device_info.info:
+      if device_info.info and device_info.info == 401:
+        logger.info("")
+        self.security_help(device_info, 'Scanner')
+      elif device_info.info:
         fw_model = device_info.info.get('model') if device_info.is_homekit() else device_info.shelly_model(device_info.info.get('device').get('type'))[0]
         if self.is_fw_type(device_info.info.get('fw_type')) and self.is_model_type(fw_model) and self.is_device_name(device_info.info.get('device_name')):
           device = {'host': device_info.host, 'wifi_ip': device_info.wifi_ip, 'fw_type': device_info.info.get('fw_type'), 'info': device_info.info}
