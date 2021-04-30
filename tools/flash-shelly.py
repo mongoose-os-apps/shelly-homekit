@@ -727,7 +727,7 @@ class Main:
       save_file = defaults_config_file
     else:
       profile = args.get('save_config')
-      save_file = f"{args.get('save_config')}.cfg.yaml"
+      save_file = f"{args.get('save_config')}{config_file}"
     defaults_data = {}
     y = {}
     if not args.get('hosts'):
