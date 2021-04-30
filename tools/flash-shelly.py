@@ -329,8 +329,9 @@ class Device:
             logger.debug("Invalid password or security not enabled.")
             fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
             device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
-      except Exception:
-        pass
+      except Exception as e:
+        logger.debug(f"Could not get info from device: {self.host} {e}")
+        return {}
       logger.trace(f"status code: {fw_info.status_code}")
       if fw_info.status_code == 401:
         self.info = 401
@@ -749,6 +750,7 @@ class Main:
     sys.exit(0)
 
   def load_security(self):
+    data = None
     logger.trace(f"load_security")
     if os.path.exists(security_file):
       with open(security_file) as fp:
