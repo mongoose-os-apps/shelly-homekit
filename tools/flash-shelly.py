@@ -691,6 +691,7 @@ class Main:
     self.security_data = {}
 
   def load_security(self):
+    data = None
     logger.trace(f"load_security")
     if os.path.exists(security_file):
       with open(security_file) as fp:
