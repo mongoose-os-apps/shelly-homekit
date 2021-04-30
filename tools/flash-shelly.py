@@ -24,7 +24,7 @@ https://github.com/mongoose-os-apps/shelly-homekit/wiki
 
 usage: flash-shelly.py [-h] [--app-version] [-f] [-l] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION]
                        [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT]
-                       [--log-file LOG_FILENAME] [--reboot] [--user USER] [--password PASSWORD]
+                       [--log-file LOG_FILENAME] [--reboot] [--user USER] [--password PASSWORD] [--config CONFIG] [--save-config SAVE_CONFIG] [--save-defaults]
                        [hosts ...]
 
 Shelly HomeKit flashing script utility
@@ -74,6 +74,10 @@ optional arguments:
   --reboot              Preform a reboot of the device.
   --user USER           Enter username for device security (default = admin).
   --password PASSWORD   Enter password for device security.
+  --config CONFIG       Load options from config file.
+  --save-config SAVE_CONFIG
+                        Save current options to config file.
+  --save-defaults       Save current options as new defaults.
 """
 
 import argparse
@@ -116,9 +120,9 @@ def upgrade_pip():
 
 
 def install_import(library):
-    logger.info(f"Installing {library}...")
-    upgrade_pip()
-    subprocess.run([sys.executable, '-m', 'pip', 'install', library])
+  logger.info(f"Installing {library}...")
+  upgrade_pip()
+  subprocess.run([sys.executable, '-m', 'pip', 'install', library])
 
 
 try:
@@ -140,6 +144,8 @@ except ImportError:
   import yaml
 
 app_ver = '2.8.0'
+config_file = '.cfg.yaml'
+defaults_config_file = 'flash-shelly.cfg.yaml'
 security_file = 'flash-shelly.auth.yaml'
 webserver_port = 8381
 http_server_started = False
@@ -687,8 +693,60 @@ class Main:
     self.flash_mode = None
     self.zc = None
     self.listener = None
-    self.config_data = {}
     self.security_data = {}
+
+  @staticmethod
+  def host_check(host):
+    host_check = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host)
+    return f'{host}.local' if '.local' not in host and not host_check else host
+
+  @staticmethod
+  def load_config(profile):
+    logger.trace(f"load_config: {profile}")
+    data = {}
+    if profile == 'defaults':
+      load_file = defaults_config_file
+    else:
+      load_file = f'{profile}{config_file}'
+    if os.path.exists(load_file):
+      logger.trace(f"Loading configuration {load_file}")
+      with open(load_file) as fp:
+        data = yaml.load(fp, Loader=yaml.FullLoader)
+      logger.trace(f"config: {yaml.dump(data, indent=2)}")
+    defaults_data = data if data is not None else {}
+    defaults = defaults_data.get(profile)
+    if defaults is not None and defaults.get('hosts'):
+      defaults['hosts'] = defaults.get('hosts').split()
+    return defaults
+
+  @staticmethod
+  def save_config(args, parser):
+    logger.trace(f"save_config")
+    if args.get('save_defaults') is True:
+      profile = 'defaults'
+      save_file = defaults_config_file
+    else:
+      profile = args.get('save_config')
+      save_file = f"{args.get('save_config')}.cfg.yaml"
+    defaults_data = {}
+    y = {}
+    if not args.get('hosts'):
+      args.pop('hosts')
+    for k in args:
+      if k in ('config', 'save_config', 'save_defaults', 'app_version', 'flash', 'user', 'password'):
+        continue
+      if args[k] == parser.get_default(k):
+        continue
+      if k == 'hosts' and args[k]:
+        y[k] = re.sub(r"[\[\]',]", "", str(args[k]))
+      else:
+        y[k] = args[k]
+    defaults_data[profile] = y
+    logger.trace(f"{'defaults_data'}: {yaml.dump(defaults_data, indent=2)}")
+    with open(save_file, 'w') as yaml_file:
+      yaml.dump(defaults_data, yaml_file)
+    logger.info(f"Saved configuration {profile} to {save_file}")
+    sys.exit(0)
 
   def load_security(self):
     logger.trace(f"load_security")
@@ -758,78 +816,139 @@ class Main:
       logger.info(f"{WHITE}Example {security_file}:{NC}")
       logger.info(f"{YELLOW}{yaml.dump(example_dict, indent=2)}{NC}[!n]")
 
-  @staticmethod
-  def host_check(host):
-    host_check = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host)
-    return f'{host}.local' if '.local' not in host and not host_check else host
-
   def run_app(self):
-    parser = argparse.ArgumentParser(prog='flash-shelly.py', fromfile_prefix_chars='@', description='Shelly HomeKit flashing script utility')
-    parser.add_argument('--app-version', action="store_true", help="Shows app version and exists.")
-    parser.add_argument('-f', '--flash', action="store_true", help="Flash firmware to shelly device(s).")
-    parser.add_argument('-l', '--list', action="store_true", help="List info of shelly device(s).")
-    parser.add_argument('-m', '--mode', choices=['homekit', 'keep', 'revert'], default="homekit", help="Script mode homekit=homekit firmware, revert=stock firmware, keep=use current firmware type")
-    parser.add_argument('-i', '--info-level', dest='info_level', type=int, choices=[1, 2, 3], default=2, help="Control how much detail is output in the list 1=minimal, 2=basic, 3=all.")
-    parser.add_argument('-ft', '--fw-type', dest='fw_type_filter', choices=['homekit', 'stock', 'all'], default="all", help="Limit scan to current firmware type.")
-    parser.add_argument('-mt', '--model-type', dest='model_type_filter', default='all', help="Limit scan to model type (dimmer, rgbw2, shelly1, etc).")
-    parser.add_argument('-dn', '--device-name', dest='device_name_filter', default='all', help="Limit scan to include term in device name..")
-    parser.add_argument('-a', '--all', action="store_true", dest='do_all', help="Run against all the devices on the network.")
-    parser.add_argument('-q', '--quiet', action="store_true", dest='quiet_run', help="Only include upgradeable shelly devices.")
-    parser.add_argument('-e', '--exclude', dest="exclude", nargs='*', default='', help="Exclude hosts from found devices.")
-    parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', help="Do a dummy run through.")
-    parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', help="Do not ask any confirmation to perform the flash.")
-    parser.add_argument('-V', '--version', type=str, dest="version", default='', help="Force a particular version.")
-    parser.add_argument('--variant', dest="variant", default='', help="Pre-release variant name.")
-    parser.add_argument('--local-file', dest="local_file", default='', help="Use local file to flash.")
-    parser.add_argument('-c', '--hap-setup-code', dest="hap_setup_code", default='', help="Configure HomeKit setup code, after flashing.")
-    parser.add_argument('--ip-type', choices=['dhcp', 'static'], dest="network_type", default='', help="Configure network IP type (Static or DHCP)")
-    parser.add_argument('--ip', dest="ipv4_ip", default='', help="set IP address")
-    parser.add_argument('--gw', dest="ipv4_gw", default='', help="set Gateway IP address")
-    parser.add_argument('--mask', dest="ipv4_mask", default='', help="set Subnet mask address")
-    parser.add_argument('--dns', dest="ipv4_dns", default='', help="set DNS IP address")
-    parser.add_argument('-v', '--verbose', dest="verbose", type=int, choices=[0, 1, 2, 3, 4, 5], default=3, help="Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.")
-    parser.add_argument('--timeout', type=int, default=20, help="Scan: Time of seconds to wait after last detected device before quitting.  Manual: Time of seconds to keeping to connect.")
-    parser.add_argument('--log-file', dest="log_filename", default='', help="Create output log file with chosen filename.")
-    parser.add_argument('--reboot', action="store_true", help="Preform a reboot of the device.")
-    parser.add_argument('--user', default='admin', help="Enter username for device security (default = admin).")
-    parser.add_argument('--password', default='', help="Enter password for device security.")
-    parser.add_argument('hosts', type=str, nargs='*', default='')
+    defaults = {
+      'device_name_filter': 'all',
+      'do_all': False,
+      'dry_run': False,
+      'exclude': '',
+      'fw_type_filter': 'all',
+      'hap_setup_code': '',
+      'hosts': '',
+      'info_level': 2,
+      'ipv4_dns': '',
+      'ipv4_gw': '',
+      'ipv4_ip': '',
+      'ipv4_mask': '',
+      'list': False,
+      'local_file': '',
+      'log_filename': '',
+      'mode': 'homekit',
+      'model_type_filter': 'all',
+      'network_type': '',
+      'quiet_run': False,
+      'reboot': False,
+      'silent_run': False,
+      'timeout': 20,
+      'variant': '',
+      'verbose': 3,
+      'version': ''
+    }
+    new_defaults = self.load_config('defaults')
+    defaults.update(new_defaults)  # update defaults with defaults config file if available
+    parser = argparse.ArgumentParser(prog='flash-shelly.py', description='Shelly HomeKit flashing script utility')
+    parser.add_argument('--app-version', action="store_true", default=None, help="Shows app version and exists.")
+    parser.add_argument('-f', '--flash', action="store_true", default=None, help="Flash firmware to shelly device(s).")
+    parser.add_argument('-l', '--list', action="store_true", default=None, help="List info of shelly device(s).")
+    parser.add_argument('-m', '--mode', choices=['homekit', 'keep', 'revert'], default=None, help="Script mode homekit=homekit firmware, revert=stock firmware, keep=use current firmware type")
+    parser.add_argument('-i', '--info-level', dest='info_level', type=int, choices=[1, 2, 3], default=None, help="Control how much detail is output in the list 1=minimal, 2=basic, 3=all.")
+    parser.add_argument('-ft', '--fw-type', dest='fw_type_filter', choices=['homekit', 'stock', 'all'], default=None, help="Limit scan to current firmware type.")
+    parser.add_argument('-mt', '--model-type', dest='model_type_filter', default=None, help="Limit scan to model type (dimmer, rgbw2, shelly1, etc).")
+    parser.add_argument('-dn', '--device-name', dest='device_name_filter', default=None, help="Limit scan to include term in device name..")
+    parser.add_argument('-a', '--all', action="store_true", dest='do_all', default=None, help="Run against all the devices on the network.")
+    parser.add_argument('-q', '--quiet', action="store_true", dest='quiet_run', default=None, help="Only include upgradeable shelly devices.")
+    parser.add_argument('-e', '--exclude', dest="exclude", nargs='*', default=None, help="Exclude hosts from found devices.")
+    parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', default=None, help="Do a dummy run through.")
+    parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=None, help="Do not ask any confirmation to perform the flash.")
+    parser.add_argument('-V', '--version', type=str, dest="version", default=None, help="Force a particular version.")
+    parser.add_argument('--variant', dest="variant", default=None, help="Pre-release variant name.")
+    parser.add_argument('--local-file', dest="local_file", default=None, help="Use local file to flash.")
+    parser.add_argument('-c', '--hap-setup-code', dest="hap_setup_code", default=None, help="Configure HomeKit setup code, after flashing.")
+    parser.add_argument('--ip-type', choices=['dhcp', 'static'], dest="network_type", default=None, help="Configure network IP type (Static or DHCP)")
+    parser.add_argument('--ip', dest="ipv4_ip", default=None, help="set IP address")
+    parser.add_argument('--gw', dest="ipv4_gw", default=None, help="set Gateway IP address")
+    parser.add_argument('--mask', dest="ipv4_mask", default=None, help="set Subnet mask address")
+    parser.add_argument('--dns', dest="ipv4_dns", default=None, help="set DNS IP address")
+    parser.add_argument('-v', '--verbose', dest="verbose", type=int, choices=[0, 1, 2, 3, 4, 5], default=None, help="Enable verbose logging 0=critical, 1=error, 2=warning, 3=info, 4=debug, 5=trace.")
+    parser.add_argument('--timeout', type=int, default=None, help="Scan: Time of seconds to wait after last detected device before quitting.  Manual: Time of seconds to keeping to connect.")
+    parser.add_argument('--log-file', dest="log_filename", default=None, help="Create output log file with chosen filename.")
+    parser.add_argument('--reboot', action="store_true", default=None, help="Preform a reboot of the device.")
+    parser.add_argument('--user', default=None, help="Enter username for device security (default = admin).")
+    parser.add_argument('--password', default=None, help="Enter password for device security.")
+    parser.add_argument('hosts', type=str, nargs='*', default=None)
+    parser.add_argument('--config', default=None, help="Load options from config file.")
+    parser.add_argument('--save-config', default=None, help="Save current options to config file.")
+    parser.add_argument('--save-defaults', action="store_true", default=None, help="Save current options as new defaults.")
     args = parser.parse_args()
+    tmp_flags = vars(args)
+    flags = {k: v for k, v in tmp_flags.items() if v is not None}  # clear out defaults, just leave commandline arguments (we need these later).
+    if not flags.get('hosts'):  # remove host from defaults.
+      flags.pop('hosts')  # remove host from defaults.
+    args = defaults  # set defaults arguments.
+    if flags.get('config'):
+      config = self.load_config(flags.get('config'))  # load configs if requested from commandline.
+      args.update(config)  # update arguments with profile additional options.
+    args.update(flags)  # update arguments with commandline arguments, so they always have priority.
 
     sh = MStreamHandler()
     sh.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(sh)
-    sh.setLevel(log_level[args.verbose])
+    sh.setLevel(log_level[args.get('verbose')])
+    if args.get('verbose') >= 4:
+      args['info_level'] = 3
+    if args.get('log_filename'):
+      args['verbose'] = 5
+      args['info_level'] = 3
+      fh = MFileHandler(args.get('log_filename'), mode='w', encoding='UTF-8')
+      fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
+      fh.setLevel(log_level[args.get('verbose')])
+      logger.addHandler(fh)
 
-    if args.app_version:
+    if args.get('save_config') or args.get('save_defaults'):
+      self.save_config(tmp_flags, parser)
+
+    if args.get('app_version'):
       logger.info(f"Version: {app_ver}")
       sys.exit(0)
 
     self.load_security()
 
-    if args.flash:
+    if args.get('flash'):
       action = 'flash'
-    elif args.reboot:
+    elif args.get('reboot'):
       action = 'reboot'
-    elif args.list:
+    elif args.get('list'):
       action = 'list'
     else:
       action = 'flash'
-    args.hap_setup_code = f"{args.hap_setup_code[:3]}-{args.hap_setup_code[3:-3]}-{args.hap_setup_code[5:]}" if args.hap_setup_code and '-' not in args.hap_setup_code else args.hap_setup_code
 
-    sh.setLevel(log_level[args.verbose])
-    if args.verbose >= 4:
-      args.info_level = 3
-    if args.log_filename:
-      args.verbose = 5
-      args.info_level = 3
-      fh = MFileHandler(args.log_filename, mode='w', encoding='UTF-8')
-      fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(lineno)d %(message)s'))
-      fh.setLevel(log_level[args.verbose])
-      logger.addHandler(fh)
+    self.hosts = args.get('hosts')
+    self.run_action = action
+    self.timeout = args.get('timeout')
+    self.log_filename = args.get('log_filename')
+    self.dry_run = args.get('dry_run')
+    self.quiet_run = args.get('quiet_run')
+    self.silent_run = args.get('silent_run')
+    self.mode = args.get('mode')
+    self.info_level = args.get('info_level')
+    self.fw_type_filter = args.get('fw_type_filter')
+    self.model_type_filter = args.get('model_type_filter')
+    self.device_name_filter = args.get('device_name_filter')
+    self.exclude = args.get('exclude')
+    self.version = args.get('version')
+    self.variant = args.get('variant')
+    self.hap_setup_code = f"{args.get('hap_setup_code[:3]')}-{args.get('hap_setup_code[3:-3]')}-{args.get('hap_setup_code[5:]')}" if args.get('hap_setup_code') and '-' not in args.get('hap_setup_code') else args.get('hap_setup_code')
+    self.local_file = args.get('local_file')
+    self.network_type = args.get('network_type')
+    self.ipv4_ip = args.get('ipv4_ip')
+    self.ipv4_mask = args.get('ipv4_mask')
+    self.ipv4_gw = args.get('ipv4_gw')
+    self.ipv4_dns = args.get('ipv4_dns')
+    self.username = args.get('user')
+    self.password = args.get('password')
 
     # Windows and log file do not support acsii colours
-    if args.log_filename or arch.startswith('Win'):
+    if self.log_filename or arch.startswith('Win'):
       global NC, WHITE, RED, GREEN, YELLOW, BLUE, PURPLE
       WHITE = ''
       RED = ''
@@ -841,86 +960,62 @@ class Main:
 
     logger.debug(f"OS: {PURPLE}{arch}{NC}")
     logger.debug(f"app_version: {app_ver}")
-    logger.debug(f"manual_hosts: {args.hosts} ({len(args.hosts)})")
-    logger.debug(f"user: {args.user}")
-    logger.debug(f"password: {args.password}")
-    logger.debug(f"action: {action}")
-    logger.debug(f"mode: {args.mode}")
-    logger.debug(f"timeout: {args.timeout}")
-    logger.debug(f"info_level: {args.info_level}")
-    logger.debug(f"fw_type_filter: {args.fw_type_filter}")
-    logger.debug(f"model_type_filter: {args.model_type_filter}")
-    logger.debug(f"device_name_filter: {args.device_name_filter}")
-    logger.debug(f"do_all: {args.do_all}")
-    logger.debug(f"dry_run: {args.dry_run}")
-    logger.debug(f"quiet_run: {args.quiet_run}")
-    logger.debug(f"silent_run: {args.silent_run}")
-    logger.debug(f"version: {args.version}")
-    logger.debug(f"exclude: {args.exclude}")
-    logger.debug(f"local_file: {args.local_file}")
-    logger.debug(f"variant: {args.variant}")
-    logger.debug(f"verbose: {args.verbose}")
-    logger.debug(f"hap_setup_code: {args.hap_setup_code}")
-    logger.debug(f"network_type: {args.network_type}")
-    logger.debug(f"ipv4_ip: {args.ipv4_ip}")
-    logger.debug(f"ipv4_mask: {args.ipv4_mask}")
-    logger.debug(f"ipv4_gw: {args.ipv4_gw}")
-    logger.debug(f"ipv4_dns: {args.ipv4_dns}")
-    logger.debug(f"log_filename: {args.log_filename}")
-
-    self.hosts = args.hosts
-    self.run_action = action
-    self.timeout = args.timeout
-    self.log_filename = args.log_filename
-    self.dry_run = args.dry_run
-    self.quiet_run = args.quiet_run
-    self.silent_run = args.silent_run
-    self.mode = args.mode
-    self.info_level = args.info_level
-    self.fw_type_filter = args.fw_type_filter
-    self.model_type_filter = args.model_type_filter
-    self.device_name_filter = args.device_name_filter
-    self.exclude = args.exclude
-    self.version = args.version
-    self.variant = args.variant
-    self.hap_setup_code = args.hap_setup_code
-    self.local_file = args.local_file
-    self.network_type = args.network_type
-    self.ipv4_ip = args.ipv4_ip
-    self.ipv4_mask = args.ipv4_mask
-    self.ipv4_gw = args.ipv4_gw
-    self.ipv4_dns = args.ipv4_dns
-    self.username = args.user
-    self.password = args.password
+    logger.debug(f"do_all: {args.get('do_all')}")
+    logger.debug(f"dry_run: {args.get('dry_run')}")
+    logger.debug(f"quiet_run: {args.get('quiet_run')}")
+    logger.debug(f"silent_run: {args.get('silent_run')}")
+    logger.debug(f"timeout: {args.get('timeout')}")
+    logger.debug(f"reboot: {args.get('reboot')}")
+    logger.debug(f"manual_hosts: {self.hosts} ({len(self.hosts)})")
+    logger.debug(f"user: {self.username}")
+    logger.debug(f"password: {self.password}")
+    logger.debug(f"action: {self.run_action}")
+    logger.debug(f"mode: {self.mode}")
+    logger.debug(f"info_level: {self.info_level}")
+    logger.debug(f"fw_type_filter: {self.fw_type_filter}")
+    logger.debug(f"model_type_filter: {self.model_type_filter}")
+    logger.debug(f"device_name_filter: {self.device_name_filter}")
+    logger.debug(f"version: {self.version}")
+    logger.debug(f"exclude: {self.exclude}")
+    logger.debug(f"local_file: {self.local_file}")
+    logger.debug(f"variant: {self.variant}")
+    logger.debug(f"verbose: {args.get('verbose')}")
+    logger.debug(f"hap_setup_code: {self.hap_setup_code}")
+    logger.debug(f"network_type: {self.network_type}")
+    logger.debug(f"ipv4_ip: {self.ipv4_ip}")
+    logger.debug(f"ipv4_mask: {self.ipv4_mask}")
+    logger.debug(f"ipv4_gw: {self.ipv4_gw}")
+    logger.debug(f"ipv4_dns: {self.ipv4_dns}")
+    logger.debug(f"log_filename: {self.log_filename}")
 
     message = None
-    if not args.hosts and not args.do_all:
+    if not self.hosts and not args.get('do_all'):
       if action in ('list', 'flash'):
-        args.do_all = True
+        args['do_all'] = True
       else:
         message = f"{WHITE}Requires a hostname or -a | --all{NC}"
-    elif args.hosts and args.do_all:
+    elif self.hosts and args.get('do_all'):
       message = f"{WHITE}Invalid option hostname or -a | --all not both.{NC}"
-    elif args.list and args.reboot:
-      args.list = False
-    elif args.network_type:
-      if args.do_all:
+    elif args.get('list') and args.get('reboot'):
+      args['list'] = False
+    elif self.network_type:
+      if args.get('do_all'):
         message = f"{WHITE}Invalid option -a | --all can not be used with --ip-type.{NC}"
-      elif len(args.hosts) > 1:
+      elif len(self.hosts) > 1:
         message = f"{WHITE}Invalid option only 1 host can be used with --ip-type.{NC}"
-      elif args.network_type == 'static' and (not args.ipv4_ip or not args.ipv4_mask or not args.ipv4_gw or not args.ipv4_dns):
-        if not args.ipv4_dns:
+      elif self.network_type == 'static' and (not self.ipv4_ip or not self.ipv4_mask or not self.ipv4_gw or not self.ipv4_dns):
+        if not self.ipv4_dns:
           message = f"{WHITE}Invalid option --dns can not be empty.{NC}"
           logger.info(message)
-        if not args.ipv4_gw:
+        if not self.ipv4_gw:
           message = f"{WHITE}Invalid option --gw can not be empty.{NC}"
           logger.info(message)
-        if not args.ipv4_mask:
+        if not self.ipv4_mask:
           message = f"{WHITE}Invalid option --mask can not be empty.{NC}"
           logger.info(message)
-        if not args.ipv4_ip:
+        if not self.ipv4_ip:
           message = f"{WHITE}Invalid option --ip can not be empty.{NC}"
-    elif args.version and len(args.version.split('.')) < 3:
+    elif self.version and len(self.version.split('.')) < 3:
       message = f"{WHITE}Incorrect version formatting i.e '1.9.0'{NC}"
 
     if message:
