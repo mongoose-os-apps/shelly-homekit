@@ -329,13 +329,12 @@ class Device:
             logger.debug("Invalid password or security not enabled.")
             fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
             device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
-      except Exception as e:
-        logger.debug(f"Could not get info from device: {self.host} {e}")
-        return {}
-      logger.trace(f"status code: {fw_info.status_code}")
-      if fw_info.status_code == 401:
-        self.info = 401
-        return 401
+        logger.trace(f"status code: {fw_info.status_code}")
+        if fw_info.status_code == 401:
+          self.info = 401
+          return 401
+      except Exception:
+        pass
       if fw_info is not None and fw_info.status_code == 200:
         info = json.loads(fw_info.content)
         info['fw_type'] = fw_type
