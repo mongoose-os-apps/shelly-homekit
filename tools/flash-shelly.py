@@ -776,20 +776,24 @@ class Main:
     save_security = False
     current_user = self.security_data.get(device_info.host, {}).get('user')
     current_password = self.security_data.get(device_info.host, {}).get('password')
-    if not self.security_data.get(device_info.host) and not current_user or not current_password:
+    data = {'user': device_info.username, 'password': device_info.password}
+    if self.security_data.get(device_info.host) and not device_info.password:  # remove security infomation if password is empty.
       save_security = True
-      logger.debug(f"")
-      logger.debug(f"{WHITE}Security:{NC} Saving data for {device_info.host}[!n]")
-    elif current_user != device_info.username or current_password != device_info.password:
-      logger.debug(f"")
-      logger.debug(f"{WHITE}Security:{NC} Updating data for {device_info.host}{NC}[!n]")
-      save_security = True
+      self.security_data.pop(device_info.host)
+      logger.debug(f"{WHITE}Security:{NC} Removing data for {device_info.host}[!n]")
+    elif self.security_data.get(device_info.host) is None and device_info.password is not None:
+      # only save security information if user and password do not exist or changed.
+      if (not current_user or not current_password) or (current_user != device_info.username or current_password != device_info.password):
+        save_security = True
+        logger.debug(f"")
+        logger.debug(f"{WHITE}Security:{NC} Saving data for {device_info.host}[!n]")
+        self.security_data[device_info.host] = data
     if save_security:
-      data = {'user': device_info.username, 'password': device_info.password}
-      self.security_data[device_info.host] = data
-      logger.trace(yaml.dump(self.security_data[device_info.host]))
+      logger.trace(yaml.dump(self.security_data.get(device_info.host)))
       with open(security_file, 'w') as yaml_file:
         yaml.dump(self.security_data, yaml_file)
+    if not self.security_data:  # delete security data if empty.
+      os.remove(security_file)
 
   def security_help(self, device_info, mode='Manual'):
     example_dict = {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}
