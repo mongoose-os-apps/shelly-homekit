@@ -785,7 +785,7 @@ class Main:
     current_user = self.security_data.get(device_info.host, {}).get('user')
     current_password = self.security_data.get(device_info.host, {}).get('password')
     data = {'user': device_info.username, 'password': device_info.password}
-    if self.security_data.get(device_info.host) and not device_info.password:  # remove security infomation if password is empty.
+    if self.security_data.get(device_info.host) and not device_info.password:  # remove security information if password is empty.
       save_security = True
       self.security_data.pop(device_info.host)
       logger.debug(f"{WHITE}Security:{NC} Removing data for {device_info.host}[!n]")
