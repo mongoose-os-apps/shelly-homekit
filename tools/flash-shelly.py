@@ -851,7 +851,8 @@ class Main:
       'timeout': 20,
       'variant': '',
       'verbose': 3,
-      'version': ''
+      'version': '',
+      'user': 'admin'
     }
     new_defaults = self.load_config('defaults')
     defaults.update(new_defaults)  # update defaults with defaults config file if available
