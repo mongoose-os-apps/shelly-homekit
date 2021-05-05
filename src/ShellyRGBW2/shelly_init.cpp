@@ -19,6 +19,7 @@
 #include "shelly_hap_light_bulb.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_rgbw_controller.hpp"
 
 namespace shelly {
 
@@ -43,19 +44,20 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       HAPAccessoryServerRef *svr) {
   auto *lb_cfg = (struct mgos_config_lb *) mgos_sys_config_get_lb1();
 
-  std::unique_ptr<hap::LightBulb> rgbw_light;
+  std::unique_ptr<LightBulbController> lightbulb_controller;
 
   if (mgos_sys_config_get_shelly_mode() == 4) {
-    rgbw_light.reset(new hap::LightBulb(1, FindInput(1), FindOutput(1),
-                                        FindOutput(2), FindOutput(3),
-                                        FindOutput(4), lb_cfg));
+    lightbulb_controller.reset(new RGBWController(
+        lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
   } else {
-    rgbw_light.reset(new hap::LightBulb(1, FindInput(1), FindOutput(1),
-                                        FindOutput(2), FindOutput(3), nullptr,
-                                        lb_cfg));
+    lightbulb_controller.reset(new RGBWController(
+        lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
 
     FindOutput(4)->SetStatePWM(0.0f, "cc");
   }
+
+  std::unique_ptr<hap::LightBulb> rgbw_light(
+      new hap::LightBulb(1, FindInput(1), lightbulb_controller.get(), lb_cfg));
 
   if (rgbw_light == nullptr || !rgbw_light->Init().ok()) {
     return;

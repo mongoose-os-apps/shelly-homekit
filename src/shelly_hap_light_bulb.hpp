@@ -17,14 +17,17 @@
 
 #pragma once
 
+#include "mgos.hpp"
 #include "mgos_hap_chars.hpp"
 #include "mgos_hap_service.hpp"
 #include "mgos_sys_config.h"
+#include "mgos_system.hpp"
 #include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
 #include "shelly_input.hpp"
+#include "shelly_light_bulb_controller.hpp"
 #include "shelly_output.hpp"
 
 namespace shelly {
@@ -32,16 +35,9 @@ namespace hap {
 
 class LightBulb : public Component, public mgos::hap::Service {
  public:
-  LightBulb(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
-            Output *out_w, struct mgos_config_lb *cfg);
+  LightBulb(int id, Input *in, LightBulbController *controller,
+            struct mgos_config_lb *cfg);
   virtual ~LightBulb();
-
-  struct RGBW {
-    float r;
-    float g;
-    float b;
-    float w;
-  };
 
   // Component interface impl.
   Type type() const override;
@@ -58,25 +54,20 @@ class LightBulb : public Component, public mgos::hap::Service {
   void InputEventHandler(Input::Event ev, bool state);
 
   void AutoOffTimerCB();
-  void TransitionTimerCB();
 
   void UpdateOnOff(bool on, const std::string &source, bool force = false);
   void SetHue(int hue, const std::string &source);
   void SetSaturation(int saturation, const std::string &source);
   void SetBrightness(int brightness, const std::string &source);
 
-  bool IsOn() const;
-  bool IsOff() const;
   bool IsAutoOffEnabled() const;
 
-  void HSVtoRGBW(RGBW &rgbw) const;
-  void StartTransition();
   void SaveState();
   void ResetAutoOff();
   void DisableAutoOff();
 
   Input *const in_;
-  Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
+  LightBulbController *const controller_;
   struct mgos_config_lb *cfg_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
