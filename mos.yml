@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.9.0
+version: 2.9.1-alpha1
 platform: esp8266
 
 libs_version: latest
@@ -135,7 +135,8 @@ libs:
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
   - origin: https://github.com/mongoose-os-libs/rpc-service-ota
   - origin: https://github.com/mongoose-os-libs/rpc-uart
-  - origin: https://github.com/mongoose-os-libs/rpc-mqtt
+  # Not enough space on 2.5
+  # - origin: https://github.com/mongoose-os-libs/rpc-mqtt
   - origin: https://github.com/mongoose-os-libs/rpc-ws
   - origin: https://github.com/mongoose-os-libs/sntp
 
@@ -484,8 +485,9 @@ conds:
         - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
         - origin: https://github.com/mongoose-os-libs/adc
-        - origin: https://github.com/mongoose-os-libs/wifi
         - origin: https://github.com/mongoose-os-libs/pwm
+        - origin: https://github.com/mongoose-os-libs/wifi
+          version: scan_rewrite  # Testing
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
