@@ -34,9 +34,6 @@
 #if CS_PLATFORM == CS_P_ESP8266
 #include "esp_coredump.h"
 #include "esp_rboot.h"
-extern "C" {
-#include "user_interface.h"
-}
 #endif
 
 #include "HAP.h"
@@ -154,7 +151,6 @@ static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 static std::vector<std::unique_ptr<mgos::hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
-static bool s_failsafe_mode = false;
 std::vector<std::unique_ptr<Component>> g_comps;
 
 template <class T>
@@ -172,28 +168,6 @@ Output *FindOutput(int id) {
 }
 PowerMeter *FindPM(int id) {
   return FindById(s_pms, id);
-}
-
-// Executed very early, pretty much nothing is available here.
-extern "C" void mgos_app_preinit(void) {
-#if RST_GPIO_INIT >= 0
-  mgos_gpio_setup_output(RST_GPIO_INIT, 0);
-#endif
-#if BTN_GPIO >= 0
-  mgos_gpio_setup_input(BTN_GPIO,
-                        (BTN_DOWN ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP));
-  int i = 10;
-  while (mgos_gpio_read(BTN_GPIO) == BTN_DOWN && i > 0) {
-    mgos_msleep(10);
-    i--;
-  }
-  if (i == 0) {
-    s_failsafe_mode = true;
-#if LED_GPIO >= 0
-    mgos_gpio_setup_output(LED_GPIO, LED_ON);
-#endif
-  }
-#endif
 }
 
 static void DoReset(void *arg) {
@@ -856,34 +830,6 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
   return (stat(buf, &st) != 0);
 }
 
-bool WipeDevice() {
-  static const char *s_wipe_files[] = {
-      "conf2.json",
-      "conf9.json",
-      KVS_FILE_NAME,
-      AUTH_FILE_NAME,
-  };
-  bool wiped = false;
-  for (const char *wipe_fn : s_wipe_files) {
-    if (remove(wipe_fn) == 0) wiped = true;
-  }
-#if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
-  if (wiped) {
-    mgos_vfs_gc("/");
-  }
-#endif
-  return wiped;
-}
-
-bool IsSoftReboot() {
-#if CS_PLATFORM == CS_P_ESP8266
-  const struct rst_info *ri = system_get_rst_info();
-  return (ri->reason == REASON_SOFT_RESTART);
-#else
-  return false;
-#endif
-}
-
 static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
                         void *user_data) {
   if (ev != MG_EV_HTTP_REQUEST) return;
@@ -912,15 +858,12 @@ void InitApp() {
   struct mg_http_endpoint_opts opts = {};
   mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
 
-  if (s_failsafe_mode) {
-    if (WipeDevice()) {
-      LOG(LL_INFO, ("== Wiped config, rebooting"));
-      mgos_system_restart_after(100);
-      return;
-    } else {
-      LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
-      shelly_rpc_service_init(nullptr, nullptr, nullptr);
-    }
+  if (IsFailsafeMode()) {
+    LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
+    shelly_rpc_service_init(nullptr, nullptr, nullptr);
+#if LED_GPIO >= 0
+    mgos_gpio_setup_output(LED_GPIO, LED_ON);
+#endif
     return;
   }
 
@@ -981,9 +924,7 @@ void InitApp() {
 
 }  // namespace shelly
 
-extern "C" {
-enum mgos_app_init_result mgos_app_init(void) {
+extern "C" enum mgos_app_init_result mgos_app_init(void) {
   shelly::InitApp();
   return MGOS_APP_INIT_SUCCESS;
-}
 }

@@ -1,0 +1,25 @@
+description: Shelly device reset library
+type: lib
+version: 1.0.0
+
+sources:
+  - src
+
+includes:
+  - include
+
+no_implicit_init_deps: true
+# Execute as early as possible, before pretty much anything else.
+init_after:
+  - core
+init_before:
+  - adc
+  - i2c
+  - file-logger
+  - homekit-adk
+  - http-server
+  - ota-http-server
+  - rpc-*
+  - wifi
+
+manifest_version: 2019-07-28
