@@ -358,8 +358,7 @@ class Device:
     v = re.search(r'/.*?(?P<ver>([0-9]+\.)([0-9]+)(\.[0-9]+)?(-[a-z0-9]*)?)(?P<rest>([@\-_])[a-z0-9\-]*)', version, re.IGNORECASE)
     debug_info = v.groupdict() if v is not None else v
     logger.trace(f"parse stock version: {version}  group: {debug_info}")
-    parsed_version = v.group('ver') if v is not None else '0.0.0'
-    return parsed_version
+    return v.group('ver') if v is not None else '0.0.0'
 
   def get_current_version(self, no_error_message=False):  # used when flashing between firmware versions.
     version = None
@@ -429,60 +428,58 @@ class Device:
     return options.get(stock_fw_model, [stock_fw_model, stock_fw_model])
 
   def parse_local_file(self):
-    if os.path.exists(self.local_file) and self.local_file.endswith('.zip'):
-      s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-      s.connect((self.wifi_ip, 80))
-      local_ip = s.getsockname()[0]
-      logger.debug(f"Host IP: {local_ip}")
-      s.close()
-      manifest_file = None
-      with zipfile.ZipFile(self.local_file, "r") as zfile:
-        for name in zfile.namelist():
-          if name.endswith('manifest.json'):
-            logger.debug(f"zipfile: {name}")
-            mfile = zfile.read(name)
-            manifest_file = json.loads(mfile)
-            logger.debug(f"manifest: {json.dumps(manifest_file, indent=2)}")
-            break
-      if manifest_file is not None:
-        manifest_version = manifest_file.get('version', '0.0.0')
-        manifest_name = manifest_file.get('name')
-        if manifest_version == '1.0':
-          self.version = self.parse_stock_version(manifest_file.get('build_id', '0.0.0'))
-          self.flash_fw_type_str = "Stock"
-          main.flash_mode = 'stock'
-        else:
-          self.version = manifest_version
-          self.flash_fw_type_str = "HomeKit"
-          main.flash_mode = 'homekit'
-        logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
-        self.flash_fw_version = self.version
-        if self.is_homekit():
-          self.download_url = 'local'
-        else:
-          self.download_url = f'http://{local_ip}:{main.webserver_port}/{self.local_file}'
-        if self.is_stock() and self.info.get('stock_fw_model') == 'SHRGBW2' and self.info.get('color_mode'):
-          m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
-        else:
-          m_model = self.info.get('app')
-        if 'rgbw2' in m_model:
-          m_model = m_model.split('-')[0]
-        if 'rgbw2' in manifest_name:
-          manifest_name = manifest_name.split('-')[0]
-        if m_model != manifest_name:
-          self.flash_fw_version = '0.0.0'
-          self.download_url = None
-        return True
-      else:
-        logger.info(f"Invalid file.")
-        self.flash_fw_version = '0.0.0'
-        self.download_url = None
-        return False
+    if not os.path.exists(self.local_file) or not self.local_file.endswith('.zip'):
+      return self._extracted_from_parse_local_file_47(f"File does not exist.")
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect((self.wifi_ip, 80))
+    local_ip = s.getsockname()[0]
+    logger.debug(f"Host IP: {local_ip}")
+    s.close()
+    manifest_file = None
+    with zipfile.ZipFile(self.local_file, "r") as zfile:
+      for name in zfile.namelist():
+        if name.endswith('manifest.json'):
+          logger.debug(f"zipfile: {name}")
+          mfile = zfile.read(name)
+          manifest_file = json.loads(mfile)
+          logger.debug(f"manifest: {json.dumps(manifest_file, indent=2)}")
+          break
+    if manifest_file is None:
+      return self._extracted_from_parse_local_file_47(f"Invalid file.")
+    manifest_version = manifest_file.get('version', '0.0.0')
+    manifest_name = manifest_file.get('name')
+    if manifest_version == '1.0':
+      self.version = self.parse_stock_version(manifest_file.get('build_id', '0.0.0'))
+      self.flash_fw_type_str = "Stock"
+      main.flash_mode = 'stock'
     else:
-      logger.info(f"File does not exist.")
+      self.version = manifest_version
+      self.flash_fw_type_str = "HomeKit"
+      main.flash_mode = 'homekit'
+    logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
+    self.flash_fw_version = self.version
+    if self.is_homekit():
+      self.download_url = 'local'
+    else:
+      self.download_url = f'http://{local_ip}:{main.webserver_port}/{self.local_file}'
+    if self.is_stock() and self.info.get('stock_fw_model') == 'SHRGBW2' and self.info.get('color_mode'):
+      m_model = f"{self.info.get('app')}-{self.info.get('color_mode')}"
+    else:
+      m_model = self.info.get('app')
+    if 'rgbw2' in m_model:
+      m_model = m_model.split('-')[0]
+    if 'rgbw2' in manifest_name:
+      manifest_name = manifest_name.split('-')[0]
+    if m_model != manifest_name:
       self.flash_fw_version = '0.0.0'
       self.download_url = None
-      return False
+    return True
+
+  def _extracted_from_parse_local_file_47(self, arg0):
+    logger.info(f'{arg0}')
+    self.flash_fw_version = '0.0.0'
+    self.download_url = None
+    return False
 
   @staticmethod
   def get_release_info(info_type):  # handle loading of release info for both stock and homekit.
@@ -520,10 +517,7 @@ class Device:
           self.flash_fw_version = 'no_variant'
           self.download_url = None
           return
-        if self.variant:
-          re_search = r'-*'
-        else:
-          re_search = i[0]
+        re_search = r'-*' if self.variant else i[0]
         if re.search(re_search, self.fw_version):
           self.flash_fw_version = i[1].get('version', '0.0.0')
           self.download_url = i[1].get('urls', {}).get(self.info.get('model'))
@@ -550,9 +544,8 @@ class Device:
     else:
       self.flash_fw_version = self.version
       self.download_url = f'http://archive.shelly-tools.de/version/v{self.version}/{stock_fw_model}.zip'
-    if stock_fw_model == 'SHRGBW2':
-      if self.download_url and not self.version and color_mode and not self.local_file:
-        self.download_url = self.download_url.replace('.zip', f'-{color_mode}.zip')
+    if stock_fw_model == 'SHRGBW2' and self.download_url and not self.version and color_mode and not self.local_file:
+      self.download_url = self.download_url.replace('.zip', f'-{color_mode}.zip')
 
 
 class HomeKitDevice(Device):
@@ -826,7 +819,6 @@ class Main:
       os.remove(security_file)
 
   def security_help(self, device_info, mode='Manual'):  # show security help information.
-    example_dict = {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}
     logger.info(f"{WHITE}Host: {NC}{device_info.host} {RED}is password protected{NC}")
     if self.security_data:
       if self.security_data.get(device_info.host) is None:
@@ -834,7 +826,7 @@ class Main:
           logger.info(f"Invalid user or password, please check supplied details are correct.")
           logger.info(f"username: {self.username}")
           logger.info(f"password: {self.password}")
-        elif mode == 'Manual' and not self.password:
+        elif mode == 'Manual':
           logger.info(f"{device_info.host} is not found in '{security_file}' config file,")
           logger.info(f"please add or use commandline args --user | --password")
         else:
@@ -849,6 +841,7 @@ class Main:
       logger.info(f"Please use either command line security (--user | --password) or '{security_file}'")
       logger.info(f"for '{security_file}', create a file called '{security_file}' in tools folder")
       logger.info(f"{WHITE}Example {security_file}:{NC}")
+      example_dict = {"shelly-AF0183.local": {"user": "admin", "password": "abc123"}}
       logger.info(f"{YELLOW}{yaml.dump(example_dict, indent=2)}{NC}[!n]")
 
   def run_app(self):  # main run of the script, handles commandline arguments.
@@ -1123,8 +1116,8 @@ class Main:
     time.sleep(5)
     current_version = None
     current_uptime = device_info.get_uptime(True)
-    n = 1
     if not reboot_only:
+      n = 1
       while current_uptime >= before_reboot_uptime and n < 90 or current_version is None:
         logger.trace(f"loop number: {n}")
         logger.debug(f"current_uptime: {current_uptime}")
@@ -1206,7 +1199,7 @@ class Main:
     waiting_shown = False
     while uptime <= 25:  # make sure device has not just booted up.
       logger.trace("seems like we just booted, delay a few seconds")
-      if waiting_shown is not True:
+      if not waiting_shown:
         logger.info("Waiting for device.")
         waiting_shown = True
       time.sleep(5)
@@ -1344,7 +1337,7 @@ class Main:
       latest_fw_label = f"{RED}Not supported{NC}"
       flash_fw_version = '0.0.0'
       download_url = None
-    if (not self.quiet_run or (self.quiet_run and (flash_fw_newer or (force_flash and flash_fw_version != '0.0.0')))) and self.requires_upgrade != 'Done':
+    if (not self.quiet_run or flash_fw_newer or force_flash and flash_fw_version != '0.0.0') and self.requires_upgrade != 'Done':
       logger.info(f"")
       logger.info(f"{WHITE}Host: {NC}http://{host}")
       if self.info_level > 1 or device_name != friendly_host:
@@ -1378,10 +1371,10 @@ class Main:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} \u279c {YELLOW}{latest_fw_label}{NC}")
       elif current_fw_type != self.flash_mode and current_fw_version != flash_fw_version:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} \u279c {YELLOW}{flash_fw_type_str} {latest_fw_label}{NC}")
-      elif current_fw_type == self.flash_mode and current_fw_version != flash_fw_version:
+      elif current_fw_type == self.flash_mode:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version}")
 
-    if download_url and (force_flash or self.requires_upgrade is True or (current_fw_type != self.flash_mode) or (current_fw_type == self.flash_mode and flash_fw_newer)):
+    if download_url and (force_flash or self.requires_upgrade is True or current_fw_type != self.flash_mode or flash_fw_newer):
       if device_info.already_processed is False:
         self.upgradeable_devices += 1
 
@@ -1413,10 +1406,10 @@ class Main:
         elif current_fw_type != self.flash_mode:
           perform_flash = True
           keyword = f"converted to {flash_fw_type_str} firmware"
-        elif current_fw_type == self.flash_mode and flash_fw_newer:
+        elif flash_fw_newer:
           perform_flash = True
           keyword = f"upgraded from {current_fw_version} to version {flash_fw_version}"
-      elif not download_url:
+      else:
         if force_version:
           keyword = f"Version {force_version} is not available..."
         elif device_info.local_file:
@@ -1490,10 +1483,7 @@ class Main:
     self.requires_upgrade = False
     self.requires_mode_change = False
     hk_flash_fw_version = None
-    if self.mode == 'keep':
-      self.flash_mode = device.fw_type
-    else:
-      self.flash_mode = self.mode
+    self.flash_mode = device.fw_type if self.mode == 'keep' else self.mode
     if device.fw_type == 'homekit':
       device = HomeKitDevice(device.host, device.username, device.password, device.wifi_ip, device.info, device.fw_type)
     else:
@@ -1560,7 +1550,7 @@ class Main:
         else:
           self.parse_info(device, hk_flash_fw_version)  # main convert run, or update stock to latest firmware if an update or color mode is required.
           if self.run_action == 'flash' and (self.requires_upgrade in ('Done', True) or self.requires_mode_change in ('Done', True)) and self.flash_question is True:
-            if self.requires_mode_change is True:  # do another run if colour mode is still required.
+            if self.requires_mode_change:  # do another run if colour mode is still required.
               device.get_info()  # update device information after previous run.
               self.parse_info(device)  # colour change run.
             device.get_info()  # update device information after previous run.
@@ -1620,10 +1610,11 @@ class Main:
           break
       if n > self.timeout:
         device = Device(host, username, password)
-      if device.info and device.info == 401:
-        self.security_help(device)
-      elif device.info:
-        self.probe_device(device)
+      if device.info:
+        if device.info == 401:
+          self.security_help(device)
+        else:
+          self.probe_device(device)
     if self.http_server_started and self.server is not None:
       logger.trace("Shutting down webserver")
       self.server.shutdown()
@@ -1642,13 +1633,14 @@ class Main:
         break
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
-      if device.info and device.info == 401:
-        logger.info("")
-        self.security_help(device, 'Scanner')
-      elif device.info:
-        fw_model = device.info.get('model') if device.is_homekit() else device.shelly_model(device.info.get('device').get('type'))[0]
-        if self.is_fw_type(device.fw_type) and self.is_model_type(fw_model) and self.is_device_name(device.info.get('device_name')):
-          self.probe_device(device)
+      if device.info:
+        if device.info == 401:
+          logger.info("")
+          self.security_help(device, 'Scanner')
+        else:
+          fw_model = device.info.get('model') if device.is_homekit() else device.shelly_model(device.info.get('device').get('type'))[0]
+          if self.is_fw_type(device.fw_type) and self.is_model_type(fw_model) and self.is_device_name(device.info.get('device_name')):
+            self.probe_device(device)
 
 
 # start script and pass commandline arguments to 'run_app'
