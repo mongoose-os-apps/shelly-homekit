@@ -157,15 +157,10 @@ flashed_devices = 0
 failed_flashed_devices = 0
 arch = platform.system()
 stock_info_url = 'https://api.shelly.cloud/files/firmware'
-stock_release_info = None
-tried_to_get_remote_homekit = False
 homekit_info_url = 'https://rojer.me/files/shelly/update.json'
-homekit_release_info = None
-tried_to_get_remote_stock = False
 flash_question = None
 requires_upgrade = None
 requires_mode_change = None
-not_supported = None
 
 WHITE = '\033[1m'
 RED = '\033[1;91m'
@@ -466,9 +461,11 @@ class Device:
         if manifest_version == '1.0':
           self.version = self.parse_stock_version(manifest_file.get('build_id', '0.0.0'))
           self.flash_fw_type_str = "Stock"
+          main.flash_mode = 'stock'
         else:
           self.version = manifest_version
           self.flash_fw_type_str = "HomeKit"
+          main.flash_mode = 'homekit'
         logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
         self.flash_fw_version = self.version
         if self.is_homekit():
@@ -498,30 +495,38 @@ class Device:
       self.download_url = None
       return False
 
+  @staticmethod
+  def get_release_info(info_type):  # handle loading of release info for both stock and homekit.
+    release_info = False
+    release_info_url = homekit_info_url if info_type == 'homekit' else stock_info_url
+    try:
+      fp = requests.get(release_info_url, timeout=3)
+      logger.debug(f"{info_type} release_info status code: {fp.status_code}")
+      if fp.status_code == 200:
+        release_info = json.loads(fp.content)
+    except requests.exceptions.RequestException as err:
+      logger.critical(f"{RED}CRITICAL:{NC} {err}")
+    logger.trace(f"{info_type} release_info: {json.dumps(release_info, indent=2)}")
+    if not release_info:
+      logger.error("")
+      logger.error(f"{RED}Failed to lookup online firmware information{NC}")
+      logger.error("For more information please point your web browser to:")
+      logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
+    return release_info
 
-class HomeKitDevice(Device):
-  def get_info(self):
-    if not self.info:
-      return False
-    self.fw_type_str = 'HomeKit'
-    self.fw_version = self.info.get('version', '0.0.0')
-    if self.info.get('stock_fw_model') is None:  # TODO remove once 2.9.x is mainstream.
-      self.info['stock_fw_model'] = self.info.get('stock_model')
-    self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
-    return True
-
-  def parse_release_info(self, release_info=None):
-    global not_supported
+  def parse_homekit_release_info(self, revert=False):
     self.flash_fw_type_str = 'HomeKit'
     logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
     if self.version:
       self.flash_fw_version = self.version
       self.download_url = f"http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.info.get('model')}.zip"
-    elif release_info is None:
+    elif revert is True:
       self.flash_fw_version = 'revert'
       self.download_url = f"http://rojer.me/files/shelly/stock/{self.info.get('stock_fw_model')}.zip"
     else:
-      for i in release_info:
+      if main.homekit_release_info is None:
+        main.homekit_release_info = self.get_release_info('homekit')
+      for i in main.homekit_release_info:
         if self.variant and self.variant not in i[1].get('version', '0.0.0'):
           self.flash_fw_version = 'no_variant'
           self.download_url = None
@@ -534,7 +539,43 @@ class HomeKitDevice(Device):
           self.flash_fw_version = i[1].get('version', '0.0.0')
           self.download_url = i[1].get('urls', {}).get(self.info.get('model'))
           break
-      not_supported = True
+      main.not_supported = True
+
+  def parse_stock_release_info(self):
+    self.flash_fw_type_str = 'Stock'
+    stock_fw_model = self.info.get('stock_fw_model')
+    color_mode = self.info.get('color_mode')
+    logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
+    if not self.version:
+      if stock_fw_model == 'SHRGBW2-color':  # we need to use real stock model here
+        stock_fw_model = 'SHRGBW2'
+      if main.stock_release_info is None:
+        main.stock_release_info = self.get_release_info('stock')
+      stock_model_info = main.stock_release_info.get('data', {}).get(stock_fw_model)
+      if self.variant == 'beta':
+        self.flash_fw_version = self.parse_stock_version(stock_model_info.get('beta_ver', '0.0.0'))
+        self.download_url = stock_model_info.get('beta_url')
+      else:
+        self.flash_fw_version = self.parse_stock_version(stock_model_info.get('version', '0.0.0'))
+        self.download_url = stock_model_info.get('url')
+    else:
+      self.flash_fw_version = self.version
+      self.download_url = f'http://archive.shelly-tools.de/version/v{self.version}/{stock_fw_model}.zip'
+    if stock_fw_model == 'SHRGBW2':
+      if self.download_url and not self.version and color_mode and not self.local_file:
+        self.download_url = self.download_url.replace('.zip', f'-{color_mode}.zip')
+
+
+class HomeKitDevice(Device):
+  def get_info(self):
+    if not self.info:
+      return False
+    self.fw_type_str = 'HomeKit'
+    self.fw_version = self.info.get('version', '0.0.0')
+    if self.info.get('stock_fw_model') is None:  # TODO remove once 2.9.x is mainstream.
+      self.info['stock_fw_model'] = self.info.get('stock_model')
+    self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
+    return True
 
   @staticmethod
   def get_mode(mode):
@@ -598,28 +639,6 @@ class StockDevice(Device):
     self.info['battery'] = self.info.get('status', {}).get('bat', {}).get('value')
     return True
 
-  def parse_release_info(self, release_info=None):
-    self.flash_fw_type_str = 'Stock'
-    stock_fw_model = self.info.get('stock_fw_model')
-    color_mode = self.info.get('color_mode')
-    logger.debug(f"Mode: {self.fw_type_str} To {self.flash_fw_type_str}")
-    if not self.version:
-      if stock_fw_model == 'SHRGBW2-color':  # we need to use real stock model here
-        stock_fw_model = 'SHRGBW2'
-      stock_model_info = release_info.get('data', {}).get(stock_fw_model)
-      if self.variant == 'beta':
-        self.flash_fw_version = self.parse_stock_version(stock_model_info.get('beta_ver', '0.0.0'))
-        self.download_url = stock_model_info.get('beta_url')
-      else:
-        self.flash_fw_version = self.parse_stock_version(stock_model_info.get('version', '0.0.0'))
-        self.download_url = stock_model_info.get('url')
-    else:
-      self.flash_fw_version = self.version
-      self.download_url = f'http://archive.shelly-tools.de/version/v{self.version}/{stock_fw_model}.zip'
-    if stock_fw_model == 'SHRGBW2':
-      if self.download_url and not self.version and color_mode and not self.local_file:
-        self.download_url = self.download_url.replace('.zip', f'-{color_mode}.zip')
-
   def get_color_mode(self, no_error_message=False):  # used when flashing between firmware versions.
     if not self.get_device_info(True, no_error_message):
       return None
@@ -674,6 +693,9 @@ class StockDevice(Device):
 # noinspection PyUnboundLocalVariable,PyUnresolvedReferences
 class Main:
   def __init__(self):
+    self.stock_release_info = None
+    self.homekit_release_info = None
+    self.not_supported = None
     self.hosts = None
     self.username = None
     self.password = None
@@ -1056,25 +1078,6 @@ class Main:
       main.stop_scan()  # catch user break CTRL-C
 
   @staticmethod
-  def get_release_info(info_type):  # handle loading of release info for both stock and homekit.
-    release_info = False
-    release_info_url = homekit_info_url if info_type == 'homekit' else stock_info_url
-    try:
-      fp = requests.get(release_info_url, timeout=3)
-      logger.debug(f"{info_type} release_info status code: {fp.status_code}")
-      if fp.status_code == 200:
-        release_info = json.loads(fp.content)
-    except requests.exceptions.RequestException as err:
-      logger.critical(f"{RED}CRITICAL:{NC} {err}")
-    logger.trace(f"{info_type} release_info: {json.dumps(release_info, indent=2)}")
-    if not release_info:
-      logger.error("")
-      logger.error(f"{RED}Failed to lookup online firmware information{NC}")
-      logger.error("For more information please point your web browser to:")
-      logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
-    return release_info
-
-  @staticmethod
   def parse_version(vs):  # split version string into list.
     # 1.9 / 1.9.2 / 1.9.3-rc3 / 1.9.5-DM2 / 2.7.0-beta1 / 2.7.0-latest
     try:
@@ -1309,7 +1312,7 @@ class Main:
     logger.debug(f"force_flash: {force_flash}")
     logger.debug(f"force_version: {force_version}")
     logger.debug(f"download_url: {download_url}")
-    logger.debug(f"not_supported: {not_supported}")
+    logger.debug(f"not_supported: {main.not_supported}")
 
     if download_url and download_url != 'local':
       download_url_request = requests.head(download_url)
@@ -1340,7 +1343,7 @@ class Main:
       latest_fw_label = flash_fw_version
 
     flash_fw_newer = self.is_newer(flash_fw_version, current_fw_version)
-    if not_supported is True and download_url is None:
+    if main.not_supported is True and download_url is None:
       flash_fw_type_str = f"{RED}{flash_fw_type_str}{NC}"
       latest_fw_label = f"{RED}Not supported{NC}"
       flash_fw_version = '0.0.0'
@@ -1489,10 +1492,9 @@ class Main:
     logger.debug("")
     logger.debug(f"{PURPLE}[Probe Device] {device.host}{NC}")
 
-    global stock_release_info, homekit_release_info, tried_to_get_remote_homekit, tried_to_get_remote_stock, http_server_started, webserver_port, server, thread, flash_question, requires_upgrade, requires_mode_change
+    global http_server_started, webserver_port, server, thread, flash_question, requires_upgrade, requires_mode_change
     requires_upgrade = False
     requires_mode_change = False
-    got_info = False
     hk_flash_fw_version = None
     if self.mode == 'keep':
       self.flash_mode = device.fw_type
@@ -1524,81 +1526,57 @@ class Main:
           thread = threading.Thread(None, server.run)
           thread.start()
       if self.local_file:  # handle local file firmware.
-        if device.is_homekit() and device.parse_local_file():
-          got_info = True
+        if device.is_homekit():
+          device.parse_local_file()
         elif device.is_stock():
-          if not stock_release_info and not tried_to_get_remote_stock:
-            stock_release_info = self.get_release_info('stock')
-            tried_to_get_remote_stock = True7
-          if stock_release_info:
-            device.parse_release_info(stock_release_info)
-            if device.info.get('device', {}).get('type', '') == 'SHRGBW2' and device.info.get('color_mode') == 'white':
-              requires_mode_change = True
-            if device.fw_version == '0.0.0' or self.is_newer(device.flash_fw_version, device.fw_version):
-              requires_upgrade = True
-              got_info = True
-            elif device.parse_local_file():
-              got_info = True
+          device.parse_stock_release_info()
+          if device.info.get('device', {}).get('type', '') == 'SHRGBW2' and device.info.get('color_mode') == 'white':
+            requires_mode_change = True
+          if device.fw_version == '0.0.0' or self.is_newer(device.flash_fw_version, device.fw_version):
+            requires_upgrade = True
+          else:
+            device.parse_local_file()
       else:  # handle online firmware.
         if device.is_stock() and self.flash_mode == 'homekit':
-          if not stock_release_info and not tried_to_get_remote_stock:
-            stock_release_info = self.get_release_info('stock')
-            tried_to_get_remote_stock = True
-          if not homekit_release_info and not tried_to_get_remote_homekit:
-            homekit_release_info = self.get_release_info('homekit')
-            tried_to_get_remote_homekit = True
-          if stock_release_info and homekit_release_info:
-            device.parse_release_info(homekit_release_info)
-            if device.download_url:
-              download_url_request = requests.head(device.download_url)
-              logger.debug(f"download_url_request: {download_url_request}")
-              hk_flash_fw_version = device.flash_fw_version
-            device.parse_release_info(stock_release_info)
-            if device.info.get('device', {}).get('type', '') == 'SHRGBW2' and device.info.get('color_mode') == 'white':  # checks RGBW2 colour mode if 'white' marge it for mode change required.
-              requires_mode_change = True
-            if device.fw_version == '0.0.0' or self.is_newer(device.flash_fw_version, device.fw_version):  # checks device if is on release or firmware is no latest, mark for update required.
-              requires_upgrade = True
-              got_info = True
-            else:
-              device.parse_release_info(homekit_release_info)
-              got_info = True
+          device.parse_homekit_release_info()
+          if device.download_url:
+            download_url_request = requests.head(device.download_url)
+            logger.debug(f"download_url_request: {download_url_request}")
+            hk_flash_fw_version = device.flash_fw_version
+          device.parse_stock_release_info()
+          if device.info.get('device', {}).get('type', '') == 'SHRGBW2' and device.info.get('color_mode') == 'white':  # checks RGBW2 colour mode if 'white' marge it for mode change required.
+            requires_mode_change = True
+          if device.fw_version == '0.0.0' or self.is_newer(device.flash_fw_version, device.fw_version):  # checks device if is on release or firmware is no latest, mark for update required.
+            requires_upgrade = True
+          else:
+            device.parse_homekit_release_info()
         elif self.flash_mode == 'revert':
-            device.parse_release_info()
-            got_info = True
+            device.parse_homekit_release_info(revert=True)
         elif self.flash_mode == 'homekit':
-          if not homekit_release_info and not tried_to_get_remote_homekit and not self.local_file:
-            homekit_release_info = self.get_release_info('homekit')
-            tried_to_get_remote_homekit = True
-          if homekit_release_info:
-            device.parse_release_info(homekit_release_info)
-            got_info = True
+          device.parse_homekit_release_info()
         elif self.flash_mode == 'stock':
-          if not stock_release_info and not tried_to_get_remote_stock:
-            stock_release_info = self.get_release_info('stock')
-            tried_to_get_remote_stock = True
-          if stock_release_info:
-            device.parse_release_info(stock_release_info)
-            got_info = True
+          device.parse_stock_release_info()
       device_version = self.parse_version(device.info.get('version', '0.0.0'))
-      if got_info and device.fw_type == "homekit" and float(f"{device_version[0]}.{device_version[1]}") < 2.1:  # script requires version 2.1 firmware minimum.
-        logger.error(f"{WHITE}Host: {NC}{device.host}")
-        logger.error(f"Version {device.info.get('version')} is to old for this script,")
-        logger.error(f"please update via the device webUI.")
-        logger.error("")
-      elif got_info:  # make sure we have firmware information.
-        self.parse_info(device, hk_flash_fw_version)  # main convert run, or update stock to latest firmware if an update or color mode is required.
-        if self.run_action == 'flash' and (requires_upgrade in ('Done', True) or requires_mode_change in ('Done', True)) and flash_question is True:
-          if requires_mode_change is True:  # do another run if colour mode is still required.
+      if device.flash_fw_version is not None:  # make sure we have firmware information.
+        if device.fw_type == "homekit" and float(f"{device_version[0]}.{device_version[1]}") < 2.1:  # script requires version 2.1 firmware minimum.
+          logger.error(f"{WHITE}Host: {NC}{device.host}")
+          logger.error(f"Version {device.info.get('version')} is to old for this script,")
+          logger.error(f"please update via the device webUI.")
+          logger.error("")
+        else:
+          self.parse_info(device, hk_flash_fw_version)  # main convert run, or update stock to latest firmware if an update or color mode is required.
+          if self.run_action == 'flash' and (requires_upgrade in ('Done', True) or requires_mode_change in ('Done', True)) and flash_question is True:
+            if requires_mode_change is True:  # do another run if colour mode is still required.
+              device.get_info()  # update device information after previous run.
+              self.parse_info(device)  # colour change run.
             device.get_info()  # update device information after previous run.
-            self.parse_info(device)  # colour change run.
-          device.get_info()  # update device information after previous run.
-          # if device is still stock and has been updated to latest version, finally do convert to homekit run.
-          if device.flash_fw_version != '0.0.0' and (not self.is_newer(device.flash_fw_version, device.fw_version) or (device.is_stock() and self.flash_mode == 'homekit')):
-            if self.local_file:
-              device.parse_local_file()
-            else:
-              device.parse_release_info(homekit_release_info)
-            self.parse_info(device)
+            # if device is still stock and has been updated to latest version, finally do convert to homekit run.
+            if device.flash_fw_version != '0.0.0' and (not self.is_newer(device.flash_fw_version, device.fw_version) or (device.is_stock() and self.flash_mode == 'homekit')):
+              if self.local_file:
+                device.parse_local_file()
+              else:
+                device.parse_homekit_release_info()
+              self.parse_info(device)
 
   def stop_scan(self):  # stop DNS scanner.
     if self.listener is not None:
