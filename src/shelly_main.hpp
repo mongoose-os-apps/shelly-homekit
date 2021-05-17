@@ -28,6 +28,7 @@
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_pm.hpp"
+#include "shelly_reset.hpp"
 #include "shelly_temp_sensor.hpp"
 
 #define AUTH_USER "admin"
@@ -54,10 +55,6 @@ void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
                               bool cur_state);
 
 void RestartService();
-
-bool WipeDevice();
-
-bool IsSoftReboot();
 
 StatusOr<int> GetSystemTemperature();
 

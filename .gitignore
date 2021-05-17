@@ -8,5 +8,6 @@ releases/
 core-*
 *.gz
 *.zip
+fs/conf*.json
 flash-shelly.auth.yaml
 *.cfg.yaml
