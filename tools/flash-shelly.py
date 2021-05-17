@@ -139,7 +139,7 @@ except ImportError:
   install_import('pyyaml')
   import yaml
 
-app_ver = '2.8.0'
+app_ver = '2.8.2'
 security_file = 'flash-shelly.auth.yaml'
 webserver_port = 8381
 http_server_started = False
