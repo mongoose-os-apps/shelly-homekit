@@ -114,6 +114,7 @@ config_schema:
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
+  MGOS_FW_EXTRA_ATTRS: hk_model=${build_vars.MODEL}
 
 cdefs:
   PRODUCT_VENDOR: '"Allterco"'
