@@ -603,7 +603,7 @@ class HomeKitDevice(Device):
                }
     return options.get(mode, mode)
 
-  def flash_firmware(self, revert=False):
+  def write_firmware(self, revert=False):
     logger.trace(f"revert {revert}")
     if self.local_file:
       logger.debug(f"Local file: {self.local_file}")
@@ -627,7 +627,7 @@ class HomeKitDevice(Device):
       main.security_help(self)
     return response
 
-  def preform_reboot(self):
+  def do_reboot(self):
     logger.info(f"Rebooting...")
     logger.debug(f"requests.post(url='http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
     response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
@@ -660,7 +660,7 @@ class StockDevice(Device):
       return None
     return self.info.get('mode')
 
-  def flash_firmware(self, revert=False):
+  def write_firmware(self, revert=False):
     logger.trace(f"revert {revert}")
     logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
     download_url = self.download_url.replace('https', 'http')
@@ -680,7 +680,7 @@ class StockDevice(Device):
       main.security_help(self)
     return response
 
-  def preform_reboot(self):
+  def do_reboot(self):
     logger.info(f"Rebooting...")
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}, auth=('{self.username}', '{self.password}'d)")
     response = requests.get(url=f'http://{self.wifi_ip}/reboot', auth=(self.username, self.password))
@@ -689,7 +689,7 @@ class StockDevice(Device):
       main.security_help(self)
     return response
 
-  def perform_mode_change(self, mode_color):
+  def do_mode_change(self, mode_color):
     logger.info("Performing mode change...")
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}, auth=('{self.username}', '{self.password}'))")
     response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.username, self.password))
@@ -718,7 +718,7 @@ class Main:
     self.homekit_release_info = None
     self.not_supported = None
     self.requires_upgrade = None
-    self.requires_mode_change = None
+    self.requires_color_mode_change = None
     self.total_devices = 0
     self.upgradeable_devices = 0
     self.flashed_devices = 0
@@ -1278,10 +1278,10 @@ class Main:
       uptime = device.get_uptime(True)
     return uptime
 
-  def write_flash(self, device, revert=False):  # handle flash procedure.
+  def flash_firmware(self, device, revert=False):  # handle flash procedure.
     logger.debug(f"{PURPLE}[Write Flash]{NC}")
     uptime = self.just_booted_check(device)  # check to see if device has just booted.
-    response = device.flash_firmware(revert)  # do actual flash firmware.
+    response = device.write_firmware(revert)  # do actual flash firmware.
     logger.trace(response)
     if response and response.status_code == 200:
       message = f"{GREEN}Successfully flashed {device.friendly_host} to {device.flash_fw_type_str} {device.flash_fw_version}{NC}"
@@ -1311,15 +1311,15 @@ class Main:
 
   def reboot_device(self, device):  # handle reboot procedure.
     logger.debug(f"{PURPLE}[Reboot Device]{NC}")
-    response = device.preform_reboot()  # do actual reboot.
+    response = device.do_reboot()  # do actual reboot.
     if response.status_code == 200:
       self.wait_for_reboot(device, reboot_only=True)
       logger.info(f"Device has rebooted...")
 
-  def mode_change(self, device, mode_color):  # handle colour mode change.
+  def color_mode_change(self, device, mode_color):  # handle colour mode change.
     logger.debug(f"{PURPLE}[Color Mode Change] change from {device.info.get('color_mode')} to {mode_color}{NC}")
     uptime = device.get_uptime(True)
-    response = device.perform_mode_change(mode_color)  # do actual colour mode change.
+    response = device.do_mode_change(mode_color)  # do actual colour mode change.
     if response.status_code == 200:
       self.wait_for_reboot(device, uptime)
       current_color_mode = device.get_color_mode()
@@ -1328,7 +1328,7 @@ class Main:
       if current_color_mode == mode_color:
         device.already_processed = True
         logger.critical(f"{GREEN}Successfully changed {device.friendly_host} to mode: {current_color_mode}{NC}")
-        self.requires_mode_change = 'Done'
+        self.requires_color_mode_change = 'Done'
 
   def parse_info(self, device, hk_ver=None):  # parse device information, and action on commandline options.
     logger.debug(f"")
@@ -1370,7 +1370,7 @@ class Main:
 
     logger.debug(f"flash mode: {self.flash_mode}")
     logger.debug(f"requires_upgrade: {self.requires_upgrade}")
-    logger.debug(f"requires_mode_change: {self.requires_mode_change}")
+    logger.debug(f"requires_color_mode_change: {self.requires_color_mode_change}")
     logger.debug(f"stock_fw_model: {stock_fw_model}")
     logger.debug(f"color_mode: {color_mode}")
     logger.debug(f"current_fw_version: {current_fw_type_str} {current_fw_version}")
@@ -1470,7 +1470,7 @@ class Main:
           elif self.flash_mode == 'homekit':
             action_message = "This device needs to be"
             keyword = "upgraded to latest stock firmware version, before you can flash to HomeKit"
-        elif self.requires_mode_change is True:
+        elif self.requires_color_mode_change is True:
           do_mode_change = True
           action_message = "This device needs to be"
           keyword = "changed to colour mode in stock firmware, before you can flash to HomeKit"
@@ -1500,9 +1500,9 @@ class Main:
       if (perform_flash is True or do_mode_change is True) and self.dry_run is False and self.silent_run is False:
         if self.requires_upgrade is True:
           flash_message = f"{action_message} {keyword}"
-        elif self.requires_upgrade == 'Done' and self.requires_mode_change is False:
+        elif self.requires_upgrade == 'Done' and self.requires_color_mode_change is False:
           flash_message = f"Do you wish to continue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
-        elif self.requires_mode_change is True:
+        elif self.requires_color_mode_change is True:
           flash_message = f"{action_message} {keyword}"
         elif flash_fw_version == 'revert':
           flash_message = f"Do you wish to revert {friendly_host} to stock firmware"
@@ -1522,11 +1522,11 @@ class Main:
       logger.debug(f"flash_question: {self.flash_question}")
       if self.flash_question is True:
         if do_mode_change is True:
-          self.mode_change(device, 'color')
+          self.color_mode_change(device, 'color')
         elif flash_fw_version == 'revert':
-          self.write_flash(device, True)
+          self.flash_firmware(device, True)
         else:
-          self.write_flash(device)
+          self.flash_firmware(device)
 
     if device.is_homekit() and self.hap_setup_code:
       device.write_hap_setup_code()
@@ -1582,7 +1582,7 @@ class Main:
     logger.debug(f"{PURPLE}[Probe Device] {device.host}{NC}")
     hk_flash_fw_version = None
     self.requires_upgrade = False
-    self.requires_mode_change = False
+    self.requires_color_mode_change = False
     self.flash_mode = device.fw_type if self.mode == 'keep' else self.mode
     if not device.get_info():
       logger.warning("")
@@ -1596,7 +1596,7 @@ class Main:
         elif device.is_stock():
           device.parse_stock_release_info()
           if device.info.get('device', {}).get('type', '') == 'SHRGBW2' and device.info.get('color_mode') == 'white':
-            self.requires_mode_change = True
+            self.requires_color_mode_change = True
           if device.info.get('fw_version') == '0.0.0' or self.is_newer(device.flash_fw_version, device.info.get('fw_version')):
             self.requires_upgrade = True
           else:
@@ -1611,7 +1611,7 @@ class Main:
               hk_flash_fw_version = device.flash_fw_version
             device.parse_stock_release_info()
             if device.info.get('device', {}).get('type', '') == 'SHRGBW2' and device.info.get('color_mode') == 'white':  # checks RGBW2 colour mode if 'white' marge it for mode change required.
-              self.requires_mode_change = True
+              self.requires_color_mode_change = True
             if device.info.get('fw_version') == '0.0.0' or self.is_newer(device.flash_fw_version, device.info.get('fw_version')):  # checks device if is on release or firmware is no latest, mark for update required.
               self.requires_upgrade = True
             else:
@@ -1627,8 +1627,8 @@ class Main:
       if device.flash_fw_version is not None:  # make sure we have firmware information.
         if self.check_fw(device, 2.1):  # script requires version 2.1 firmware minimum.
           self.parse_info(device, hk_flash_fw_version)  # main convert run, or update stock to latest firmware if an update or color mode is required.
-          if self.run_action == 'flash' and (self.requires_upgrade in ('Done', True) or self.requires_mode_change in ('Done', True)) and self.flash_question is True:
-            if self.requires_mode_change:  # do another run if colour mode is still required.
+          if self.run_action == 'flash' and (self.requires_upgrade in ('Done', True) or self.requires_color_mode_change in ('Done', True)) and self.flash_question is True:
+            if self.requires_color_mode_change:  # do another run if colour mode is still required.
               device.get_info()  # update device information after previous run.
               self.parse_info(device)  # colour change run.
             device.get_info()  # update device information after previous run.
