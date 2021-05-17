@@ -1636,20 +1636,6 @@ class Main:
           self.zc.close()
           break
 
-  def exit_app(self):  # exit script.
-    logger.info(f"")
-    if self.run_action == 'flash':
-      if self.failed_flashed_devices > 0:
-        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC} {RED}Failed: {self.failed_flashed_devices}{NC}")
-      else:
-        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC}")
-    else:
-      if self.total_devices > 0:
-        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices}{NC}")
-    if self.log_filename:
-      logger.info(f"Log file created: {self.log_filename}")
-    self.stop_webserver()
-
   def is_fw_type(self, fw_type):
     return fw_type.lower() in self.fw_type_filter.lower() or self.fw_type_filter == 'all'
 
@@ -1710,6 +1696,21 @@ class Main:
           fw_model = device.info.get('model') if device.is_homekit() else device.shelly_model(device.info.get('device').get('type'))[0]
           if self.is_fw_type(device.fw_type) and self.is_model_type(fw_model) and self.is_device_name(device.info.get('device_name')):
             self.probe_device(device)
+
+  def exit_app(self):  # exit script.
+    logger.info(f"")
+    if self.run_action == 'flash':
+      if self.failed_flashed_devices > 0:
+        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC} {RED}Failed: {self.failed_flashed_devices}{NC}")
+      else:
+        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC}")
+    else:
+      if self.total_devices > 0:
+        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices}{NC}")
+    if self.log_filename:
+      logger.info(f"Log file created: {self.log_filename}")
+    self.stop_webserver()
+
 
 
 # start script and pass commandline arguments to 'run_app'
