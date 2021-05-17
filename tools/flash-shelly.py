@@ -854,8 +854,8 @@ class Main:
       username = self.security_data.get(host).get('user')
       password = self.security_data.get(host).get('password')
     else:
-      username = main.username
-      password = main.password
+      username = self.username
+      password = self.password
     logger.debug(f"[login] {host} {self.security_data.get(host)}")
     logger.debug(f"[login] username: {username}")
     logger.debug(f"[login] password: {password}")
@@ -1107,7 +1107,7 @@ class Main:
     self.show_debug_info(args)  # show debug info as debug logger.
     self.handle_invalid_args()  # handle invalid options from commandline.
 
-    atexit.register(main.exit_app)  # handle safe exit (user break CTRL-C).
+    atexit.register(self.exit_app)  # handle safe exit (user break CTRL-C).
 
     # run correct mode manual / device scan.
     try:
@@ -1118,7 +1118,7 @@ class Main:
     except Exception:
       self._show_exception_message()
     except KeyboardInterrupt:
-      main.stop_scan()  # catch user break CTRL-C
+      self.stop_scan()  # catch user break CTRL-C
 
   @staticmethod
   def _show_exception_message():
@@ -1365,7 +1365,7 @@ class Main:
     logger.debug(f"force_flash: {force_flash}")
     logger.debug(f"manual_version: {force_version}")
     logger.debug(f"download_url: {download_url}")
-    logger.debug(f"not_supported: {main.not_supported}")
+    logger.debug(f"not_supported: {self.not_supported}")
 
     if download_url and download_url != 'local':
       download_url_request = requests.head(download_url)
@@ -1396,7 +1396,7 @@ class Main:
       latest_fw_label = flash_fw_version
 
     flash_fw_newer = self.is_newer(flash_fw_version, current_fw_version)
-    if main.not_supported is True and download_url is None:
+    if self.not_supported is True and download_url is None:
       flash_fw_type_str = f"{RED}{flash_fw_type_str}{NC}"
       latest_fw_label = f"{RED}Not supported{NC}"
       flash_fw_version = '0.0.0'
@@ -1666,7 +1666,7 @@ class Main:
     for host in self.hosts:
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Manual Hosts] action {host}{NC}")
-      (username, password) = main.get_security_data(host)
+      (username, password) = self.get_security_data(host)
       n = 1
       while n <= self.timeout:
         device = self.get_device_info(Device(host, username, password, no_error_message=True))
