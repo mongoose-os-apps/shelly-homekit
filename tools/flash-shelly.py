@@ -1627,15 +1627,6 @@ class Main:
                 device.parse_homekit_release_info()
               self.parse_info(device)
 
-  def stop_scan(self):  # stop DNS scanner.
-    if self.listener is not None:
-      while True:
-        try:
-          self.listener.queue.get_nowait()
-        except queue.Empty:
-          self.zc.close()
-          break
-
   def is_fw_type(self, fw_type):
     return fw_type.lower() in self.fw_type_filter.lower() or self.fw_type_filter == 'all'
 
@@ -1696,6 +1687,15 @@ class Main:
           fw_model = device.info.get('model') if device.is_homekit() else device.shelly_model(device.info.get('device').get('type'))[0]
           if self.is_fw_type(device.fw_type) and self.is_model_type(fw_model) and self.is_device_name(device.info.get('device_name')):
             self.probe_device(device)
+
+  def stop_scan(self):  # stop DNS scanner.
+    if self.listener is not None:
+      while True:
+        try:
+          self.listener.queue.get_nowait()
+        except queue.Empty:
+          self.zc.close()
+          break
 
   def exit_app(self):  # exit script.
     logger.info(f"")
