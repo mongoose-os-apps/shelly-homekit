@@ -999,7 +999,7 @@ class Main:
     self.version = args.get('version')
     self.variant = args.get('variant')
     self.force = args.get('force')
-    self.hap_setup_code = f"{args.get('hap_setup_code[:3]')}-{args.get('hap_setup_code[3:-3]')}-{args.get('hap_setup_code[5:]')}" if args.get('hap_setup_code') and '-' not in args.get('hap_setup_code') else args.get('hap_setup_code')
+    self.hap_setup_code = f"{args.get('hap_setup_code')[:3]}-{args.get('hap_setup_code')[3:-3]}-{args.get('hap_setup_code')[5:]}" if args.get('hap_setup_code') and '-' not in args.get('hap_setup_code') else args.get('hap_setup_code')
     self.local_file = args.get('local_file')
     self.network_type = args.get('network_type')
     self.ipv4_ip = args.get('ipv4_ip')
