@@ -568,6 +568,19 @@ class Device:
     if stock_fw_model == 'SHRGBW2' and self.download_url and not self.version and color_mode and not self.local_file:
       self.download_url = self.download_url.replace('.zip', f'-{color_mode}.zip')
 
+  def write_hap_setup_code(self):  # handle saving HomeKIT setup code.
+    logger.info(f"Configuring HomeKit setup code: {main.hap_setup_code}")
+    value = {'code': main.hap_setup_code}
+    logger.trace(f"security: {self.info.get('auth_en')}")
+    logger.debug(f"requests.post(url='http://{self.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth('{main.username}', '{main.password}'), json={value})")
+    response = requests.post(url=f'http://{self.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth(main.username, main.password), json={'code': main.hap_setup_code})
+    if response.status_code == 200:
+      logger.trace(response.text)
+      logger.info(f"HAP code successfully configured.")
+    elif response.status_code == 401:
+      logger.info(f"{self.friendly_host} is password protected.")
+      main.security_help(self)
+
 
 class HomeKitDevice(Device):
   def get_info(self):
@@ -1516,7 +1529,7 @@ class Main:
           self.write_flash(device)
 
     if device.is_homekit() and self.hap_setup_code:
-      self.write_hap_setup_code(device)
+      device.write_hap_setup_code()
     if self.network_type:
       if self.network_type == 'static':
         action_message = f"Do you wish to set your IP address to {self.ipv4_ip}"
