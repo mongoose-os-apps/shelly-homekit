@@ -19,7 +19,12 @@
 
 namespace shelly {
 
+// Wipe all device configuration, including WiFi.
 bool WipeDevice();
+
+// Wipe device before reverting to stock FW.
+// Preserves WiFi STA config.
+void WipeDeviceRevertToStock();
 
 bool IsSoftReboot();
 
