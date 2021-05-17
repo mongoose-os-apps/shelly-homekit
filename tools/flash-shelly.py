@@ -1252,19 +1252,6 @@ class Main:
     logger.info("")
     return current_version
 
-  def write_hap_setup_code(self, device):  # handle saving HomeKIT setup code.
-    logger.info("Configuring HomeKit setup code...")
-    value = {'code': self.hap_setup_code}
-    logger.trace(f"security: {device.info.get('auth_en')}")
-    logger.debug(f"requests.post(url='http://{device.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth('{self.username}', '{self.password}'), json={value})")
-    response = requests.post(url=f'http://{device.wifi_ip}/rpc/HAP.Setup', auth=HTTPDigestAuth(self.username, self.password), json={'code': self.hap_setup_code})
-    if response.status_code == 200:
-      logger.trace(response.text)
-      logger.info(f"HAP code successfully configured.")
-    elif response.status_code == 401:
-      logger.info(f"{device.friendly_host} is password protected.")
-      self.security_help(device)
-
   @staticmethod
   def just_booted_check(device):  # stock devices need time after a boot, before we can flash.
     uptime = device.get_uptime(True)
