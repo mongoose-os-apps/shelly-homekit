@@ -247,7 +247,6 @@ class Device:
     self.password = password
     self.wifi_ip = wifi_ip
     self.fw_type = fw_type
-    self.error_message = error_message
     self.info = {}
     self.variant = main.variant
     self.version = main.version
