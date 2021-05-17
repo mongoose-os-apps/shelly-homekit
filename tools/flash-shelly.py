@@ -22,9 +22,10 @@ version of this firmware, if you are looking to flash your device from stock
 or any other firmware please follow instructions here:
 https://github.com/mongoose-os-apps/shelly-homekit/wiki
 
-usage: flash-shelly.py [-h] [--app-version] [-f] [-l] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION]
-                       [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT]
-                       [--log-file LOG_FILENAME] [--reboot] [--user USER] [--password PASSWORD] [--config CONFIG] [--save-config SAVE_CONFIG] [--save-defaults]
+usage: flash-shelly.py [-h] [--app-version] [-f] [-l] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-e [EXCLUDE ...]] [-n]
+                       [-y] [-V VERSION] [--force] [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK]
+                       [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT] [--log-file LOG_FILENAME] [--reboot] [--user USER] [--password PASSWORD] [--config CONFIG] [--save-config SAVE_CONFIG]
+                       [--save-defaults]
                        [hosts ...]
 
 Shelly HomeKit flashing script utility
@@ -54,7 +55,8 @@ optional arguments:
   -n, --assume-no       Do a dummy run through.
   -y, --assume-yes      Do not ask any confirmation to perform the flash.
   -V VERSION, --version VERSION
-                        Force a particular version.
+                        Flash a particular version.
+  --force               Force a flash
   --variant VARIANT     Pre-release variant name.
   --local-file LOCAL_FILE
                         Use local file to flash.
