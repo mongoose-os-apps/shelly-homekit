@@ -56,7 +56,7 @@ optional arguments:
   -y, --assume-yes      Do not ask any confirmation to perform the flash.
   -V VERSION, --version VERSION
                         Flash a particular version.
-  --force               Force a flash
+  --force               Force a flash.
   --variant VARIANT     Pre-release variant name.
   --local-file LOCAL_FILE
                         Use local file to flash.
