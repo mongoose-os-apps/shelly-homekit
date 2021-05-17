@@ -860,8 +860,7 @@ class Main:
       defaults['hosts'] = defaults.get('hosts').split()
     return defaults
 
-  @staticmethod
-  def save_config(args):  # saves defaults and profiles to config file.
+  def save_config(self, args):  # saves defaults and profiles to config file.
     logger.trace(f"save_config")
     if args.get('save_defaults') is True:
       profile = 'defaults'
