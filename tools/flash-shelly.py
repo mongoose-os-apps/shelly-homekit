@@ -636,6 +636,27 @@ class HomeKitDevice(Device):
       main.security_help(self)
     return response
 
+  def write_network_type(self):  # handle changing of WiFi connection type DHCP or StaticC IP.
+    logger.debug(f"{PURPLE}[Write Network Type]{NC}")
+    if main.network_type == 'static':
+      log_message = f"Configuring static IP to {main.ipv4_ip}..."
+      value = {'config': {'wifi': {'sta': {'ip': main.ipv4_ip, 'netmask': main.ipv4_mask, 'gw': main.ipv4_gw, 'nameserver': main.ipv4_dns}}}}
+    else:
+      log_message = f"Configuring IP to use DHCP..."
+      value = {'config': {'wifi': {'sta': {'ip': ''}}}}
+    config_set_url = f'http://{self.wifi_ip}/rpc/Config.Set'
+    logger.info(log_message)
+    logger.debug(f"requests.post(url={config_set_url}, json={value}, auth=HTTPDigestAuth('{main.username}', '{main.password}'))")
+    response = requests.post(url=config_set_url, json=value, auth=HTTPDigestAuth(main.username, main.password))
+    logger.trace(response.text)
+    if response.status_code == 200:
+      logger.trace(response.text)
+      logger.info(f"Saved, Rebooting...")
+      logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/rpc/SyS.Reboot'}, auth=HTTPDigestAuth('{main.username}', '{main.password}'))")
+      requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(main.username, main.password))
+    elif response.status_code == 401:
+      main.security_help(self)
+
 
 class StockDevice(Device):
   def get_info(self):
@@ -704,6 +725,23 @@ class StockDevice(Device):
       except ConnectionResetError:
         pass
     return response
+
+  def write_network_type(self):  # handle changing of WiFi connection type DHCP or StaticC IP.
+    logger.debug(f"{PURPLE}[Write Network Type]{NC}")
+    if main.network_type == 'static':
+      log_message = f"Configuring static IP to {main.ipv4_ip}..."
+      config_set_url = f'http://{self.wifi_ip}/settings/sta?ipv4_method=static&ip={main.ipv4_ip}&netmask={main.ipv4_mask}&gateway={main.ipv4_gw}&dns={main.ipv4_dns}'
+    else:
+      log_message = f"Configuring IP to use DHCP..."
+      config_set_url = f'http://{self.wifi_ip}/settings/sta?ipv4_method=dhcp'
+    logger.info(log_message)
+    logger.debug(f"requests.post(url={config_set_url})")
+    response = requests.post(url=config_set_url)
+    if response.status_code == 200:
+      logger.trace(response.text)
+      logger.info(f"Saved...")
+    elif response.status_code == 401:
+      main.security_help(self)
 
 
 # noinspection PyUnboundLocalVariable,PyUnresolvedReferences
@@ -1214,44 +1252,6 @@ class Main:
     logger.info("")
     return current_version
 
-  def write_network_type(self, device):  # handle changing of WiFi connection type DHCP or StaticC IP.
-    logger.debug(f"{PURPLE}[Write Network Type]{NC}")
-    wifi_ip = device.wifi_ip
-    if device.is_homekit():
-      if self.network_type == 'static':
-        log_message = f"Configuring static IP to {self.ipv4_ip}..."
-        value = {'config': {'wifi': {'sta': {'ip': self.ipv4_ip, 'netmask': self.ipv4_mask, 'gw': self.ipv4_gw, 'nameserver': self.ipv4_dns}}}}
-      else:
-        log_message = f"Configuring IP to use DHCP..."
-        value = {'config': {'wifi': {'sta': {'ip': ''}}}}
-      config_set_url = f'http://{wifi_ip}/rpc/Config.Set'
-      logger.info(log_message)
-      logger.debug(f"requests.post(url={config_set_url}, json={value}, auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
-      response = requests.post(url=config_set_url, json=value, auth=HTTPDigestAuth(self.username, self.password))
-      logger.trace(response.text)
-      if response.status_code == 200:
-        logger.trace(response.text)
-        logger.info(f"Saved, Rebooting...")
-        logger.debug(f"requests.post(url={f'http://{wifi_ip}/rpc/SyS.Reboot'}, auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
-        requests.get(url=f'http://{wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
-      elif response.status_code == 401:
-        self.security_help(device)
-    else:
-      if self.network_type == 'static':
-        log_message = f"Configuring static IP to {self.ipv4_ip}..."
-        config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=static&ip={self.ipv4_ip}&netmask={self.ipv4_mask}&gateway={self.ipv4_gw}&dns={self.ipv4_dns}'
-      else:
-        log_message = f"Configuring IP to use DHCP..."
-        config_set_url = f'http://{wifi_ip}/settings/sta?ipv4_method=dhcp'
-      logger.info(log_message)
-      logger.debug(f"requests.post(url={config_set_url})")
-      response = requests.post(url=config_set_url)
-      if response.status_code == 200:
-        logger.trace(response.text)
-        logger.info(f"Saved...")
-      elif response.status_code == 401:
-        self.security_help(device)
-
   def write_hap_setup_code(self, device):  # handle saving HomeKIT setup code.
     logger.info("Configuring HomeKit setup code...")
     value = {'code': self.hap_setup_code}
@@ -1540,7 +1540,7 @@ class Main:
       else:
         set_ip = False
       if set_ip or self.silent_run:
-        self.write_network_type(device)
+        device.write_network_type()
     if self.run_action == 'reboot':
       reboot = False
       if self.dry_run is False and self.silent_run is False:
