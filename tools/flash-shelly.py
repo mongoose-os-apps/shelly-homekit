@@ -1558,6 +1558,12 @@ class Main:
       self.thread = threading.Thread(None, self.server.run)
       self.thread.start()
 
+  def stop_webserver(self):
+    if self.http_server_started and self.server is not None:
+      logger.trace("Shutting down webserver")
+      self.server.shutdown()
+      self.thread.join()
+
   def probe_device(self, device):  # get information from device, and pass on to parse_info so it can be actioned.
     logger.debug("")
     logger.debug(f"{PURPLE}[Probe Device] {device.host}{NC}")
@@ -1642,6 +1648,7 @@ class Main:
         logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices}{NC}")
     if self.log_filename:
       logger.info(f"Log file created: {self.log_filename}")
+    self.stop_webserver()
 
   def is_fw_type(self, fw_type):
     return fw_type.lower() in self.fw_type_filter.lower() or self.fw_type_filter == 'all'
@@ -1681,10 +1688,6 @@ class Main:
           self.security_help(device)
         else:
           self.probe_device(device)
-    if self.http_server_started and self.server is not None:
-      logger.trace("Shutting down webserver")
-      self.server.shutdown()
-      self.thread.join()
 
   def device_scan(self):  # handle devices found from DNS scanner.
     logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
