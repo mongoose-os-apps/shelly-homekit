@@ -1712,7 +1712,6 @@ class Main:
     self.stop_webserver()
 
 
-
 # start script and pass commandline arguments to 'run_app'
 if __name__ == '__main__':
   main = Main()
