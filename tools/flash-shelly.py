@@ -744,7 +744,6 @@ class StockDevice(Device):
       main.security_help(self)
 
 
-# noinspection PyUnboundLocalVariable,PyUnresolvedReferences
 class Main:
   def __init__(self):
     self.parser = None
