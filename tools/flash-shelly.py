@@ -144,7 +144,7 @@ except ImportError:
   import yaml
 
 arch = platform.system()
-app_ver = '2.8.0'
+app_ver = '3.0.0'
 config_file = '.cfg.yaml'
 defaults_config_file = 'flash-shelly.cfg.yaml'
 security_file = 'flash-shelly.auth.yaml'
