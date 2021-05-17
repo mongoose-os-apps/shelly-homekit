@@ -731,6 +731,7 @@ class Main:
     self.exclude = None
     self.version = None
     self.variant = None
+    self.force = None
     self.hap_setup_code = None
     self.local_file = None
     self.network_type = None
@@ -946,6 +947,7 @@ class Main:
     self.exclude = args.get('exclude')
     self.version = args.get('version')
     self.variant = args.get('variant')
+    self.force = args.get('force')
     self.hap_setup_code = f"{args.get('hap_setup_code[:3]')}-{args.get('hap_setup_code[3:-3]')}-{args.get('hap_setup_code[5:]')}" if args.get('hap_setup_code') and '-' not in args.get('hap_setup_code') else args.get('hap_setup_code')
     self.local_file = args.get('local_file')
     self.network_type = args.get('network_type')
@@ -990,6 +992,7 @@ class Main:
     logger.debug(f"exclude: {self.exclude}")
     logger.debug(f"local_file: {self.local_file}")
     logger.debug(f"variant: {self.variant}")
+    logger.debug(f"force: {self.force}")
     logger.debug(f"verbose: {args.get('verbose')}")
     logger.debug(f"hap_setup_code: {self.hap_setup_code}")
     logger.debug(f"network_type: {self.network_type}")
@@ -1047,6 +1050,7 @@ class Main:
     self.parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', default=None, help="Do a dummy run through.")
     self.parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', default=None, help="Do not ask any confirmation to perform the flash.")
     self.parser.add_argument('-V', '--version', type=str, dest="version", default=None, help="Flash a particular version.")
+    self.parser.add_argument('--force', action="store_true", dest='force', default=None, help="Force a flash")
     self.parser.add_argument('--variant', dest="variant", default=None, help="Pre-release variant name.")
     self.parser.add_argument('--local-file', dest="local_file", default=None, help="Use local file to flash.")
     self.parser.add_argument('-c', '--hap-setup-code', dest="hap_setup_code", default=None, help="Configure HomeKit setup code, after flashing.")
@@ -1334,11 +1338,11 @@ class Main:
     color_mode = device.info.get('color_mode')
     current_fw_version = device.info.get('fw_version')
     current_fw_type = device.fw_type
-    current_fw_type_str = device.fw_type_str
-    flash_fw_version = device.flash_fw_version
+    current_fw_type_str = device.info.get('fw_type_str')
+    flash_fw_version = device.version if device.version else device.flash_fw_version
     flash_fw_type_str = device.flash_fw_type_str
     force_version = device.version
-    force_flash = True if force_version else False
+    force_flash = True if current_fw_version != device.version else self.force
     download_url = device.download_url
     device_name = device.info.get('device_name')
     wifi_ssid = device.info.get('wifi_ssid')
@@ -1359,7 +1363,7 @@ class Main:
     logger.debug(f"current_fw_version: {current_fw_type_str} {current_fw_version}")
     logger.debug(f"flash_fw_version: {flash_fw_type_str} {flash_fw_version}")
     logger.debug(f"force_flash: {force_flash}")
-    logger.debug(f"force_version: {force_version}")
+    logger.debug(f"manual_version: {force_version}")
     logger.debug(f"download_url: {download_url}")
     logger.debug(f"not_supported: {main.not_supported}")
 
