@@ -1342,7 +1342,7 @@ class Main:
     flash_fw_version = device.version if device.version else device.flash_fw_version
     flash_fw_type_str = device.flash_fw_type_str
     force_version = device.version
-    force_flash = True if current_fw_version != device.version else self.force
+    force_flash = True if device.version and current_fw_version != device.version else self.force
     download_url = device.download_url
     device_name = device.info.get('device_name')
     wifi_ssid = device.info.get('wifi_ssid')
