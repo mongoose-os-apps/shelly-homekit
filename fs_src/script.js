@@ -1292,13 +1292,13 @@ async function uploadFW(blob, spinner, status, ar) {
           return uploadFW(blob, spinner, status, authResp);
         }
       }
+      spinner.className = "";
       status.innerText = (respText ? respText : resp.statusText);
       setVar("update_available", false);
     })
     .catch((error) => {
       console.log("Fetch erorr:", error);
       status.innerText = `Error uploading: ${error}`;
-    }).finally(() => {
       spinner.className = "";
     });
 }
