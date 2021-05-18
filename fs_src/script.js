@@ -17,6 +17,7 @@
 
 // Options.
 const maxAuthAge = 24 * 60 * 60;
+const updateCheckInterval = 24 * 60 * 60;
 
 // Globals.
 var lastInfo = null;
@@ -1174,16 +1175,7 @@ el("sec_save_btn").onclick = function () {
 // noinspection JSUnusedGlobalSymbols
 function onLoad() {
   connectWebSocket().then(() => {
-    getInfo().then((info) => {
-      if (info.wifi_rssi == 0) return;
-      var last_update_check = parseInt(getVar("last_update_check"));
-      var now = new Date();
-      console.log("Last update check:", last_update_check, new Date(last_update_check));
-      if (isNaN(last_update_check) || now.getTime() - last_update_check > 24 * 60 * 60 * 1000) {
-        checkUpdate();
-      }
-      el("notify_update").style.display = (getVar("update_available") ? "inline" : "none");
-    }).catch((err) => {
+    getInfo().catch((err) => {
       console.log("getInfo() rejected", err);
     });
   });
@@ -1196,7 +1188,9 @@ function refreshUI() {
   if (socket.readyState !== 1) return;
   if (pauseAutoRefresh || pendingGetInfo) return;
   pendingGetInfo = true;
-  getInfo().finally(() => pendingGetInfo = false);
+  getInfo()
+    .then((info) => checkUpdateIfNeeded(info))
+    .finally(() => pendingGetInfo = false);
 }
 
 function setValueIfNotModified(e, newValue) {
@@ -1324,7 +1318,23 @@ function isNewer(v1, v2) {
   return false;
 }
 
-async function checkUpdate() {
+function checkUpdateIfNeeded(info) {
+  // If device is in AP mode, we most likely don't have internet connectivity anyway.
+  if (info.wifi_rssi == 0) return;
+  let last_update_check = parseInt(getVar("last_update_check"));
+  let now = new Date();
+  let age = undefined;
+  if (!isNaN(last_update_check)) {
+    age = (now.getTime() - last_update_check) / 1000;
+  }
+  if (isNaN(last_update_check) || age > updateCheckInterval) {
+    console.log(`Last update check: ${last_update_check} age ${age}, checking for update`);
+    checkUpdate();
+  }
+  el("notify_update").style.display = (getVar("update_available") ? "inline" : "none");
+}
+
+function checkUpdate() {
   var model = lastInfo.model;
   var curVersion = lastInfo.version;
   var e = el("update_status");
