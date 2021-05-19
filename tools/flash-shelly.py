@@ -905,17 +905,19 @@ class Main:
     self.security_data = data if data is not None else {}
 
   def get_security_data(self, host):
-    logger.trace(f"load_security")
+    logger.trace(f"get_security_data")
     host = self.host_check(host)
+    logger.debug(f"[Security] {host}")
     if not self.password and self.security_data.get(host):
+      sec_type = 'file'
       username = self.security_data.get(host).get('user')
       password = self.security_data.get(host).get('password')
     else:
+      sec_type = 'commandline'
       username = self.username
       password = self.password
-    logger.debug(f"[login] {host} info loaded {self.security_data.get(host)}")
-    logger.debug(f"[login] username: {username}")
-    logger.debug(f"[login] password: {password}")
+    logger.debug(f"[Security] username: {username} from {sec_type}")
+    logger.debug(f"[Security] password: {password} from {sec_type}")
     return username, password
 
   def save_security(self, device):  # save user and password that was supplied from commandline to file.
