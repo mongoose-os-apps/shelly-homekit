@@ -225,7 +225,7 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
         fw_type = properties.get('fw_type')
       elif properties.get('id') and properties.get('id').startswith('shelly'):  # this is only way to detect if remaining device is be a shelly.
         fw_type = 'stock'
-      self.queue.put(Detection(host, username, password, socket.inet_ntoa(info.addresses[0]), fw_type))
+      self.queue.put(Device(host, username, password, socket.inet_ntoa(info.addresses[0]), fw_type))
 
   @staticmethod
   def remove_service(zc, service_type, device):
@@ -247,12 +247,11 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
 class Detection:
   def __init__(self, host, username=None, password=None, wifi_ip=None, fw_type=None, error_message=True):
     self.host = host
-    self.friendly_host = host.replace('.local', '')
     self.wifi_ip = wifi_ip
     self.username = username
     self.password = password
     self.fw_type = fw_type
-    if self.fw_type is None:
+    if self.fw_type is None:  # run detector for manual hosts.
       self.is_shelly(error_message)
 
   def is_shelly(self, error_message):
@@ -308,6 +307,7 @@ class Detection:
 class Device(Detection):
   def __init__(self, host, username=None, password=None, wifi_ip=None, fw_type=None, error_message=True):
     super().__init__(host, username, password, wifi_ip, fw_type, error_message)
+    self.friendly_host = self.host.replace('.local', '')
     self.info = {}
     self.variant = main.variant
     self.version = main.version
@@ -1658,13 +1658,13 @@ class Main:
       (username, password) = self.get_security_data(host)
       n = 1
       while n <= self.timeout:
-        device = self.get_device_info(Detection(host, username, password, error_message=False))
+        device = self.get_device_info(Device(host, username, password, error_message=False))
         time.sleep(1)
         n += 1
         if device and device.get_info(False):
           break
       if n > self.timeout:
-        device = self.get_device_info(Detection(host, username, password))
+        device = self.get_device_info(Device(host, username, password))
       if device and device.get_info():
         if device.info == 401:
           self.security_help(device)
