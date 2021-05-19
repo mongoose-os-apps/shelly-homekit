@@ -275,6 +275,7 @@ class Detection:
     self.host = main.host_check(host)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(1)
+    host_is_reachable = False
     n = 1
     while n <= (main.timeout/4):  # do loop to keep retrying for timeout
       try:
@@ -287,6 +288,7 @@ class Detection:
         test_host = self.host
       try:  # do actual online check.
         sock.connect((test_host, 80))
+        self.wifi_ip = socket.gethostbyname(test_host)  # resolve IP from manual hostname
         logger.debug(f"Device: {test_host} is Online")
         host_is_reachable = True
       except socket.error:
@@ -298,9 +300,6 @@ class Detection:
     if not host_is_reachable and error_message:
       logger.error(f"")
       logger.error(f"{RED}Could not connect to host: {self.host}{NC}")
-    if host_is_reachable and not self.wifi_ip:
-      # resolve IP from manual hostname
-      self.wifi_ip = socket.gethostbyname(test_host)
     return host_is_reachable
 
 
