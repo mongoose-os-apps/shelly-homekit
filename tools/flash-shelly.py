@@ -215,15 +215,25 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
     if info:
       properties = info.properties
       properties = {y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys()}
-      logger.trace(f"[Device Scan] found device: {host} added, IP address: {socket.inet_ntoa(info.addresses[0])}")
+      logger.trace(f"[Device Scan] found device: {host}, IP address: {socket.inet_ntoa(info.addresses[0])}")
       logger.trace(f"[Device Scan] info: {info}")
       logger.trace(f"[Device Scan] properties: {properties}")
-      logger.trace("")
       (username, password) = main.get_security_data(host)
       if properties.get('fw_type'):  # this is only available in homekit fw.
         self.queue.put(HomeKitDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), properties.get('fw_type')))
+        logger.debug(f"[Device Scan] added: {host}, IP address: {socket.inet_ntoa(info.addresses[0])} to queue")
       elif properties.get('id') and properties.get('id').startswith('shelly'):  # this is only way to detect if remaining device is be a shelly.
+        logger.debug(f"[Device Scan] added: {host}, IP address: {socket.inet_ntoa(info.addresses[0])} to queue")
         self.queue.put(StockDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), 'stock'))
+      else:  # add fallback to manual detection, # TODO remove when 2.9.0 when more mainstream.
+        device = Detection(host, username, password)
+        if device and device.fw_type is not None:
+          logger.debug(f"[Device Scan] added: {host}, IP address: {socket.inet_ntoa(info.addresses[0])} to queue")
+          if device.fw_type == 'homekit':
+            self.queue.put(HomeKitDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), device.fw_type))
+          elif device.fw_type == 'stock':
+            self.queue.put(StockDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), device.fw_type))
+      logger.debug("")
 
   @staticmethod
   def remove_service(zc, service_type, device):
@@ -596,7 +606,7 @@ class HomeKitDevice(Device):
       return False
     self.info['fw_type_str'] = 'HomeKit'
     self.info['fw_version'] = self.info.get('version', '0.0.0')
-    if self.info.get('stock_fw_model') is None:  # TODO remove once 2.9.x is mainstream.
+    if self.info.get('stock_fw_model') is None:  # TODO remove when 2.9.x is mainstream.
       self.info['stock_fw_model'] = self.info.get('stock_model')
     self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
     return True
@@ -1618,7 +1628,7 @@ class Main:
         elif self.flash_mode == 'stock':
           device.parse_stock_release_info()
       if device.flash_fw_version is not None:  # make sure we have firmware information.
-        if self.check_fw(device, 2.1):  # script requires version 2.1 firmware minimum.
+        if self.check_fw(device, 2.1):  # script requires version 2.1 firmware minimum.  # TODO increase to 2.9.0 when more mainstream.
           self.parse_info(device, hk_flash_fw_version)  # main convert run, or update stock to latest firmware if an update or color mode is required.
           if self.run_action == 'flash' and (self.requires_upgrade in ('Done', True) or self.requires_color_mode_change in ('Done', True)) and self.flash_question is True:
             if self.requires_color_mode_change:  # do another run if colour mode is still required.
