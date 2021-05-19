@@ -274,8 +274,9 @@ class Detection:
   def is_host_reachable(self, host, error_message=True):  # check if host is reachable
     self.host = main.host_check(host)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(3)
-    if not self.wifi_ip:  # if host is not from DNS scanner.
+    sock.settimeout(1)
+    n = 1
+    while n <= (main.timeout/4):  # do loop to keep retrying for timeout
       try:
         # use manual IP supplied
         ipaddress.IPv4Address(host)
@@ -284,18 +285,19 @@ class Detection:
       except ipaddress.AddressValueError:
         # if not IP use hostname supplied.
         test_host = self.host
-    else:  # if IP is supplied from DNS scanner.
-      test_host = self.wifi_ip
-    try:  # do actual online check.
-      sock.connect((test_host, 80))
-      logger.debug(f"Device: {test_host} is Online")
-      host_is_reachable = True
-    except socket.error:
-      if error_message:
-        logger.error(f"")
-        logger.error(f"{RED}Could not connect to host: {self.host}{NC}")
-      host_is_reachable = False
-    sock.close()
+      try:  # do actual online check.
+        sock.connect((test_host, 80))
+        logger.debug(f"Device: {test_host} is Online")
+        host_is_reachable = True
+      except socket.error:
+        host_is_reachable = False
+      sock.close()
+      n += 1
+      if host_is_reachable:
+        break
+    if not host_is_reachable and error_message:
+      logger.error(f"")
+      logger.error(f"{RED}Could not connect to host: {self.host}{NC}")
     if host_is_reachable and not self.wifi_ip:
       # resolve IP from manual hostname
       self.wifi_ip = socket.gethostbyname(test_host)
