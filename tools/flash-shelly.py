@@ -940,7 +940,7 @@ class Main:
       logger.trace(yaml.dump(self.security_data.get(device.host)))
       with open(security_file, 'w') as yaml_file:
         yaml.dump(self.security_data, yaml_file)
-    if not self.security_data:  # delete security data if empty.
+    if os.path.exists(security_file) and not self.security_data:  # delete security data if empty.
       os.remove(security_file)
 
   def security_help(self, device, mode='Manual'):  # show security help information.
