@@ -212,7 +212,6 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
   def add_service(self, zc, service_type, device):
     host = device.replace(f'{service_type}', 'local')
     info = zc.get_service_info(service_type, device)
-    fw_type = None
     if info:
       properties = info.properties
       properties = {y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys()}
@@ -222,10 +221,9 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
       logger.trace("")
       (username, password) = main.get_security_data(host)
       if properties.get('fw_type'):  # this is only available in homekit fw.
-        fw_type = properties.get('fw_type')
+        self.queue.put(HomeKitDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), properties.get('fw_type')))
       elif properties.get('id') and properties.get('id').startswith('shelly'):  # this is only way to detect if remaining device is be a shelly.
-        fw_type = 'stock'
-      self.queue.put(Device(host, username, password, socket.inet_ntoa(info.addresses[0]), fw_type))
+        self.queue.put(StockDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), 'stock'))
 
   @staticmethod
   def remove_service(zc, service_type, device):
@@ -1640,31 +1638,21 @@ class Main:
   def is_device_name(self, device_name):
     return device_name is not None and self.device_name_filter is not None and self.device_name_filter.lower() in device_name.lower() or self.device_name_filter == 'all'
 
-  @staticmethod
-  def get_device_info(device):
-    if device.fw_type == 'homekit':
-      return HomeKitDevice(device.host, device.username, device.password, device.wifi_ip, device.fw_type, False)
-    elif device.fw_type == 'stock':
-      return StockDevice(device.host, device.username, device.password, device.wifi_ip, device.fw_type, False)
-    return None
-
   def manual_hosts(self):  # handle manual hosts from commandline.
-    device = None
     logger.debug(f"{PURPLE}[Manual Hosts]{NC}")
     logger.info(f"{WHITE}Looking for Shelly devices...{NC}")
     for host in self.hosts:
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Manual Hosts] action {host}{NC}")
       (username, password) = self.get_security_data(host)
-      n = 1
-      while n <= self.timeout:
-        device = self.get_device_info(Device(host, username, password, error_message=False))
-        time.sleep(1)
-        n += 1
-        if device and device.get_info(False):
-          break
-      if n > self.timeout:
-        device = self.get_device_info(Device(host, username, password))
+      device = Detection(host, username, password)
+      if device and device.fw_type is not None:
+        if device.fw_type == 'homekit':
+          device = HomeKitDevice(device.host, device.username, device.password, device.wifi_ip, device.fw_type, False)
+        elif device.fw_type == 'stock':
+          device = StockDevice(device.host, device.username, device.password, device.wifi_ip, device.fw_type, False)
+      else:
+        device = None
       if device and device.get_info():
         if device.info == 401:
           self.security_help(device)
@@ -1679,7 +1667,7 @@ class Main:
     zeroconf.ServiceBrowser(zc=self.zc, type_='_http._tcp.local.', listener=self.listener)
     while True:
       try:
-        device = self.get_device_info(self.listener.queue.get(timeout=self.timeout))
+        device = self.listener.queue.get(timeout=self.timeout)
       except queue.Empty:
         break
       logger.debug(f"")
