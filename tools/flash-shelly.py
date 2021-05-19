@@ -212,6 +212,7 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
   def add_service(self, zc, service_type, device):
     host = device.replace(f'{service_type}', 'local')
     info = zc.get_service_info(service_type, device)
+    fw_type = None
     if info:
       properties = info.properties
       properties = {y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys()}
@@ -220,7 +221,11 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
       logger.trace(f"[Device Scan] properties: {properties}")
       logger.trace("")
       (username, password) = main.get_security_data(host)
-      self.queue.put(Device(host, username, password, socket.inet_ntoa(info.addresses[0])))
+      if properties.get('fw_type'):  # this is only available in homekit fw.
+        fw_type = properties.get('fw_type')
+      elif properties.get('id') and properties.get('id').startswith('shelly'):  # this is only way to detect if remaining device is be a shelly.
+        fw_type = 'stock'
+      self.queue.put(Detection(host, username, password, socket.inet_ntoa(info.addresses[0]), fw_type))
 
   @staticmethod
   def remove_service(zc, service_type, device):
@@ -239,28 +244,19 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
     logger.trace('')
 
 
-class Device:
+class Detection:
   def __init__(self, host, username=None, password=None, wifi_ip=None, fw_type=None, error_message=True):
     self.host = host
     self.friendly_host = host.replace('.local', '')
+    self.wifi_ip = wifi_ip
     self.username = username
     self.password = password
-    self.wifi_ip = wifi_ip
     self.fw_type = fw_type
-    self.info = {}
-    self.variant = main.variant
-    self.version = main.version
-    self.local_file = main.local_file
-    self.flash_fw_version = '0.0.0'
-    self.flash_fw_type_str = None
-    self.download_url = None
-    self.already_processed = False
-    self.is_shelly(error_message)
+    if self.fw_type is None:
+      self.is_shelly(error_message)
 
-  def is_shelly(self, error_message=True):
+  def is_shelly(self, error_message):
     response = None
-    if self.fw_type is not None:
-      return self.fw_type
     if self.is_host_reachable(self.host, error_message):
       for url in [f'http://{self.wifi_ip}/settings', f'http://{self.wifi_ip}/rpc/Shelly.GetInfo']:
         try:
@@ -308,56 +304,66 @@ class Device:
       self.wifi_ip = socket.gethostbyname(test_host)
     return host_is_reachable
 
-  def load_device_info(self):
-    # as device firmware type can change during flashing, we have no easy way atm to test what is correct info url.
-    # scanner could read DNS info, but manual hosts would not have this info.
+
+class Device(Detection):
+  def __init__(self, host, username=None, password=None, wifi_ip=None, fw_type=None, error_message=True):
+    super().__init__(host, username, password, wifi_ip, fw_type, error_message)
+    self.info = {}
+    self.variant = main.variant
+    self.version = main.version
+    self.local_file = main.local_file
+    self.flash_fw_version = '0.0.0'
+    self.flash_fw_type_str = None
+    self.download_url = None
+    self.already_processed = False
+
+  def load_device_info(self, force_update=False, error_message=True):
     fw_info = None
-    device_url = None
     status = None
+    if force_update:
+      self.is_shelly(error_message)
     try:  # we need an exception as device could be rebooting.
-      # latest stock firmware return 'updating' `/status` status dict when updating.
-      status_check = requests.get(f'http://{self.wifi_ip}/status', auth=(self.username, self.password), timeout=3)
-      if status_check.status_code == 200:
-        self.fw_type = "stock"
-        status = json.loads(status_check.content)
-        if status.get('status', '') != '':  # we use this to see if a device is updating, this should return '' unless updating.
-          self.info = {}
-          return self.info
-        # get stock device information.
+      if self.fw_type == 'stock':
+        # latest stock firmware return 'updating' `/status` status dict when updating.
+        status_check = requests.get(f'http://{self.wifi_ip}/status', auth=(self.username, self.password), timeout=3)
+        if status_check.status_code == 200:
+          status = json.loads(status_check.content)
+          if status.get('status', '') != '':  # we use this to see if a device is updating, this should return '' unless updating.
+            self.info = {}
+            return self.info
         fw_info = requests.get(f'http://{self.wifi_ip}/settings', auth=(self.username, self.password), timeout=3)
         device_url = f'http://{self.wifi_ip}/settings'
       else:
-        # get homekit device information.
-        self.fw_type = "homekit"
         # test device to see if it is using security
         fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
         device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt'
-        if fw_info.status_code == 200:
-          # connection was successful, save credentials to security file.
-          main.save_security(self)
         if fw_info.status_code in (401, 404):
           # connection failed, fallback to open URL (401 Unauthorized, 404 Not Found).
-          logger.debug("Invalid password or security not enabled.")
+          logger.debug("Invalid password or security not enabled, fall back to basic info")
           fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
           device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
+      logger.trace(f"Device URL: {device_url}")
       logger.trace(f"status code: {fw_info.status_code}")
+      if fw_info.status_code == 200:
+        # connection was successful, save credentials to security file.
+        main.save_security(self)
       if fw_info.status_code == 401:  # Unauthorized
+        logger.debug("Invalid user or password.")
         self.info = 401
         return 401
     except Exception:
       pass  # ignore exception as device could be rebooting.
-    return fw_info, status, device_url
+    return fw_info, status
 
   def get_device_info(self, force_update=False, error_message=True):
-    info = {}
-    if (not self.info or force_update) and self.is_host_reachable(self.host, error_message):  # only get information if required or force update.
-      (fw_info, status, device_url) = self.load_device_info()
+    if not self.info or force_update:  # only get information if required or force update.
+      info = {}
+      (fw_info, status) = self.load_device_info(force_update, error_message)
       if fw_info is not None and fw_info.status_code == 200 and fw_info.content is not None:
         info = json.loads(fw_info.content)
         info['device_name'] = info.get('name')
         if status is not None:
           info['status'] = status
-      logger.trace(f"Device URL: {device_url}")
       if not info:
         logger.debug(f"{RED}Failed to lookup local information of {self.host}{NC}")
       self.info = info
@@ -1652,13 +1658,13 @@ class Main:
       (username, password) = self.get_security_data(host)
       n = 1
       while n <= self.timeout:
-        device = self.get_device_info(Device(host, username, password, error_message=False))
+        device = self.get_device_info(Detection(host, username, password, error_message=False))
         time.sleep(1)
         n += 1
         if device and device.get_info(False):
           break
       if n > self.timeout:
-        device = self.get_device_info(Device(host, username, password))
+        device = self.get_device_info(Detection(host, username, password))
       if device and device.get_info():
         if device.info == 401:
           self.security_help(device)
