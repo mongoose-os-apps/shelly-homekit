@@ -914,7 +914,7 @@ class Main:
     else:
       username = self.username
       password = self.password
-    logger.debug(f"[login] {host} {self.security_data.get(host)}")
+    logger.debug(f"[login] {host} info loaded {self.security_data.get(host)}")
     logger.debug(f"[login] username: {username}")
     logger.debug(f"[login] password: {password}")
     return username, password
