@@ -1149,7 +1149,8 @@ class Main:
 
   def run_app(self):  # main run of the script, handles commandline arguments.
     new_defaults = self.load_config('defaults')  # load saved defaults from config.
-    self.defaults.update(new_defaults)  # update defaults with defaults config file if available
+    if new_defaults:
+      self.defaults.update(new_defaults) # update defaults with defaults config file if available
     args = self.get_arguments()
 
     self.setup_logger(args)  # setup output logging
