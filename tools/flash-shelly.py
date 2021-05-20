@@ -146,7 +146,7 @@ except ImportError:
   import yaml
 
 arch = platform.system()
-app_ver = '3.0.0'
+app_ver = '3.0.0'  # beta1
 config_file = '.cfg.yaml'
 defaults_config_file = 'flash-shelly.cfg.yaml'
 security_file = 'flash-shelly.auth.yaml'
@@ -209,30 +209,36 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
   def __init__(self):
     self.queue = queue.Queue()
 
+  def add_to_queue(self, host, username, password, wifi_ip, fw_type):
+    if fw_type == 'homekit':
+      self.queue.put(HomeKitDevice(host, username, password, wifi_ip, fw_type))
+    elif fw_type == 'stock':
+      self.queue.put(StockDevice(host, username, password, wifi_ip, fw_type))
+
   def add_service(self, zc, service_type, device):
     host = device.replace(f'{service_type}', 'local')
     info = zc.get_service_info(service_type, device)
     if info:
+      fw_type = None
+      wifi_ip = socket.inet_ntoa(info.addresses[0])
       properties = info.properties
       properties = {y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys()}
-      logger.trace(f"[Device Scan] found device: {host}, IP address: {socket.inet_ntoa(info.addresses[0])}")
+      logger.debug(f"[Device Scan] found device: {host}, IP address: {wifi_ip}")
       logger.trace(f"[Device Scan] info: {info}")
       logger.trace(f"[Device Scan] properties: {properties}")
-      (username, password) = main.get_security_data(host)
-      if properties.get('fw_type'):  # this is only available in homekit fw.
-        self.queue.put(HomeKitDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), properties.get('fw_type')))
-        logger.debug(f"[Device Scan] added: {host}, IP address: {socket.inet_ntoa(info.addresses[0])} to queue")
-      elif properties.get('id') and properties.get('id').startswith('shelly'):  # this is only way to detect if remaining device is be a shelly.
-        logger.debug(f"[Device Scan] added: {host}, IP address: {socket.inet_ntoa(info.addresses[0])} to queue")
-        self.queue.put(StockDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), 'stock'))
-      else:  # add fallback to manual detection, # TODO remove when 2.9.0 when more mainstream.
-        device = Detection(host, username, password)
-        if device and device.fw_type is not None:
-          logger.debug(f"[Device Scan] added: {host}, IP address: {socket.inet_ntoa(info.addresses[0])} to queue")
-          if device.fw_type == 'homekit':
-            self.queue.put(HomeKitDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), device.fw_type))
-          elif device.fw_type == 'stock':
-            self.queue.put(StockDevice(host, username, password, socket.inet_ntoa(info.addresses[0]), device.fw_type))
+      if properties.get('arch') and properties.get('arch') == 'esp8266' and properties.get('fw_version'):  # this detects if esp device.
+        if properties.get('fw_version') == '2.9.0' and properties.get('fw_type'):  # this detects if esp device.
+          fw_type = properties.get('fw_type')
+        elif properties.get('fw_version') == '1.0' and properties.get('id').startswith('shelly'):  # this detects stock device.
+          fw_type = 'stock'
+        else:  # add fallback to legacy detection, # TODO remove when 2.9.0 when more mainstream.
+          device = Detection(host, 'admin', '', wifi_ip)
+          if device and device.fw_type is not None:
+            fw_type = device.fw_type
+      if fw_type:
+        (username, password) = main.get_security_data(host)
+        self.add_to_queue(host, username, password, wifi_ip, fw_type)
+        logger.debug(f"[Device Scan] added: {host}, IP address: {wifi_ip}, FW Type: {fw_type} to queue")
       logger.debug("")
 
   @staticmethod
