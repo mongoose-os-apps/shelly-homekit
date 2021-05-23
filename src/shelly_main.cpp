@@ -775,7 +775,8 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
   s_service_flags &= ~SHELLY_SERVICE_FLAG_REVERT;
   // Are we reverting to stock? Stock fw does not have "hk_model"
   char *hk_model = nullptr;
-  json_scanf(arg->mi.manifest.p, arg->mi.manifest.len, "{hk_model: %Q}");
+  json_scanf(arg->mi.manifest.p, arg->mi.manifest.len, "{shelly_hk_model: %Q}",
+             &hk_model);
   mgos::ScopedCPtr hk_model_owner(hk_model);
   if (hk_model == nullptr) {
     // hk_model was added in 2.9.1, for now we also check version in the
