@@ -74,6 +74,12 @@ class ShellySwitch : public Component, public mgos::hap::Service {
   bool dirty_ = false;
 
   ShellySwitch(const ShellySwitch &other) = delete;
+
+  void AddPowerMeter(uint16_t *iid);
+  void PowerMeterTimerCB();
+  mgos::Timer power_timer_;
+  mgos::hap::Characteristic *power_char;
+  mgos::hap::Characteristic *total_power_char;
 };
 
 }  // namespace shelly
