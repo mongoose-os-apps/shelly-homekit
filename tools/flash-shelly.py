@@ -382,6 +382,7 @@ class Device(Detection):
       if not info:
         logger.debug(f"{RED}Failed to lookup local information of {self.host}{NC}")
       self.info = info
+      logger.trace(f"Device Info: {self.info}")
     return self.info
 
   def is_homekit(self):
