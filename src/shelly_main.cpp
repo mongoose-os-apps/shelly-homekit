@@ -807,6 +807,10 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
+static void WipeDeviceRevertToStockCB(void *) {
+  WipeDeviceRevertToStock();
+}
+
 static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
   // Restart server in case of error.
@@ -816,7 +820,9 @@ static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
         ~(SHELLY_SERVICE_FLAG_UPDATE | SHELLY_SERVICE_FLAG_REVERT);
   } else if (arg->state == MGOS_OTA_STATE_SUCCESS &&
              (s_service_flags & SHELLY_SERVICE_FLAG_REVERT)) {
-    WipeDeviceRevertToStock();
+    // For some reason if WipeDeviceRevertToStock is done inline the client
+    // doesn't get a response to the POST request.
+    mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
   }
   (void) ev;
   (void) ev_data;
