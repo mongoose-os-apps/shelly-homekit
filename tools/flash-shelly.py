@@ -555,19 +555,20 @@ class Device(Detection):
       self.flash_fw_version = 'revert'
       self.download_url = f"http://rojer.me/files/shelly/stock/{self.info.get('stock_fw_model')}.zip"
     else:
-      if main.homekit_release_info is None:
+      if not main.homekit_release_info:
         main.homekit_release_info = self.get_release_info('homekit')
-      for i in main.homekit_release_info:
-        if self.variant and self.variant not in i[1].get('version', '0.0.0'):
-          self.flash_fw_version = 'no_variant'
-          self.download_url = None
-          return
-        re_search = r'-*' if self.variant else i[0]
-        if re.search(re_search, self.info.get('fw_version')):
-          self.flash_fw_version = i[1].get('version', '0.0.0')
-          self.download_url = i[1].get('urls', {}).get(self.info.get('model'))
-          break
-      main.not_supported = True
+      if main.homekit_release_info:
+        for i in main.homekit_release_info:
+          if self.variant and self.variant not in i[1].get('version', '0.0.0'):
+            self.flash_fw_version = 'no_variant'
+            self.download_url = None
+            return
+          re_search = r'-*' if self.variant else i[0]
+          if re.search(re_search, self.info.get('fw_version')):
+            self.flash_fw_version = i[1].get('version', '0.0.0')
+            self.download_url = i[1].get('urls', {}).get(self.info.get('model'))
+            break
+        main.not_supported = True
 
   def parse_stock_release_info(self):
     self.flash_fw_type_str = 'Stock'
@@ -577,15 +578,16 @@ class Device(Detection):
     if not self.version:
       if stock_fw_model == 'SHRGBW2-color':  # we need to use real stock model here
         stock_fw_model = 'SHRGBW2'
-      if main.stock_release_info is None:
+      if not main.stock_release_info:
         main.stock_release_info = self.get_release_info('stock')
-      stock_model_info = main.stock_release_info.get('data', {}).get(stock_fw_model)
-      if self.variant == 'beta':
-        self.flash_fw_version = self.parse_stock_version(stock_model_info.get('beta_ver', '0.0.0'))
-        self.download_url = stock_model_info.get('beta_url')
-      else:
-        self.flash_fw_version = self.parse_stock_version(stock_model_info.get('version', '0.0.0'))
-        self.download_url = stock_model_info.get('url')
+      if main.stock_release_info:
+        stock_model_info = main.stock_release_info.get('data', {}).get(stock_fw_model)
+        if self.variant == 'beta':
+          self.flash_fw_version = self.parse_stock_version(stock_model_info.get('beta_ver', '0.0.0'))
+          self.download_url = stock_model_info.get('beta_url')
+        else:
+          self.flash_fw_version = self.parse_stock_version(stock_model_info.get('version', '0.0.0'))
+          self.download_url = stock_model_info.get('url')
     else:
       self.flash_fw_version = self.version
       self.download_url = f'http://archive.shelly-tools.de/version/v{self.version}/{stock_fw_model}.zip'
@@ -775,8 +777,8 @@ class Main:
     self.webserver_port = 8381
     self.server = None
     self.thread = None
-    self.stock_release_info = None
-    self.homekit_release_info = None
+    self.stock_release_info = {}
+    self.homekit_release_info = {}
     self.not_supported = None
     self.requires_upgrade = None
     self.requires_color_mode_change = None
