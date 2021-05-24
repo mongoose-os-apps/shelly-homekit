@@ -61,6 +61,7 @@ StatusOr<int> GetSystemTemperature();
 #define SHELLY_SERVICE_FLAG_UPDATE (1 << 0)
 #define SHELLY_SERVICE_FLAG_REBOOT (1 << 1)
 #define SHELLY_SERVICE_FLAG_OVERHEAT (1 << 2)
+#define SHELLY_SERVICE_FLAG_REVERT (1 << 3)
 uint8_t GetServiceFlags();
 
 HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request);

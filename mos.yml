@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.9.1-alpha1
+version: 2.9.2-alpha3
 platform: esp8266
 
 libs_version: latest
@@ -114,6 +114,7 @@ config_schema:
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
+  MGOS_FW_EXTRA_ATTRS: shelly_hk_model=${build_vars.MODEL}
 
 cdefs:
   PRODUCT_VENDOR: '"Allterco"'
@@ -487,7 +488,6 @@ conds:
         - origin: https://github.com/mongoose-os-libs/adc
         - origin: https://github.com/mongoose-os-libs/pwm
         - origin: https://github.com/mongoose-os-libs/wifi
-          version: scan_rewrite  # Testing
 
   - when: build_vars.MODEL == "ShellyU"
     apply:

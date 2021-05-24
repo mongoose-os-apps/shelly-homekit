@@ -42,6 +42,19 @@ static void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st) {
   mg_rpc_send_errorf(ri, st.error_code(), "%s", st.error_message().c_str());
 }
 
+static inline bool IsAuthEn() {
+  return !mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_file());
+}
+
+static void PublishHTTP() {
+  std::string txt;
+  txt.append("failsafe=");
+  txt.append(IsFailsafeMode() ? "1" : "0");
+  txt.append(",auth_en=");
+  txt.append(IsAuthEn() ? "1" : "0");
+  mgos_http_server_publish_dns_sd(txt.c_str());
+}
+
 static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                            struct mg_rpc_frame_info *fi, struct mg_str args) {
   mg_rpc_send_responsef(
@@ -54,8 +67,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
       (int) mgos_uptime(), (s_server == nullptr) /* failsafe_mode */,
-      !mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_file()) /* auth_en */
-  );
+      IsAuthEn());
   (void) cb_arg;
   (void) fi;
   (void) args;
@@ -103,8 +115,7 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
       CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
       mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
-      (int) mgos_uptime(), false /* failsafe_mode */,
-      !mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_file()), /* auth_en */
+      (int) mgos_uptime(), false /* failsafe_mode */, IsAuthEn(),
       mgos_sys_config_get_rpc_auth_domain(),
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (wifi_ssid ? wifi_ssid : ""),
@@ -206,7 +217,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
         mgos_sys_config_set_shelly_name(name.c_str());
         mgos_sys_config_set_dns_sd_host_name(name.c_str());
         mgos_dns_sd_set_host_name(name.c_str());
-        mgos_http_server_publish_dns_sd();
+        PublishHTTP();
         restart_required = true;
       }
     }
@@ -371,6 +382,7 @@ static Status SetAuthFileName(const std::string &passwd_fname,
       ep->auth_algo = (enum mg_auth_algo) mgos_sys_config_get_http_auth_algo();
     }
   }
+  PublishHTTP();  // Re-publish the HTTP service to update auth_en.
   return Status::OK();
 }
 
@@ -453,6 +465,7 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                      GetDebugInfoHandler, nullptr);
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.WipeDevice", "",
                      WipeDeviceHandler, nullptr);
+  PublishHTTP();  // Update TXT records for the HTTP service.
   return true;
 }
 

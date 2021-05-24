@@ -670,7 +670,8 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
       kHAPAccessoryServerState_Running) {
     HAPAccessoryServerStop(&s_server);
   }
-  if (ev == MGOS_EVENT_REBOOT) {
+  if (ev == MGOS_EVENT_REBOOT &&
+      !(s_service_flags & SHELLY_SERVICE_FLAG_REVERT)) {
     // Increment CN on every reboot, because why not.
     // This will cover firmware update as well as other configuration changes.
     if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
@@ -771,6 +772,22 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
     s_wait_start = mgos_uptime();
   }
   s_service_flags |= SHELLY_SERVICE_FLAG_UPDATE;
+  s_service_flags &= ~SHELLY_SERVICE_FLAG_REVERT;
+  // Are we reverting to stock? Stock fw does not have "hk_model"
+  char *hk_model = nullptr;
+  json_scanf(arg->mi.manifest.p, arg->mi.manifest.len, "{shelly_hk_model: %Q}",
+             &hk_model);
+  mgos::ScopedCPtr hk_model_owner(hk_model);
+  if (hk_model == nullptr) {
+    // hk_model was added in 2.9.1, for now we also check version in the
+    // manifest to double-check: stock has manifest version always set to "1.0"
+    // while HK has actual version there.
+    // This check can be removed after a few versions with hk_model.
+    if (mg_vcmp(&arg->mi.version, "1.0") == 0) {
+      LOG(LL_INFO, ("This is a revert to stock firmware"));
+      s_service_flags |= SHELLY_SERVICE_FLAG_REVERT;
+    }
+  }
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
     // There is a bug in HAP server where it will get stuck and fail to shut
     // down reported to happen after approximately 25 days. This is a workaround
@@ -790,12 +807,22 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
+static void WipeDeviceRevertToStockCB(void *) {
+  WipeDeviceRevertToStock();
+}
+
 static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
   // Restart server in case of error.
   // In case of success we are going to reboot anyway.
   if (arg->state == MGOS_OTA_STATE_ERROR) {
-    s_service_flags &= ~SHELLY_SERVICE_FLAG_UPDATE;
+    s_service_flags &=
+        ~(SHELLY_SERVICE_FLAG_UPDATE | SHELLY_SERVICE_FLAG_REVERT);
+  } else if (arg->state == MGOS_OTA_STATE_SUCCESS &&
+             (s_service_flags & SHELLY_SERVICE_FLAG_REVERT)) {
+    // For some reason if WipeDeviceRevertToStock is done inline the client
+    // doesn't get a response to the POST request.
+    mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
   }
   (void) ev;
   (void) ev_data;
@@ -814,10 +841,11 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "conf9_backup.json",
       "conf3.json",
       // Obsolete files from previopus versions.
-      "style.css",
       "axios.min.js.gz",
-      "style.css.gz",
+      "favicon.ico",
       "logo.png",
+      "style.css",
+      "style.css.gz",
   };
   for (const char *skip_fn : s_skip_files) {
     if (strcmp(file_name, skip_fn) == 0) return false;
