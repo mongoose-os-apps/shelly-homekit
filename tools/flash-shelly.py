@@ -146,7 +146,7 @@ except ImportError:
   import yaml
 
 arch = platform.system()
-app_ver = '3.0.0'  # beta1
+app_ver = '3.0.0'  # beta3
 config_file = '.cfg.yaml'
 defaults_config_file = 'flash-shelly.cfg.yaml'
 security_file = 'flash-shelly.auth.yaml'
@@ -209,15 +209,16 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
   def __init__(self):
     self.queue = queue.Queue()
 
-  def add_to_queue(self, host, username, password, wifi_ip, fw_type):
+  def add_to_queue(self, host, username, password, wifi_ip, fw_type, auth):
     if fw_type == 'homekit':
-      self.queue.put(HomeKitDevice(host, username, password, wifi_ip, fw_type))
+      self.queue.put(HomeKitDevice(host, username, password, wifi_ip, fw_type, auth))
     elif fw_type == 'stock':
-      self.queue.put(StockDevice(host, username, password, wifi_ip, fw_type))
+      self.queue.put(StockDevice(host, username, password, wifi_ip, fw_type, auth))
 
   def add_service(self, zc, service_type, device):
     host = device.replace(f'{service_type}', 'local')
     info = zc.get_service_info(service_type, device)
+    auth = False
     if info:
       fw_type = None
       wifi_ip = socket.inet_ntoa(info.addresses[0])
@@ -226,19 +227,22 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
       logger.debug(f"[Device Scan] found device: {host}, IP address: {wifi_ip}")
       logger.trace(f"[Device Scan] info: {info}")
       logger.trace(f"[Device Scan] properties: {properties}")
-      if properties.get('arch') and properties.get('arch') == 'esp8266' and properties.get('fw_version'):  # this detects if esp device.
-        if properties.get('fw_version') == '2.9.0' and properties.get('fw_type'):  # this detects if esp device.
+      if properties.get('arch') == 'esp8266':  # this detects if esp device.
+        if properties.get('auth_en'):
+          auth = bool(int(properties.get('auth_en')))
+        if main.is_newer(properties.get('fw_version', '0.0.0'), '2.9.0') and properties.get('fw_type') == 'homekit':  # this detects if homekit device. # TODO remove main.is_newer when 2.9.x when more mainstream.
           fw_type = properties.get('fw_type')
         elif properties.get('fw_version') == '1.0' and properties.get('id').startswith('shelly'):  # this detects stock device.
           fw_type = 'stock'
-        else:  # add fallback to legacy detection, # TODO remove when 2.9.0 when more mainstream.
+        else:  # add fallback to legacy detection, # TODO remove when 2.9.x when more mainstream.
           device = Detection(host, 'admin', '', wifi_ip)
           if device and device.fw_type is not None:
             fw_type = device.fw_type
+            auth = device.auth
       if fw_type:
         (username, password) = main.get_security_data(host)
-        self.add_to_queue(host, username, password, wifi_ip, fw_type)
-        logger.debug(f"[Device Scan] added: {host}, IP address: {wifi_ip}, FW Type: {fw_type} to queue")
+        self.add_to_queue(host, username, password, wifi_ip, fw_type, auth)
+        logger.debug(f"[Device Scan] added: {host}, IP address: {wifi_ip}, FW Type: {fw_type}, Security Enabled: {auth} to queue")
       logger.debug("")
 
   @staticmethod
@@ -259,32 +263,32 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
 
 
 class Detection:
-  def __init__(self, host, username=None, password=None, wifi_ip=None, fw_type=None, error_message=True):
+  def __init__(self, host, username=None, password=None, wifi_ip=None, fw_type=None, auth=False, error_message=True):
     self.host = host
     self.wifi_ip = wifi_ip
     self.username = username
     self.password = password
     self.fw_type = fw_type
+    self.auth = auth
     if self.fw_type is None:  # run detector for manual hosts.
       self.is_shelly(error_message)
 
   def is_shelly(self, error_message):
-    response = None
     if self.is_host_reachable(self.host, error_message):
-      for url in [f'http://{self.wifi_ip}/settings', f'http://{self.wifi_ip}/rpc/Shelly.GetInfo']:
-        try:
-          response = requests.get(url)
-          # If the response was successful, no Exception will be raised
-          response.raise_for_status()
-        except Exception:
-          pass
-        if response is not None and response.status_code == 200:
-          if 'GetInfo' in url:
+      for url in [f'http://{self.wifi_ip}/settings', f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt']:
+        response = requests.get(url)
+        if response is not None and response.status_code in (200, 401):
+          if 'GetInfoExt' in url:
             self.fw_type = "homekit"
           elif 'settings' in url:
             self.fw_type = "stock"
+          if response.status_code == 401:
+            self.auth = True
           break
-      return self.fw_type is not None
+      if self.fw_type is not None:
+        return self.fw_type
+      logger.info(f"")
+      logger.info(f"{WHITE}Host:{NC} {self.host} {RED}is not a Shelly device.{NC}")
     return False
 
   def is_host_reachable(self, host, error_message=True):  # check if host is reachable
@@ -320,8 +324,8 @@ class Detection:
 
 
 class Device(Detection):
-  def __init__(self, host, username=None, password=None, wifi_ip=None, fw_type=None, error_message=True):
-    super().__init__(host, username, password, wifi_ip, fw_type, error_message)
+  def __init__(self, host, username=None, password=None, wifi_ip=None, fw_type=None, auth=False, error_message=True):
+    super().__init__(host, username, password, wifi_ip, fw_type, auth, error_message)
     self.friendly_host = self.host.replace('.local', '')
     self.info = {}
     self.variant = main.variant
@@ -335,54 +339,57 @@ class Device(Detection):
   def load_device_info(self, force_update=False, error_message=True):
     fw_info = None
     status = None
+    authentication = ''
     if force_update:
       self.is_shelly(error_message)
     try:  # we need an exception as device could be rebooting.
       if self.fw_type == 'stock':
         # latest stock firmware return 'updating' `/status` status dict when updating.
-        status_check = requests.get(f'http://{self.wifi_ip}/status', auth=(self.username, self.password), timeout=3)
+        if self.auth:
+          authentication = (self.username, self.password)
+        status_check = requests.get(f'http://{self.wifi_ip}/status', auth=authentication, timeout=3)
         if status_check.status_code == 200:
           status = json.loads(status_check.content)
           if status.get('status', '') != '':  # we use this to see if a device is updating, this should return '' unless updating.
             self.info = {}
             return self.info
-        fw_info = requests.get(f'http://{self.wifi_ip}/settings', auth=(self.username, self.password), timeout=3)
         device_url = f'http://{self.wifi_ip}/settings'
       else:
-        # test device to see if it is using security
-        fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt', auth=HTTPDigestAuth(self.username, self.password), timeout=3)
+        if self.auth:
+          authentication = HTTPDigestAuth(self.username, self.password)
         device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt'
-        if fw_info.status_code in (401, 404):
-          # connection failed, fallback to open URL (401 Unauthorized, 404 Not Found).
-          logger.debug("Invalid password or security not enabled, fall back to basic info")
-          fw_info = requests.get(f'http://{self.wifi_ip}/rpc/Shelly.GetInfo', timeout=3)
-          device_url = f'http://{self.wifi_ip}/rpc/Shelly.GetInfo'
+      fw_info = requests.get(device_url, auth=authentication, timeout=3)
       logger.trace(f"Device URL: {device_url}")
       logger.trace(f"status code: {fw_info.status_code}")
-      if fw_info.status_code == 200:
-        # connection was successful, save credentials to security file.
-        main.save_security(self)
+      logger.trace(f"security: {self.auth}")
       if fw_info.status_code == 401:  # Unauthorized
         logger.debug("Invalid user or password.")
         self.info = 401
-        return 401
+        return 401, ''
     except Exception:
       pass  # ignore exception as device could be rebooting.
     return fw_info, status
 
-  def get_device_info(self, force_update=False, error_message=True):
-    if not self.info or force_update:  # only get information if required or force update.
+  def get_device_info(self, force_update=False, error_message=True, scanner='Manual'):
+    if not self.info or force_update:# only get information if required or force update.
       info = {}
       (fw_info, status) = self.load_device_info(force_update, error_message)
-      if fw_info is not None and fw_info.status_code == 200 and fw_info.content is not None:
-        info = json.loads(fw_info.content)
-        info['device_name'] = info.get('name')
-        if status is not None:
-          info['status'] = status
+      if fw_info is not None:
+        if fw_info == 401:
+          logger.info("")
+          main.security_help(self, scanner)
+        elif fw_info.status_code == 200 and fw_info.content is not None:
+          info = json.loads(fw_info.content)
+          info['device_name'] = info.get('name')
+          if status is not None:
+            info['status'] = status
+          logger.trace(f"Device Info: {json.dumps(info, indent=2)}")
+          if (self.is_stock() and info.get('login').get('enabled')) or (self.is_homekit() and info.get('auth_en', 'false')):
+            # secure connection was successful, save credentials to security file.
+            main.save_security(self)
       if not info:
         logger.debug(f"{RED}Failed to lookup local information of {self.host}{NC}")
       self.info = info
-      logger.trace(f"Device Info: {self.info}")
     return self.info
 
   def is_homekit(self):
@@ -604,14 +611,11 @@ class Device(Detection):
     if response.status_code == 200:
       logger.trace(response.text)
       logger.info(f"HAP code successfully configured.")
-    elif response.status_code == 401:
-      logger.info(f"{self.friendly_host} is password protected.")
-      main.security_help(self)
 
 
 class HomeKitDevice(Device):
-  def get_info(self, force_update=False, error_message=True):
-    if not self.get_device_info(force_update, error_message):
+  def get_info(self, force_update=False, error_message=True, scanner='Manual'):
+    if not self.get_device_info(force_update, error_message, scanner):
       return False
     self.info['fw_type_str'] = 'HomeKit'
     self.info['fw_version'] = self.info.get('version', '0.0.0')
@@ -650,8 +654,6 @@ class HomeKitDevice(Device):
     response = requests.post(url=f'http://{self.wifi_ip}/update', auth=HTTPDigestAuth(self.username, self.password), files=files)
     logger.trace(response.text)
     logger.trace(f"response.status_code: {response.status_code}")
-    if response.status_code == 401:
-      main.security_help(self)
     return response
 
   def do_reboot(self):
@@ -659,8 +661,6 @@ class HomeKitDevice(Device):
     logger.debug(f"requests.post(url='http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth('{self.username}', '{self.password}'))")
     response = requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(self.username, self.password))
     logger.trace(response.text)
-    if response.status_code == 401:
-      main.security_help(self)
     return response
 
   def write_network_type(self):  # handle changing of WiFi connection type DHCP or StaticC IP.
@@ -681,13 +681,11 @@ class HomeKitDevice(Device):
       logger.info(f"Saved, Rebooting...")
       logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/rpc/SyS.Reboot'}, auth=HTTPDigestAuth('{main.username}', '{main.password}'))")
       requests.get(url=f'http://{self.wifi_ip}/rpc/SyS.Reboot', auth=HTTPDigestAuth(main.username, main.password))
-    elif response.status_code == 401:
-      main.security_help(self)
 
 
 class StockDevice(Device):
-  def get_info(self, force_update=False, error_message=True):
-    if not self.get_device_info(force_update, error_message):
+  def get_info(self, force_update=False, error_message=True, scanner='Manual'):
+    if not self.get_device_info(force_update, error_message, scanner):
       return False
     self.info['fw_type_str'] = 'Stock'
     self.info['fw_version'] = self.parse_stock_version(self.info.get('fw', '0.0.0'))  # current firmware version
@@ -724,8 +722,6 @@ class StockDevice(Device):
     logger.debug(f"requests.get(url={flash_url}, auth=('{self.username}', '{self.password}')")
     response = requests.get(url=flash_url, auth=(self.username, self.password))
     logger.trace(response.text)
-    if response.status_code == 401:
-      main.security_help(self)
     return response
 
   def do_reboot(self):
@@ -733,8 +729,6 @@ class StockDevice(Device):
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/reboot'}, auth=('{self.username}', '{self.password}'d)")
     response = requests.get(url=f'http://{self.wifi_ip}/reboot', auth=(self.username, self.password))
     logger.trace(response.text)
-    if response.status_code == 401:
-      main.security_help(self)
     return response
 
   def do_mode_change(self, mode_color):
@@ -742,8 +736,6 @@ class StockDevice(Device):
     logger.debug(f"requests.post(url={f'http://{self.wifi_ip}/settings/?mode={mode_color}'}, auth=('{self.username}', '{self.password}'))")
     response = requests.get(url=f'http://{self.wifi_ip}/settings/?mode={mode_color}', auth=(self.username, self.password))
     logger.trace(response.text)
-    if response.status_code == 401:
-      main.security_help(self)
     while response.status_code == 400:
       time.sleep(2)
       try:
@@ -767,8 +759,6 @@ class StockDevice(Device):
     if response.status_code == 200:
       logger.trace(response.text)
       logger.info(f"Saved...")
-    elif response.status_code == 401:
-      main.security_help(self)
 
 
 class Main:
@@ -966,23 +956,23 @@ class Main:
   def security_help(self, device, mode='Manual'):  # show security help information.
     logger.info(f"{WHITE}Host: {NC}{device.host} {RED}is password protected{NC}")
     if self.security_data:
-      if self.security_data.get(device.host) is None:
-        if mode == 'Manual' and self.password:
+      if self.security_data.get(device.host) is None:  # no security info supplied in config file.
+        if mode == 'Manual' and self.password:  # manual host not found in config file, but with incorrect password supplied by commandline.
           logger.info(f"Invalid user or password, please check supplied details are correct.")
           logger.info(f"username: {self.username}")
           logger.info(f"password: {self.password}")
-        elif mode == 'Manual':
+        elif mode == 'Manual':  # manual host not found in config file.
           logger.info(f"{device.host} is not found in '{security_file}' config file,")
           logger.info(f"please add or use commandline args --user | --password")
-        else:
+        else:  # scanner host not found in config file.
           logger.info(f"{device.host} is not found in '{security_file}' config file,")
           logger.info(f"'{security_file}' security file is required in scanner mode.")
           logger.info(f"unless all devices use same password.{NC}")
-      else:
+      else:  # authentication on device, but security info found in config file is invalid.
         logger.info(f"Invalid user or password found in '{security_file}',please check supplied details are correct.")
         logger.info(f"username: {self.security_data.get(device.host).get('user')}")
         logger.info(f"password: {self.security_data.get(device.host).get('password')}{NC}")
-    else:
+    else:  # no security info supplied.
       logger.info(f"Please use either command line security (--user | --password) or '{security_file}'")
       logger.info(f"for '{security_file}', create a file called '{security_file}' in tools folder")
       logger.info(f"{WHITE}Example {security_file}:{NC}")
@@ -1637,7 +1627,7 @@ class Main:
         elif self.flash_mode == 'stock':
           device.parse_stock_release_info()
       if device.flash_fw_version is not None:  # make sure we have firmware information.
-        if self.check_fw(device, 2.1):  # script requires version 2.1 firmware minimum.  # TODO increase to 2.9.0 when more mainstream.
+        if self.check_fw(device, 2.1):  # script requires version 2.1 firmware minimum.  # TODO increase to 2.9.2 when more mainstream.
           self.parse_info(device, hk_flash_fw_version)  # main convert run, or update stock to latest firmware if an update or color mode is required.
           if self.run_action == 'flash' and (self.requires_upgrade in ('Done', True) or self.requires_color_mode_change in ('Done', True)) and self.flash_question is True:
             if self.requires_color_mode_change:  # do another run if colour mode is still required.
@@ -1671,16 +1661,13 @@ class Main:
       device = Detection(host, username, password)
       if device and device.fw_type is not None:
         if device.fw_type == 'homekit':
-          device = HomeKitDevice(device.host, device.username, device.password, device.wifi_ip, device.fw_type, False)
+          device = HomeKitDevice(device.host, device.username, device.password, device.wifi_ip, device.fw_type, device.auth, False)
         elif device.fw_type == 'stock':
-          device = StockDevice(device.host, device.username, device.password, device.wifi_ip, device.fw_type, False)
+          device = StockDevice(device.host, device.username, device.password, device.wifi_ip, device.fw_type, device.auth, False)
       else:
         device = None
       if device and device.get_info():
-        if device.info == 401:
-          self.security_help(device)
-        else:
-          self.probe_device(device)
+        self.probe_device(device)
 
   def device_scan(self):  # handle devices found from DNS scanner.
     logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
@@ -1696,13 +1683,9 @@ class Main:
       logger.debug(f"")
       logger.debug(f"{PURPLE}[Device Scan] action queue entry{NC}")
       if device and device.get_info():
-        if device.info == 401:
-          logger.info("")
-          self.security_help(device, 'Scanner')
-        else:
-          fw_model = device.info.get('model') if device.is_homekit() else device.shelly_model(device.info.get('device').get('type'))[0]
-          if self.is_fw_type(device.fw_type) and self.is_model_type(fw_model) and self.is_device_name(device.info.get('device_name')):
-            self.probe_device(device)
+        fw_model = device.info.get('model') if device.is_homekit() else device.shelly_model(device.info.get('device').get('type'))[0]
+        if self.is_fw_type(device.fw_type) and self.is_model_type(fw_model) and self.is_device_name(device.info.get('device_name')):
+          self.probe_device(device)
 
   def stop_scan(self):  # stop DNS scanner.
     if self.listener is not None:
