@@ -334,6 +334,7 @@ class Device(Detection):
     self.flash_fw_type_str = None
     self.download_url = None
     self.already_processed = False
+    self.not_supported = False
 
   def load_device_info(self, force_update=False, error_message=True):
     fw_info = None
@@ -569,13 +570,15 @@ class Device(Detection):
           if self.variant and self.variant not in i[1].get('version', '0.0.0'):
             self.flash_fw_version = 'no_variant'
             self.download_url = None
-            return
+            break
           re_search = r'-*' if self.variant else i[0]
           if re.search(re_search, self.info.get('fw_version')):
             self.flash_fw_version = i[1].get('version', '0.0.0')
             self.download_url = i[1].get('urls', {}).get(self.info.get('model'))
             break
-        main.not_supported = True
+        if self.download_url == None:
+          self.not_supported = True
+          self.flash_fw_version = '0.0.0'
 
   def parse_stock_release_info(self):
     self.flash_fw_type_str = 'Stock'
@@ -769,7 +772,6 @@ class Main:
     self.thread = None
     self.stock_release_info = {}
     self.homekit_release_info = {}
-    self.not_supported = None
     self.requires_upgrade = None
     self.requires_color_mode_change = None
     self.total_devices = 0
@@ -1361,6 +1363,7 @@ class Main:
     force_version = device.version
     force_flash = True if device.version and current_fw_version != device.version else self.force
     download_url = device.download_url
+    not_supported = device.not_supported
     device_name = device.info.get('device_name')
     wifi_ssid = device.info.get('wifi_ssid')
     wifi_rssi = device.info.get('wifi_rssi')
@@ -1382,7 +1385,7 @@ class Main:
     logger.debug(f"force_flash: {force_flash}")
     logger.debug(f"manual_version: {force_version}")
     logger.debug(f"download_url: {download_url}")
-    logger.debug(f"not_supported: {self.not_supported}")
+    logger.debug(f"not_supported: {not_supported}")
 
     if download_url and download_url != 'local':
       download_url_request = requests.head(download_url)
@@ -1413,11 +1416,9 @@ class Main:
       latest_fw_label = flash_fw_version
 
     flash_fw_newer = self.is_newer(flash_fw_version, current_fw_version)
-    if self.not_supported is True and download_url is None:
+    if not_supported is True:
       flash_fw_type_str = f"{RED}{flash_fw_type_str}{NC}"
-      latest_fw_label = f"{RED}Not supported{NC}"
-      flash_fw_version = '0.0.0'
-      download_url = None
+      latest_fw_label = f"{RED}is not supported{NC}"
     if (not self.quiet_run or flash_fw_newer or force_flash and flash_fw_version != '0.0.0') and self.requires_upgrade != 'Done':
       logger.info(f"")
       logger.info(f"{WHITE}Host: {NC}http://{host}")
