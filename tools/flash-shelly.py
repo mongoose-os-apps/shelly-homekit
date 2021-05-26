@@ -228,9 +228,8 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
       logger.trace(f"[Device Scan] info: {info}")
       logger.trace(f"[Device Scan] properties: {properties}")
       if properties.get('arch') == 'esp8266':  # this detects if esp device.
-        if properties.get('auth_en'):
+        if properties.get('auth_en') and properties.get('fw_type') == 'homekit':  # this detects if homekit device (requires fw >= 2.9.1).
           auth = bool(int(properties.get('auth_en')))
-        if main.is_newer(properties.get('fw_version', '0.0.0'), '2.9.0') and properties.get('fw_type') == 'homekit':  # this detects if homekit device. # TODO remove main.is_newer when 2.9.x when more mainstream.
           fw_type = properties.get('fw_type')
         elif properties.get('fw_version') == '1.0' and properties.get('id').startswith('shelly'):  # this detects stock device.
           fw_type = 'stock'
