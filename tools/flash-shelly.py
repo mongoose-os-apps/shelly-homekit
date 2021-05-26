@@ -576,7 +576,7 @@ class Device(Detection):
             self.flash_fw_version = i[1].get('version', '0.0.0')
             self.download_url = i[1].get('urls', {}).get(self.info.get('model'))
             break
-        if self.download_url == None:
+        if self.download_url is None:
           self.not_supported = True
           self.flash_fw_version = '0.0.0'
 
@@ -585,7 +585,7 @@ class Device(Detection):
     stock_fw_model = self.info.get('stock_fw_model')
     color_mode = self.info.get('color_mode')
     logger.debug(f"Mode: {self.info.get('fw_type_str')} To {self.flash_fw_type_str}")
-    if not self.version:
+    if not self.version or main.flash_mode == 'homekit':  # allow checking of latest stock version, when force version to homekit
       if stock_fw_model == 'SHRGBW2-color':  # we need to use real stock model here
         stock_fw_model = 'SHRGBW2'
       if not main.stock_release_info:
