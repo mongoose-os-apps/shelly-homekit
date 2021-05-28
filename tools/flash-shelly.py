@@ -335,6 +335,7 @@ class Device(Detection):
     self.download_url = None
     self.already_processed = False
     self.not_supported = False
+    self.no_variant = False
 
   def load_device_info(self, force_update=False, error_message=True):
     fw_info = None
@@ -553,13 +554,13 @@ class Device(Detection):
       logger.error("https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#script-fails-to-run")
     return release_info
 
-  def parse_homekit_release_info(self, revert=False):
+  def parse_homekit_release_info(self):
     self.flash_fw_type_str = 'HomeKit'
     logger.debug(f"Mode: {self.info.get('fw_type_str')} To {self.flash_fw_type_str}")
     if self.version:
       self.flash_fw_version = self.version
       self.download_url = f"http://rojer.me/files/shelly/{self.version}/shelly-homekit-{self.info.get('model')}.zip"
-    elif revert is True:
+    elif main.revert_to_stock is True:
       self.flash_fw_version = 'revert'
       self.download_url = f"http://rojer.me/files/shelly/stock/{self.info.get('stock_fw_model')}.zip"
     else:
@@ -568,9 +569,8 @@ class Device(Detection):
       if main.homekit_release_info:
         for i in main.homekit_release_info:
           if self.variant and self.variant not in i[1].get('version', '0.0.0'):
-            self.flash_fw_version = 'no_variant'
-            self.download_url = None
-            break
+            self.no_variant = True
+            return
           re_search = r'-*' if self.variant else i[0]
           if re.search(re_search, self.info.get('fw_version')):
             self.flash_fw_version = i[1].get('version', '0.0.0')
@@ -636,8 +636,7 @@ class HomeKitDevice(Device):
                }
     return options.get(mode, mode)
 
-  def write_firmware(self, revert=False):
-    logger.trace(f"revert {revert}")
+  def write_firmware(self):
     if self.local_file:
       logger.debug(f"Local file: {self.local_file}")
       my_file = open(self.local_file, 'rb')
@@ -647,7 +646,7 @@ class HomeKitDevice(Device):
       logger.info("Downloading Firmware...")
       logger.debug(f"Remote Download URL: {self.download_url}")
       my_file = requests.get(self.download_url)
-      if revert is True:
+      if main.revert_to_stock is True:
         logger.info(f"Now Reverting to stock firmware")
       else:
         logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
@@ -708,8 +707,7 @@ class StockDevice(Device):
       return None
     return self.info.get('mode')
 
-  def write_firmware(self, revert=False):
-    logger.trace(f"revert {revert}")
+  def write_firmware(self):
     logger.info(f"Now Flashing {self.flash_fw_type_str} {self.flash_fw_version}")
     download_url = self.download_url.replace('https', 'http')
     if self.local_file:
@@ -799,6 +797,7 @@ class Main:
     self.exclude = None
     self.version = None
     self.variant = None
+    self.revert_to_stock = False
     self.force = None
     self.hap_setup_code = None
     self.local_file = None
@@ -1284,14 +1283,14 @@ class Main:
       uptime = device.get_uptime(False)
     return uptime
 
-  def flash_firmware(self, device, revert=False):  # handle flash procedure.
+  def flash_firmware(self, device):  # handle flash procedure.
     logger.debug(f"{PURPLE}[Write Flash]{NC}")
     uptime = self.just_booted_check(device)  # check to see if device has just booted.
-    response = device.write_firmware(revert)  # do actual flash firmware.
+    response = device.write_firmware()  # do actual flash firmware.
     logger.trace(response)
     if response and response.status_code == 200:
       message = f"{GREEN}Successfully flashed {device.friendly_host} to {device.flash_fw_type_str} {device.flash_fw_version}{NC}"
-      if revert is True:
+      if self.revert_to_stock is True:
         self.wait_for_reboot(device, uptime)
         reboot_check = device.is_stock()
         flash_fw = 'stock revert'
@@ -1299,7 +1298,7 @@ class Main:
       else:
         reboot_check = self.parse_version(self.wait_for_reboot(device, uptime))
         flash_fw = self.parse_version(device.flash_fw_version)
-      if (reboot_check == flash_fw) or (revert is True and reboot_check is True):
+      if (reboot_check == flash_fw) or (self.revert_to_stock is True and reboot_check is True):
         if device.already_processed is False:
           self.flashed_devices += 1
         if self.requires_upgrade is True:
@@ -1347,7 +1346,6 @@ class Main:
     perform_flash = False
     do_mode_change = False
     download_url_request = False
-    no_variant = False
     host = device.host
     wifi_ip = device.wifi_ip
     friendly_host = device.friendly_host
@@ -1364,6 +1362,8 @@ class Main:
     force_flash = True if device.version and current_fw_version != device.version else self.force
     download_url = device.download_url
     not_supported = device.not_supported
+    no_variant = device.no_variant
+    revert_to_stock = self.revert_to_stock
     device_name = device.info.get('device_name')
     wifi_ssid = device.info.get('wifi_ssid')
     wifi_rssi = device.info.get('wifi_rssi')
@@ -1386,17 +1386,19 @@ class Main:
     logger.debug(f"manual_version: {force_version}")
     logger.debug(f"download_url: {download_url}")
     logger.debug(f"not_supported: {not_supported}")
+    logger.debug(f"no_variant: {no_variant}")
+    logger.debug(f"revert_to_stock: {revert_to_stock}")
 
     if download_url and download_url != 'local':
       download_url_request = requests.head(download_url)
       logger.debug(f"download_url_request: {download_url_request}")
-    if flash_fw_version == 'no_variant':
+    if not_supported is True:
       flash_fw_type_str = f"{RED}{flash_fw_type_str}{NC}"
-      latest_fw_label = f"{RED}No {device.variant} available{NC}"
-      flash_fw_version = '0.0.0'
-      download_url = None
-      no_variant = True
-    elif flash_fw_version == 'revert':
+      latest_fw_label = f"{RED}is not supported{NC}"
+    elif no_variant is True:
+      flash_fw_type_str = f"{RED}{flash_fw_type_str}{NC}"
+      latest_fw_label = f"{RED}no version with variant {device.variant} is available{NC}"
+    elif revert_to_stock is True:
       flash_fw_type_str = 'Revert to'
       latest_fw_label = 'Stock'
     elif not download_url and device.local_file:
@@ -1416,9 +1418,6 @@ class Main:
       latest_fw_label = flash_fw_version
 
     flash_fw_newer = self.is_newer(flash_fw_version, current_fw_version)
-    if not_supported is True:
-      flash_fw_type_str = f"{RED}{flash_fw_type_str}{NC}"
-      latest_fw_label = f"{RED}is not supported{NC}"
     if (not self.quiet_run or flash_fw_newer or force_flash and flash_fw_version != '0.0.0') and self.requires_upgrade != 'Done':
       logger.info(f"")
       logger.info(f"{WHITE}Host: {NC}http://{host}")
@@ -1456,9 +1455,8 @@ class Main:
       elif current_fw_type == self.flash_mode:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version}")
 
-    if download_url and (force_flash or self.requires_upgrade is True or current_fw_type != self.flash_mode or flash_fw_newer):
-      if device.already_processed is False:
-        self.upgradeable_devices += 1
+    if download_url and (force_flash or self.requires_upgrade is True or current_fw_type != self.flash_mode or flash_fw_newer) and device.already_processed is False:
+      self.upgradeable_devices += 1
 
     if self.run_action == 'flash':
       action_message = "Would have been"
@@ -1470,11 +1468,11 @@ class Main:
           return 0
         elif self.requires_upgrade is True:
           perform_flash = True
-          if self.flash_mode == 'stock':
-            keyword = f"upgraded to version {flash_fw_version}"
-          elif self.flash_mode == 'homekit':
+          if self.flash_mode == 'homekit':
             action_message = "This device needs to be"
             keyword = "upgraded to latest stock firmware version, before you can flash to HomeKit"
+          elif self.flash_mode == 'stock':
+            keyword = f"upgraded to version {flash_fw_version}"
         elif self.requires_color_mode_change is True:
           do_mode_change = True
           action_message = "This device needs to be"
@@ -1482,7 +1480,7 @@ class Main:
         elif force_flash:
           perform_flash = True
           keyword = f"flashed to {flash_fw_type_str} version {flash_fw_version}"
-        elif flash_fw_version == 'revert':
+        elif revert_to_stock is True:
           perform_flash = True
           keyword = f"reverted to stock firmware"
         elif current_fw_type != self.flash_mode:
@@ -1502,40 +1500,38 @@ class Main:
 
       logger.debug(f"perform_flash: {perform_flash}")
       logger.debug(f"do_mode_change: {do_mode_change}")
-      if (perform_flash is True or do_mode_change is True) and self.dry_run is False and self.silent_run is False:
-        if self.requires_upgrade is True:
-          flash_message = f"{action_message} {keyword}"
-        elif self.requires_upgrade == 'Done' and self.requires_color_mode_change is False:
-          flash_message = f"Do you wish to continue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
-        elif self.requires_color_mode_change is True:
-          flash_message = f"{action_message} {keyword}"
-        elif flash_fw_version == 'revert':
-          flash_message = f"Do you wish to revert {friendly_host} to stock firmware"
-        else:
-          flash_message = f"Do you wish to flash {friendly_host} to {flash_fw_type_str} firmware version {flash_fw_version}"
-        if self.flash_question is None:
-          if input(f"{flash_message} (y/n) ? ") in ('y', 'Y'):
-            self.flash_question = True
+      if perform_flash is True or do_mode_change is True:
+        if self.dry_run is False and self.silent_run is False:
+          if self.requires_upgrade is True:
+            flash_message = f"{action_message} {keyword}"
+          elif self.requires_upgrade == 'Done' and self.requires_color_mode_change is False:
+            flash_message = f"Do you wish to continue to flash {friendly_host} to HomeKit firmware version {flash_fw_version}"
+          elif self.requires_color_mode_change is True:
+            flash_message = f"{action_message} {keyword}"
+          elif revert_to_stock is True:
+            flash_message = f"Do you wish to revert {friendly_host} to stock firmware"
           else:
-            self.flash_question = False
-            logger.info("Skipping Flash...")
-      elif (perform_flash is True or do_mode_change is True) and self.dry_run is False and self.silent_run is True:
-        self.flash_question = True
-      elif (perform_flash is True or do_mode_change is True) and self.dry_run is True:
-        logger.info(f"{action_message} {keyword}...")
+            flash_message = f"Do you wish to flash {friendly_host} to {flash_fw_type_str} firmware version {flash_fw_version}"
+          if self.flash_question is None:
+            if input(f"{flash_message} (y/n) ? ") in ('y', 'Y'):
+              self.flash_question = True
+            else:
+              self.flash_question = False
+              logger.info("Skipping Flash...")
+        elif self.dry_run is False and self.silent_run is True:
+          self.flash_question = True
+        elif self.dry_run is True:
+          logger.info(f"{action_message} {keyword}...")
 
       logger.debug(f"flash_question: {self.flash_question}")
       if self.flash_question is True:
         if do_mode_change is True:
           self.color_mode_change(device, 'color')
-        elif flash_fw_version == 'revert':
-          self.flash_firmware(device, True)
         else:
           self.flash_firmware(device)
-
-    if device.is_homekit() and self.hap_setup_code:
+    if device.is_homekit() and self.hap_setup_code:  # handle set HomeKit Setup code option.
       device.write_hap_setup_code()
-    if self.network_type:
+    if self.network_type:  # handle set network type option.
       if self.network_type == 'static':
         action_message = f"Do you wish to set your IP address to {self.ipv4_ip}"
       else:
@@ -1546,7 +1542,7 @@ class Main:
         set_ip = False
       if set_ip or self.silent_run:
         device.write_network_type()
-    if self.run_action == 'reboot':
+    if self.run_action == 'reboot':  # handle reboot option
       reboot = False
       if self.dry_run is False and self.silent_run is False:
         if input(f"Do you wish to reboot {friendly_host} (y/n) ? ") in ('y', 'Y'):
@@ -1619,8 +1615,9 @@ class Main:
             else:
               device.parse_homekit_release_info()
         elif self.flash_mode == 'revert':
+          self.revert_to_stock = True
           if device.is_homekit():
-            device.parse_homekit_release_info(revert=True)
+            device.parse_homekit_release_info()
           else:
             device.parse_stock_release_info()
             self.flash_mode = 'stock'
