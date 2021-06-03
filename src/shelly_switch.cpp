@@ -27,11 +27,13 @@ namespace shelly {
 
 const HAPUUID kHAPCharacteristic_EveConsumption = {
     0x52, 0x9F, 0xA2, 0x05, 0x26, 0x9C, 0x27, 0x8F,
-    0xFF, 0x48, 0x9E, 0x07, 0x0D, 0xF1, 0x63, 0xE8};
+    0xFF, 0x48, 0x9E, 0x07, 0x0D, 0xF1, 0x63, 0xE8,
+};
 
 const HAPUUID kHAPCharacteristic_EveTotalConsumption = {
     0x52, 0x9F, 0xA2, 0x05, 0x26, 0x9C, 0x27, 0x8F,
-    0xFF, 0x48, 0x9E, 0x07, 0x0C, 0xF1, 0x63, 0xE8};
+    0xFF, 0x48, 0x9E, 0x07, 0x0C, 0xF1, 0x63, 0xE8,
+};
 
 ShellySwitch::ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
                            Output *led_out, struct mgos_config_sw *cfg)
@@ -329,7 +331,7 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
   if (out_pm_ == nullptr) return;
 
   // Power
-  power_char = new mgos::hap::UInt16Characteristic(
+  power_char_ = new mgos::hap::UInt16Characteristic(
       (*iid)++, &kHAPCharacteristic_EveConsumption, 0, 65535, 1,
       [this](HAPAccessoryServerRef *,
              const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
@@ -337,9 +339,9 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr, "eve-power-consumption");
-  AddChar(power_char);
+  AddChar(power_char_);
   // Energy
-  total_power_char = new mgos::hap::UInt16Characteristic(
+  total_power_char__ = new mgos::hap::UInt16Characteristic(
       (*iid)++, &kHAPCharacteristic_EveTotalConsumption, 0, 65535, 1,
       [this](HAPAccessoryServerRef *,
              const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
@@ -347,14 +349,14 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr, "eve-total-power-consumption");
-  AddChar(total_power_char);
+  AddChar(total_power_char__);
 
   power_timer_.Reset(1000, MGOS_TIMER_REPEAT);
 }
 
 void ShellySwitch::PowerMeterTimerCB() {
-  power_char->RaiseEvent();
-  total_power_char->RaiseEvent();
+  power_char_->RaiseEvent();
+  total_power_char__->RaiseEvent();
 }
 
 }  // namespace shelly
