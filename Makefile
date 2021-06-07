@@ -70,9 +70,9 @@ fs/index.html.gz: $(wildcard fs_src/*) Makefile
 	mkdir -p $(BUILD_DIR)
 	cat fs_src/index.html | \
 	sed "s/.*<link.*rel=\"stylesheet\".*//g" | sed -e '/<style>/ r fs_src/style.css' | \
-	sed "s/.*<script.*src=\"script.js\".*/<script><!-- script.js -->/g" | sed -e '/<script>/ r fs_src/script.js' | \
-	sed "s/.*<script.*src=\"sha256.js\".*/<script><!-- sha256.js -->/g" | sed -e '/<script>/ r fs_src/sha256.js' | \
-	sed "s/.*<script.*src=\"qrcode.js\".*/<script><!-- qrcode.js -->/g" | sed -e '/<script>/ r fs_src/qrcode.js' | \
+	sed "s/.*<script src=\"sha256.js\".*/<script data-src=\"sha256.js\">/g" | sed -e '/<script data-src=\"sha256.js\">/ r fs_src/sha256.js' | \
+	sed "s/.*<script src=\"qrcode.js\".*/<script data-src=\"qrcode.js\">/g" | sed -e '/<script data-src=\"qrcode.js\">/ r fs_src/qrcode.js' | \
+	sed "s/.*<script src=\"script.js\".*/<script data-src=\"script.js\">/g" | sed -e '/<script data-src=\"script.js\">/ r fs_src/script.js' | \
 	sed -e '/.*<img.*src=".\/logo.svg".*/ {' -e 'r fs_src/logo.svg' -e 'd' -e '}' > $(BUILD_DIR)/index.html
 	gzip -9 -c $(BUILD_DIR)/index.html > $@
 #	zopfli -c -i30 $(BUILD_DIR)/index.html > $@
