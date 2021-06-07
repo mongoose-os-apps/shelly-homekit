@@ -66,12 +66,17 @@ ShellyU25: PLATFORM=ubuntu
 ShellyU25: build-ShellyU25
 	@true
 
-fs/index.html.gz: fs_src/index.html fs_src/style.css fs_src/script.js fs_src/logo.svg Makefile
+fs/index.html.gz: $(wildcard fs_src/*) Makefile
+	mkdir -p $(BUILD_DIR)
 	cat fs_src/index.html | \
 	sed "s/.*<link.*rel=\"stylesheet\".*//g" | sed -e '/<style>/ r fs_src/style.css' | \
-	sed "s/.*<script.*src=\"script.js\".*/<script>/g" | sed -e '/<script>/ r fs_src/script.js' | \
-	sed -e '/.*<img.*src=".\/logo.svg".*/ {' -e 'r fs_src/logo.svg' -e 'd' -e '}' | \
-	gzip -9 -c > fs/index.html.gz
+	sed "s/.*<script.*src=\"script.js\".*/<script><!-- script.js -->/g" | sed -e '/<script>/ r fs_src/script.js' | \
+	sed "s/.*<script.*src=\"sha256.js\".*/<script><!-- sha256.js -->/g" | sed -e '/<script>/ r fs_src/sha256.js' | \
+	sed "s/.*<script.*src=\"qrcode.js\".*/<script><!-- qrcode.js -->/g" | sed -e '/<script>/ r fs_src/qrcode.js' | \
+	sed -e '/.*<img.*src=".\/logo.svg".*/ {' -e 'r fs_src/logo.svg' -e 'd' -e '}' > $(BUILD_DIR)/index.html
+	gzip -9 -c $(BUILD_DIR)/index.html > $@
+#	zopfli -c -i30 $(BUILD_DIR)/index.html > $@
+#	brotli --best -c $(BUILD_DIR)/index.html > $@
 
 build-%: fs/index.html.gz Makefile
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
@@ -81,7 +86,8 @@ ifeq "$(RELEASE)" "1"
 	  (dir=releases/`jq -r .build_version $(BUILD_DIR)/gen/build_info.json`$(RELEASE_SUFFIX) && \
 	    mkdir -p $$dir/elf && \
 	    cp -v $(BUILD_DIR)/fw.zip $$dir/shelly-homekit-$*.zip && \
-	    cp -v $(BUILD_DIR)/objs/*.elf $$dir/elf/shelly-homekit-$*.elf)
+	    cp -v $(BUILD_DIR)/objs/*.elf $$dir/elf/shelly-homekit_$*.elf && \
+	    cp -v $(BUILD_DIR)/gen/mgos_deps_manifest.yml $$dir/elf/shelly-homekit-$*_deps.yml)
 endif
 
 format:
