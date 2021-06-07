@@ -25,11 +25,18 @@
 
 namespace shelly {
 
+// Inofficial HK Chars defined by Eve
+// https://gist.github.com/gomfunkel/b1a046d729757120907c#elgato-eve-energy-firmware-revision-131466
+
+// Eve power consumption (W)
+// E863F10D-079E-48FF-8F27-9C2605A29F52
 const HAPUUID kHAPCharacteristic_EveConsumption = {
     0x52, 0x9F, 0xA2, 0x05, 0x26, 0x9C, 0x27, 0x8F,
     0xFF, 0x48, 0x9E, 0x07, 0x0D, 0xF1, 0x63, 0xE8,
 };
 
+// Eve total power consumption (kWh)
+// E863F10C-079E-48FF-8F27-9C2605A29F52
 const HAPUUID kHAPCharacteristic_EveTotalConsumption = {
     0x52, 0x9F, 0xA2, 0x05, 0x26, 0x9C, 0x27, 0x8F,
     0xFF, 0x48, 0x9E, 0x07, 0x0C, 0xF1, 0x63, 0xE8,
