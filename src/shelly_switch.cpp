@@ -362,8 +362,18 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
 }
 
 void ShellySwitch::PowerMeterTimerCB() {
-  power_char_->RaiseEvent();
-  total_power_char__->RaiseEvent();
+  float current_power = out_pm_->GetPowerW().ValueOrDie();
+  float current_total_power = out_pm_->GetEnergyWH().ValueOrDie();
+
+  if (current_power != last_power_) {
+    power_char_->RaiseEvent();
+  }
+  if (current_total_power != last_total_power_) {
+    total_power_char__->RaiseEvent();
+  }
+
+  last_power_ = current_power;
+  last_total_power_ = current_total_power;
 }
 
 }  // namespace shelly
