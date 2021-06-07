@@ -86,7 +86,8 @@ ifeq "$(RELEASE)" "1"
 	  (dir=releases/`jq -r .build_version $(BUILD_DIR)/gen/build_info.json`$(RELEASE_SUFFIX) && \
 	    mkdir -p $$dir/elf && \
 	    cp -v $(BUILD_DIR)/fw.zip $$dir/shelly-homekit-$*.zip && \
-	    cp -v $(BUILD_DIR)/objs/*.elf $$dir/elf/shelly-homekit-$*.elf)
+	    cp -v $(BUILD_DIR)/objs/*.elf $$dir/elf/shelly-homekit_$*.elf && \
+	    cp -v $(BUILD_DIR)/gen/mgos_deps_manifest.yml $$dir/elf/shelly-homekit-$*_deps.yml)
 endif
 
 format:
