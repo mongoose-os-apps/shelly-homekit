@@ -348,7 +348,7 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
       true /* supports_notification */, nullptr, "eve-power-consumption");
   AddChar(power_char_);
   // Energy
-  total_power_char__ = new mgos::hap::UInt16Characteristic(
+  total_power_char_ = new mgos::hap::UInt16Characteristic(
       (*iid)++, &kHAPCharacteristic_EveTotalConsumption, 0, 65535, 1,
       [this](HAPAccessoryServerRef *,
              const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
@@ -356,7 +356,7 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr, "eve-total-power-consumption");
-  AddChar(total_power_char__);
+  AddChar(total_power_char_);
 
   power_timer_.Reset(1000, MGOS_TIMER_REPEAT);
 }

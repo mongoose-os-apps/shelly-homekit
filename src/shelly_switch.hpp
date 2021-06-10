@@ -79,7 +79,7 @@ class ShellySwitch : public Component, public mgos::hap::Service {
   void PowerMeterTimerCB();
   mgos::Timer power_timer_;
   mgos::hap::Characteristic *power_char_;
-  mgos::hap::Characteristic *total_power_char__;
+  mgos::hap::Characteristic *total_power_char_;
   float last_power_ = 0.0f;
   float last_total_power_ = 0.0f;
 };
