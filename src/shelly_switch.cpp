@@ -342,7 +342,10 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
       (*iid)++, &kHAPCharacteristic_EveConsumption, 0, 65535, 1,
       [this](HAPAccessoryServerRef *,
              const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
-        *value = out_pm_->GetPowerW().ValueOrDie();
+        auto power = out_pm_->GetPowerW();
+        if (!power.ok())
+          return kHAPError_Busy;  // Operation failed temporarily, retry later.
+        *value = power.ValueOrDie();
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr, "eve-power-consumption");
@@ -352,7 +355,10 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
       (*iid)++, &kHAPCharacteristic_EveTotalConsumption, 0, 65535, 1,
       [this](HAPAccessoryServerRef *,
              const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
-        *value = out_pm_->GetEnergyWH().ValueOrDie() / 1000.0f;
+        auto energy = out_pm_->GetEnergyWH();
+        if (!energy.ok())
+          return kHAPError_Busy;  // Operation failed temporarily, retry later.
+        *value = energy.ValueOrDie() / 1000.0f;
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr, "eve-total-power-consumption");
@@ -362,18 +368,18 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
 }
 
 void ShellySwitch::PowerMeterTimerCB() {
-  float current_power = out_pm_->GetPowerW().ValueOrDie();
-  float current_total_power = out_pm_->GetEnergyWH().ValueOrDie();
+  auto current_power = out_pm_->GetPowerW();
+  auto current_total_power = out_pm_->GetEnergyWH();
 
-  if (current_power != last_power_) {
+  if (current_power.ok() && current_power.ValueOrDie() != last_power_) {
+    last_power_ = current_power.ValueOrDie();
     power_char_->RaiseEvent();
   }
-  if (current_total_power != last_total_power_) {
-    total_power_char__->RaiseEvent();
+  if (current_total_power.ok() &&
+      current_total_power.ValueOrDie() != last_total_power_) {
+    last_total_power_ = current_total_power.ValueOrDie();
+    total_power_char_->RaiseEvent();
   }
-
-  last_power_ = current_power;
-  last_total_power_ = current_total_power;
 }
 
 }  // namespace shelly
