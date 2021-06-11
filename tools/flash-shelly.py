@@ -604,7 +604,7 @@ class Device(Detection):
     if stock_fw_model == 'SHRGBW2' and self.download_url and not self.version and color_mode and not self.local_file:
       self.download_url = self.download_url.replace('.zip', f'-{color_mode}.zip')
 
-  def write_hap_setup_code(self):  # handle saving HomeKIT setup code.
+  def write_hap_setup_code(self):  # handle saving HomeKit setup code.
     logger.info(f"Configuring HomeKit setup code: {main.hap_setup_code}")
     value = {'code': main.hap_setup_code}
     logger.trace(f"security: {self.info.get('auth_en')}")
