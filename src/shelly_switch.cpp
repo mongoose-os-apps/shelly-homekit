@@ -343,8 +343,7 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
       [this](HAPAccessoryServerRef *,
              const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
         auto power = out_pm_->GetPowerW();
-        if (!power.ok())
-          return kHAPError_Busy;  // Operation failed temporarily, retry later.
+        if (!power.ok()) return kHAPError_Busy;
         *value = power.ValueOrDie();
         return kHAPError_None;
       },
@@ -356,8 +355,7 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
       [this](HAPAccessoryServerRef *,
              const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
         auto energy = out_pm_->GetEnergyWH();
-        if (!energy.ok())
-          return kHAPError_Busy;  // Operation failed temporarily, retry later.
+        if (!energy.ok()) return kHAPError_Busy;
         *value = energy.ValueOrDie() / 1000.0f;
         return kHAPError_None;
       },
