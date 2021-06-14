@@ -56,8 +56,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     FindOutput(4)->SetStatePWM(0.0f, "cc");
   }
 
-  std::unique_ptr<hap::LightBulb> rgbw_light(
-      new hap::LightBulb(1, FindInput(1), lightbulb_controller.get(), lb_cfg));
+  std::unique_ptr<hap::LightBulb> rgbw_light(new hap::LightBulb(
+      1, FindInput(1), std::move(lightbulb_controller), lb_cfg));
 
   if (rgbw_light == nullptr || !rgbw_light->Init().ok()) {
     return;

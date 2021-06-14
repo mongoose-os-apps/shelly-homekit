@@ -26,6 +26,8 @@ class RGBWController : public LightBulbController {
  public:
   RGBWController(struct mgos_config_lb *cfg, Output *out_r, Output *out_g,
                  Output *out_b, Output *out_w);
+  RGBWController(const RGBWController &other) = delete;
+  virtual ~RGBWController();
 
   struct State {
     float r;

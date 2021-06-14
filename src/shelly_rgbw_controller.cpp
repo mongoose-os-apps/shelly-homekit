@@ -27,12 +27,15 @@ namespace shelly {
 
 RGBWController::RGBWController(struct mgos_config_lb *cfg, Output *out_r,
                                Output *out_g, Output *out_b, Output *out_w)
-    : out_r_(out_r),
+    : LightBulbController(cfg),
+      out_r_(out_r),
       out_g_(out_g),
       out_b_(out_b),
       out_w_(out_w),
       transition_timer_(std::bind(&RGBWController::TransitionTimerCB, this)) {
-  cfg_ = cfg;
+}
+
+RGBWController::~RGBWController() {
 }
 
 void RGBWController::UpdateOutput() {

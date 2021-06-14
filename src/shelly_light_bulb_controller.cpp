@@ -19,6 +19,13 @@
 
 namespace shelly {
 
+LightBulbController::LightBulbController(struct mgos_config_lb *cfg)
+    : cfg_(cfg) {
+}
+
+LightBulbController::~LightBulbController() {
+}
+
 bool LightBulbController::IsOn() const {
   return cfg_->state != 0;
 }

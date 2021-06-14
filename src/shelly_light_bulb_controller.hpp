@@ -23,11 +23,17 @@ namespace shelly {
 
 class LightBulbController {
  public:
-  struct mgos_config_lb *cfg_;
-  virtual void UpdateOutput() = 0;
-  bool IsOn() const;
+  explicit LightBulbController(struct mgos_config_lb *cfg);
+  LightBulbController(const LightBulbController &other) = delete;
+  virtual ~LightBulbController();
 
+  virtual void UpdateOutput() = 0;
+
+  bool IsOn() const;
   bool IsOff() const;
+
+ protected:
+  struct mgos_config_lb *cfg_;
 };
 
 }  // namespace shelly

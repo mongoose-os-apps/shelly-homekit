@@ -27,7 +27,8 @@
 namespace shelly {
 namespace hap {
 
-LightBulb::LightBulb(int id, Input *in, LightBulbController *controller,
+LightBulb::LightBulb(int id, Input *in,
+                     std::unique_ptr<LightBulbController> controller,
                      struct mgos_config_lb *cfg)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_LIGHTING +
@@ -35,7 +36,7 @@ LightBulb::LightBulb(int id, Input *in, LightBulbController *controller,
               &kHAPServiceType_LightBulb,
               kHAPServiceDebugDescription_LightBulb),
       in_(in),
-      controller_(controller),
+      controller_(std::move(controller)),
       cfg_(cfg),
       auto_off_timer_(std::bind(&LightBulb::AutoOffTimerCB, this)) {
 }
