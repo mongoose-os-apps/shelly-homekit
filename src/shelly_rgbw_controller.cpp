@@ -16,12 +16,6 @@
  */
 
 #include "shelly_rgbw_controller.hpp"
-#include "mgos.hpp"
-#include "mgos_hap_chars.hpp"
-#include "mgos_hap_service.hpp"
-#include "mgos_sys_config.h"
-#include "mgos_system.hpp"
-#include "mgos_timers.hpp"
 
 namespace shelly {
 
