@@ -198,9 +198,6 @@ void LightBulb::HSVtoRGBW(RGBW &rgbw) const {
     rgbw.r = rgbw.r - rgbw.w;
     rgbw.g = rgbw.g - rgbw.w;
     rgbw.b = rgbw.b - rgbw.w;
-  } else {
-    // otherwise turn white channel off
-    rgbw.w = 0.0f;
   }
 }
 
