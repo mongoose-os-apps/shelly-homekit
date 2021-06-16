@@ -1217,8 +1217,7 @@ function setValueIfNotModified(e, newValue) {
 
 function checkIfNotModified(e, newState) {
   // do not update the checked value if
-  if (
-    e.lastSetValue === e.checked ||    // the value has not changed (unnecessary) OR
+  if (e.lastSetValue === e.checked ||  // the value has not changed (unnecessary) OR
     (e.lastSetValue !== undefined &&   // a value has previously been set AND
       e.lastSetValue !== e.checked))   // it is not currently the same as the visible value
     return;
@@ -1237,6 +1236,7 @@ function slideIfNotModified(e, newValue) {
 function selectIfNotModified(e, newSelection) {
   setValueIfNotModified(e, newSelection);
 }
+
 
 function durationStr(d) {
   var days = parseInt(d / 86400);
