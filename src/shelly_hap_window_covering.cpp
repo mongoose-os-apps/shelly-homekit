@@ -37,6 +37,8 @@ WindowCovering::WindowCovering(int id, Input *in0, Input *in1, Output *out0,
       state_timer_(std::bind(&WindowCovering::RunOnce, this)),
       cur_pos_(cfg_->current_pos),
       tgt_pos_(cfg_->current_pos),
+      cur_tilt_(cfg->current_tilt),
+      tgt_tilt_(cfg->current_tilt),
       move_ms_per_pct_(cfg_->move_time_ms / 100.0) {
   if (!cfg_->swap_inputs) {
     in_open_ = in0;
@@ -149,6 +151,41 @@ Status WindowCovering::Init() {
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_ObstructionDetected);
   AddChar(obst_char_);
+  // Tilt Angle (only if configured)
+  if (cfg_->tilt_time_ms != 0) {
+    // Target Horizontal Tilt Angle
+    tgt_tilt_char_ = new mgos::hap::UInt8Characteristic(
+        iid++, &kHAPCharacteristicType_TargetHorizontalTiltAngle, 0, 100, 1,
+        [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
+              uint8_t *value) {
+          *value = tgt_tilt_;
+          return kHAPError_None;
+        },
+        true /* supports_notification */,
+        [this](HAPAccessoryServerRef *,
+              const HAPUInt8CharacteristicWriteRequest *, uint8_t value) {
+          // We need to decouple from the current invocation
+          // because we may want to raise a notification on the target position
+          // and we can't do that within the write callback.
+          mgos::InvokeCB(std::bind(&WindowCovering::HAPSetTgtTilt, this, value));
+          return kHAPError_None;
+        },
+        kHAPCharacteristicDebugDescription_TargetHorizontalTiltAngle);
+    AddChar(tgt_tilt_char_);
+    
+    // Current Horizontal Tilt Angle
+    cur_tilt_char_ = new mgos::hap::UInt8Characteristic(
+        iid++, &kHAPCharacteristicType_CurrentHorizontalTiltAngle, 0, 100, 1,
+        [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
+              uint8_t *value) {
+          *value = cur_tilt_;
+          return kHAPError_None;
+        },
+        true /* supports_notification */, nullptr /* write_handler */,
+        kHAPCharacteristicDebugDescription_CurrentHorizontalTiltAngle);
+    AddChar(cur_tilt_char_);
+  }
+
   switch (static_cast<InMode>(cfg_->in_mode)) {
     case InMode::kSeparateMomentary:
     case InMode::kSeparateToggle:
@@ -184,9 +221,9 @@ std::string WindowCovering::name() const {
 }
 
 StatusOr<std::string> WindowCovering::GetInfo() const {
-  return mgos::SPrintf("c:%d mp:%.2f mt_ms:%d cp:%.2f tp:%.2f lemd:%d lhmd:%d",
+  return mgos::SPrintf("c:%d mp:%.2f mt_ms:%d cp:%.2f tp:%.2f tt_ms:%d ct:%.2f tt:%.2f lemd:%d lhmd:%d",
                        cfg_->calibrated, cfg_->move_power, cfg_->move_time_ms,
-                       cur_pos_, tgt_pos_, (int) last_ext_move_dir_,
+                       cur_pos_, tgt_pos_, cfg_->tilt_time_ms, cur_tilt_, tgt_tilt_, (int) last_ext_move_dir_,
                        (int) last_hap_move_dir_);
 }
 
@@ -195,11 +232,13 @@ StatusOr<std::string> WindowCovering::GetInfoJSON() const {
       "{id: %d, type: %d, name: %Q, "
       "in_mode: %d, swap_inputs: %B, swap_outputs: %B, "
       "cal_done: %B, move_time_ms: %d, move_power: %d, "
-      "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d}",
+      "tilt_time_ms: %d, state: %d, state_str: %Q, "
+      "cur_pos: %d, tgt_pos: %d, cur_tilt: %d, tgt_tilt: %d}",
       id(), type(), cfg_->name, cfg_->in_mode, cfg_->swap_inputs,
       cfg_->swap_outputs, cfg_->calibrated, cfg_->move_time_ms,
-      (int) cfg_->move_power, (int) state_, StateStr(state_), (int) cur_pos_,
-      (int) tgt_pos_);
+      (int) cfg_->move_power, cfg_->tilt_time_ms, (int) state_,
+      StateStr(state_), (int) cur_pos_, (int) tgt_pos_,
+      (int) cur_tilt_, (int) tgt_tilt_);
 }
 
 Status WindowCovering::SetConfig(const std::string &config_json,
@@ -345,6 +384,25 @@ void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
   tgt_pos_char_->RaiseEvent();
 }
 
+void WindowCovering::SetCurTilt(float new_cur_tilt, float p) {
+  new_cur_tilt = TrimTilt(new_cur_tilt);
+  if (new_cur_tilt == cur_tilt_) return;
+  LOG_EVERY_N(LL_INFO, 8,
+              ("WC %d: Cur tilt %.2f -> %.2f, P = %.2f", id(), cur_tilt_,
+               new_cur_tilt, p));
+  cur_tilt_ = new_tilt_pos;
+  cfg_->current_tilt = cur_tilt_;
+  cur_tilt_char_->RaiseEvent();
+}
+
+void WindowCovering::SetTgtTilt(float new_tgt_tilt, const char *src) {
+  new_tgt_tilt = TrimPos(new_tgt_tilt);
+  if (new_tgt_tilt == tgt_tilt_) return;
+  LOG(LL_INFO,
+      ("WC %d: Tgt tilt %.2f -> %.2f (%s)", id(), tgt_tilt_, new_tgt_tilt, src));
+  tgt_tilt_ = new_tilt_pos;
+  tgt_tilt_char_->RaiseEvent();
+}
 // We want tile taps to cycle the open-stop-close-stop sequence.
 // Problem is, tile taps behave as "prefer close": Home will send
 // 0 ("fully close") if tile is tapped while in the intermediate position.
@@ -362,6 +420,7 @@ void WindowCovering::HAPSetTgtPos(float value) {
   if (mgos_uptime_micros() - last_hap_set_tgt_pos_ > 60 * 1000000) {
     last_hap_move_dir_ = Direction::kNone;
   }
+  // TODO: restore tilt position after moving
   LOG(LL_INFO, ("WC %d: HAPSetTgtPos %.2f cur %.2f tgt %.2f lhmd %d", id(),
                 value, cur_pos_, tgt_pos_, (int) last_hap_move_dir_));
   // If the specified position is intermediate, just do what we are told.
@@ -387,6 +446,10 @@ void WindowCovering::HAPSetTgtPos(float value) {
   last_hap_set_tgt_pos_ = mgos_uptime_micros();
   // Run state machine immediately to improve reaction time,
   RunOnce();
+}
+
+void WindowCovering::HAPSetTgtTilt(float value) {
+  // TODO: Implement
 }
 
 WindowCovering::Direction WindowCovering::GetDesiredMoveDirection() {
