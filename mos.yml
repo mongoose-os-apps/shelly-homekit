@@ -1,6 +1,6 @@
 author: 'Deomid "rojer" Ryabkov'
 description: A HomeKit firmware for Shelly switches
-version: 2.8.1
+version: 2.9.2-alpha4
 platform: esp8266
 
 libs_version: latest
@@ -20,18 +20,21 @@ filesystem:
   - fs
 
 config_schema:
-  - ["http.index_files", "index.html.gz"]
-  - ["http.extra_headers", "Pragma: no-cache"]
-  - ["sntp.enable", true]
   - ["debug.event_level", 3]
+  - ["dns_sd.txt", "fw_type=homekit"]  # To be easily distinguishable from stock.
   - ["file_logger.level", 3]
   - ["file_logger.max_num_files", 1]
   - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
+  - ["http.auth_algo", 1]  # SHA-256
+  - ["http.auth_domain", ""]
+  - ["rpc.auth_algo", 1]  # SHA-256
+  - ["rpc.auth_domain", ""]
+  - ["sntp.enable", true]
   - ["wifi.sta_all_chan_scan", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
@@ -86,6 +89,20 @@ config_schema:
   - ["gdo.begin_move_time_ms", "i", 7000, {title: "Time allowed for movement to begin, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {title: "Output active time, ms"}]
 
+  - ["lb", "o", {title: "Light bulb settings", abstract: true}]
+  - ["lb.name", "s", "Light bulb", {title: "Accessory name"}]
+  - ["lb.enable", "b", true, {title: "Enable this light in the accessory"}]
+  - ["lb.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
+  - ["lb.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
+  - ["lb.state", "b", false, {title: "State of the light"}]
+  - ["lb.hue", "i", 0, {title: "Hue of the light"}]
+  - ["lb.brightness", "i", 100, {title: "Brightness of the light"}]
+  - ["lb.saturation", "i", 100, {title: "Saturation of the light"}]
+  - ["lb.initial_state", "i", 3, {title: "Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
+  - ["lb.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
+  - ["lb.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
+  - ["lb.transition_time", "i", 2000, {title: "Time in milliseconds how long a transition will take"}]
+
   # Preserved from stock.
   - ["k_apparent", "i", 1750000, {}]
   - ["max_power", "i", 1800, {}]
@@ -99,6 +116,7 @@ config_schema:
 build_vars:
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
+  MGOS_FW_EXTRA_ATTRS: shelly_hk_model=${build_vars.MODEL}
 
 cdefs:
   PRODUCT_VENDOR: '"Allterco"'
@@ -106,29 +124,31 @@ cdefs:
   LED_GPIO: -1
   BTN_GPIO: -1
   BTN_NOISY: 1
+  RST_GPIO_INIT: -1
   HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
-  - origin: https://github.com/mongoose-os-libs/core
-  - origin: https://github.com/mongoose-os-libs/file-logger
-  - origin: https://github.com/mongoose-os-libs/homekit-adk
-  - origin: https://github.com/mongoose-os-libs/mqtt
-  - origin: https://github.com/mongoose-os-libs/ota-http-server
-  - origin: https://github.com/mongoose-os-libs/rpc-service-config
-  - origin: https://github.com/mongoose-os-libs/rpc-service-fs
-  - origin: https://github.com/mongoose-os-libs/rpc-service-ota
-  - origin: https://github.com/mongoose-os-libs/rpc-uart
-  - origin: https://github.com/mongoose-os-libs/http-server
-  - origin: https://github.com/mongoose-os-libs/rpc-mqtt
-  - origin: https://github.com/mongoose-os-libs/rpc-ws
-  - origin: https://github.com/mongoose-os-libs/sntp
+  - location: ./libreset
+  - location: https://github.com/mongoose-os-libs/core
+  - location: https://github.com/mongoose-os-libs/file-logger
+  - location: https://github.com/mongoose-os-libs/homekit-adk
+  - location: https://github.com/mongoose-os-libs/http-server
+  - location: https://github.com/mongoose-os-libs/ota-http-server
+  - location: https://github.com/mongoose-os-libs/rpc-service-config
+  - location: https://github.com/mongoose-os-libs/rpc-service-fs
+  - location: https://github.com/mongoose-os-libs/rpc-service-ota
+  - location: https://github.com/mongoose-os-libs/rpc-uart
+  # Not enough space on 2.5
+  # - location: https://github.com/mongoose-os-libs/rpc-mqtt
+  - location: https://github.com/mongoose-os-libs/rpc-ws
+  - location: https://github.com/mongoose-os-libs/sntp
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
     apply:
       name: switch1 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -160,7 +180,7 @@ conds:
     apply:
       name: switch1l # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -199,7 +219,7 @@ conds:
     apply:
       name: switch1pm # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -236,7 +256,7 @@ conds:
     apply:
       name: switch
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -277,9 +297,9 @@ conds:
       includes:
         - src/ADE7953
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
-        - origin: https://github.com/mongoose-os-libs/ade7953
+        - location: https://github.com/mongoose-os-libs/ade7953
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
@@ -323,7 +343,7 @@ conds:
     apply:
       name: ix3
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -365,7 +385,7 @@ conds:
     apply:
       name: shelly-plug2 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         # Note: 4 MB flash chip
@@ -394,7 +414,7 @@ conds:
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -421,6 +441,38 @@ conds:
         - ["sw1.state_led_en", 1]
         - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
 
+  - when: build_vars.MODEL == "ShellyRGBW2"
+    apply:
+      name: rgbw2-color # To allow OTA from stock fw.
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x7000  # To be compatible with stock firmware.
+        MGOS_ROOT_FS_TYPE: SPIFFS
+      cdefs:
+        LED_GPIO: 2
+        LED_ON: 0
+        BTN_GPIO: 13
+        BTN_DOWN: 0
+        BTN_NOISY: 0
+        RST_GPIO_INIT: 15 # reset GPIO 15 to prevent green flash on startup
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHRGBW2-color"'
+        # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW"
+        - ["device.id", "shellyrgbw2-??????"]
+        - ["shelly.name", "shellyrgbw2-??????"]
+        - ["wifi.ap.ssid", "shellyrgbw2-??????"]
+        - ["lb1", "lb", {title: "RGB 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+
   - when: mos.platform != "ubuntu"
     apply:
       config_schema:
@@ -435,13 +487,16 @@ conds:
         # While this is being investigated, the workaround is to reboot if not connected for 5 minutes when supposed to be.
         - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
-        - origin: https://github.com/mongoose-os-libs/adc
-        - origin: https://github.com/mongoose-os-libs/wifi
+        - location: https://github.com/mongoose-os-libs/adc
+        - location: https://github.com/mongoose-os-libs/pwm
+        - location: https://github.com/mongoose-os-libs/wifi
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
+      sources:
+        - src/mock/pwm
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
@@ -453,7 +508,6 @@ conds:
         - ["device.id", "ShellyU-????"]
         - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
-        - ["http.document_root", "."]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -464,8 +518,9 @@ conds:
     apply:
       sources:
         - src/Shelly25/shelly_init_components.cpp  # Same components as Shelly25
+        - src/mock/pwm
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
@@ -477,7 +532,6 @@ conds:
         - ["device.id", "ShellyU25-????"]
         - ["shelly.name", "ShellyU25-????"]
         - ["file_logger.dir", "./"]
-        - ["http.document_root", "."]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU25 SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]

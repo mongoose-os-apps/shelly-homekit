@@ -34,9 +34,6 @@
 #if CS_PLATFORM == CS_P_ESP8266
 #include "esp_coredump.h"
 #include "esp_rboot.h"
-extern "C" {
-#include "user_interface.h"
-}
 #endif
 
 #include "HAP.h"
@@ -61,7 +58,6 @@ extern "C" {
 #include "shelly_switch.hpp"
 #include "shelly_temp_sensor.hpp"
 
-#define KVS_FILE_NAME "kvs.json"
 #define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
 
@@ -155,7 +151,6 @@ static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 static std::vector<std::unique_ptr<mgos::hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
-static bool s_failsafe_mode = false;
 std::vector<std::unique_ptr<Component>> g_comps;
 
 template <class T>
@@ -175,25 +170,6 @@ PowerMeter *FindPM(int id) {
   return FindById(s_pms, id);
 }
 
-// Executed very early, pretty much nothing is available here.
-extern "C" void mgos_app_preinit(void) {
-#if BTN_GPIO >= 0
-  mgos_gpio_setup_input(BTN_GPIO,
-                        (BTN_DOWN ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP));
-  int i = 10;
-  while (mgos_gpio_read(BTN_GPIO) == BTN_DOWN && i > 0) {
-    mgos_msleep(10);
-    i--;
-  }
-  if (i == 0) {
-    s_failsafe_mode = true;
-#if LED_GPIO >= 0
-    mgos_gpio_setup_output(LED_GPIO, LED_ON);
-#endif
-  }
-#endif
-}
-
 static void DoReset(void *arg) {
   intptr_t out_gpio = (intptr_t) arg;
   if (out_gpio >= 0) {
@@ -204,7 +180,14 @@ static void DoReset(void *arg) {
 #ifdef MGOS_SYS_CONFIG_HAVE_WIFI
   mgos_sys_config_set_wifi_sta_enable(false);
   mgos_sys_config_set_wifi_ap_enable(true);
-  mgos_sys_config_save(&mgos_sys_config, false, nullptr);
+#endif
+  mgos_sys_config_set_rpc_acl_file(nullptr);
+  mgos_sys_config_set_rpc_auth_file(nullptr);
+  mgos_sys_config_set_http_auth_file(nullptr);
+  if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
+    remove(AUTH_FILE_NAME);
+  }
+#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
   mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
 #endif
   CheckLED(LED_GPIO, LED_ON);
@@ -277,7 +260,13 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     sw2->set_primary(true);
     pri_acc->SetCategory(cat);
     pri_acc->AddService(sw2);
-    pri_acc->SetName(sw2->name());
+    // This was requested in
+    // https://github.com/mongoose-os-apps/shelly-homekit/issues/237 however,
+    // without https://github.com/mongoose-os-libs/dns-sd/issues/5 it causes
+    // confusion when multiple accessories advertise the same name (reported in
+    // https://github.com/mongoose-os-apps/shelly-homekit/issues/561).
+    // So for now we're going back to less readable but unique accessory names.
+    // pri_acc->SetName(sw2->name());
     return;
   }
   if (!sw_hidden) {
@@ -601,13 +590,13 @@ static bool shelly_cfg_migrate(void) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
-          static_cast<int>(ShellySwitch::InitialState::kLast));
+          static_cast<int>(InitialState::kLast));
     }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
     if (mgos_sys_config_get_sw2_persist_state()) {
       mgos_sys_config_set_sw2_initial_state(
-          static_cast<int>(ShellySwitch::InitialState::kLast));
+          static_cast<int>(InitialState::kLast));
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(1);
@@ -654,6 +643,24 @@ static bool shelly_cfg_migrate(void) {
     mgos_sys_config_set_shelly_cfg_version(4);
     changed = true;
   }
+  if (mgos_sys_config_get_shelly_cfg_version() == 4) {
+    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+      LOG(LL_ERROR, ("Failed to increment CN"));
+    }
+    // Disable file logging.
+    if (mgos_sys_config_get_file_logger_enable()) {
+      SetDebugEnable(false);
+    }
+    mgos_sys_config_set_shelly_cfg_version(5);
+    changed = true;
+  }
+  // 2.9.0-alpha3 -> alpha3 ACL settings workaround. Can be removed after 2.9.0.
+  if (mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_domain()) &&
+      !mgos_conf_str_empty(mgos_sys_config_get_rpc_acl_file())) {
+    mgos_sys_config_set_rpc_acl_file(NULL);
+    mgos_sys_config_set_rpc_auth_file(NULL);
+    changed = true;
+  }
   return changed;
 }
 
@@ -663,12 +670,12 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
       kHAPAccessoryServerState_Running) {
     HAPAccessoryServerStop(&s_server);
   }
-  if (ev == MGOS_EVENT_REBOOT) {
+  if (ev == MGOS_EVENT_REBOOT &&
+      !(s_service_flags & SHELLY_SERVICE_FLAG_REVERT)) {
     // Increment CN on every reboot, because why not.
     // This will cover firmware update as well as other configuration changes.
-    uint16_t cn;
-    if (HAPAccessoryServerGetCN(&s_kvs, &cn) != kHAPError_None) {
-      cn = 0;
+    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+      LOG(LL_ERROR, ("Failed to increment CN"));
     }
   }
   (void) ev;
@@ -765,6 +772,22 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
     s_wait_start = mgos_uptime();
   }
   s_service_flags |= SHELLY_SERVICE_FLAG_UPDATE;
+  s_service_flags &= ~SHELLY_SERVICE_FLAG_REVERT;
+  // Are we reverting to stock? Stock fw does not have "hk_model"
+  char *hk_model = nullptr;
+  json_scanf(arg->mi.manifest.p, arg->mi.manifest.len, "{shelly_hk_model: %Q}",
+             &hk_model);
+  mgos::ScopedCPtr hk_model_owner(hk_model);
+  if (hk_model == nullptr) {
+    // hk_model was added in 2.9.1, for now we also check version in the
+    // manifest to double-check: stock has manifest version always set to "1.0"
+    // while HK has actual version there.
+    // This check can be removed after a few versions with hk_model.
+    if (mg_vcmp(&arg->mi.version, "1.0") == 0) {
+      LOG(LL_INFO, ("This is a revert to stock firmware"));
+      s_service_flags |= SHELLY_SERVICE_FLAG_REVERT;
+    }
+  }
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
     // There is a bug in HAP server where it will get stuck and fail to shut
     // down reported to happen after approximately 25 days. This is a workaround
@@ -784,12 +807,22 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
+static void WipeDeviceRevertToStockCB(void *) {
+  WipeDeviceRevertToStock();
+}
+
 static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
   // Restart server in case of error.
   // In case of success we are going to reboot anyway.
   if (arg->state == MGOS_OTA_STATE_ERROR) {
-    s_service_flags &= ~SHELLY_SERVICE_FLAG_UPDATE;
+    s_service_flags &=
+        ~(SHELLY_SERVICE_FLAG_UPDATE | SHELLY_SERVICE_FLAG_REVERT);
+  } else if (arg->state == MGOS_OTA_STATE_SUCCESS &&
+             (s_service_flags & SHELLY_SERVICE_FLAG_REVERT)) {
+    // For some reason if WipeDeviceRevertToStock is done inline the client
+    // doesn't get a response to the POST request.
+    mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
   }
   (void) ev;
   (void) ev_data;
@@ -806,11 +839,13 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "relaydata",
       "index.html",
       "conf9_backup.json",
+      "conf3.json",
       // Obsolete files from previopus versions.
-      "style.css",
       "axios.min.js.gz",
-      "style.css.gz",
+      "favicon.ico",
       "logo.png",
+      "style.css",
+      "style.css.gz",
   };
   for (const char *skip_fn : s_skip_files) {
     if (strcmp(file_name, skip_fn) == 0) return false;
@@ -823,43 +858,40 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
   return (stat(buf, &st) != 0);
 }
 
-bool WipeDevice() {
-  static const char *s_wipe_files[] = {
-      "conf2.json",
-      "conf9.json",
-      KVS_FILE_NAME,
-  };
-  bool wiped = false;
-  for (const char *wipe_fn : s_wipe_files) {
-    if (remove(wipe_fn) == 0) wiped = true;
+static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
+                        void *user_data) {
+  if (ev != MG_EV_HTTP_REQUEST) return;
+  struct http_message *hm = (struct http_message *) ev_data;
+  const char *file = nullptr, *type = nullptr;
+  if (mg_vcasecmp(&hm->method, "GET") == 0) {
+    if (mg_vcmp(&hm->uri, "/") == 0) {
+      file = "index.html.gz";
+      type = "text/html";
+    } else if (mg_vcmp(&hm->uri, "/favicon.ico") == 0) {
+      file = "favicon.ico.gz";
+      type = "image/x-icon";
+    }
   }
-#if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
-  if (wiped) {
-    mgos_vfs_gc("/");
+  if (file == nullptr) {
+    mg_http_send_error(nc, 404, nullptr);
+    nc->flags |= MG_F_SEND_AND_CLOSE;
+    return;
   }
-#endif
-  return wiped;
-}
-
-bool IsSoftReboot() {
-#if CS_PLATFORM == CS_P_ESP8266
-  const struct rst_info *ri = system_get_rst_info();
-  return (ri->reason == REASON_SOFT_RESTART);
-#else
-  return false;
-#endif
+  mg_http_serve_file(nc, hm, file, mg_mk_str(type),
+                     mg_mk_str("Content-Encoding: gzip\r\nPragma: no-cache"));
+  (void) user_data;
 }
 
 void InitApp() {
-  if (s_failsafe_mode) {
-    if (WipeDevice()) {
-      LOG(LL_INFO, ("== Wiped config, rebooting"));
-      mgos_system_restart_after(100);
-      return;
-    } else {
-      LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
-      shelly_rpc_service_init(nullptr, nullptr, nullptr);
-    }
+  struct mg_http_endpoint_opts opts = {};
+  mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
+
+  if (IsFailsafeMode()) {
+    LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
+    shelly_rpc_service_init(nullptr, nullptr, nullptr);
+#if LED_GPIO >= 0
+    mgos_gpio_setup_output(LED_GPIO, LED_ON);
+#endif
     return;
   }
 
@@ -920,9 +952,7 @@ void InitApp() {
 
 }  // namespace shelly
 
-extern "C" {
-enum mgos_app_init_result mgos_app_init(void) {
+extern "C" enum mgos_app_init_result mgos_app_init(void) {
   shelly::InitApp();
   return MGOS_APP_INIT_SUCCESS;
-}
 }

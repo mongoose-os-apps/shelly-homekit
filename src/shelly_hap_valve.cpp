@@ -73,6 +73,9 @@ Status Valve::Init() {
   state_notify_chars_.push_back(valve_type_char);
   AddChar(valve_type_char);
 
+  // Power
+  AddPowerMeter(&iid);
+
   return Status::OK();
 }
 

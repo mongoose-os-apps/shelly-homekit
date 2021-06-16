@@ -3,7 +3,10 @@ build/
 build_*/
 deps/
 releases/
+.vscode/
 .DS_Store
 core-*
 *.gz
 *.zip
+flash-shelly.auth.yaml
+fs/conf*.json

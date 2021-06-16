@@ -36,24 +36,6 @@ namespace shelly {
 // Common base for Switch, Outlet and Lock services.
 class ShellySwitch : public Component, public mgos::hap::Service {
  public:
-  enum class InMode {
-    kAbsent = -1,
-    kMomentary = 0,
-    kToggle = 1,
-    kEdge = 2,
-    kDetached = 3,
-    kActivation = 4,
-    kMax,
-  };
-
-  enum class InitialState {
-    kOff = 0,
-    kOn = 1,
-    kLast = 2,
-    kInput = 3,
-    kMax,
-  };
-
   ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
                Output *led_out, struct mgos_config_sw *cfg);
   virtual ~ShellySwitch();
@@ -92,6 +74,14 @@ class ShellySwitch : public Component, public mgos::hap::Service {
   bool dirty_ = false;
 
   ShellySwitch(const ShellySwitch &other) = delete;
+
+  void AddPowerMeter(uint16_t *iid);
+  void PowerMeterTimerCB();
+  mgos::Timer power_timer_;
+  mgos::hap::Characteristic *power_char_ = nullptr;
+  mgos::hap::Characteristic *total_power_char_ = nullptr;
+  float last_power_ = 0.0f;
+  float last_total_power_ = 0.0f;
 };
 
 }  // namespace shelly

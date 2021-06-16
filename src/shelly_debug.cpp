@@ -200,7 +200,7 @@ void mg_http_handler_wrapper(struct mg_connection *nc, int ev, void *ev_data,
     nc->flags &= ~MG_F_SEND_AND_CLOSE;
     nc->proto_handler = nullptr;
     nc->handler = DebugLogTailHandler;
-    LOG(LL_INFO, ("Tailing"));
+    LOG(LL_INFO, ("%s log file, sending new entries", "End of"));
   }
 }
 
@@ -224,6 +224,7 @@ static void DebugLogHandler(struct mg_connection *nc, int ev, void *ev_data,
                             "Pragma: no-store\r\n");
       s_tail_conns.push_front(nc);
       nc->handler = DebugLogTailHandler;
+      LOG(LL_INFO, ("%s log file, sending new entries", "No"));
     }
     return;
   }
