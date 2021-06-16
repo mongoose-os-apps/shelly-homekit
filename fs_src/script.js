@@ -68,7 +68,6 @@ el("sys_save_btn").onclick = function () {
   callDevice("Shelly.SetConfig", data).then(function () {
     setTimeout(() => {
       el("sys_save_spinner").className = "";
-      if (err.response) err = err.response.data.message;
       pauseAutoRefresh = false;
       refreshUI();
     }, 1300);
@@ -77,7 +76,7 @@ el("sys_save_btn").onclick = function () {
     if (err.response) err = err.response.data.message;
     pauseAutoRefresh = false;
     alert(err);
-  });      
+  });
 };
 
 el("hap_setup_btn").onclick = function () {
@@ -241,7 +240,7 @@ function setComponentState(c, state, spinner) {
 
 function autoOffDelayValid(value) {
   parsedValue = dateStringToSeconds(value);
-  return parsedValue >= 0.010 && (parsedValue <= 2147483.647);
+  return (parsedValue >= 0.010) && (parsedValue <= 2147483.647);
 }
 
 function dateStringToSeconds(dateString) {
@@ -448,12 +447,7 @@ el("reboot_btn").onclick = function () {
 };
 
 el("reset_btn").onclick = function () {
-  if (
-    !confirm(
-      "Device configuration will be wiped and return to AP mode. Are you sure?"
-    )
-  )
-    return;
+  if(!confirm("Device configuration will be wiped and return to AP mode. Are you sure?")) return;
 
   callDevice("Shelly.WipeDevice", {}).then(function () {
     alert("Device configuration has been reset, it will reboot in AP mode.");
@@ -691,7 +685,7 @@ function updateComponent(cd) {
         el(c, "cal").innerText = "not calibrated";
         el(c, "pos_ctl").style.display = "none";
       }
-      if (cd.state >= 10 && cd.state < 20) { // Calibration is ongoing.
+      if (cd.state >= 10 && cd.state < 20) {  // Calibration is ongoing.
         el(c, "cal_spinner").className = "spin";
         el(c, "cal").innerText = "in progress";
       } else if (!(cd.state >= 20 && cd.state <= 25)) {
@@ -735,7 +729,7 @@ function updateComponent(cd) {
       checkIfNotModified(el(c, "inverted"), cd.inverted);
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       setValueIfNotModified(el(c, "idle_time"), cd.idle_time);
-      el(c, "idle_time_container").style.display = cd.in_mode == 0 ? "none" : "block";
+      el(c, "idle_time_container").style.display = (cd.in_mode == 0 ? "none" : "block");
       var what = (cd.type == 7 ? "motion" : "occupancy");
       var statusText = (cd.state ? `${what} detected` : `no ${what} detected`);
       if (cd.last_ev_age > 0) {
@@ -1213,11 +1207,10 @@ function refreshUI() {
 
 function setValueIfNotModified(e, newValue) {
   // do not update the value of the input field if
-  if (e.selected || // the user has selected / highlighted the input field OR
-    e.lastSetValue === e.value || // the value has not been changed by the user OR
-    (e.lastSetValue !== undefined && // a value has previously been set AND
-      e.lastSetValue !== e.value) // it is not currently the same as the visible value
-  )
+  if (e.selected ||                    // the user has selected / highlighted the input field OR
+    e.lastSetValue === e.value ||      // the value has not been changed by the user OR
+    (e.lastSetValue !== undefined &&   // a value has previously been set AND
+      e.lastSetValue !== e.value))     // it is not currently the same as the visible value
     return;
   e.value = e.lastSetValue = newValue;
 }
@@ -1225,11 +1218,9 @@ function setValueIfNotModified(e, newValue) {
 function checkIfNotModified(e, newState) {
   // do not update the checked value if
   if (
-    e.lastSetValue === e.checked || // the value has not changed (unnecessary) OR
-    (e.lastSetValue !== undefined && // a value has previously been set AND
-      e.lastSetValue !== e.checked)
-  )
-    // it is not currently the same as the visible value
+    e.lastSetValue === e.checked ||    // the value has not changed (unnecessary) OR
+    (e.lastSetValue !== undefined &&   // a value has previously been set AND
+      e.lastSetValue !== e.checked))   // it is not currently the same as the visible value
     return;
   e.checked = e.lastSetValue = newState;
 }
@@ -1254,11 +1245,10 @@ function durationStr(d) {
   d %= 3600;
   var mins = parseInt(d / 60);
   var secs = d % 60;
-  return (days + ":" +
+  return days + ":" +
     nDigitString(hours, 2) + ":" +
     nDigitString(mins, 2) + ":" +
-    nDigitString(secs, 2)
-  );
+    nDigitString(secs, 2);
 }
 
 async function downloadUpdate(fwURL, spinner, status) {
@@ -1365,16 +1355,16 @@ function checkUpdate() {
   e.innerText = "";
   se.className = "spin";
   console.log("Model:", model, "Version:", curVersion);
-  fetch("https://rojer.me/files/shelly/update.json", 
+  fetch("https://rojer.me/files/shelly/update.json",
     {
       headers: {
         "X-Model": model,
         "X-Current-Version": curVersion,
         "X-Current-Build": lastInfo.fw_build,
         "X-Device-ID": lastInfo.device_id,
-      },
+      }
     })
-    .then((resp) => resp.json())
+    .then(resp => resp.json())
     .then((resp) => {
       // save the cookie before anything else, so that if update not
       // found we still remember that we tried to check for an update
