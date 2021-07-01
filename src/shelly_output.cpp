@@ -23,7 +23,25 @@
 
 namespace shelly {
 
+#if MGOS_HAVE_PROMETHEUS_METRICS
+#include "mgos_prometheus_metrics.h"
+
+static void metrics_shelly_output(struct mg_connection *nc, void *user_data) {
+  Output* out = (Output*) user_data;
+
+ mgos_prometheus_metrics_printf(
+        nc, GAUGE, "shelly_output", "Output state",
+        "{id=\"%d\"} %d", out->id(), out->GetState());
+    
+  (void) user_data;
+}
+#endif // MGOS_HAVE_PROMETHEUS_METRICS
+
+
 Output::Output(int id) : id_(id) {
+   #if MGOS_HAVE_PROMETHEUS_METRICS
+    mgos_prometheus_metrics_add_handler(metrics_shelly_output, this);
+  #endif
 }
 
 Output::~Output() {

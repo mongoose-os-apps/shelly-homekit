@@ -140,6 +140,7 @@ libs:
   # - location: https://github.com/mongoose-os-libs/rpc-mqtt
   - location: https://github.com/mongoose-os-libs/rpc-ws
   - location: https://github.com/mongoose-os-libs/sntp
+  - location: https://github.com/mongoose-os-libs/prometheus-metrics
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
