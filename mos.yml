@@ -31,7 +31,6 @@ config_schema:
   - ["rpc.auth_algo", 1]  # SHA-256
   - ["rpc.auth_domain", ""]
   - ["sntp.enable", true]
-  - ["wifi.sta_all_chan_scan", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
   - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported)"}]
@@ -481,6 +480,8 @@ conds:
         - ["wifi.ap.dhcp_start", "192.168.33.2"]
         - ["wifi.ap.dhcp_end", "192.168.33.100"]
         - ["wifi.sta_connect_timeout", 15]
+        - ["wifi.sta_roam_rssi_thr", -80]
+        - ["wifi.sta_roam_interval", 600]
         # This is a mitigation for devices dropping of wifi and never coming back.
         # While this is being investigated, the workaround is to reboot if not connected for 5 minutes when supposed to be.
         - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
