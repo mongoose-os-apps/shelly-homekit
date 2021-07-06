@@ -27,6 +27,7 @@ endif
 build: Shelly1 Shelly1L Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2 ShellyU ShellyU25
 
 release:
+	@[ -z "$(wildcard fs/conf*.json)" ] || { echo; echo "XXX No configs in release builds allowed"; echo; exit 1; }
 	$(MAKE) build CLEAN=1 RELEASE=1
 
 PLATFORM ?= esp8266
