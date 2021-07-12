@@ -818,11 +818,16 @@ static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   if (arg->state == MGOS_OTA_STATE_ERROR) {
     s_service_flags &=
         ~(SHELLY_SERVICE_FLAG_UPDATE | SHELLY_SERVICE_FLAG_REVERT);
-  } else if (arg->state == MGOS_OTA_STATE_SUCCESS &&
-             (s_service_flags & SHELLY_SERVICE_FLAG_REVERT)) {
-    // For some reason if WipeDeviceRevertToStock is done inline the client
-    // doesn't get a response to the POST request.
-    mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
+  } else if (arg->state == MGOS_OTA_STATE_SUCCESS) {
+#if CS_PLATFORM == CS_P_ESP8266
+    // Disable flash core dump because it would overwite the new fw.
+    esp_core_dump_set_flash_area(0, 0);
+#endif
+    if (s_service_flags & SHELLY_SERVICE_FLAG_REVERT) {
+      // For some reason if WipeDeviceRevertToStock is done inline the client
+      // doesn't get a response to the POST request.
+      mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
+    }
   }
   (void) ev;
   (void) ev_data;
