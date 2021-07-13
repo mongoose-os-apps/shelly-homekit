@@ -35,7 +35,7 @@ button {
 button label {
   position: relative;
   cursor: pointer;
-  min-width: 10em;
+  min-width: 9em !important;
 }
 
 a, a:link, a:visited {
@@ -88,7 +88,7 @@ h1 {
 }
 
 .form label {
-  min-width: 9.5em;
+  min-width: 9.0em;
   display: inline-block;
 }
 
@@ -148,7 +148,7 @@ a.badge {
 
 .title {
   color: #454955;
-  font-size: 36px;
+  font-size: 34px;
   font-weight: lighter;
   text-align: left;
   line-height: normal;
@@ -156,7 +156,7 @@ a.badge {
 
 #logo {
   display: block;
-  margin: 8px;
+  margin: 8px 0px;
   float: left;
   width: 80px;
   height: 80px;
