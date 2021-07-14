@@ -66,6 +66,8 @@ uint8_t GetServiceFlags();
 
 HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request);
 
+int GetOTAProgress();
+
 // Implemented for each model.
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,

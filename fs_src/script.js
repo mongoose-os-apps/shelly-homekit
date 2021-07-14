@@ -857,6 +857,11 @@ function updateElement(key, value, info) {
     case "overheat_on":
       el("notify_overheat").style.display = (value ? "inline" : "none");
       break;
+    case "ota_progress":
+      if (value >= 0) {
+        el("update_status").innerText = `${value}%`;
+      }
+      break;
   }
 }
 
@@ -1144,10 +1149,20 @@ function callDevice(method, params = []) {
   return callDeviceAuth(method, params, null);
 }
 
-el("auth_log_in_btn").onclick = function () {
+function doLogin() {
   el("auth_log_in_spinner").className = "spin";
   getInfo().finally(() => el("auth_log_in_spinner").className = "");
+}
+
+el("auth_log_in_btn").onclick = function () {
+  doLogin();
   return true;
+};
+
+el("auth_pass").onkeyup = function (e) {
+  console.log(e);
+  if (e.code == "Enter") doLogin();
+  return false;
 };
 
 el("sec_log_out_btn").onclick = function () {
