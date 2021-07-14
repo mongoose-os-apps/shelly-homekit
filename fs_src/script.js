@@ -80,7 +80,6 @@ el("sys_save_btn").onclick = function () {
 };
 
 el("hap_setup_btn").onclick = function () {
-  if(lastInfo.hap_running && !confirm("This will erase all pairings and clear setup code. Are you sure?")) return;
   el("hap_setup_spinner").className = "spin";
   callDevice("HAP.Setup", {"code": "RANDOMCODE", "id": "RANDOMID"})
     .then(function (resp) {
@@ -800,7 +799,15 @@ function updateElement(key, value, info) {
       }
       break;
     case "hap_paired":
-      el(key).innerText = (value ? "yes" : "no");
+      if (value) {
+        el(key).innerText = "yes";
+        el("hap_setup_btn").style.display = "none";
+        el("hap_reset_btn").style.display = "";
+      } else {
+        el(key).innerText = "no";
+        el("hap_setup_btn").style.display = "";
+        el("hap_reset_btn").style.display = "none";
+      }
       break;
     case "hap_cn":
       if (value !== el("components").cn) {
@@ -814,9 +821,11 @@ function updateElement(key, value, info) {
       for (let i in value) updateComponent(value[i]);
       break;
     case "hap_running":
-      if (!value) el("hap_ip_conns_max").innerText = "server not running"
-      el("hap_ip_conns_pending").style.display = "none";
-      el("hap_ip_conns_active").style.display = "none";
+      if (!value) {
+        el("hap_ip_conns_max").innerText = "server not running"
+        el("hap_ip_conns_pending").style.display = "none";
+        el("hap_ip_conns_active").style.display = "none";
+      }
       break;
     case "hap_ip_conns_pending":
     case "hap_ip_conns_active":
