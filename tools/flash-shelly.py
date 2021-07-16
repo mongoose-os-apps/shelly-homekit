@@ -22,9 +22,9 @@ version of this firmware, if you are looking to flash your device from stock
 or any other firmware please follow instructions here:
 https://github.com/mongoose-os-apps/shelly-homekit/wiki
 
-usage: flash-shelly.py [-h] [--app-version] [-f] [-l] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-e [EXCLUDE ...]] [-n] [-y] [-V VERSION]
-                       [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK] [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT]
-                       [--log-file LOG_FILENAME] [--reboot] [--user USER] [--password PASSWORD]
+usage: flash-shelly.py [-h] [--app-version] [-f] [-l] [-m {homekit,keep,revert}] [-i {1,2,3}] [-ft {homekit,stock,all}] [-mt MODEL_TYPE_FILTER] [-dn DEVICE_NAME_FILTER] [-a] [-q] [-e [EXCLUDE ...]] [-n]
+                       [-y] [-V VERSION] [--force] [--variant VARIANT] [--local-file LOCAL_FILE] [-c HAP_SETUP_CODE] [--ip-type {dhcp,static}] [--ip IPV4_IP] [--gw IPV4_GW] [--mask IPV4_MASK]
+                       [--dns IPV4_DNS] [-v {0,1,2,3,4,5}] [--timeout TIMEOUT] [--log-file LOG_FILENAME] [--reboot] [--user USER] [--password PASSWORD]
                        [hosts ...]
 
 Shelly HomeKit flashing script utility
@@ -54,7 +54,8 @@ optional arguments:
   -n, --assume-no       Do a dummy run through.
   -y, --assume-yes      Do not ask any confirmation to perform the flash.
   -V VERSION, --version VERSION
-                        Force a particular version.
+                        Flash a particular version.
+  --force               Force a flash
   --variant VARIANT     Pre-release variant name.
   --local-file LOCAL_FILE
                         Use local file to flash.
@@ -139,7 +140,7 @@ except ImportError:
   install_import('pyyaml')
   import yaml
 
-app_ver = '2.8.0'
+app_ver = '2.8.2'
 security_file = 'flash-shelly.auth.yaml'
 webserver_port = 8381
 http_server_started = False
@@ -677,6 +678,7 @@ class Main:
     self.exclude = None
     self.version = None
     self.variant = None
+    self.force = None
     self.hap_setup_code = None
     self.local_file = None
     self.network_type = None
@@ -783,7 +785,8 @@ class Main:
     parser.add_argument('-e', '--exclude', dest="exclude", nargs='*', default='', help="Exclude hosts from found devices.")
     parser.add_argument('-n', '--assume-no', action="store_true", dest='dry_run', help="Do a dummy run through.")
     parser.add_argument('-y', '--assume-yes', action="store_true", dest='silent_run', help="Do not ask any confirmation to perform the flash.")
-    parser.add_argument('-V', '--version', type=str, dest="version", default='', help="Force a particular version.")
+    parser.add_argument('-V', '--version', type=str, dest="version", default=None, help="Flash a particular version.")
+    parser.add_argument('--force', action="store_true", dest='force', default=None, help="Force a flash")
     parser.add_argument('--variant', dest="variant", default='', help="Pre-release variant name.")
     parser.add_argument('--local-file', dest="local_file", default='', help="Use local file to flash.")
     parser.add_argument('-c', '--hap-setup-code', dest="hap_setup_code", default='', help="Configure HomeKit setup code, after flashing.")
@@ -864,6 +867,7 @@ class Main:
     logger.debug(f"exclude: {args.exclude}")
     logger.debug(f"local_file: {args.local_file}")
     logger.debug(f"variant: {args.variant}")
+    logger.debug(f"force: {args.force}")
     logger.debug(f"verbose: {args.verbose}")
     logger.debug(f"hap_setup_code: {args.hap_setup_code}")
     logger.debug(f"network_type: {args.network_type}")
@@ -888,6 +892,7 @@ class Main:
     self.exclude = args.exclude
     self.version = args.version
     self.variant = args.variant
+    self.force = args.force
     self.hap_setup_code = args.hap_setup_code
     self.local_file = args.local_file
     self.network_type = args.network_type
@@ -1177,10 +1182,10 @@ class Main:
     current_fw_version = device_info.fw_version
     current_fw_type = device_info.info.get('fw_type')
     current_fw_type_str = device_info.fw_type_str
-    flash_fw_version = device_info.flash_fw_version
+    flash_fw_version = device_info.version if device_info.version else device_info.flash_fw_version
     flash_fw_type_str = device_info.flash_fw_type_str
     force_version = device_info.version
-    force_flash = True if force_version else False
+    force_flash = True if device_info.version and current_fw_version != device_info.version else self.force
     download_url = device_info.download_url
     device_name = device_info.info.get('device_name')
     wifi_ssid = device_info.info.get('wifi_ssid')
@@ -1201,7 +1206,7 @@ class Main:
     logger.debug(f"current_fw_version: {current_fw_type_str} {current_fw_version}")
     logger.debug(f"flash_fw_version: {flash_fw_type_str} {flash_fw_version}")
     logger.debug(f"force_flash: {force_flash}")
-    logger.debug(f"force_version: {force_version}")
+    logger.debug(f"manual_version: {force_version}")
     logger.debug(f"download_url: {download_url}")
     logger.debug(f"not_supported: {not_supported}")
 
