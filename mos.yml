@@ -547,4 +547,42 @@ conds:
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "ShellyU25 GDO"]
 
+  - when: build_vars.MODEL == "Custom2"
+    apply:
+      name: switch
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x1000
+        MGOS_ROOT_FS_TYPE: SPIFFS
+      cdefs:
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-21"'
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["device.id", "custom21-??????"]
+        - ["shelly.name", "custom21-??????"]
+        - ["wifi.ap.ssid", "custom21-??????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["sw2", "sw", {title: "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
+        - ["ssw1.name", "Input 1"]
+        - ["ssw2", "ssw", {title: "SSW2 settings"}]
+        - ["ssw2.name", "Input 2"]
+
+
 manifest_version: 2020-01-29

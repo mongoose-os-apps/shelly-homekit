@@ -1,6 +1,6 @@
 MAKEFLAGS += --warn-undefined-variables
 
-.PHONY: build check-format format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2
+.PHONY: build check-format format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2 Custom2
 
 MOS ?= mos
 # Build locally by default if Docker is available.
@@ -24,7 +24,7 @@ ifneq "$(VERBOSE)$(V)" "00"
   MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
-build: Shelly1 Shelly1L Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2 ShellyU ShellyU25
+build: Shelly1 Shelly1L Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2 ShellyU ShellyU25 Custom2
 
 release:
 	@[ -z "$(wildcard fs/conf*.json fs/kvs.json)" ] || { echo; echo "XXX No configs in release builds allowed"; echo; exit 1; }
@@ -65,6 +65,9 @@ ShellyU: build-ShellyU
 
 ShellyU25: PLATFORM=ubuntu
 ShellyU25: build-ShellyU25
+	@true
+
+Custom2: build-Custom2
 	@true
 
 fs/index.html.gz: $(wildcard fs_src/*) Makefile
