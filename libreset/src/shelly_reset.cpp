@@ -19,6 +19,12 @@
 
 #include "mgos.hpp"
 
+#if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
+extern "C" {
+#include "mgos_vfs.h"
+}
+#endif
+
 #if CS_PLATFORM == CS_P_ESP8266
 extern "C" {
 #include "user_interface.h"
