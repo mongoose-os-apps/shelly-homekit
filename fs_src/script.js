@@ -80,7 +80,6 @@ el("sys_save_btn").onclick = function () {
 };
 
 el("hap_setup_btn").onclick = function () {
-  if(lastInfo.hap_running && !confirm("This will erase all pairings and clear setup code. Are you sure?")) return;
   el("hap_setup_spinner").className = "spin";
   callDevice("HAP.Setup", {"code": "RANDOMCODE", "id": "RANDOMID"})
     .then(function (resp) {
@@ -489,6 +488,9 @@ function findOrAddContainer(cd) {
       el(c, "close_btn").onclick = function () {
         setComponentState(c, {tgt_pos: 0}, el(c, "close_spinner"));
       };
+      el(c, "set_tgt_pos_button").onclick = function () {
+        setComponentState(c, {tgt_pos: el(c, "set_tgt_pos_input").value}, el(c, "close_spinner"));
+      }
       el(c, "save_btn").onclick = function () {
         wcSetConfig(c, null, el(c, "save_spinner"))
       };
@@ -800,7 +802,15 @@ function updateElement(key, value, info) {
       }
       break;
     case "hap_paired":
-      el(key).innerText = (value ? "yes" : "no");
+      if (value) {
+        el(key).innerText = "yes";
+        el("hap_setup_btn").style.display = "none";
+        el("hap_reset_btn").style.display = "";
+      } else {
+        el(key).innerText = "no";
+        el("hap_setup_btn").style.display = "";
+        el("hap_reset_btn").style.display = "none";
+      }
       break;
     case "hap_cn":
       if (value !== el("components").cn) {
@@ -814,9 +824,11 @@ function updateElement(key, value, info) {
       for (let i in value) updateComponent(value[i]);
       break;
     case "hap_running":
-      if (!value) el("hap_ip_conns_max").innerText = "server not running"
-      el("hap_ip_conns_pending").style.display = "none";
-      el("hap_ip_conns_active").style.display = "none";
+      if (!value) {
+        el("hap_ip_conns_max").innerText = "server not running"
+        el("hap_ip_conns_pending").style.display = "none";
+        el("hap_ip_conns_active").style.display = "none";
+      }
       break;
     case "hap_ip_conns_pending":
     case "hap_ip_conns_active":
@@ -847,6 +859,11 @@ function updateElement(key, value, info) {
       break;
     case "overheat_on":
       el("notify_overheat").style.display = (value ? "inline" : "none");
+      break;
+    case "ota_progress":
+      if (value >= 0) {
+        el("update_status").innerText = `${value}%`;
+      }
       break;
   }
 }
@@ -1135,10 +1152,20 @@ function callDevice(method, params = []) {
   return callDeviceAuth(method, params, null);
 }
 
-el("auth_log_in_btn").onclick = function () {
+function doLogin() {
   el("auth_log_in_spinner").className = "spin";
   getInfo().finally(() => el("auth_log_in_spinner").className = "");
+}
+
+el("auth_log_in_btn").onclick = function () {
+  doLogin();
   return true;
+};
+
+el("auth_pass").onkeyup = function (e) {
+  console.log(e);
+  if (e.code == "Enter") doLogin();
+  return false;
 };
 
 el("sec_log_out_btn").onclick = function () {
