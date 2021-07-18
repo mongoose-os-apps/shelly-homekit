@@ -19,7 +19,29 @@
 
 namespace shelly {
 
+
+#if MGOS_HAVE_PROMETHEUS_METRICS
+#include "mgos_prometheus_metrics.h"
+
+static void metrics_shelly_temperatur(struct mg_connection *nc, void *user_data) {
+  TempSensor* sensor = (TempSensor*) user_data;
+
+  const auto &temp = sensor->GetTemperature();
+  if(temp.ok()) {
+    mgos_prometheus_metrics_printf(
+        nc, GAUGE, "shelly_temperatur", "Temperatur in (Celcius)",
+        "%f", temp.ValueOrDie());
+
+  }
+  (void) user_data;
+}
+#endif // MGOS_HAVE_PROMETHEUS_METRICS
+
+
 TempSensor::TempSensor() {
+   #if MGOS_HAVE_PROMETHEUS_METRICS
+    mgos_prometheus_metrics_add_handler(metrics_shelly_temperatur, this);
+  #endif
 }
 
 TempSensor::~TempSensor() {

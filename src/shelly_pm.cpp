@@ -19,7 +19,35 @@
 
 namespace shelly {
 
+#if MGOS_HAVE_PROMETHEUS_METRICS
+#include "mgos_prometheus_metrics.h"
+
+static void metrics_shelly_powermeter(struct mg_connection *nc, void *user_data) {
+  PowerMeter* pm = (PowerMeter*) user_data;
+
+  const auto &power = pm->GetPowerW();
+  if(power.ok()) {
+    mgos_prometheus_metrics_printf(
+        nc, GAUGE, "shelly_power", "Power in (Watt)",
+        "{id=\"%d\"} %f", pm->id(), power.ValueOrDie());
+
+  }
+    
+  const auto &energy = pm->GetEnergyWH();
+  if(energy.ok()) {
+    mgos_prometheus_metrics_printf(
+        nc, GAUGE, "shelly_energy", "Energy in (Watt hour)",
+        "{id=\"%d\"} %f", pm->id(), energy.ValueOrDie());
+  }
+  (void) user_data;
+}
+#endif // MGOS_HAVE_PROMETHEUS_METRICS
+
+
 PowerMeter::PowerMeter(int id) : id_(id) {
+  #if MGOS_HAVE_PROMETHEUS_METRICS
+    mgos_prometheus_metrics_add_handler(metrics_shelly_powermeter, this);
+  #endif
 }
 
 PowerMeter::~PowerMeter() {
