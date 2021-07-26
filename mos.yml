@@ -1,6 +1,6 @@
-author: 'Deomid "rojer" Ryabkov'
+author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.9.2-alpha3
+version: 2.9.3
 platform: esp8266
 
 libs_version: latest
@@ -31,7 +31,6 @@ config_schema:
   - ["rpc.auth_algo", 1]  # SHA-256
   - ["rpc.auth_domain", ""]
   - ["sntp.enable", true]
-  - ["wifi.sta_all_chan_scan", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
   - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported)"}]
@@ -126,27 +125,27 @@ cdefs:
   HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
-  - origin: ./libreset
-  - origin: https://github.com/mongoose-os-libs/core
-  - origin: https://github.com/mongoose-os-libs/file-logger
-  - origin: https://github.com/mongoose-os-libs/homekit-adk
-  - origin: https://github.com/mongoose-os-libs/http-server
-  - origin: https://github.com/mongoose-os-libs/ota-http-server
-  - origin: https://github.com/mongoose-os-libs/rpc-service-config
-  - origin: https://github.com/mongoose-os-libs/rpc-service-fs
-  - origin: https://github.com/mongoose-os-libs/rpc-service-ota
-  - origin: https://github.com/mongoose-os-libs/rpc-uart
+  - location: ./libreset
+  - location: https://github.com/mongoose-os-libs/core
+  - location: https://github.com/mongoose-os-libs/file-logger
+  - location: https://github.com/mongoose-os-libs/homekit-adk
+  - location: https://github.com/mongoose-os-libs/http-server
+  - location: https://github.com/mongoose-os-libs/ota-http-server
+  - location: https://github.com/mongoose-os-libs/rpc-service-config
+  - location: https://github.com/mongoose-os-libs/rpc-service-fs
+  - location: https://github.com/mongoose-os-libs/rpc-service-ota
+  - location: https://github.com/mongoose-os-libs/rpc-uart
   # Not enough space on 2.5
-  # - origin: https://github.com/mongoose-os-libs/rpc-mqtt
-  - origin: https://github.com/mongoose-os-libs/rpc-ws
-  - origin: https://github.com/mongoose-os-libs/sntp
+  # - location: https://github.com/mongoose-os-libs/rpc-mqtt
+  - location: https://github.com/mongoose-os-libs/rpc-ws
+  - location: https://github.com/mongoose-os-libs/sntp
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
     apply:
       name: switch1 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -178,7 +177,7 @@ conds:
     apply:
       name: switch1l # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -217,7 +216,7 @@ conds:
     apply:
       name: switch1pm # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -254,7 +253,7 @@ conds:
     apply:
       name: switch
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -295,9 +294,9 @@ conds:
       includes:
         - src/ADE7953
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
-        - origin: https://github.com/mongoose-os-libs/ade7953
+        - location: https://github.com/mongoose-os-libs/ade7953
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
@@ -341,7 +340,7 @@ conds:
     apply:
       name: ix3
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -383,7 +382,7 @@ conds:
     apply:
       name: shelly-plug2 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         # Note: 4 MB flash chip
@@ -412,7 +411,7 @@ conds:
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -443,7 +442,7 @@ conds:
     apply:
       name: rgbw2-color # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -481,20 +480,22 @@ conds:
         - ["wifi.ap.dhcp_start", "192.168.33.2"]
         - ["wifi.ap.dhcp_end", "192.168.33.100"]
         - ["wifi.sta_connect_timeout", 15]
+        - ["wifi.sta_roam_rssi_thr", -80]
+        - ["wifi.sta_roam_interval", 600]
         # This is a mitigation for devices dropping of wifi and never coming back.
         # While this is being investigated, the workaround is to reboot if not connected for 5 minutes when supposed to be.
         - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
-        - origin: https://github.com/mongoose-os-libs/adc
-        - origin: https://github.com/mongoose-os-libs/pwm
-        - origin: https://github.com/mongoose-os-libs/wifi
+        - location: https://github.com/mongoose-os-libs/adc
+        - location: https://github.com/mongoose-os-libs/pwm
+        - location: https://github.com/mongoose-os-libs/wifi
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
       sources:
         - src/mock/pwm
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
@@ -518,7 +519,7 @@ conds:
         - src/Shelly25/shelly_init_components.cpp  # Same components as Shelly25
         - src/mock/pwm
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
         PRODUCT_HW_REV: '"1.0"'

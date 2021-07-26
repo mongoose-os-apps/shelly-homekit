@@ -25,6 +25,23 @@
 
 namespace shelly {
 
+// Inofficial HK Chars defined by Eve
+// https://gist.github.com/gomfunkel/b1a046d729757120907c#elgato-eve-energy-firmware-revision-131466
+
+// Eve power consumption (W)
+// E863F10D-079E-48FF-8F27-9C2605A29F52
+const HAPUUID kHAPCharacteristic_EveConsumption = {
+    0x52, 0x9F, 0xA2, 0x05, 0x26, 0x9C, 0x27, 0x8F,
+    0xFF, 0x48, 0x9E, 0x07, 0x0D, 0xF1, 0x63, 0xE8,
+};
+
+// Eve total power consumption (kWh)
+// E863F10C-079E-48FF-8F27-9C2605A29F52
+const HAPUUID kHAPCharacteristic_EveTotalConsumption = {
+    0x52, 0x9F, 0xA2, 0x05, 0x26, 0x9C, 0x27, 0x8F,
+    0xFF, 0x48, 0x9E, 0x07, 0x0C, 0xF1, 0x63, 0xE8,
+};
+
 ShellySwitch::ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
                            Output *led_out, struct mgos_config_sw *cfg)
     : Component(id),
@@ -33,7 +50,8 @@ ShellySwitch::ShellySwitch(int id, Input *in, Output *out, PowerMeter *out_pm,
       led_out_(led_out),
       out_pm_(out_pm),
       cfg_(cfg),
-      auto_off_timer_(std::bind(&ShellySwitch::AutoOffTimerCB, this)) {
+      auto_off_timer_(std::bind(&ShellySwitch::AutoOffTimerCB, this)),
+      power_timer_(std::bind(&ShellySwitch::PowerMeterTimerCB, this)) {
 }
 
 ShellySwitch::~ShellySwitch() {
@@ -313,6 +331,52 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
     case Input::Event::kReset:
     case Input::Event::kMax:
       break;
+  }
+}
+
+void ShellySwitch::AddPowerMeter(uint16_t *iid) {
+  if (out_pm_ == nullptr) return;
+
+  // Power
+  power_char_ = new mgos::hap::UInt16Characteristic(
+      (*iid)++, &kHAPCharacteristic_EveConsumption, 0, 65535, 1,
+      [this](HAPAccessoryServerRef *,
+             const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
+        auto power = out_pm_->GetPowerW();
+        if (!power.ok()) return kHAPError_Busy;
+        *value = power.ValueOrDie();
+        return kHAPError_None;
+      },
+      true /* supports_notification */, nullptr, "eve-power-consumption");
+  AddChar(power_char_);
+  // Energy
+  total_power_char_ = new mgos::hap::UInt16Characteristic(
+      (*iid)++, &kHAPCharacteristic_EveTotalConsumption, 0, 65535, 1,
+      [this](HAPAccessoryServerRef *,
+             const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
+        auto energy = out_pm_->GetEnergyWH();
+        if (!energy.ok()) return kHAPError_Busy;
+        *value = energy.ValueOrDie() / 1000.0f;
+        return kHAPError_None;
+      },
+      true /* supports_notification */, nullptr, "eve-total-power-consumption");
+  AddChar(total_power_char_);
+
+  power_timer_.Reset(1000, MGOS_TIMER_REPEAT);
+}
+
+void ShellySwitch::PowerMeterTimerCB() {
+  auto current_power = out_pm_->GetPowerW();
+  auto current_total_power = out_pm_->GetEnergyWH();
+
+  if (current_power.ok() && current_power.ValueOrDie() != last_power_) {
+    last_power_ = current_power.ValueOrDie();
+    power_char_->RaiseEvent();
+  }
+  if (current_total_power.ok() &&
+      current_total_power.ValueOrDie() != last_total_power_) {
+    last_total_power_ = current_total_power.ValueOrDie();
+    total_power_char_->RaiseEvent();
   }
 }
 

@@ -68,6 +68,9 @@ Status Outlet::Init() {
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_OutletInUse));
 
+  // Power
+  AddPowerMeter(&iid);
+
   return Status::OK();
 }
 

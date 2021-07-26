@@ -79,31 +79,41 @@ el("sys_save_btn").onclick = function () {
   });
 };
 
-el("hap_save_btn").onclick = function () {
-  var codeMatch = el("hap_setup_code").value.match(/^(\d{3})\-?(\d{2})\-?(\d{3})$/);
-  if (!codeMatch) {
-    alert(`Invalid code ${el("hap_setup_code").value}, must be xxxyyzzz or xxx-yy-zzz.`);
-    return;
-  }
-  var code = codeMatch.slice(1).join('-');
-  el("hap_save_spinner").className = "spin";
-  callDevice("HAP.Setup", {"code": code})
-    .then(function () {
-      el("hap_save_spinner").className = "";
-      el("hap_setup_code").value = "";
+el("hap_setup_btn").onclick = function () {
+  el("hap_setup_spinner").className = "spin";
+  callDevice("HAP.Setup", {"code": "RANDOMCODE", "id": "RANDOMID"})
+    .then(function (resp) {
+      var info = resp.result;
+      console.log(info);
+      if (!info) return;
+      el("hap_setup_code").innerText = info.code;
+      el("qrcode").innerText = "";
+      new QRCode(el("qrcode"), {
+        text: info.url,
+        width: 160,
+        height: 160,
+        colorDark : "black",
+        colorLight : "white",
+        correctLevel: QRCode.CorrectLevel.Q,
+      });
+      el("hap_setup_info").style.display = "block";
       getInfo();
-    }).catch(function (err) {
+    })
+    .catch(function (err) {
       if (err.response) {
         err = err.response.data.message;
       }
       alert(err);
+    }).finally(function () {
+      el("hap_setup_spinner").className = "";
     });
 };
 
 el("hap_reset_btn").onclick = function () {
-  if(!confirm("HAP reset will erase all pairings and clear setup code. Are you sure?")) return;
+  if(!confirm("This will erase all pairings and clear setup code. Are you sure?")) return;
 
   el("hap_reset_spinner").className = "spin";
+  el("hap_setup_info").style.display = "none";
   callDevice("HAP.Reset", {"reset_server": true, "reset_code": true})
     .then(function () {
       el("hap_reset_spinner").className = "";
@@ -478,6 +488,9 @@ function findOrAddContainer(cd) {
       el(c, "close_btn").onclick = function () {
         setComponentState(c, {tgt_pos: 0}, el(c, "close_spinner"));
       };
+      el(c, "set_tgt_pos_button").onclick = function () {
+        setComponentState(c, {tgt_pos: el(c, "set_tgt_pos_input").value}, el(c, "close_spinner"));
+      }
       el(c, "save_btn").onclick = function () {
         wcSetConfig(c, null, el(c, "save_spinner"))
       };
@@ -789,7 +802,15 @@ function updateElement(key, value, info) {
       }
       break;
     case "hap_paired":
-      el(key).innerText = (value ? "yes" : "no");
+      if (value) {
+        el(key).innerText = "yes";
+        el("hap_setup_btn").style.display = "none";
+        el("hap_reset_btn").style.display = "";
+      } else {
+        el(key).innerText = "no";
+        el("hap_setup_btn").style.display = "";
+        el("hap_reset_btn").style.display = "none";
+      }
       break;
     case "hap_cn":
       if (value !== el("components").cn) {
@@ -803,10 +824,11 @@ function updateElement(key, value, info) {
       for (let i in value) updateComponent(value[i]);
       break;
     case "hap_running":
-      el("hap_setup_code").placeholder = (value ? "(hidden)" : "e.g. 111-22-333");
-      if (!value) el("hap_ip_conns_max").innerText = "server not running"
-      el("hap_ip_conns_pending").style.display = "none";
-      el("hap_ip_conns_active").style.display = "none";
+      if (!value) {
+        el("hap_ip_conns_max").innerText = "server not running"
+        el("hap_ip_conns_pending").style.display = "none";
+        el("hap_ip_conns_active").style.display = "none";
+      }
       break;
     case "hap_ip_conns_pending":
     case "hap_ip_conns_active":
@@ -837,6 +859,11 @@ function updateElement(key, value, info) {
       break;
     case "overheat_on":
       el("notify_overheat").style.display = (value ? "inline" : "none");
+      break;
+    case "ota_progress":
+      if (value >= 0) {
+        el("update_status").innerText = `${value}%`;
+      }
       break;
   }
 }
@@ -965,7 +992,7 @@ function connectWebSocket() {
       let pr = pendingRequests;
       pendingRequests = {};
       for (let id in pr) {
-        pendingRequests[id].reject(error);
+        pr[id].reject(error);
       }
       reject(error);
     };
@@ -1125,10 +1152,20 @@ function callDevice(method, params = []) {
   return callDeviceAuth(method, params, null);
 }
 
-el("auth_log_in_btn").onclick = function () {
+function doLogin() {
   el("auth_log_in_spinner").className = "spin";
   getInfo().finally(() => el("auth_log_in_spinner").className = "");
+}
+
+el("auth_log_in_btn").onclick = function () {
+  doLogin();
   return true;
+};
+
+el("auth_pass").onkeyup = function (e) {
+  console.log(e);
+  if (e.code == "Enter") doLogin();
+  return false;
 };
 
 el("sec_log_out_btn").onclick = function () {
@@ -1460,6 +1497,3 @@ function hsv2rgb(h, s, v) {
     return [v, p, q];
   }
 }
-
-// https://github.com/geraintluff/sha256
-let sha256 = function a(b){function c(a,b){return a>>>b|a<<32-b}for(var d,e,f=Math.pow,g=f(2,32),h="length",i="",j=[],k=8*b[h],l=a.h=a.h||[],m=a.k=a.k||[],n=m[h],o={},p=2;64>n;p++)if(!o[p]){for(d=0;313>d;d+=p)o[d]=p;l[n]=f(p,.5)*g|0,m[n++]=f(p,1/3)*g|0}for(b+="\x80";b[h]%64-56;)b+="\x00";for(d=0;d<b[h];d++){if(e=b.charCodeAt(d),e>>8)return;j[d>>2]|=e<<(3-d)%4*8}for(j[j[h]]=k/g|0,j[j[h]]=k,e=0;e<j[h];){var q=j.slice(e,e+=16),r=l;for(l=l.slice(0,8),d=0;64>d;d++){var s=q[d-15],t=q[d-2],u=l[0],v=l[4],w=l[7]+(c(v,6)^c(v,11)^c(v,25))+(v&l[5]^~v&l[6])+m[d]+(q[d]=16>d?q[d]:q[d-16]+(c(s,7)^c(s,18)^s>>>3)+q[d-7]+(c(t,17)^c(t,19)^t>>>10)|0),x=(c(u,2)^c(u,13)^c(u,22))+(u&l[1]^u&l[2]^l[1]&l[2]);l=[w+x|0].concat(l),l[4]=l[4]+w|0}for(d=0;8>d;d++)l[d]=l[d]+r[d]|0}for(d=0;8>d;d++)for(e=3;e+1;e--){var y=l[d]>>8*e&255;i+=(16>y?0:"")+y.toString(16)}return i};

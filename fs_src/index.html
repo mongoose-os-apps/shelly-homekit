@@ -95,17 +95,19 @@
           <li id="hap_ip_conns_max"></li>
         </ul>
       </div>
-      <div class="form-control">
-        <label>Setup Code:</label>
-        <input type="text" id="hap_setup_code" placeholder="e.g. 111-22-333">
-      </div>
       <div class="button-container">
-        <button id="hap_save_btn">
-          <label><span id="hap_save_spinner"></span>Save</label>
+        <button id="hap_setup_btn">
+          <label><span id="hap_setup_spinner"></span>Setup</label>
         </button>
         <button id="hap_reset_btn">
           <label><span id="hap_reset_spinner"></span>Reset</label>
         </button>
+      </div>
+      <div id="hap_setup_info" style="display: none">
+        <svg id="qrcode_container" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+          <g id="qrcode"/>
+        </svg>
+        <div>Code: <span id="hap_setup_code"></span></div>
       </div>
     </div>
   </div>
@@ -538,6 +540,13 @@
           <label><span id="close_spinner"></span>Close</label>
         </button>
       </div>
+      <div class="form-control" id="set_tgt_pos_form">
+        <label>Set to Postion</label>
+        <input type="number" id="set_tgt_pos_input">
+        <button id="set_tgt_pos_button">
+          <label><span id="open_spinner"></span>Set</label>
+        </button>
+      </div>
       <div class="form-control">
         <label>Calibration:</label>
         <span id="cal"></span>
@@ -722,7 +731,10 @@
     </div>
   </div>
 </div>
-<!-- script.js inserted below during build -->
+<script src="sha256.js">
+</script>
+<script src="qrcode.js">
+</script>
 <script src="script.js">
 </script>
 </body>

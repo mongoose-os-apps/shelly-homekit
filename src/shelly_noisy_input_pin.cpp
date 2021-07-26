@@ -28,11 +28,10 @@ namespace shelly {
 #define NUM_SAMPLES 10
 #define SAMPLE_INTERVAL_MICROS 5000
 
-static uint32_t s_gpio_vals[NUM_SAMPLES] = {0};
-static uint32_t s_gpio_mask = 0, s_gpio_last = 0;
-static uint32_t s_cnt = 0;
-static volatile uint32_t s_meas_cnt = 0;
-static uint32_t s_int_cnt = 0;
+static uint16_t s_gpio_vals[NUM_SAMPLES] = {0};
+static uint16_t s_gpio_mask = 0, s_gpio_last = 0;
+static uint8_t s_cnt = 0;
+static volatile uint8_t s_meas_cnt = 0;
 static mgos_timer_id s_timer_id = MGOS_INVALID_TIMER_ID;
 
 static std::vector<NoisyInputPin *> s_noisy_inputs;
@@ -47,7 +46,7 @@ static void GPIOChangeCB(void *arg) {
 
 /* NB: Executed in ISR context */
 static IRAM void GPIOHWTimerCB(void *arg) {
-  uint32_t gpio_vals = GPIO_REG_READ(GPIO_IN_ADDRESS) & 0xffff;
+  uint16_t gpio_vals = (uint16_t) GPIO_REG_READ(GPIO_IN_ADDRESS);
   // gpio_vals |= (READ_PERI_REG(RTC_GPIO_IN_DATA) & 1) << 16;  // GPIO16
   gpio_vals &= s_gpio_mask;
   s_gpio_vals[s_cnt++] = gpio_vals;
@@ -61,7 +60,6 @@ static IRAM void GPIOHWTimerCB(void *arg) {
   // Has anything changed?
   if (s_gpio_last == gpio_vals) return;
   s_gpio_last = gpio_vals;
-  s_int_cnt++;
   mgos_invoke_cb(GPIOChangeCB, nullptr, true /* from_isr */);
   (void) arg;
 }

@@ -811,18 +811,33 @@ static void WipeDeviceRevertToStockCB(void *) {
   WipeDeviceRevertToStock();
 }
 
+static int8_t s_ota_progress = -1;
+
+int GetOTAProgress() {
+  return s_ota_progress;
+}
+
 static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
   // Restart server in case of error.
   // In case of success we are going to reboot anyway.
-  if (arg->state == MGOS_OTA_STATE_ERROR) {
+  if (arg->state == MGOS_OTA_STATE_PROGRESS) {
+    s_ota_progress = arg->progress_percent;
+  } else if (arg->state == MGOS_OTA_STATE_ERROR) {
+    s_ota_progress = -1;
     s_service_flags &=
         ~(SHELLY_SERVICE_FLAG_UPDATE | SHELLY_SERVICE_FLAG_REVERT);
-  } else if (arg->state == MGOS_OTA_STATE_SUCCESS &&
-             (s_service_flags & SHELLY_SERVICE_FLAG_REVERT)) {
-    // For some reason if WipeDeviceRevertToStock is done inline the client
-    // doesn't get a response to the POST request.
-    mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
+  } else if (arg->state == MGOS_OTA_STATE_SUCCESS) {
+    s_ota_progress = 100;
+#if CS_PLATFORM == CS_P_ESP8266
+    // Disable flash core dump because it would overwite the new fw.
+    esp_core_dump_set_flash_area(0, 0);
+#endif
+    if (s_service_flags & SHELLY_SERVICE_FLAG_REVERT) {
+      // For some reason if WipeDeviceRevertToStock is done inline the client
+      // doesn't get a response to the POST request.
+      mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
+    }
   }
   (void) ev;
   (void) ev_data;

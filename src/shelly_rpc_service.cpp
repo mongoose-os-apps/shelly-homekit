@@ -110,7 +110,7 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
-      "debug_en: %B",
+      "debug_en: %B, ota_progress: %d",
       mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
       MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
       CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
@@ -136,7 +136,7 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #else
       false,
 #endif
-      debug_en);
+      debug_en, GetOTAProgress());
   auto sys_temp = GetSystemTemperature();
   if (sys_temp.ok()) {
     mgos::JSONAppendStringf(&res, ", sys_temp: %d, overheat_on: %B",
