@@ -28,6 +28,7 @@ var connectionTries = 0;
 
 var pauseAutoRefresh = false;
 var pendingGetInfo = false;
+var updateInProgress = false;
 
 var pendingRequests = {};  // id -> Promise.
 
@@ -745,6 +746,7 @@ function updateComponent(cd) {
 function updateElement(key, value, info) {
   switch (key) {
     case "uptime":
+      el("uptime_container").style.display = "block";
       updateInnerText(el("uptime"), durationStr(value));
       break;
     case "model":
@@ -787,14 +789,14 @@ function updateElement(key, value, info) {
       if (value !== undefined) {
         // These only make sense if we are connected to WiFi.
         el("update_container").style.display = "block";
-        el("revert_to_stock_container").style.display = "block";
+        el("revert_to_stock_container").style.display = (!updateInProgress ? "block" : "none");
         // We set external image URL to prevent loading it when not on WiFi, as it slows things down.
         if (el("donate_form_submit").src == "") {
           el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
         }
         el("donate_form_submit").style.display = "inline";
         updateInnerText(el("wifi_ip"), value);
-        el("wifi_container").style.display = "block";
+        el("wifi_container").style.display = (!updateInProgress ? "block" : "none");
       } else {
         updateInnerText(el("wifi_ip"), "Not connected");
       }
@@ -817,9 +819,16 @@ function updateElement(key, value, info) {
       el("components").cn = value;
       break;
     case "components":
-      // the number of components has changed, delete them all and start afresh
-      if (lastInfo !== null && lastInfo.components.length !== value.length) el("components").innerHTML = "";
-      for (let i in value) updateComponent(value[i]);
+      if (!updateInProgress) {
+        // The number of components has changed, delete them all and start afresh
+        if (lastInfo !== null && lastInfo.components.length !== value.length) {
+          el("components").innerHTML = "";
+        }
+        for (let i in value) updateComponent(value[i]);
+      } else {
+        // Update is in progress, hide all components.
+        el("components").innerHTML = "";
+      }
       break;
     case "hap_running":
       if (!value) {
@@ -859,7 +868,8 @@ function updateElement(key, value, info) {
       el("notify_overheat").style.display = (value ? "inline" : "none");
       break;
     case "ota_progress":
-      if (value >= 0) {
+      if (value !== undefined && (value >= 0 && value < 100)) {
+        setTimeout(() => setUpdateInProgress(true), 0);
         updateInnerText(el("update_status"), `${value}%`);
       }
       break;
@@ -901,11 +911,8 @@ function getInfo() {
       lastInfo = info;
 
       el("sec_old_pass_container").style.display = (info.auth_en ? "block" : "none");
-      el("homekit_container").style.display = "block";
-      el("sec_container").style.display = "block";
-      el("sys_container").style.display = "block";
       el("firmware_container").style.display = "block";
-      el("gs_container").style.display = "block";
+      updateCommonVisibility(!updateInProgress);
 
       // the system mode changed, clear out old UI components
       if (lastInfo !== null && lastInfo.sys_mode !== info.sys_mode) {
@@ -966,6 +973,16 @@ function setupHost() {
   el("debug_link").href = `http://${host}/debug/log?follow=1`;
 }
 
+function reloadPage() {
+  // If path or query string were set (e.g. '/ota'), reset them.
+  let newHREF = `http://${location.host}/`;
+  if (location.href != newHREF) {
+    location.replace(newHREF);
+  } else {
+    location.reload();
+  }
+}
+
 function connectWebSocket() {
   setupHost();
 
@@ -980,7 +997,7 @@ function connectWebSocket() {
       setTimeout(function() {
         connectWebSocket()
           // reload the page once we reconnect (the web ui could have changed)
-          .then(() => location.reload())
+          .then(() => reloadPage())
           .catch(() => console.log("[error] Could not reconnect to Shelly"));
       }, Math.min(3000, connectionTries * 1000));
     };
@@ -1030,7 +1047,7 @@ function connectWebSocket() {
         } else {
           if (lastInfo !== null) {
             // Locked out, reload UI.
-            location.reload();
+            reloadPage();
           } else {
             pauseAutoRefresh = true;
             el("auth_container").style.display = "block";
@@ -1168,7 +1185,7 @@ el("auth_pass").onkeyup = function (e) {
 
 el("sec_log_out_btn").onclick = function () {
   setVar(authInfoKey, undefined);
-  location.reload();
+  reloadPage();
   return true;
 };
 
@@ -1196,7 +1213,7 @@ el("sec_save_btn").onclick = function () {
   el("sec_save_spinner").className = "spin";
   callDevice("Shelly.SetAuth", {user: authUser, realm: realm, ha1: newHA1}).then(function () {
     setVar(authInfoKey, undefined);
-    location.reload();
+    reloadPage();
   }).catch(function (err) {
     if (err.response) err = err.response.data.message;
     alert(err);
@@ -1215,6 +1232,12 @@ function onLoad() {
     });
   });
   setInterval(refreshUI, 1000);
+  if (location.pathname === "/ota") {
+    let params = new URLSearchParams(location.search.substring(1));
+    return downloadUpdate(params.get("url"), el("update_btn_spinner"), el("update_status"));
+  } else if (location.pathname !== "/") {
+    reloadPage();
+  }
 }
 
 function refreshUI() {
@@ -1265,6 +1288,25 @@ function updateInnerText(e, newInnerText) {
   e.innerText = newInnerText;
 }
 
+function updateCommonVisibility(visible) {
+  let d = (visible ? "block" : "none");
+  el("gs_container").style.display = d;
+  el("homekit_container").style.display = d;
+  el("wifi_container").style.display = d;
+  el("sec_container").style.display = d;
+  el("sys_container").style.display = d;
+}
+
+function setUpdateInProgress(val) {
+  updateInProgress = !!val;
+  if (val) {
+    el("components").innerHTML = "";
+    el("update_btn").style.display = "none";
+    el("revert_to_stock_container").style.display = "none";
+    updateCommonVisibility(false);
+  }
+}
+
 function durationStr(d) {
   var days = parseInt(d / 86400);
   d %= 86400;
@@ -1278,7 +1320,10 @@ function durationStr(d) {
     nDigitString(secs, 2);
 }
 
+let egor;
+
 async function downloadUpdate(fwURL, spinner, status) {
+  setUpdateInProgress(true);
   spinner.className = "spin";
   status.innerText = "Downloading...";
   console.log("Downloading", fwURL);
@@ -1292,12 +1337,15 @@ async function downloadUpdate(fwURL, spinner, status) {
       }
       return uploadFW(blob, spinner, status);
     }).catch((error) => {
-    spinner.className = "";
-    status.innerText = `Error downloading: ${error}`;
+      spinner.className = "";
+      console.log(error);
+      status.innerText = `Error downloading: ${error}`;
+      // Do not reset updateInProgress to make failure more prominent.
   });
 }
 
 async function uploadFW(blob, spinner, status, ar) {
+  setUpdateInProgress(true);
   spinner.className = "spin";
   status.innerText = "Uploading...";
   let fd = new FormData();
@@ -1315,7 +1363,6 @@ async function uploadFW(blob, spinner, status, ar) {
   })
     .then(async (resp) => {
       let respText = await resp.text();
-      console.log("resp", resp, respText, resp.status, ar);
       if (resp.status == 401 && !ar) {
         let authHdr = resp.headers.get("www-authenticate");
         if (authHdr !== null) {
@@ -1326,13 +1373,14 @@ async function uploadFW(blob, spinner, status, ar) {
         }
       }
       spinner.className = "";
-      status.innerText = (respText ? respText : resp.statusText);
+      status.innerText = (respText ? respText : resp.statusText).trim();
       setVar("update_available", false);
     })
     .catch((error) => {
       console.log("Fetch erorr:", error);
       status.innerText = `Error uploading: ${error}`;
       spinner.className = "";
+      // Do not reset updateInProgress to make failure more prominent.
     });
 }
 
