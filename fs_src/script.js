@@ -1480,7 +1480,7 @@ function checkUpdate() {
         See <a href="${relNotesURL}" target="_blank">release notes</a>.`
       el("update_btn_text").innerText = "Install";
       el("update_btn").onclick = function () {
-        return downloadUpdate(updateURL, el("update_btn_spinner"), el("update_status"));
+        return downloadUpdate(updateURL, el("fw_spinner"), el("update_status"));
       };
     })
     .catch((error) => {
