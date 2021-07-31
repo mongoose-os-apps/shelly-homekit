@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.9.4-beta1
+version: 2.9.4
 platform: esp8266
 
 libs_version: latest
