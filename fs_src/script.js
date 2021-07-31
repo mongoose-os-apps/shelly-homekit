@@ -488,9 +488,6 @@ function findOrAddContainer(cd) {
       el(c, "close_btn").onclick = function () {
         setComponentState(c, {tgt_pos: 0}, el(c, "close_spinner"));
       };
-      el(c, "set_tgt_pos_button").onclick = function () {
-        setComponentState(c, {tgt_pos: el(c, "set_tgt_pos_input").value}, el(c, "close_spinner"));
-      }
       el(c, "save_btn").onclick = function () {
         wcSetConfig(c, null, el(c, "save_spinner"))
       };

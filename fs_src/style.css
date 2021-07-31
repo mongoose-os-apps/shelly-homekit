@@ -284,11 +284,3 @@ input:checked + .slider:before {
 #hap_setup_code {
   font-weight: bold;
 }
-
-#set_tgt_pos_form {
-  display: flex;
-}
-
-#set_tgt_pos_input {
-  margin-right: 5px;
-}
