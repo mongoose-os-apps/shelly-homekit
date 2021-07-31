@@ -563,14 +563,13 @@ function rgbState(c, newState) {
 
 function updateComponent(cd) {
   let c = findOrAddContainer(cd);
-  let headText;
   if (!c) return;
   switch (cd.type) {
     case 0: // Switch
     case 1: // Outlet
     case 2: // Lock
-    case 11: // RGB
-      headText = `Switch ${cd.id}`;
+    case 11: { // RGB
+      let headText = `Switch ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
@@ -633,7 +632,8 @@ function updateComponent(cd) {
         setPreviewColor(c);
       }
       break;
-    case 3: // Stateless Programmable Switch (aka input in detached mode).
+    }
+    case 3: { // Stateless Programmable Switch (aka input in detached mode).
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -661,7 +661,8 @@ function updateComponent(cd) {
       }
       updateInnerText(el(c, "last_event"), lastEvText);
       break;
-    case 4: // Window Covering
+    }
+    case 4: { // Window Covering
       updateInnerText(el(c, "head"), cd.name);
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "state"), cd.state_str);
@@ -695,7 +696,8 @@ function updateComponent(cd) {
       updateInnerText(el(c, "pos"), posText);
       updateInnerText(el(c, "cal"), calText);
       break;
-    case 5: // Garage Doot Opener
+    }
+    case 5: { // Garage Doot Opener
       updateInnerText(el(c, "head"), cd.name);
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "state"), cd.cur_state_str);
@@ -713,15 +715,17 @@ function updateComponent(cd) {
         el(c, "out_mode_container").style.display = "none";
       }
       break;
-    case 6: // Disabled Input
+    }
+    case 6: { // Disabled Input
       updateInnerText(el(c, "head"), `Input ${cd.id}`);
       selectIfNotModified(el(c, "type"), cd.type);
       break;
+    }
     case 7: // Motion Sensor
     case 8: // Occupancy Sensor
     case 9: // Contact Sensor
-    case 10: // Doorbell
-      headText = `Input ${cd.id}`;
+    case 10: { // Doorbell
+      let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
@@ -737,6 +741,7 @@ function updateComponent(cd) {
       }
       updateInnerText(el(c, "status"), statusText);
       break;
+    }
     default:
       console.log(`Unhandled component type: ${cd.type}`);
   }
