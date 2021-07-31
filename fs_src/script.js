@@ -571,11 +571,11 @@ function updateComponent(cd) {
     case 11: // RGB
       var headText = `Switch ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
-      el(c, "head").innerText = headText;
+      updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
       el(c, "state").checked = cd.state;
       if (cd.apower !== undefined) {
-        el(c, "power_stats").innerText = `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
+        updateInnerText(el(c, "power_stats"), `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
         el(c, "power_stats_container").style.display = "block";
       }
       if (cd.svc_type !== undefined) {
@@ -583,7 +583,7 @@ function updateComponent(cd) {
         if (cd.svc_type == 3) {
           selectIfNotModified(el(c, "valve_type"), cd.valve_type);
           el(c, "valve_type_container").style.display = "block";
-          el(c, "valve_type_label").innerText = "Valve Type:";
+          updateInnerText(el(c, "valve_type_label"), "Valve Type:");
         } else {
           el(c, "valve_type_container").style.display = "none";
         }
@@ -618,11 +618,11 @@ function updateComponent(cd) {
       if (cd.type == 11) { // RGB
         var headText = "RGB";
         if (cd.name) headText += ` (${cd.name})`;
-        el(c, "head").innerText = headText;
+        updateInnerText(el(c, "head"), headText);
         setValueIfNotModified(el(c, "name"), cd.name);
         el(c, "state").checked = cd.state;
         if (cd.apower !== undefined) {
-          el(c, "power_stats").innerText = `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`;
+          updateInnerText(el(c, "power_stats"), `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
           el(c, "power_stats_container").style.display = "block";
         }
         slideIfNotModified(el(c, "hue"), cd.hue);
@@ -635,7 +635,7 @@ function updateComponent(cd) {
     case 3: // Stateless Programmable Switch (aka input in detached mode).
       var headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
-      el(c, "head").innerText = headText;
+      updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       selectIfNotModified(el(c, "type"), cd.type);
@@ -658,43 +658,46 @@ function updateComponent(cd) {
         }
         lastEvText = `${lastEv} (${secondsToDateString(cd.last_ev_age)} ago)`;
       }
-      el(c, "last_event").innerText = lastEvText;
+      updateInnerText(el(c, "last_event"), lastEvText);
       break;
     case 4: // Window Covering
-      el(c, "head").innerText = cd.name;
+      updateInnerText(el(c, "head"), cd.name);
       setValueIfNotModified(el(c, "name"), cd.name);
-      el(c, "state").innerText = cd.state_str;
+      updateInnerText(el(c, "state"), cd.state_str);
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       checkIfNotModified(el(c, "swap_inputs"), cd.swap_inputs);
       checkIfNotModified(el(c, "swap_outputs"), cd.swap_outputs);
+      let posText, calText;
       if (cd.cal_done == 1) {
         if (cd.cur_pos != cd.tgt_pos) {
-          el(c, "pos").innerText = `${cd.cur_pos} -> ${cd.tgt_pos}`;
+          posText = `${cd.cur_pos} -> ${cd.tgt_pos}`;
         } else {
-          el(c, "pos").innerText = cd.cur_pos;
+          posText = cd.cur_pos;
         }
-        el(c, "cal").innerText = `\
+        calText = `\
           movement time: ${cd.move_time_ms / 1000} s, \
           avg power: ${cd.move_power} W`;
         el(c, "pos_ctl").style.display = "block";
       } else {
-        el(c, "pos").innerText = "n/a";
-        el(c, "cal").innerText = "not calibrated";
+        posText = "n/a";
+        calText = "not calibrated";
         el(c, "pos_ctl").style.display = "none";
       }
       if (cd.state >= 10 && cd.state < 20) {  // Calibration is ongoing.
+        calText = "in progress";
         el(c, "cal_spinner").className = "spin";
-        el(c, "cal").innerText = "in progress";
       } else if (!(cd.state >= 20 && cd.state <= 25)) {
         el(c, "cal_spinner").className = "";
         el(c, "open_spinner").className = "";
         el(c, "close_spinner").className = "";
       }
+      updateInnerText(el(c, "pos"), posText);
+      updateInnerText(el(c, "cal"), calText);
       break;
     case 5: // Garage Doot Opener
-      el(c, "head").innerText = cd.name;
+      updateInnerText(el(c, "head"), cd.name);
       setValueIfNotModified(el(c, "name"), cd.name);
-      el(c, "state").innerText = cd.cur_state_str;
+      updateInnerText(el(c, "state"), cd.cur_state_str);
       selectIfNotModified(el(c, "close_sensor_mode"), cd.close_sensor_mode);
       setValueIfNotModified(el(c, "move_time"), cd.move_time);
       setValueIfNotModified(el(c, "pulse_time_ms"), cd.pulse_time_ms);
@@ -710,8 +713,7 @@ function updateComponent(cd) {
       }
       break;
     case 6: // Disabled Input
-      var headText = `Input ${cd.id}`;
-      el(c, "head").innerText = headText;
+      updateInnerText(el(c, "head"), `Input ${cd.id}`);
       selectIfNotModified(el(c, "type"), cd.type);
       break;
     case 7: // Motion Sensor
@@ -720,7 +722,7 @@ function updateComponent(cd) {
     case 10: // Doorbell
       var headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
-      el(c, "head").innerText = headText;
+      updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
       selectIfNotModified(el(c, "type"), cd.type);
       checkIfNotModified(el(c, "inverted"), cd.inverted);
@@ -732,7 +734,7 @@ function updateComponent(cd) {
       if (cd.last_ev_age > 0) {
         statusText += `; last ${secondsToDateString(cd.last_ev_age)} ago`;
       }
-      el(c, "status").innerText = statusText;
+      updateInnerText(el(c, "status"), statusText);
       break;
     default:
       console.log(`Unhandled component type: ${cd.type}`);
@@ -743,7 +745,7 @@ function updateComponent(cd) {
 function updateElement(key, value, info) {
   switch (key) {
     case "uptime":
-      el("uptime").innerText = durationStr(value);
+      updateInnerText(el("uptime"), durationStr(value));
       break;
     case "model":
       if (value == "ShellyRGBW2") {
@@ -753,18 +755,18 @@ function updateElement(key, value, info) {
         if (el("sys_mode_3")) el("sys_mode_3").remove();
         if (el("sys_mode_4")) el("sys_mode_4").remove();
       }
-      el(key).innerHTML = value;
+      updateInnerText(el(key), value);
       break;
     case "device_id":
     case "version":
-      el(key).innerHTML = value;
+      updateInnerText(el(key), value);
       break;
     case "fw_build":
-      el("fw_build").innerHTML = value;
+      updateInnerText(el("fw_build"), value);
       break;
     case "name":
       document.title = value;
-      el("device_name").innerText = value;
+      updateInnerText(el("device_name"), value);
       setValueIfNotModified(el("sys_name"), value);
       break;
     case "wifi_en":
@@ -778,7 +780,7 @@ function updateElement(key, value, info) {
       break;
     case "wifi_rssi":
     case "host":
-      el(key).innerText = value;
+      updateInnerText(el(key), value);
       el(`${key}_container`).style.display = (value !== 0) ? "block" : "none";
       break;
     case "wifi_ip":
@@ -791,20 +793,19 @@ function updateElement(key, value, info) {
           el("donate_form_submit").src = "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
         }
         el("donate_form_submit").style.display = "inline";
-
-        el("wifi_ip").innerText = value;
+        updateInnerText(el("wifi_ip"), value);
         el("wifi_container").style.display = "block";
       } else {
-        el("wifi_ip").innerText = "Not connected";
+        updateInnerText(el("wifi_ip"), "Not connected");
       }
       break;
     case "hap_paired":
       if (value) {
-        el(key).innerText = "yes";
+        updateInnerText(el(key), "yes");
         el("hap_setup_btn").style.display = "none";
         el("hap_reset_btn").style.display = "";
       } else {
-        el(key).innerText = "no";
+        updateInnerText(el(key), "no");
         el("hap_setup_btn").style.display = "";
         el("hap_reset_btn").style.display = "none";
       }
@@ -822,7 +823,7 @@ function updateElement(key, value, info) {
       break;
     case "hap_running":
       if (!value) {
-        el("hap_ip_conns_max").innerText = "server not running"
+        updateInnerText(el("hap_ip_conns_max"), "server not running");
         el("hap_ip_conns_pending").style.display = "none";
         el("hap_ip_conns_active").style.display = "none";
       }
@@ -832,7 +833,7 @@ function updateElement(key, value, info) {
     case "hap_ip_conns_max":
       if (info.hap_running) {
         el(key).style.display = "inline";
-        el(key).innerText = `${value} ${key.split("_").slice(-1)[0]}`;
+        updateInnerText(el(key), `${value} ${key.split("_").slice(-1)[0]}`);
       }
       break;
     case "wc_avail":
@@ -848,7 +849,7 @@ function updateElement(key, value, info) {
       break;
     case "sys_temp":
       if (value !== undefined) {
-        el("sys_temp").innerText = value;
+        updateInnerText(el("sys_temp"), value);
         el("sys_temp_container").style.display = "block";
       } else {
         el("sys_temp_container").style.display = "none";
@@ -859,7 +860,7 @@ function updateElement(key, value, info) {
       break;
     case "ota_progress":
       if (value >= 0) {
-        el("update_status").innerText = `${value}%`;
+        updateInnerText(el("update_status"), `${value}%`);
       }
       break;
   }
@@ -1259,6 +1260,10 @@ function selectIfNotModified(e, newSelection) {
   setValueIfNotModified(e, newSelection);
 }
 
+function updateInnerText(e, newInnerText) {
+  if (e.innerText === newInnerText) return;
+  e.innerText = newInnerText;
+}
 
 function durationStr(d) {
   var days = parseInt(d / 86400);
@@ -1408,7 +1413,7 @@ function checkUpdate() {
       console.log("Version:", latestVersion, "URL:", updateURL);
       if (!latestVersion || !updateURL) {
         console.log("Update section not found:", model, curVersion, cfg);
-        e.innerHTML = errMsg;
+        e.innerText = errMsg;
         se.className = "";
         return;
       }
@@ -1432,7 +1437,7 @@ function checkUpdate() {
     })
     .catch((error) => {
       console.log("Error", error);
-      e.innerHTML = errMsg;
+      e.innerText = errMsg;
       se.className = "";
     });
 }
