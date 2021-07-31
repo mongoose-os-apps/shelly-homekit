@@ -127,14 +127,14 @@ el("hap_reset_btn").onclick = function () {
     });
 };
 
-el("fw_upload_btn").onclick = async function () {
+el("fw_upload_btn").onclick = function () {
   let ff = el("fw_select_file").files;
   if (ff.length == 0) {
     alert("No files selected");
-    return true;
+    return false;
   }
   uploadFW(ff[0], el("fw_spinner"), el("update_status"));
-  return true;
+  return false;
 };
 
 el("wifi_save_btn").onclick = function () {
@@ -1299,7 +1299,7 @@ async function downloadUpdate(fwURL, spinner, status) {
 
 async function uploadFW(blob, spinner, status, ar) {
   spinner.className = "spin";
-  status.innerText = `Uploading ${blob.size} bytes...`;
+  status.innerText = "Uploading...";
   let fd = new FormData();
   fd.append("file", blob);
   let hd = new Headers();
