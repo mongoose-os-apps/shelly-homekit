@@ -1234,7 +1234,7 @@ function onLoad() {
   setInterval(refreshUI, 1000);
   if (location.pathname === "/ota") {
     let params = new URLSearchParams(location.search.substring(1));
-    return downloadUpdate(params.get("url"), el("update_btn_spinner"), el("update_status"));
+    return downloadUpdate(params.get("url"), el("fw_spinner"), el("update_status"));
   } else if (location.pathname !== "/") {
     reloadPage();
   }
@@ -1498,7 +1498,7 @@ el("revert_btn").onclick = function () {
 
   el("revert_msg").style.display = "block";
   let stockURL = `https://rojer.me/files/shelly/stock/${lastInfo.stock_fw_model}.zip`;
-  downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
+  downloadUpdate(stockURL, el("fw_spinner"), el("revert_status"));
 };
 
 function setPreviewColor(c) {
