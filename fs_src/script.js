@@ -20,25 +20,25 @@ const maxAuthAge = 24 * 60 * 60;
 const updateCheckInterval = 24 * 60 * 60;
 
 // Globals.
-var lastInfo = null;
-var infoLevel = 0;
-var host = null;
-var socket = null;
-var connectionTries = 0;
+let lastInfo = null;
+let infoLevel = 0;
+let host = null;
+let socket = null;
+let connectionTries = 0;
 
-var pauseAutoRefresh = false;
-var pendingGetInfo = false;
-var updateInProgress = false;
+let pauseAutoRefresh = false;
+let pendingGetInfo = false;
+let updateInProgress = false;
 
-var pendingRequests = {};  // id -> Promise.
+let pendingRequests = {};  // id -> Promise.
 
 let nextRequestID = Math.ceil(Math.random() * 10000);
 let authRequired = false;
 
 const authInfoKey = "auth_info";
 const authUser = "admin";
-var authRealm = null;
-var rpcAuth = null;
+let authRealm = null;
+let rpcAuth = null;
 
 function el(container, id) {
   if (id === undefined) {
@@ -58,7 +58,7 @@ el("sys_save_btn").onclick = function () {
            and consist of letters, numbers or dashes ('-')`);
     return;
   }
-  var data = {
+  let data = {
     config: {
       name: el("sys_name").value,
       sys_mode: parseInt(el("sys_mode").value),
@@ -84,7 +84,7 @@ el("hap_setup_btn").onclick = function () {
   el("hap_setup_spinner").className = "spin";
   callDevice("HAP.Setup", {"code": "RANDOMCODE", "id": "RANDOMID"})
     .then(function (resp) {
-      var info = resp.result;
+      let info = resp.result;
       console.log(info);
       if (!info) return;
       el("hap_setup_code").innerText = info.code;
@@ -140,7 +140,7 @@ el("fw_upload_btn").onclick = function () {
 
 el("wifi_save_btn").onclick = function () {
   el("wifi_spinner").className = "spin";
-  var data = {
+  let data = {
     config: {
       wifi: {
         sta: {enable: el("wifi_en").checked, ssid: el("wifi_ssid").value},
@@ -152,10 +152,10 @@ el("wifi_save_btn").onclick = function () {
   if (el("wifi_pass").value && el("wifi_pass").value.length >= 8) {
     data.config.wifi.sta.pass = el("wifi_pass").value;
   }
-  var oldPauseAutoRefresh = pauseAutoRefresh;
+  let oldPauseAutoRefresh = pauseAutoRefresh;
   pauseAutoRefresh = true;
   callDevice("Config.Set", data).then(function () {
-    var dn = el("device_name").innerText;
+    let dn = el("device_name").innerText;
     if (data.config.wifi.sta.enable) {
       document.body.innerHTML = `
         <div class='container'><h1>Rebooting...</h1>
@@ -195,7 +195,7 @@ el("wifi_save_btn").onclick = function () {
 
 function setComponentConfig(c, cfg, spinner) {
   if (spinner) spinner.className = "spin";
-  var data = {
+  let data = {
     id: c.data.id,
     type: c.data.type,
     config: cfg,
@@ -220,7 +220,7 @@ function setComponentConfig(c, cfg, spinner) {
 
 function setComponentState(c, state, spinner) {
   if (spinner) spinner.className = "spin";
-  var data = {
+  let data = {
     id: c.data.id,
     type: c.data.type,
     state: state,
@@ -246,25 +246,24 @@ function autoOffDelayValid(value) {
 function dateStringToSeconds(dateString) {
   if (dateString == "") return 0;
 
-  var {
-    days, hours, minutes, seconds, minutes, milliseconds
+  let {
+    days, hours, minutes, seconds, milliseconds
   } = dateString.match(
     /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\.(?<milliseconds>\d{3})/
   ).groups
 
-  var seconds = parseInt(days) * 24 * 3600 +
+  return parseInt(days) * 24 * 3600 +
     parseInt(hours) * 3600 +
     parseInt(minutes) * 60 +
     parseInt(seconds) +
     parseFloat(milliseconds / 1000);
-  return seconds;
 }
 
 function secondsToDateString(seconds) {
   if (seconds == 0) return "";
-  var date = new Date(1970, 0, 1);
+  let date = new Date(1970, 0, 1);
   date.setMilliseconds(seconds * 1000);
-  var dateString = Math.floor(seconds / 3600 / 24) + ":" +
+  let dateString = Math.floor(seconds / 3600 / 24) + ":" +
     nDigitString(date.getHours(), 2) + ":" +
     nDigitString(date.getMinutes(), 2) + ":" +
     nDigitString(date.getSeconds(), 2) + "." +
@@ -277,11 +276,11 @@ function nDigitString(num, digits) {
 }
 
 function rgbSetConfig(c) {
-  var name = el(c, "name").value;
-  var initialState = el(c, "initial").value;
-  var autoOff = el(c, "auto_off").checked;
-  var autoOffDelay = el(c, "auto_off_delay").value;
-  var spinner = el(c, "save_spinner");
+  let name = el(c, "name").value;
+  let initialState = el(c, "initial").value;
+  let autoOff = el(c, "auto_off").checked;
+  let autoOffDelay = el(c, "auto_off_delay").value;
+  let spinner = el(c, "save_spinner");
 
   if (name == "") {
     alert("Name must not be empty");
@@ -293,7 +292,7 @@ function rgbSetConfig(c) {
     return;
   }
 
-  var cfg = {
+  let cfg = {
     name: name,
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
@@ -310,13 +309,13 @@ function rgbSetConfig(c) {
 }
 
 function swSetConfig(c) {
-  var name = el(c, "name").value;
-  var svcType = el(c, "svc_type").value;
-  var charType = el(c, "valve_type").value;
-  var initialState = el(c, "initial").value;
-  var autoOff = el(c, "auto_off").checked;
-  var autoOffDelay = el(c, "auto_off_delay").value;
-  var spinner = el(c, "save_spinner");
+  let name = el(c, "name").value;
+  let svcType = el(c, "svc_type").value;
+  let charType = el(c, "valve_type").value;
+  let initialState = el(c, "initial").value;
+  let autoOff = el(c, "auto_off").checked;
+  let autoOffDelay = el(c, "auto_off_delay").value;
+  let spinner = el(c, "save_spinner");
 
   if (name == "") {
     alert("Name must not be empty");
@@ -328,7 +327,7 @@ function swSetConfig(c) {
     return;
   }
 
-  var cfg = {
+  let cfg = {
     name: name,
     svc_type: parseInt(el(c, "svc_type").value),
     initial_state: parseInt(el(c, "initial").value),
@@ -350,12 +349,12 @@ function swSetConfig(c) {
 }
 
 function sswSetConfig(c) {
-  var name = el(c, "name").value;
+  let name = el(c, "name").value;
   if (name == "") {
     alert("Name must not be empty");
     return;
   }
-  var cfg = {
+  let cfg = {
     name: name,
     type: parseInt(el(c, "type").value),
     inverted: el(c, "inverted").checked,
@@ -365,19 +364,19 @@ function sswSetConfig(c) {
 }
 
 function diSetConfig(c) {
-  var cfg = {
+  let cfg = {
     type: parseInt(el(c, "type").value),
   };
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
 
 function mosSetConfig(c) {
-  var name = el(c, "name").value;
+  let name = el(c, "name").value;
   if (name == "") {
     alert("Name must not be empty");
     return;
   }
-  var cfg = {
+  let cfg = {
     name: name,
     type: parseInt(el(c, "type").value),
     inverted: el(c, "inverted").checked,
@@ -389,7 +388,7 @@ function mosSetConfig(c) {
 
 function wcSetConfig(c, cfg, spinner) {
   if (!cfg) {
-    var name = el(c, "name").value;
+    let name = el(c, "name").value;
     if (name == "") {
       alert("Name must not be empty");
       return;
@@ -406,17 +405,17 @@ function wcSetConfig(c, cfg, spinner) {
 
 function gdoSetConfig(c, cfg, spinner) {
   if (!cfg) {
-    var name = el(c, "name").value;
+    let name = el(c, "name").value;
     if (name == "") {
       alert("Name must not be empty");
       return;
     }
-    var moveTime = parseInt(el(c, "move_time").value);
+    let moveTime = parseInt(el(c, "move_time").value);
     if (isNaN(moveTime) || moveTime < 10) {
       alert(`Invalid movement time ${moveTime}`);
       return;
     }
-    var pulseTimeMs = parseInt(el(c, "pulse_time_ms").value);
+    let pulseTimeMs = parseInt(el(c, "pulse_time_ms").value);
     if (isNaN(pulseTimeMs) || pulseTimeMs < 20) {
       alert(`Invalid pulse time ${pulseTimeMs}`);
       return;
@@ -454,8 +453,8 @@ el("reset_btn").onclick = function () {
 }
 
 function findOrAddContainer(cd) {
-  var elId = `c${cd.type}-${cd.id}`;
-  var c = el(elId);
+  let elId = `c${cd.type}-${cd.id}`;
+  let c = el(elId);
   if (c) return c;
   switch (cd.type) {
     case 0: // Switch
@@ -563,14 +562,15 @@ function rgbState(c, newState) {
 }
 
 function updateComponent(cd) {
-  var c = findOrAddContainer(cd);
+  let c = findOrAddContainer(cd);
+  let headText;
   if (!c) return;
   switch (cd.type) {
     case 0: // Switch
     case 1: // Outlet
     case 2: // Lock
     case 11: // RGB
-      var headText = `Switch ${cd.id}`;
+      headText = `Switch ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
@@ -617,7 +617,7 @@ function updateComponent(cd) {
       }
 
       if (cd.type == 11) { // RGB
-        var headText = "RGB";
+        headText = "RGB";
         if (cd.name) headText += ` (${cd.name})`;
         updateInnerText(el(c, "head"), headText);
         setValueIfNotModified(el(c, "name"), cd.name);
@@ -634,16 +634,16 @@ function updateComponent(cd) {
       }
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
-      var headText = `Input ${cd.id}`;
+      let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       selectIfNotModified(el(c, "type"), cd.type);
       checkIfNotModified(el(c, "inverted"), cd.inverted);
-      var lastEvText = "n/a";
+      let lastEvText = "n/a";
       if (cd.last_ev_age > 0) {
-        var lastEv = cd.last_ev;
+        let lastEv = cd.last_ev;
         switch (cd.last_ev) {
           case 0:
             lastEv = "single";
@@ -721,7 +721,7 @@ function updateComponent(cd) {
     case 8: // Occupancy Sensor
     case 9: // Contact Sensor
     case 10: // Doorbell
-      var headText = `Input ${cd.id}`;
+      headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
@@ -730,8 +730,8 @@ function updateComponent(cd) {
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       setValueIfNotModified(el(c, "idle_time"), cd.idle_time);
       el(c, "idle_time_container").style.display = (cd.in_mode == 0 ? "none" : "block");
-      var what = (cd.type == 7 ? "motion" : "occupancy");
-      var statusText = (cd.state ? `${what} detected` : `no ${what} detected`);
+      let what = (cd.type == 7 ? "motion" : "occupancy");
+      let statusText = (cd.state ? `${what} detected` : `no ${what} detected`);
       if (cd.last_ev_age > 0) {
         statusText += `; last ${secondsToDateString(cd.last_ev_age)} ago`;
       }
@@ -881,7 +881,7 @@ function getInfo() {
     let method = (infoLevel == 1 ? "Shelly.GetInfoExt" : "Shelly.GetInfo");
 
     callDevice(method).then(function (res) {
-      var info = res.result;
+      let info = res.result;
 
       if (!info) {
         reject();
@@ -1308,12 +1308,12 @@ function setUpdateInProgress(val) {
 }
 
 function durationStr(d) {
-  var days = parseInt(d / 86400);
+  let days = parseInt(d / 86400);
   d %= 86400;
-  var hours = parseInt(d / 3600);
+  let hours = parseInt(d / 3600);
   d %= 3600;
-  var mins = parseInt(d / 60);
-  var secs = d % 60;
+  let mins = parseInt(d / 60);
+  let secs = d % 60;
   return days + ":" +
     nDigitString(hours, 2) + ":" +
     nDigitString(mins, 2) + ":" +
@@ -1330,7 +1330,7 @@ async function downloadUpdate(fwURL, spinner, status) {
   fetch(fwURL, {mode: "cors"})
     .then(async (resp) => {
       console.log(resp);
-      var blob = await resp.blob();
+      let blob = await resp.blob();
       if (!resp.ok || blob.type != "application/zip") {
         status.innerText = "Failed, try manually.";
         return;
@@ -1396,7 +1396,7 @@ function parseVersion(versionString) {
 }
 
 function isNewer(v1, v2) {
-  var vi1 = parseVersion(v1), vi2 = parseVersion(v2);
+  let vi1 = parseVersion(v1), vi2 = parseVersion(v2);
   if (vi1.major != vi2.major) return (vi1.major > vi2.major);
   if (vi1.minor != vi2.minor) return (vi1.minor > vi2.minor);
   if (vi1.patch != vi2.patch) return (vi1.patch > vi2.patch);
@@ -1422,11 +1422,11 @@ function checkUpdateIfNeeded(info) {
 }
 
 function checkUpdate() {
-  var model = lastInfo.model;
-  var curVersion = lastInfo.version;
-  var e = el("update_status");
-  var se = el("update_btn_spinner");
-  var errMsg = 'Failed, check <a href="https://github.com/mongoose-os-apps/shelly-homekit/releases">GitHub</a>.';
+  let model = lastInfo.model;
+  let curVersion = lastInfo.version;
+  let e = el("update_status");
+  let se = el("update_btn_spinner");
+  let errMsg = 'Failed, check <a href="https://github.com/mongoose-os-apps/shelly-homekit/releases">GitHub</a>.';
   e.innerText = "";
   se.className = "spin";
   console.log("Model:", model, "Version:", curVersion);
@@ -1445,9 +1445,9 @@ function checkUpdate() {
       // found we still remember that we tried to check for an update
       setVar("last_update_check", (new Date()).getTime());
 
-      var cfg, latestVersion, updateURL, relNotesURL;
-      for (var i in resp) {
-        var re = new RegExp(resp[i][0]);
+      let cfg, latestVersion, updateURL, relNotesURL;
+      for (let i in resp) {
+        let re = new RegExp(resp[i][0]);
         if (curVersion.match(re)) {
           cfg = resp[i][1];
           break;
@@ -1465,7 +1465,7 @@ function checkUpdate() {
         se.className = "";
         return;
       }
-      var updateAvailable = isNewer(latestVersion, curVersion);
+      let updateAvailable = isNewer(latestVersion, curVersion);
       el("notify_update").style.display = (updateAvailable ? "inline" : "none");
 
       setVar("update_available", updateAvailable);
@@ -1497,16 +1497,16 @@ el("revert_btn").onclick = function () {
   if(!confirm("Revert to stock firmware?")) return;
 
   el("revert_msg").style.display = "block";
-  var stockURL = `https://rojer.me/files/shelly/stock/${lastInfo.stock_fw_model}.zip`;
+  let stockURL = `https://rojer.me/files/shelly/stock/${lastInfo.stock_fw_model}.zip`;
   downloadUpdate(stockURL, el("revert_btn_spinner"), el("revert_status"));
 };
 
 function setPreviewColor(c) {
-  var h = el(c, "hue").value / 360;
-  var s = el(c, "saturation").value / 100;
+  let h = el(c, "hue").value / 360;
+  let s = el(c, "saturation").value / 100;
 
   // use fixed 100% for v, because we want to control brightness over pwm frequence
-  var [r, g, b] = hsv2rgb(h, s, 100);
+  let [r, g, b] = hsv2rgb(h, s, 100);
 
   r = Math.round(r * 2.55);
   g = Math.round(g * 2.55);
