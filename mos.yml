@@ -593,8 +593,10 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp32
-        - location: https://github.com/mongoose-os-libs/vfs-fs-spiffs        
-        - location: https://github.com/mongoose-os-libs/dash
+        - location: https://github.com/mongoose-os-libs/i2c
+        - location: https://github.com/mongoose-os-libs/pcf857x-i2c       
+        - location: https://github.com/mongoose-os-libs/dash # optional
+        - location: https://github.com/mongoose-os-libs/rpc-service-i2c # optional, debug
       build_vars:
         MGOS_ROOT_FS_TYPE: SPIFFS
       cdefs:
@@ -602,6 +604,10 @@ conds:
         STOCK_FW_MODEL: '"XXX"'
         MG_ENABLE_SSL: 0
       config_schema:
+        - ["i2c.enable", true]
+        - ["i2c.debug", false]
+        - ["i2c.sda_gpio", 0]
+        - ["i2c.scl_gpio", 2]
         - ["device.id", "custom16-??????"]
         - ["shelly.name", "custom16-??????"]
         - ["wifi.ap.ssid", "custom16-??????"]
@@ -650,5 +656,40 @@ conds:
         - ["in9", "in", {title: "Input 9 settings"}]
         - ["in9.ssw.name", "Custom SSW9"]
         - ["in9.sensor.name", "Custom S9"]
+        - ["sw10", "sw", {title: "SW10 settings"}]
+        - ["sw10.name", "Custom SW10"]
+        - ["in10", "in", {title: "Input 10 settings"}]
+        - ["in10.ssw.name", "Custom SSW10"]
+        - ["in10.sensor.name", "Custom S10"]
+        - ["sw11", "sw", {title: "SW11 settings"}]
+        - ["sw11.name", "Custom SW11"]
+        - ["in11", "in", {title: "Input 11 settings"}]
+        - ["in11.ssw.name", "Custom SSW11"]
+        - ["in11.sensor.name", "Custom S11"]
+        - ["sw12", "sw", {title: "SW12 settings"}]
+        - ["sw12.name", "Custom SW12"]
+        - ["in12", "in", {title: "Input 12 settings"}]
+        - ["in12.ssw.name", "Custom SSW12"]
+        - ["in12.sensor.name", "Custom S12"]
+        - ["sw13", "sw", {title: "SW13 settings"}]
+        - ["sw13.name", "Custom SW13"]
+        - ["in13", "in", {title: "Input 13 settings"}]
+        - ["in13.ssw.name", "Custom SSW13"]
+        - ["in13.sensor.name", "Custom S13"]
+        - ["sw14", "sw", {title: "SW14 settings"}]
+        - ["sw14.name", "Custom SW14"]
+        - ["in14", "in", {title: "Input 14 settings"}]
+        - ["in14.ssw.name", "Custom SSW14"]
+        - ["in14.sensor.name", "Custom S14"]
+        - ["sw15", "sw", {title: "SW15 settings"}]
+        - ["sw15.name", "Custom SW15"]
+        - ["in15", "in", {title: "Input 15 settings"}]
+        - ["in15.ssw.name", "Custom SSW15"]
+        - ["in15.sensor.name", "Custom S15"]
+        - ["sw16", "sw", {title: "SW16 settings"}]
+        - ["sw16.name", "Custom SW16"]
+        - ["in16", "in", {title: "Input 16 settings"}]
+        - ["in16.ssw.name", "Custom SSW16"]
+        - ["in16.sensor.name", "Custom S16"]
 
 manifest_version: 2020-01-29
