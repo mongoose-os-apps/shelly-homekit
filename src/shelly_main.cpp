@@ -879,7 +879,7 @@ static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
   struct http_message *hm = (struct http_message *) ev_data;
   const char *file = nullptr, *type = nullptr;
   if (mg_vcasecmp(&hm->method, "GET") == 0) {
-    if (mg_vcmp(&hm->uri, "/") == 0) {
+    if (mg_vcmp(&hm->uri, "/") == 0 || mg_vcmp(&hm->uri, "/ota") == 0) {
       file = "index.html.gz";
       type = "text/html";
     } else if (mg_vcmp(&hm->uri, "/favicon.ico") == 0) {
@@ -900,6 +900,8 @@ static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
 void InitApp() {
   struct mg_http_endpoint_opts opts = {};
   mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
+  // Support /ota?url=... updates a-la stock.
+  mgos_register_http_endpoint_opt("/ota", HTTPHandler, opts);
 
   if (IsFailsafeMode()) {
     LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));

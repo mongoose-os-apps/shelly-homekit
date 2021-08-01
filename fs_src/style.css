@@ -77,7 +77,6 @@ h1 {
 }
 
 .form-wrap-control {
-  padding: 0 0.3em;
   margin: 0.4em 0;
   display: inline-flex;
   flex-wrap: inherit;
@@ -283,12 +282,4 @@ input:checked + .slider:before {
 
 #hap_setup_code {
   font-weight: bold;
-}
-
-#set_tgt_pos_form {
-  display: flex;
-}
-
-#set_tgt_pos_input {
-  margin-right: 5px;
 }

@@ -195,7 +195,7 @@
         <label>Device ID:</label>
         <span id="device_id"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="uptime_container" style="display: none">
         <label>Uptime:</label>
         <span id="uptime"></span>
       </div>
@@ -226,12 +226,10 @@
   <div class="form">
     <div>
       <div class="form-control">
-        <label>Version:</label>
-        <span id="version"></span>
+        <label>Version:</label><span id="version"></span>
       </div>
       <div class="form-wrap-control">
-        <label>Build:</label>
-        <span id="fw_build"></span>
+        <label>Build:</label><span id="fw_build"></span>
       </div>
       <div class="form-control" id="update_container" style="display: none">
         <label>Update: </label>
@@ -538,13 +536,6 @@
         </button>
         <button id="close_btn">
           <label><span id="close_spinner"></span>Close</label>
-        </button>
-      </div>
-      <div class="form-control" id="set_tgt_pos_form">
-        <label>Set to Postion</label>
-        <input type="number" id="set_tgt_pos_input">
-        <button id="set_tgt_pos_button">
-          <label><span id="open_spinner"></span>Set</label>
         </button>
       </div>
       <div class="form-control">
