@@ -346,9 +346,18 @@ static bool StartService(bool quiet) {
   return true;
 }
 
+static void DestroyComponents() {
+  if (s_accs.empty()) return;
+  LOG(LL_INFO, ("=== Destroying accessories"));
+  s_accs.clear();
+  s_hap_accs.clear();
+  g_comps.clear();
+}
+
 void StopService() {
   HAPAccessoryServerState state = HAPAccessoryServerGetState(&s_server);
   if (state == kHAPAccessoryServerState_Idle) {
+    DestroyComponents();
     return;
   }
   LOG(LL_INFO, ("== Stopping HAP service (%d)", state));
@@ -365,9 +374,7 @@ static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
   LOG(LL_INFO, ("HAP server state: %d", st));
   if (st == kHAPAccessoryServerState_Idle) {
     // Safe to destroy components now.
-    s_accs.clear();
-    s_hap_accs.clear();
-    g_comps.clear();
+    DestroyComponents();
   }
 }
 
