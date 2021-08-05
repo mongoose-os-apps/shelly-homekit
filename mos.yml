@@ -100,6 +100,8 @@ config_schema:
   - ["lb.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
   - ["lb.transition_time", "i", 2000, {title: "Time in milliseconds how long a transition will take"}]
 
+  - ["_const.rpc_acl", "s", '[{"ch_type": "UART", "acl": "*"},{"method": "Shelly.GetInfo", "acl": "*"},{"method": "*", "ch_type": "HTTP", "acl": "admin"},{"method": "*", "ch_type": "WS_in", "acl": "admin"}]', {}]
+
   # Preserved from stock.
   - ["k_apparent", "i", 1750000, {}]
   - ["max_power", "i", 1800, {}]

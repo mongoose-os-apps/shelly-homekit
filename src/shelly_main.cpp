@@ -181,6 +181,7 @@ static void DoReset(void *arg) {
   mgos_sys_config_set_wifi_sta_enable(false);
   mgos_sys_config_set_wifi_ap_enable(true);
 #endif
+  mgos_sys_config_set_rpc_acl(nullptr);
   mgos_sys_config_set_rpc_acl_file(nullptr);
   mgos_sys_config_set_rpc_auth_file(nullptr);
   mgos_sys_config_set_http_auth_file(nullptr);
@@ -661,11 +662,12 @@ static bool shelly_cfg_migrate(void) {
     mgos_sys_config_set_shelly_cfg_version(5);
     changed = true;
   }
-  // 2.9.0-alpha3 -> alpha3 ACL settings workaround. Can be removed after 2.9.0.
-  if (mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_domain()) &&
-      !mgos_conf_str_empty(mgos_sys_config_get_rpc_acl_file())) {
-    mgos_sys_config_set_rpc_acl_file(NULL);
-    mgos_sys_config_set_rpc_auth_file(NULL);
+  if (mgos_sys_config_get_shelly_cfg_version() == 5) {
+    if (mgos_sys_config_get_rpc_acl_file() != nullptr) {
+      mgos_sys_config_set_rpc_acl(mgos_sys_config_get_default__const_rpc_acl());
+      mgos_sys_config_set_rpc_acl_file(nullptr);
+    }
+    mgos_sys_config_set_shelly_cfg_version(6);
     changed = true;
   }
   return changed;
@@ -866,6 +868,7 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "axios.min.js.gz",
       "favicon.ico",
       "logo.png",
+      "rpc_acl.json",
       "style.css",
       "style.css.gz",
   };

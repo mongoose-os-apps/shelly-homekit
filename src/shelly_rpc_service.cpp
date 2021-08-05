@@ -352,13 +352,14 @@ static void AbortHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 }
 
 static Status SetAuthFileName(const std::string &passwd_fname,
-                              const std::string &auth_domain,
-                              const std::string &acl_fname) {
+                              const std::string &auth_domain, bool acl_en) {
   mgos_sys_config_set_http_auth_file(passwd_fname.c_str());
   mgos_sys_config_set_http_auth_domain(auth_domain.c_str());
   mgos_sys_config_set_rpc_auth_file(passwd_fname.c_str());
   mgos_sys_config_set_rpc_auth_domain(auth_domain.c_str());
-  mgos_sys_config_set_rpc_acl_file(acl_fname.c_str());
+  mgos_sys_config_set_rpc_acl(
+      acl_en ? mgos_sys_config_get_default__const_rpc_acl() : nullptr);
+  mgos_sys_config_set_rpc_acl_file(nullptr);
   char *err = nullptr;
   if (!mgos_sys_config_save(&mgos_sys_config, false /* try once */, &err)) {
     return mgos::Errorf(STATUS_UNAVAILABLE, "Failed to save config: %s", err);
@@ -412,7 +413,7 @@ static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 
   size_t l = std::string(ha1).length();
   if (l == 0) {
-    auto st = SetAuthFileName("", "", "");
+    auto st = SetAuthFileName("", "", false);
     if (st.ok()) remove(AUTH_FILE_NAME);
     SendStatusResp(ri, st);
     return;
@@ -429,7 +430,7 @@ static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   fprintf(fp, "%s:%s:%s\n", AUTH_USER, realm, ha1);
   fclose(fp);
 
-  auto st = SetAuthFileName(AUTH_FILE_NAME, realm, ACL_FILE_NAME);
+  auto st = SetAuthFileName(AUTH_FILE_NAME, realm, true);
   SendStatusResp(ri, st);
 
   (void) cb_arg;
