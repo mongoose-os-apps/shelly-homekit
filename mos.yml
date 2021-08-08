@@ -113,6 +113,8 @@ config_schema:
   - ["ssw.in_mode", "i", 0, {}]
 
 build_vars:
+  # BLE disabled for most models.
+  MGOS_HAP_BLE: 0
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
   MGOS_FW_EXTRA_ATTRS: shelly_hk_model=${build_vars.MODEL}
@@ -352,7 +354,6 @@ conds:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHIX3-1"'
         MG_ENABLE_SSL: 0
-        # HAP_LOG_LEVEL: 0
         LED_GPIO: 5
         LED_ON: 0
         BTN_GPIO: 4

@@ -86,6 +86,7 @@ static HAPPlatformKeyValueStore s_kvs;
 static HAPPlatformAccessorySetup s_accessory_setup;
 static HAPAccessoryServerOptions s_server_options = {
     .maxPairings = kHAPPairingStorage_MinElements,
+#if HAP_IP
     .ip =
         {
             .transport = &kHAPAccessoryServerTransport_IP,
@@ -94,6 +95,8 @@ static HAPAccessoryServerOptions s_server_options = {
 #endif
             .accessoryServerStorage = &s_ip_storage,
         },
+#endif
+#if HAP_BLE
     .ble =
         {
             .transport = nullptr,
@@ -104,6 +107,7 @@ static HAPAccessoryServerOptions s_server_options = {
             .preferredAdvertisingInterval = 0,
             .preferredNotificationDuration = 0,
         },
+#endif
 };
 static HAPAccessoryServerCallbacks s_callbacks;
 static HAPPlatformTCPStreamManager s_tcpm;
@@ -975,6 +979,8 @@ void InitApp() {
   mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
 
   SetupButton(BTN_GPIO, BTN_DOWN);
+
+  (void) s_ip_storage;
 }
 
 }  // namespace shelly
