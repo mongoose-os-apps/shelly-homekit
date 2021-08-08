@@ -124,7 +124,6 @@ cdefs:
   BTN_GPIO: -1
   BTN_NOISY: 1
   RST_GPIO_INIT: -1
-  HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
 
 libs:
   - location: ./libreset
@@ -491,6 +490,10 @@ conds:
         - location: https://github.com/mongoose-os-libs/adc
         - location: https://github.com/mongoose-os-libs/pwm
         - location: https://github.com/mongoose-os-libs/wifi
+      cdefs:
+        HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
+        HAP_DISABLE_ASSERTS: 1       # 32K
+        HAP_DISABLE_PRECONDITIONS: 1 # 40K
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
