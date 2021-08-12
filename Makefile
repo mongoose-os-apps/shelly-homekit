@@ -1,6 +1,7 @@
-MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
 .PHONY: build check-format format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2
+.SUFFIXES:
 
 MOS ?= mos
 # Build locally by default if Docker is available.
