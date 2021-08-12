@@ -479,6 +479,7 @@ function findOrAddContainer(cd) {
         sswSetConfig(c);
       };
       break;
+    case 12: // Window, or
     case 4: // Window Covering
       c = el("wc_template").cloneNode(true);
       c.id = elId;
@@ -662,6 +663,7 @@ function updateComponent(cd) {
       updateInnerText(el(c, "last_event"), lastEvText);
       break;
     }
+    case 12: // Window, or
     case 4: { // Window Covering
       updateInnerText(el(c, "head"), cd.name);
       setValueIfNotModified(el(c, "name"), cd.name);
@@ -849,6 +851,10 @@ function updateElement(key, value, info) {
         el(key).style.display = "inline";
         updateInnerText(el(key), `${value} ${key.split("_").slice(-1)[0]}`);
       }
+      break;
+    case "w_avail":
+      if (value) el("sys_mode_container").style.display = "block";
+      else if (el("sys_mode_5")) el("sys_mode_5").remove();
       break;
     case "wc_avail":
       if (value) el("sys_mode_container").style.display = "block";

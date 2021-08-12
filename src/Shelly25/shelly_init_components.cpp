@@ -20,6 +20,7 @@
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_window_covering.hpp"
+#include "shelly_hap_window.hpp"
 #include "shelly_main.hpp"
 
 namespace shelly {
@@ -59,6 +60,51 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
         acc->AddService(wc.get());
         accs->push_back(std::move(acc));
         if (im == hap::WindowCovering::InMode::kDetached) {
+          hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
+          hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
+        } else if (wc_cfg->swap_inputs) {
+          hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
+        } else {
+          hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
+        }
+        break;
+      }
+    }
+    comps->emplace_back(std::move(wc));
+    return;
+  }
+  // Window mode
+  if (mgos_sys_config_get_shelly_mode() == 5) {
+    const int id = 1;
+    auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
+    auto im = static_cast<hap::Window::InMode>(wc_cfg->in_mode);
+    Input *in1 = FindInput(1), *in2 = FindInput(2);
+    std::unique_ptr<hap::Window> wc(
+        new hap::Window(id, in1, in2, FindOutput(1), FindOutput(2),
+                                FindPM(1), FindPM(2), wc_cfg));
+    if (wc == nullptr || !wc->Init().ok()) {
+      return;
+    }
+    wc->set_primary(true);
+    switch (im) {
+      case hap::Window::InMode::kSeparateMomentary:
+      case hap::Window::InMode::kSeparateToggle: {
+        // Single accessory with a single primary service.
+        mgos::hap::Accessory *pri_acc = (*accs)[0].get();
+        pri_acc->SetCategory(kHAPAccessoryCategory_Windows);
+        pri_acc->AddService(wc.get());
+        break;
+      }
+      case hap::Window::InMode::kSingle:
+      case hap::Window::InMode::kDetached: {
+        std::unique_ptr<mgos::hap::Accessory> acc(
+            new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_WINDOW + id,
+                                     kHAPAccessoryCategory_BridgedAccessory,
+                                     wc_cfg->name, &AccessoryIdentifyCB, svr));
+        acc->AddHAPService(&mgos_hap_accessory_information_service);
+        acc->AddService(wc.get());
+        accs->push_back(std::move(acc));
+        if (im == hap::Window::InMode::kDetached) {
           hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
           hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
         } else if (wc_cfg->swap_inputs) {

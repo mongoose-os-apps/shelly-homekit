@@ -109,7 +109,7 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
+      "hap_ip_conns_max: %u, sys_mode: %d, w_avail: %B, wc_avail: %B, gdo_avail: %B, "
       "debug_en: %B, ota_progress: %d",
       mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
       MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
@@ -126,10 +126,10 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
-#ifdef MGOS_SYS_CONFIG_HAVE_WC1  // wc_avail
-      true,
+#ifdef MGOS_SYS_CONFIG_HAVE_WC1  // w_avail & wc_avail
+      true, true,
 #else
-      false,
+      false, false,
 #endif
 #ifdef MGOS_SYS_CONFIG_HAVE_GDO1  // gdo_avail
       true,
@@ -188,7 +188,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                &debug_en);
     mgos::ScopedCPtr name_owner(name_c);
 
-    if (sys_mode >= 0 && sys_mode <= 4) {
+    if (sys_mode >= 0 && sys_mode <= 5) {
       if (sys_mode != mgos_sys_config_get_shelly_mode()) {
         mgos_sys_config_set_shelly_mode(sys_mode);
         restart_required = true;
