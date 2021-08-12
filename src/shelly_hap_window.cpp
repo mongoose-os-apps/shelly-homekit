@@ -25,14 +25,12 @@
 namespace shelly {
 namespace hap {
 
-Window::Window(int id, Input *in0, Input *in1, Output *out0,
-                               Output *out1, PowerMeter *pm0, PowerMeter *pm1,
-                               struct mgos_config_wc *cfg)
+Window::Window(int id, Input *in0, Input *in1, Output *out0, Output *out1,
+               PowerMeter *pm0, PowerMeter *pm1, struct mgos_config_wc *cfg)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_WINDOW +
                (SHELLY_HAP_IID_STEP_WINDOW * (id - 1))),
-              &kHAPServiceType_Window,
-              kHAPServiceDebugDescription_Window),
+              &kHAPServiceType_Window, kHAPServiceDebugDescription_Window),
       cfg_(cfg),
       state_timer_(std::bind(&Window::RunOnce, this)),
       cur_pos_(cfg_->current_pos),
@@ -154,9 +152,8 @@ Status Window::Init() {
     case InMode::kSeparateToggle:
       in_open_handler_ = in_open_->AddHandler(std::bind(
           &Window::HandleInputEvent01, this, Direction::kOpen, _1, _2));
-      in_close_handler_ =
-          in_close_->AddHandler(std::bind(&Window::HandleInputEvent01,
-                                          this, Direction::kClose, _1, _2));
+      in_close_handler_ = in_close_->AddHandler(std::bind(
+          &Window::HandleInputEvent01, this, Direction::kClose, _1, _2));
       break;
     case InMode::kSingle:
       in_open_handler_ = in_open_->AddHandler(
@@ -203,7 +200,7 @@ StatusOr<std::string> Window::GetInfoJSON() const {
 }
 
 Status Window::SetConfig(const std::string &config_json,
-                                 bool *restart_required) {
+                         bool *restart_required) {
   struct mgos_config_wc cfg = *cfg_;
   cfg.name = nullptr;
   int in_mode = -1;
@@ -641,8 +638,7 @@ void Window::RunOnce() {
   }
 }
 
-void Window::HandleInputEvent01(Direction dir, Input::Event ev,
-                                        bool state) {
+void Window::HandleInputEvent01(Direction dir, Input::Event ev, bool state) {
   if (!cfg_->calibrated) {
     HandleInputEventNotCalibrated();
     return;
@@ -699,8 +695,7 @@ void Window::HandleInputEventNotCalibrated() {
   out_close_->SetState(want_close, "ext");
 }
 
-void Window::HandleInputSingle(const char *src,
-                                       Direction *last_move_dir) {
+void Window::HandleInputSingle(const char *src, Direction *last_move_dir) {
   switch (moving_dir_) {
     case Direction::kNone: {
       if (cur_pos_ == kFullyClosed || *last_move_dir != Direction::kOpen) {

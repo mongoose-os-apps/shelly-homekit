@@ -44,7 +44,7 @@ class Window : public Component, public mgos::hap::Service {
   };
 
   Window(int id, Input *in0, Input *in1, Output *out0, Output *out1,
-                 PowerMeter *pm0, PowerMeter *pm1, struct mgos_config_wc *cfg);
+         PowerMeter *pm0, PowerMeter *pm1, struct mgos_config_wc *cfg);
   virtual ~Window();
 
   // Component interface impl.

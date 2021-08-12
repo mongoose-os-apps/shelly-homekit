@@ -109,7 +109,8 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u, sys_mode: %d, w_avail: %B, wc_avail: %B, gdo_avail: %B, "
+      "hap_ip_conns_max: %u, sys_mode: %d, w_avail: %B, wc_avail: %B, "
+      "gdo_avail: %B, "
       "debug_en: %B, ota_progress: %d",
       mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
       MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),

@@ -19,8 +19,8 @@
 
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_input.hpp"
-#include "shelly_hap_window_covering.hpp"
 #include "shelly_hap_window.hpp"
+#include "shelly_hap_window_covering.hpp"
 #include "shelly_main.hpp"
 
 namespace shelly {
@@ -79,9 +79,9 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
     auto im = static_cast<hap::Window::InMode>(wc_cfg->in_mode);
     Input *in1 = FindInput(1), *in2 = FindInput(2);
-    std::unique_ptr<hap::Window> wc(
-        new hap::Window(id, in1, in2, FindOutput(1), FindOutput(2),
-                                FindPM(1), FindPM(2), wc_cfg));
+    std::unique_ptr<hap::Window> wc(new hap::Window(id, in1, in2, FindOutput(1),
+                                                    FindOutput(2), FindPM(1),
+                                                    FindPM(2), wc_cfg));
     if (wc == nullptr || !wc->Init().ok()) {
       return;
     }
