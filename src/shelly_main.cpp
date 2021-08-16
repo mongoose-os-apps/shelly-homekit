@@ -84,56 +84,10 @@ static HAPIPAccessoryServerStorage s_ip_storage = {
 
 static HAPPlatformKeyValueStore s_kvs;
 static HAPPlatformAccessorySetup s_accessory_setup;
-static HAPAccessoryServerOptions s_server_options = {
-    .maxPairings = kHAPPairingStorage_MinElements,
-#if HAP_IP
-    .ip =
-        {
-            .transport = &kHAPAccessoryServerTransport_IP,
-#ifndef __clang__
-            .available = 0,
-#endif
-            .accessoryServerStorage = &s_ip_storage,
-        },
-#endif
-#if HAP_BLE
-    .ble =
-        {
-            .transport = nullptr,
-#ifndef __clang__
-            .available = 0,
-#endif
-            .accessoryServerStorage = nullptr,
-            .preferredAdvertisingInterval = 0,
-            .preferredNotificationDuration = 0,
-        },
-#endif
-};
 static HAPAccessoryServerCallbacks s_callbacks;
 static HAPPlatformTCPStreamManager s_tcpm;
 static HAPPlatformServiceDiscovery s_service_discovery;
 static HAPAccessoryServerRef s_server;
-
-static HAPPlatform s_platform = {
-    .keyValueStore = &s_kvs,
-    .accessorySetup = &s_accessory_setup,
-    .setupDisplay = nullptr,
-    .setupNFC = nullptr,
-    .ip =
-        {
-            .tcpStreamManager = &s_tcpm,
-            .serviceDiscovery = &s_service_discovery,
-        },
-    .ble =
-        {
-            .blePeripheralManager = nullptr,
-        },
-    .authentication =
-        {
-            .mfiHWAuth = nullptr,
-            .mfiTokenAuth = nullptr,
-        },
-};
 
 static Input *s_btn = nullptr;
 static uint8_t s_service_flags = 0;
@@ -321,7 +275,7 @@ static bool StartService(bool quiet) {
     g_comps.shrink_to_fit();
   }
 
-  if (!mgos_hap_config_valid()) {
+  if (!HAPAccessoryServerIsPaired(&s_server) && !mgos_hap_config_valid()) {
     if (!quiet) {
       LOG(LL_INFO, ("=== Accessory not provisioned"));
     }
@@ -367,11 +321,6 @@ void StopService() {
   }
   LOG(LL_INFO, ("== Stopping HAP service (%d)", state));
   HAPAccessoryServerStop(&s_server);
-}
-
-static void StartHAPServerCB(HAPAccessoryServerRef *server) {
-  StartService(false /* quiet */);
-  (void) server;
 }
 
 static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
@@ -950,8 +899,53 @@ void InitApp() {
   s_callbacks.handleUpdatedState = HAPServerStateUpdateCB;
 
   // Initialize accessory server.
-  HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
-                           &s_callbacks, nullptr /* context */);
+  HAPAccessoryServerOptions server_options = {
+    .maxPairings = kHAPPairingStorage_MinElements,
+#if HAP_IP
+    .ip =
+        {
+            .transport = &kHAPAccessoryServerTransport_IP,
+#ifndef __clang__
+            .available = 0,
+#endif
+            .accessoryServerStorage = &s_ip_storage,
+        },
+#endif
+#if HAP_BLE
+    .ble =
+        {
+            .transport = nullptr,
+#ifndef __clang__
+            .available = 0,
+#endif
+            .accessoryServerStorage = nullptr,
+            .preferredAdvertisingInterval = 0,
+            .preferredNotificationDuration = 0,
+        },
+#endif
+  };
+  HAPPlatform platform = {
+      .keyValueStore = &s_kvs,
+      .accessorySetup = &s_accessory_setup,
+      .setupDisplay = nullptr,
+      .setupNFC = nullptr,
+      .ip =
+          {
+              .tcpStreamManager = &s_tcpm,
+              .serviceDiscovery = &s_service_discovery,
+          },
+      .ble =
+          {
+              .blePeripheralManager = nullptr,
+          },
+      .authentication =
+          {
+              .mfiHWAuth = nullptr,
+              .mfiTokenAuth = nullptr,
+          },
+  };
+  HAPAccessoryServerCreate(&s_server, &server_options, &platform, &s_callbacks,
+                           nullptr /* context */);
 
   if (shelly_cfg_migrate()) {
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
@@ -966,7 +960,10 @@ void InitApp() {
   // House-keeping timer.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, StatusTimerCB, nullptr);
 
-  mgos_hap_add_rpc_service_cb(&s_server, StartHAPServerCB);
+  mgos_hap_add_rpc_service_cb(
+      &s_server,
+      [](HAPAccessoryServerRef *) { HAPAccessoryServerStop(&s_server); },
+      [](HAPAccessoryServerRef *) { StartService(false /* quiet */); });
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
