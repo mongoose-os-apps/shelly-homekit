@@ -565,10 +565,10 @@ function updateComponent(cd) {
   let c = findOrAddContainer(cd);
   if (!c) return;
   switch (cd.type) {
-    case 0: // Switch
-    case 1: // Outlet
-    case 2: // Lock
-    case 11: { // RGB
+    case 0: // kSwitch
+    case 1: // kOutlet
+    case 2: // kLock
+    case 11: { // kLightBulb
       let headText = `Switch ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -595,6 +595,10 @@ function updateComponent(cd) {
           checkIfNotModified(el(c, "in_inverted"), cd.in_inverted);
           el(c, "in_inverted_container").style.display = "block";
         }
+        if (!cd.hdim) {
+          if (el(c, "im_mode_5")) el(c, "im_mode_5").remove();
+          if (el(c, "im_mode_6")) el(c, "im_mode_6").remove();
+        }
       } else {
         el(c, "in_mode_container").style.display = "none";
         el(c, "in_inverted_container").style.display = "none";
@@ -615,7 +619,7 @@ function updateComponent(cd) {
         }
       }
 
-      if (cd.type == 11) { // RGB
+      if (cd.type == 11) { // kLightBulb
         headText = "RGB";
         if (cd.name) headText += ` (${cd.name})`;
         updateInnerText(el(c, "head"), headText);

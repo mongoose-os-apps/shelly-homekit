@@ -467,9 +467,15 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
           UpdateOnOff(state, "switch");
           break;
         case InMode::kEdge:
+#if SHELLY_HAVE_DUAL_INPUT_MODES
+        case InMode::kEdgeBoth:
+#endif
           UpdateOnOff(IsOff(), "ext_edge");
           break;
         case InMode::kActivation:
+#if SHELLY_HAVE_DUAL_INPUT_MODES
+        case InMode::kActivationBoth:
+#endif
           if (state) {
             UpdateOnOff(true, "ext_act");
           } else if (IsOn() && IsAutoOffEnabled()) {

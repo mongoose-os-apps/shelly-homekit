@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.9.5
+version: 2.9.5-twoinputs2
 platform: esp8266
 
 libs_version: latest
@@ -126,6 +126,7 @@ cdefs:
   BTN_GPIO: -1
   BTN_NOISY: 1
   RST_GPIO_INIT: -1
+  SHELLY_HAVE_DUAL_INPUT_MODES: 0
 
 libs:
   - location: ./libreset
@@ -196,6 +197,7 @@ conds:
         STOCK_FW_MODEL: '"SHSW-L"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
+        SHELLY_HAVE_DUAL_INPUT_MODES: 1
       config_schema:
         - ["device.id", "shelly1l-??????"]
         - ["shelly.name", "shelly1l-??????"]
@@ -213,7 +215,6 @@ conds:
         - ["ssw1.name", "Input 1"]
         - ["ssw2", "ssw", {title: "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
-
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:

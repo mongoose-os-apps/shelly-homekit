@@ -236,7 +236,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     acc->AddService(sw2);
     accs->push_back(std::move(acc));
   }
-  if (sw_cfg->in_mode == 3) {
+  if (sw_cfg->in_mode == (int) InMode::kDetached) {
     hap::CreateHAPInput(id, in_cfg, comps, accs, svr);
   }
 }

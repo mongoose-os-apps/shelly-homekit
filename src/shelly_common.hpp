@@ -91,6 +91,10 @@ enum class InMode {
   kEdge = 2,
   kDetached = 3,
   kActivation = 4,
+#if SHELLY_HAVE_DUAL_INPUT_MODES
+  kEdgeBoth = 5,
+  kActivationBoth = 6,
+#endif
   kMax,
 };
 

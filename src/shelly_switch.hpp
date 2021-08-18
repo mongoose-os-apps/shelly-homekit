@@ -54,20 +54,25 @@ class ShellySwitch : public Component, public mgos::hap::Service {
   bool GetOutputState() const;
   void SetOutputState(bool new_state, const char *source);
 
+  // Additional input(s) are or'ed with the primary one.
+  void AddInput(Input *in);
+
  protected:
+  bool GetInputState() const;
+
   void InputEventHandler(Input::Event ev, bool state);
 
   void AutoOffTimerCB();
 
   void SaveState();
 
-  Input *const in_;
+  std::vector<Input *> ins_;
   Output *const out_;
   Output *const led_out_;
   PowerMeter *const out_pm_;
   struct mgos_config_sw *cfg_;
 
-  Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
+  std::vector<Input::HandlerID> in_handler_ids_;
   std::vector<mgos::hap::Characteristic *> state_notify_chars_;
 
   mgos::Timer auto_off_timer_;
