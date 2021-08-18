@@ -12,6 +12,7 @@ VERBOSE ?= 0
 RELEASE ?= 0
 RELEASE_SUFFIX ?=
 MOS_BUILD_FLAGS ?=
+ALLOW_DIRTY_FS ?= 0
 BUILD_DIR ?= ./build_$*
 
 MOS_BUILD_FLAGS_FINAL = $(MOS_BUILD_FLAGS)
@@ -28,7 +29,6 @@ endif
 build: Shelly1 Shelly1L Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2 ShellyU ShellyU25
 
 release:
-	@[ -z "$(wildcard fs/conf*.json fs/kvs.json)" ] || { echo; echo "XXX No configs in release builds allowed"; echo; exit 1; }
 	$(MAKE) build CLEAN=1 RELEASE=1
 
 PLATFORM ?= esp8266
@@ -81,6 +81,9 @@ fs/index.html.gz: $(wildcard fs_src/*) Makefile
 #	brotli --best -c $(BUILD_DIR)/index.html > $@
 
 build-%: fs/index.html.gz Makefile
+ifneq "$(ALLOW_DIRTY_FS)" "1"
+	@[ -z "$(wildcard fs/conf*.json fs/kvs.json)" ] || { echo; echo "XXX No configs in fs allowed, or set ALLOW_DIRTY_FS=1"; echo; exit 1; }
+endif
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
 	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL)
 ifeq "$(RELEASE)" "1"
