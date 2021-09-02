@@ -84,52 +84,10 @@ static HAPIPAccessoryServerStorage s_ip_storage = {
 
 static HAPPlatformKeyValueStore s_kvs;
 static HAPPlatformAccessorySetup s_accessory_setup;
-static HAPAccessoryServerOptions s_server_options = {
-    .maxPairings = kHAPPairingStorage_MinElements,
-    .ip =
-        {
-            .transport = &kHAPAccessoryServerTransport_IP,
-#ifndef __clang__
-            .available = 0,
-#endif
-            .accessoryServerStorage = &s_ip_storage,
-        },
-    .ble =
-        {
-            .transport = nullptr,
-#ifndef __clang__
-            .available = 0,
-#endif
-            .accessoryServerStorage = nullptr,
-            .preferredAdvertisingInterval = 0,
-            .preferredNotificationDuration = 0,
-        },
-};
 static HAPAccessoryServerCallbacks s_callbacks;
 static HAPPlatformTCPStreamManager s_tcpm;
 static HAPPlatformServiceDiscovery s_service_discovery;
 static HAPAccessoryServerRef s_server;
-
-static HAPPlatform s_platform = {
-    .keyValueStore = &s_kvs,
-    .accessorySetup = &s_accessory_setup,
-    .setupDisplay = nullptr,
-    .setupNFC = nullptr,
-    .ip =
-        {
-            .tcpStreamManager = &s_tcpm,
-            .serviceDiscovery = &s_service_discovery,
-        },
-    .ble =
-        {
-            .blePeripheralManager = nullptr,
-        },
-    .authentication =
-        {
-            .mfiHWAuth = nullptr,
-            .mfiTokenAuth = nullptr,
-        },
-};
 
 static Input *s_btn = nullptr;
 static uint8_t s_service_flags = 0;
@@ -181,6 +139,7 @@ static void DoReset(void *arg) {
   mgos_sys_config_set_wifi_sta_enable(false);
   mgos_sys_config_set_wifi_ap_enable(true);
 #endif
+  mgos_sys_config_set_rpc_acl(nullptr);
   mgos_sys_config_set_rpc_acl_file(nullptr);
   mgos_sys_config_set_rpc_auth_file(nullptr);
   mgos_sys_config_set_http_auth_file(nullptr);
@@ -277,7 +236,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     acc->AddService(sw2);
     accs->push_back(std::move(acc));
   }
-  if (sw_cfg->in_mode == 3) {
+  if (sw_cfg->in_mode == (int) InMode::kDetached) {
     hap::CreateHAPInput(id, in_cfg, comps, accs, svr);
   }
 }
@@ -316,7 +275,7 @@ static bool StartService(bool quiet) {
     g_comps.shrink_to_fit();
   }
 
-  if (!mgos_hap_config_valid()) {
+  if (!HAPAccessoryServerIsPaired(&s_server) && !mgos_hap_config_valid()) {
     if (!quiet) {
       LOG(LL_INFO, ("=== Accessory not provisioned"));
     }
@@ -346,18 +305,22 @@ static bool StartService(bool quiet) {
   return true;
 }
 
+static void DestroyComponents() {
+  if (s_accs.empty()) return;
+  LOG(LL_INFO, ("=== Destroying accessories"));
+  s_accs.clear();
+  s_hap_accs.clear();
+  g_comps.clear();
+}
+
 void StopService() {
   HAPAccessoryServerState state = HAPAccessoryServerGetState(&s_server);
   if (state == kHAPAccessoryServerState_Idle) {
+    DestroyComponents();
     return;
   }
   LOG(LL_INFO, ("== Stopping HAP service (%d)", state));
   HAPAccessoryServerStop(&s_server);
-}
-
-static void StartHAPServerCB(HAPAccessoryServerRef *server) {
-  StartService(false /* quiet */);
-  (void) server;
 }
 
 static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
@@ -365,9 +328,7 @@ static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
   LOG(LL_INFO, ("HAP server state: %d", st));
   if (st == kHAPAccessoryServerState_Idle) {
     // Safe to destroy components now.
-    s_accs.clear();
-    s_hap_accs.clear();
-    g_comps.clear();
+    DestroyComponents();
   }
 }
 
@@ -654,11 +615,12 @@ static bool shelly_cfg_migrate(void) {
     mgos_sys_config_set_shelly_cfg_version(5);
     changed = true;
   }
-  // 2.9.0-alpha3 -> alpha3 ACL settings workaround. Can be removed after 2.9.0.
-  if (mgos_conf_str_empty(mgos_sys_config_get_rpc_auth_domain()) &&
-      !mgos_conf_str_empty(mgos_sys_config_get_rpc_acl_file())) {
-    mgos_sys_config_set_rpc_acl_file(NULL);
-    mgos_sys_config_set_rpc_auth_file(NULL);
+  if (mgos_sys_config_get_shelly_cfg_version() == 5) {
+    if (mgos_sys_config_get_rpc_acl_file() != nullptr) {
+      mgos_sys_config_set_rpc_acl(mgos_sys_config_get_default__const_rpc_acl());
+      mgos_sys_config_set_rpc_acl_file(nullptr);
+    }
+    mgos_sys_config_set_shelly_cfg_version(6);
     changed = true;
   }
   return changed;
@@ -859,6 +821,7 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "axios.min.js.gz",
       "favicon.ico",
       "logo.png",
+      "rpc_acl.json",
       "style.css",
       "style.css.gz",
   };
@@ -936,8 +899,53 @@ void InitApp() {
   s_callbacks.handleUpdatedState = HAPServerStateUpdateCB;
 
   // Initialize accessory server.
-  HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
-                           &s_callbacks, nullptr /* context */);
+  HAPAccessoryServerOptions server_options = {
+    .maxPairings = kHAPPairingStorage_MinElements,
+#if HAP_IP
+    .ip =
+        {
+            .transport = &kHAPAccessoryServerTransport_IP,
+#ifndef __clang__
+            .available = 0,
+#endif
+            .accessoryServerStorage = &s_ip_storage,
+        },
+#endif
+#if HAP_BLE
+    .ble =
+        {
+            .transport = nullptr,
+#ifndef __clang__
+            .available = 0,
+#endif
+            .accessoryServerStorage = nullptr,
+            .preferredAdvertisingInterval = 0,
+            .preferredNotificationDuration = 0,
+        },
+#endif
+  };
+  HAPPlatform platform = {
+      .keyValueStore = &s_kvs,
+      .accessorySetup = &s_accessory_setup,
+      .setupDisplay = nullptr,
+      .setupNFC = nullptr,
+      .ip =
+          {
+              .tcpStreamManager = &s_tcpm,
+              .serviceDiscovery = &s_service_discovery,
+          },
+      .ble =
+          {
+              .blePeripheralManager = nullptr,
+          },
+      .authentication =
+          {
+              .mfiHWAuth = nullptr,
+              .mfiTokenAuth = nullptr,
+          },
+  };
+  HAPAccessoryServerCreate(&s_server, &server_options, &platform, &s_callbacks,
+                           nullptr /* context */);
 
   if (shelly_cfg_migrate()) {
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
@@ -952,7 +960,10 @@ void InitApp() {
   // House-keeping timer.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, StatusTimerCB, nullptr);
 
-  mgos_hap_add_rpc_service_cb(&s_server, StartHAPServerCB);
+  mgos_hap_add_rpc_service_cb(
+      &s_server,
+      [](HAPAccessoryServerRef *) { HAPAccessoryServerStop(&s_server); },
+      [](HAPAccessoryServerRef *) { StartService(false /* quiet */); });
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
@@ -965,6 +976,8 @@ void InitApp() {
   mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
 
   SetupButton(BTN_GPIO, BTN_DOWN);
+
+  (void) s_ip_storage;
 }
 
 }  // namespace shelly
