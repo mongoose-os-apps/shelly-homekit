@@ -184,10 +184,12 @@ std::string WindowCovering::name() const {
 }
 
 StatusOr<std::string> WindowCovering::GetInfo() const {
-  return mgos::SPrintf("c:%d mp:%.2f mt_ms:%d cp:%.2f tp:%.2f lemd:%d lhmd:%d",
-                       cfg_->calibrated, cfg_->move_power, cfg_->move_time_ms,
-                       cur_pos_, tgt_pos_, (int) last_ext_move_dir_,
-                       (int) last_hap_move_dir_);
+  return mgos::SPrintf(
+      "c:%d mp:%.2f mt_ms:%d cp:%.2f tp:%.2f "
+      "md:%d lemd:%d lhmd:%d",
+      cfg_->calibrated, cfg_->move_power, cfg_->move_time_ms, cur_pos_,
+      tgt_pos_, (int) moving_dir_, (int) last_ext_move_dir_,
+      (int) last_hap_move_dir_);
 }
 
 StatusOr<std::string> WindowCovering::GetInfoJSON() const {
