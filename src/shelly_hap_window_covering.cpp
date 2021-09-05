@@ -237,6 +237,9 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   }
   if (swap_outputs != -1 && swap_outputs != cfg_->swap_outputs) {
     cfg_->swap_outputs = swap_outputs;
+    // As movement direction is now reversed, position is now incorrect too.
+    // Let's re-calibrate.
+    cfg_->calibrated = false;
     *restart_required = true;
   }
   return Status::OK();
