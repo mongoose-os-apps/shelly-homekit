@@ -1470,7 +1470,7 @@ function checkUpdate() {
       console.log("Version:", latestVersion, "URL:", updateURL);
       if (!latestVersion || !updateURL) {
         console.log("Update section not found:", model, curVersion, cfg);
-        e.innerText = errMsg;
+        e.innerHTML = errMsg;
         se.className = "";
         return;
       }
