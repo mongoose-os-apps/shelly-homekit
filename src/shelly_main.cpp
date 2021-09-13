@@ -281,12 +281,17 @@ static bool StartService(bool quiet) {
     }
     return false;
   }
+  HAPDeviceIDString device_id;
+  if (HAPDeviceIDGetAsString(&s_kvs, &device_id) != kHAPError_None) {
+    device_id.stringValue[0] = '\0';
+  }
   uint16_t cn;
   if (HAPAccessoryServerGetCN(&s_kvs, &cn) != kHAPError_None) {
     cn = 0;
   }
   if (s_accs.size() == 1) {
-    LOG(LL_INFO, ("=== Starting HAP %s (CN %d)", "server", cn));
+    LOG(LL_INFO, ("=== Starting HAP %s (ID %s, CN %d)", "server",
+                  device_id.stringValue, cn));
     HAPAccessoryServerStart(&s_server, s_accs.front()->GetHAPAccessory());
   } else {
     if (s_hap_accs.empty()) {
@@ -296,8 +301,9 @@ static bool StartService(bool quiet) {
       s_hap_accs.push_back(nullptr);
       s_hap_accs.shrink_to_fit();
     }
-    LOG(LL_INFO, ("=== Starting HAP %s (CN %d, %d accessories)", "bridge", cn,
-                  (int) s_hap_accs.size()));
+    LOG(LL_INFO,
+        ("=== Starting HAP %s (ID %s, CN %d, %d accessories)", "bridge",
+         device_id.stringValue, cn, (int) s_hap_accs.size()));
     HAPAccessoryServerStartBridge(&s_server, s_accs.front()->GetHAPAccessory(),
                                   s_hap_accs.data(),
                                   false /* config changed */);
