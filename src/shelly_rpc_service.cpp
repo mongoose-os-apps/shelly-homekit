@@ -24,6 +24,8 @@
 
 #include "HAPAccessoryServer+Internal.h"
 
+#include "mbedtls/sha256.h"
+
 #include "shelly_debug.hpp"
 #include "shelly_hap_switch.hpp"
 #include "shelly_main.hpp"
@@ -76,6 +78,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                               struct mg_rpc_frame_info *fi,
                               struct mg_str args) {
+  const char *device_id = mgos_sys_config_get_device_id();
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
   bool hap_running = (HAPAccessoryServerGetState(s_server) ==
                       kHAPAccessoryServerState_Running);
@@ -89,6 +92,7 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   int flags = GetServiceFlags();
 #ifdef MGOS_HAVE_WIFI
   const char *wifi_ssid = mgos_sys_config_get_wifi_sta_ssid();
+  const char *wifi_pass = mgos_sys_config_get_wifi_sta_pass();
   int wifi_rssi = mgos_wifi_sta_get_rssi();
   char wifi_ip[16] = {};
   struct mgos_net_ip_info ip_info = {};
@@ -98,28 +102,41 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   }
   const char *wifi_ap_ssid = mgos_sys_config_get_wifi_ap_ssid();
   const char *wifi_ap_ip = mgos_sys_config_get_wifi_ap_ip();
+  if (wifi_ssid == NULL) wifi_ssid = "";
+  if (wifi_pass == NULL) wifi_pass = "";
+  /* Do not return plaintext password, mix it up with SSID and device ID. */
+  uint32_t digest[8];
+  mbedtls_sha256_context ctx;
+  mbedtls_sha256_init(&ctx);
+  mbedtls_sha256_starts_ret(&ctx, 0 /* is224 */);
+  mbedtls_sha256_update_ret(&ctx, (uint8_t *) device_id, strlen(device_id));
+  mbedtls_sha256_update_ret(&ctx, (uint8_t *) wifi_ssid, strlen(wifi_ssid));
+  mbedtls_sha256_update_ret(&ctx, (uint8_t *) wifi_pass, strlen(wifi_pass));
+  mbedtls_sha256_finish_ret(&ctx, (uint8_t *) digest);
+  mbedtls_sha256_free(&ctx);
 #endif
   std::string res = mgos::JSONPrintStringf(
       "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
       "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
       "auth_en: %B, auth_domain: %Q, "
 #ifdef MGOS_HAVE_WIFI
-      "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
+      "wifi_en: %B, wifi_ssid: %Q, wifi_pass_h: \"%08x%08x%08x%08x\", "
       "wifi_rssi: %d, wifi_ip: %Q, wifi_ap_ssid: %Q, wifi_ap_ip: %Q, "
 #endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
       "debug_en: %B, ota_progress: %d",
-      mgos_sys_config_get_device_id(), mgos_sys_config_get_shelly_name(),
-      MGOS_APP, CS_STRINGIFY_MACRO(PRODUCT_MODEL),
-      CS_STRINGIFY_MACRO(STOCK_FW_MODEL), mgos_dns_sd_get_host_name(),
-      mgos_sys_ro_vars_get_fw_version(), mgos_sys_ro_vars_get_fw_id(),
-      (int) mgos_uptime(), false /* failsafe_mode */, IsAuthEn(),
+      device_id, mgos_sys_config_get_shelly_name(), MGOS_APP,
+      CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
+      mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
+      mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
+      false /* failsafe_mode */, IsAuthEn(),
       mgos_sys_config_get_rpc_auth_domain(),
 #ifdef MGOS_HAVE_WIFI
       mgos_sys_config_get_wifi_sta_enable(), (wifi_ssid ? wifi_ssid : ""),
-      (mgos_sys_config_get_wifi_sta_pass() ? "***" : ""), wifi_rssi, wifi_ip,
+      (unsigned int) digest[0], (unsigned int) digest[2],
+      (unsigned int) digest[4], (unsigned int) digest[6], wifi_rssi, wifi_ip,
       (wifi_ap_ssid ? wifi_ap_ssid : ""), (wifi_ap_ip ? wifi_ap_ip : ""),
 #endif
       hap_cn, hap_running, hap_paired,

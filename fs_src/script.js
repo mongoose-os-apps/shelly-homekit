@@ -82,7 +82,21 @@ el("sys_save_btn").onclick = function () {
 
 el("hap_setup_btn").onclick = function () {
   el("hap_setup_spinner").className = "spin";
-  callDevice("HAP.Setup", {"code": "RANDOMCODE", "id": "RANDOMID"})
+  // Generate a code from device ID, wifi network name and password.
+  // This way it remains stable but cannot be easily guessed from device ID alone.
+  let input = lastInfo.device_id + (lastInfo.wifi_ssid || "") + (lastInfo.wifi_pass_h || "");
+  let seed = sha256(input).toLowerCase();
+  let code = "", id = "";
+  for (let i = 0; i < 8; i++) {
+    code += (seed.charCodeAt(i) % 10);
+    if (i == 2 || i == 4) code += "-";
+  }
+  for (let i = 0; i < 4; i++) {
+    let si = (seed.charCodeAt(10 + i) + seed.charCodeAt(20 + i)) % 36;
+    id += "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(si);
+  }
+  console.log(input, seed, code, id);
+  callDevice("HAP.Setup", {"code": code, "id": id})
     .then(function (resp) {
       let info = resp.result;
       console.log(info);
@@ -786,7 +800,7 @@ function updateElement(key, value, info) {
     case "wifi_ssid":
       setValueIfNotModified(el("wifi_ssid"), value);
       break;
-    case "wifi_pass":
+    case "wifi_pass_h":
       el("wifi_pass").placeholder = (value ? "(hidden)" : "(empty)");
       break;
     case "wifi_rssi":
