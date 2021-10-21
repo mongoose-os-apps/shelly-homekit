@@ -146,7 +146,7 @@ except ImportError:
   import yaml
 
 arch = platform.system()
-app_ver = '3.0.0'  # beta4
+app_ver = '3.0.0'  # beta5
 config_file = '.cfg.yaml'
 defaults_config_file = 'flash-shelly.cfg.yaml'
 security_file = 'flash-shelly.auth.yaml'
@@ -276,6 +276,7 @@ class Detection:
     if self.is_host_reachable(self.host, error_message):
       for url in [f'http://{self.wifi_ip}/settings', f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt']:
         response = requests.get(url)
+        logger.trace(f"RESPONSE: {response}")
         if response is not None and response.status_code in (200, 401):
           if 'GetInfoExt' in url:
             self.fw_type = "homekit"
@@ -441,7 +442,7 @@ class Device(Detection):
   def shelly_model(stock_fw_model):
     options = {'SHPLG-1': ['ShellyPlug', 'shelly-plug'],
                'SHPLG-S': ['ShellyPlugS', 'shelly-plug-s'],
-               'SHPLG-U1': ['ShellyPlugUS', 'shelly-plug-u1'],
+               'SHPLG-U1': ['ShellyPlugUS', 'shelly-plug-us1'],
                'SHPLG2-1': ['ShellyPlug', 'shelly-plug2'],
                'SHSW-1': ['Shelly1', 'switch1'],
                'SHSW-PM': ['Shelly1PM', 'switch1pm'],
@@ -1147,14 +1148,12 @@ class Main:
       config = self.load_config(flags.get('config'))  # load configs if requested from commandline.
       args.update(config)  # update arguments with profile additional options.
     args.update(flags)  # update arguments with commandline arguments, so they always have priority.
-    if args.get('flash'):
-      self.run_action = 'flash'  # handle commandline argument '-f / --flash', required to allow commandline override any saved defaults,
-    elif args.get('reboot'):
+    if not args.get('flash') and args.get('reboot'):
       self.run_action = 'reboot'  # handle commandline argument '-r / --reboot'
-    elif args.get('list'):
+    elif not args.get('flash') and args.get('list'):
       self.run_action = 'list'  # handle commandline argument '-l / --list'
     else:
-      self.run_action = 'flash'  # if none of above have been supplied in commandline default to '--flash'
+      self.run_action = 'flash'  # handle commandline argument '-f / --flash', required to allow commandline override any saved defaults, and handle commandline default to '--flash'.
     return args
 
   def run_app(self):  # main run of the script, handles commandline arguments.
@@ -1530,7 +1529,7 @@ class Main:
       if self.dry_run is False and self.silent_run is False:
         set_hap_code = input(f"Do you wish to set your HomeKit code to {self.hap_setup_code} (y/n) ? ") in ('y', 'Y')
       elif self.dry_run is True:
-        logger.info(f"Would have set your HomeKit code to {self.hap_setup_code}...")
+        logger.info(f"Would have set your HomeKit code to {self.hap_setup_code}")
       if set_hap_code or self.silent_run:
         device.write_hap_setup_code()
 
@@ -1544,7 +1543,7 @@ class Main:
       if self.dry_run is False and self.silent_run is False:
         set_ip = input(f"Do you wish to set your IP address {action_message} (y/n) ? ") in ('y', 'Y')
       elif self.dry_run is True:
-        logger.info(f"Would have set your IP address {action_message}...")
+        logger.info(f"Would have set your IP address {action_message}")
       if set_ip or self.silent_run:
         device.write_network_type()
 
@@ -1604,34 +1603,33 @@ class Main:
           self.requires_upgrade = True
         else:
           device.parse_local_file()
-    else:  # handle online firmware.
-      if self.flash_mode == 'homekit':
-        device.parse_homekit_release_info()
-        if device.is_stock():
-          if device.download_url:
-            download_url_request = requests.head(device.download_url)
-            logger.debug(f"download_url_request: {download_url_request}")
-            hk_flash_fw_version = device.flash_fw_version
-          device.parse_stock_release_info()
-          if device.info.get('device', {}).get('type', '') == 'SHRGBW2' and device.info.get('color_mode') == 'white':  # checks RGBW2 colour mode if 'white' mark it for mode change required.
-            self.requires_color_mode_change = True
-          if device.info.get('fw_version') == '0.0.0' or self.is_newer(device.flash_fw_version, device.info.get('fw_version')):  # checks device if is on release or firmware is no latest, mark for update required.
-            self.requires_upgrade = True
-          else:
-            device.parse_homekit_release_info()
-      elif self.flash_mode == 'revert':
-        self.revert_to_stock = True
-        if device.is_homekit():
-          device.parse_homekit_release_info()
-        else:
-          device.parse_stock_release_info()
-          self.flash_mode = 'stock'
-      elif self.flash_mode == 'stock':
+    elif self.flash_mode == 'homekit':
+      device.parse_homekit_release_info()
+      if device.is_stock():
+        if device.download_url:
+          download_url_request = requests.head(device.download_url)
+          logger.debug(f"download_url_request: {download_url_request}")
+          hk_flash_fw_version = device.flash_fw_version
         device.parse_stock_release_info()
+        if device.info.get('device', {}).get('type', '') == 'SHRGBW2' and device.info.get('color_mode') == 'white':  # checks RGBW2 colour mode if 'white' mark it for mode change required.
+          self.requires_color_mode_change = True
+        if device.info.get('fw_version') == '0.0.0' or self.is_newer(device.flash_fw_version, device.info.get('fw_version')):  # checks device if is on release or firmware is no latest, mark for update required.
+          self.requires_upgrade = True
+        else:
+          device.parse_homekit_release_info()
+    elif self.flash_mode == 'revert':
+      self.revert_to_stock = True
+      if device.is_homekit():
+        device.parse_homekit_release_info()
+      else:
+        device.parse_stock_release_info()
+        self.flash_mode = 'stock'
+    elif self.flash_mode == 'stock':
+      device.parse_stock_release_info()
     if device.flash_fw_version is None or not self.check_fw(device, 2.1):  # script requires version 2.1 firmware minimum.  # TODO increase to 2.9.2 when more mainstream.
       return 0
     self.parse_info(device, hk_flash_fw_version)  # main convert run, or update stock to latest firmware if an update or color mode is required.
-    if self.run_action == 'flash' and (self.requires_upgrade in ('Done', True) or self.requires_color_mode_change in ('Done', True)) and self.flash_question is True:
+    if self.run_action == 'flash' and (self.requires_upgrade in {'Done', True} or self.requires_color_mode_change in {'Done', True}) and self.flash_question is True:
       if self.requires_color_mode_change:  # do another run if colour mode is still required.
         device.get_info(True)  # update device information after previous run.
         self.parse_info(device)  # colour change run.
@@ -1705,9 +1703,8 @@ class Main:
         logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC} {RED}Failed: {self.failed_flashed_devices}{NC}")
       else:
         logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC}")
-    else:
-      if self.total_devices > 0:
-        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices}{NC}")
+    elif self.total_devices > 0:
+      logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices}{NC}")
     if self.log_filename:
       logger.info(f"Log file created: {self.log_filename}")
     self.stop_webserver()
