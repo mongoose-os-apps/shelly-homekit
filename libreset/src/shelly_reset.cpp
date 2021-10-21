@@ -50,10 +50,9 @@ extern "C" void mgos_app_preinit(void) {
                         (BTN_DOWN ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP));
 #if CS_PLATFORM == CS_P_ESP8266
   // system_get_rst_info() is not available yet so we're on our own.
-  uint32_t rr = rtc_get_reset_reason();
   uint32_t rir = READ_PERI_REG(RTC_STORE0);  // rst_info.reason
   // If this is not a power up / CH_PD reset, skip.
-  if (!(rr == 1 && rir == REASON_DEFAULT_RST)) {
+  if (rir == REASON_SOFT_RESTART) {
     s_failsafe_mode = (READ_PERI_REG(RTC_SCRATCH_ADDR) == FF_MODE_MAGIC);
     WRITE_PERI_REG(RTC_SCRATCH_ADDR, 0);
     return;

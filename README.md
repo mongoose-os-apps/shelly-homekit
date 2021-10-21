@@ -28,7 +28,7 @@ Features that are not yet supported:
  * Cloud connections: no Shelly Cloud, no MQTT
  * Remote actions (web hooks)
  * Valve with timer support
- * Temprature addon
+ * Temperature addon
 
 ## Quick Start
 

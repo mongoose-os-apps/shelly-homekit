@@ -195,7 +195,7 @@
         <label>Device ID:</label>
         <span id="device_id"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="uptime_container" style="display: none">
         <label>Uptime:</label>
         <span id="uptime"></span>
       </div>
@@ -226,12 +226,10 @@
   <div class="form">
     <div>
       <div class="form-control">
-        <label>Version:</label>
-        <span id="version"></span>
+        <label>Version:</label><span id="version"></span>
       </div>
       <div class="form-wrap-control">
-        <label>Build:</label>
-        <span id="fw_build"></span>
+        <label>Build:</label><span id="fw_build"></span>
       </div>
       <div class="form-control" id="update_container" style="display: none">
         <label>Update: </label>
@@ -335,6 +333,8 @@
           <option id="in_mode_2" value="2">Edge</option>
           <option id="in_mode_3" value="3">Detached</option>
           <option id="in_mode_4" value="4">Activation</option>
+          <option id="in_mode_5" value="5">Edge (both inputs)</option>
+          <option id="in_mode_6" value="6">Activation (both inputs)</option>
         </select>
       </div>
       <div class="form-control" id="in_inverted_container" style="display: none">
@@ -538,13 +538,6 @@
         </button>
         <button id="close_btn">
           <label><span id="close_spinner"></span>Close</label>
-        </button>
-      </div>
-      <div class="form-control" id="set_tgt_pos_form">
-        <label>Set to Postion</label>
-        <input type="number" id="set_tgt_pos_input">
-        <button id="set_tgt_pos_button">
-          <label><span id="open_spinner"></span>Set</label>
         </button>
       </div>
       <div class="form-control">

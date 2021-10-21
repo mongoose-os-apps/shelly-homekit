@@ -50,6 +50,7 @@ struct EnumHAPSessionsContext {
 static void EnumHAPSessions(void *vctx, HAPAccessoryServerRef *svr_,
                             HAPSessionRef *s, bool *) {
   EnumHAPSessionsContext *ctx = (EnumHAPSessionsContext *) vctx;
+#if HAP_IP
   size_t si = HAPAccessoryServerGetIPSessionIndex(svr_, s);
   const HAPAccessoryServer *svr = (const HAPAccessoryServer *) svr_;
   const HAPIPSession *is = &svr->ip.storage->sessions[si];
@@ -57,7 +58,10 @@ static void EnumHAPSessions(void *vctx, HAPAccessoryServerRef *svr_,
   mg_printf(ctx->nc, "  %d: s %p ts %p o %d st %d ts %lu\r\n", (int) si, s,
             (void *) sd->tcpStream, sd->tcpStreamIsOpen, sd->state,
             (unsigned long) sd->stamp);
+#endif
   ctx->num_sessions++;
+  (void) svr_;
+  (void) s;
 }
 
 void shelly_debug_write_nc(struct mg_connection *nc) {

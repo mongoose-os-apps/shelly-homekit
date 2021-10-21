@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.9.3
+version: 2.10.1
 platform: esp8266
 
 libs_version: latest
@@ -100,6 +100,8 @@ config_schema:
   - ["lb.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
   - ["lb.transition_time", "i", 2000, {title: "Time in milliseconds how long a transition will take"}]
 
+  - ["_const.rpc_acl", "s", '[{"ch_type": "UART", "acl": "*"},{"method": "Shelly.GetInfo", "acl": "*"},{"method": "*", "ch_type": "HTTP", "acl": "admin"},{"method": "*", "ch_type": "WS_in", "acl": "admin"}]', {}]
+
   # Preserved from stock.
   - ["k_apparent", "i", 1750000, {}]
   - ["max_power", "i", 1800, {}]
@@ -111,6 +113,8 @@ config_schema:
   - ["ssw.in_mode", "i", 0, {}]
 
 build_vars:
+  # BLE disabled for most models.
+  MGOS_HAP_BLE: 0
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
   MGOS_FW_EXTRA_ATTRS: shelly_hk_model=${build_vars.MODEL}
@@ -122,7 +126,7 @@ cdefs:
   BTN_GPIO: -1
   BTN_NOISY: 1
   RST_GPIO_INIT: -1
-  HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
+  SHELLY_HAVE_DUAL_INPUT_MODES: 0
 
 libs:
   - location: ./libreset
@@ -193,6 +197,7 @@ conds:
         STOCK_FW_MODEL: '"SHSW-L"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
+        SHELLY_HAVE_DUAL_INPUT_MODES: 1
       config_schema:
         - ["device.id", "shelly1l-??????"]
         - ["shelly.name", "shelly1l-??????"]
@@ -210,7 +215,6 @@ conds:
         - ["ssw1.name", "Input 1"]
         - ["ssw2", "ssw", {title: "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
-
 
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
@@ -351,7 +355,6 @@ conds:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHIX3-1"'
         MG_ENABLE_SSL: 0
-        # HAP_LOG_LEVEL: 0
         LED_GPIO: 5
         LED_ON: 0
         BTN_GPIO: 4
@@ -489,6 +492,14 @@ conds:
         - location: https://github.com/mongoose-os-libs/adc
         - location: https://github.com/mongoose-os-libs/pwm
         - location: https://github.com/mongoose-os-libs/wifi
+      cdefs:
+        # Size fine-tuning, saves substantial amount of RAM vs defaults.
+        HAP_SESSION_SIZE: 392
+        HAP_IP_SESSION_SIZE: 600
+        HAP_ACCESSORY_SERVER_SIZE: 1680
+        HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
+        HAP_DISABLE_ASSERTS: 1       # 32K
+        HAP_DISABLE_PRECONDITIONS: 1 # 40K
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
