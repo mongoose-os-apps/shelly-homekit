@@ -610,8 +610,8 @@ function updateComponent(cd) {
           el(c, "in_inverted_container").style.display = "block";
         }
         if (!cd.hdim) {
-          if (el(c, "im_mode_5")) el(c, "im_mode_5").remove();
-          if (el(c, "im_mode_6")) el(c, "im_mode_6").remove();
+          if (el(c, "in_mode_5")) el(c, "in_mode_5").remove();
+          if (el(c, "in_mode_6")) el(c, "in_mode_6").remove();
         }
       } else {
         el(c, "in_mode_container").style.display = "none";
