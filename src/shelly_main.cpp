@@ -851,7 +851,6 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "relaydata",
       "index.html",
       "conf9_backup.json",
-      "conf3.json",
       // Obsolete files from previopus versions.
       "axios.min.js.gz",
       "favicon.ico",
@@ -859,6 +858,16 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "rpc_acl.json",
       "style.css",
       "style.css.gz",
+      // Plus firmware stuff that we don't need.
+      "bundle.css.gz",
+      "bundle.js.gz",
+      "ca.pem",
+      "index.html",
+      "init.js",
+      "rpc_acl_auth.json",
+      "rpc_acl_no_auth.json",
+      "storage.json",
+      "tzinfo",
   };
   for (const char *skip_fn : s_skip_files) {
     if (strcmp(file_name, skip_fn) == 0) return false;

@@ -1,7 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.10.1
-platform: esp8266
+version: 2.11.0-alpha1
 
 libs_version: latest
 modules_version: latest
@@ -38,7 +37,6 @@ config_schema:
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
   - ["shelly.overheat_off", "i", 90, {title: "Overheat protection mode turns off when the temperature is back below this threshold"}]
-  - ["bl0937.power_coeff", "d", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
 
   - ["sw", "o", {title: "Switch settings", abstract: true}]
   - ["sw.name", "s", "", {title: "Name of the switch"}]
@@ -248,6 +246,7 @@ conds:
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.79942025]  # (16 + 1010 + 1935) / (8.53 + 561 + 1076)
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
@@ -408,6 +407,7 @@ conds:
         - ["sw1.in_mode", -1]
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 8.59980831]  # (16 + 1010 + 1935) / (2.01 + 117.3 + 225)
 
   - when: build_vars.MODEL == "ShellyPlugS"
@@ -439,7 +439,83 @@ conds:
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
         - ["sw1.state_led_en", 1]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
+
+  - when: build_vars.MODEL == "ShellyPlus1"
+    apply:
+      name: Plus1
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 25
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"Plus1"'
+      config_schema:
+        - ["device.id", "ShellyPlus1-????????????"]
+        - ["shelly.name", "ShellyPlus1-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
+        - ["ssw1.name", "Input"]
+
+  - when: build_vars.MODEL == "ShellyPlus1PM"
+    apply:
+      name: Plus1PM
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 25
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"Plus1PM"'
+      config_schema:
+        - ["device.id", "ShellyPlus1-????????????"]
+        - ["shelly.name", "ShellyPlus1-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
+        # Calibration values from stock
+        - ["bl0937_0", "o", {title: "BL0937 calibration"}]
+        - ["bl0937_0.apower_scale", "f", 2.028531, {title: "BL0937 apower scale"}]
+        - ["bl0937_0.voltage_scale", "f", 0.15510, {title: "BL0937 voltage scale"}]
+        - ["bl0937_0.current_scale", "f", 0.01287, {title: "BL0937 current scale"}]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
+        - ["ssw1.name", "Input"]
 
   - when: build_vars.MODEL == "ShellyRGBW2"
     apply:
@@ -558,7 +634,7 @@ conds:
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "ShellyU25 GDO"]
 
-  # Test "devicw" for BLE development.
+  # Test device for BLE development.
   - when: build_vars.MODEL == "ShellyT32"
     apply:
       libs:

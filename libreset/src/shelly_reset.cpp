@@ -29,8 +29,12 @@ extern "C" uint32_t rtc_get_reset_reason(void);
 // LWIP It used RTC to communicate with espconn (ugh). This is not used anymore,
 // so we can repurpose this location for failsafe flag.
 #define RTC_SCRATCH_ADDR 0x600011fc
-#define FF_MODE_MAGIC 0x18365472
+#elif CS_PLATFORM == CS_P_ESP32
+#include "esp32/rom/rtc.h"
+#define RTC_SCRATCH_ADDR 0x50001ffc
 #endif
+
+#define FF_MODE_MAGIC 0x18365472
 
 #include "shelly_main.hpp"
 
@@ -54,6 +58,12 @@ extern "C" void mgos_app_preinit(void) {
   uint32_t rir = READ_PERI_REG(RTC_STORE0);  // rst_info.reason
   // If this is not a power up / CH_PD reset, skip.
   if (rir == REASON_SOFT_RESTART) {
+    s_failsafe_mode = (READ_PERI_REG(RTC_SCRATCH_ADDR) == FF_MODE_MAGIC);
+    WRITE_PERI_REG(RTC_SCRATCH_ADDR, 0);
+    return;
+  }
+#elif CS_PLATFORM == CS_P_ESP32
+  if (IsSoftReboot()) {
     s_failsafe_mode = (READ_PERI_REG(RTC_SCRATCH_ADDR) == FF_MODE_MAGIC);
     WRITE_PERI_REG(RTC_SCRATCH_ADDR, 0);
     return;
@@ -139,6 +149,9 @@ bool IsSoftReboot() {
 #if CS_PLATFORM == CS_P_ESP8266
   const struct rst_info *ri = system_get_rst_info();
   return (ri->reason == REASON_SOFT_RESTART);
+#elif CS_PLATFORM == CS_P_ESP32
+  RESET_REASON rr = rtc_get_reset_reason(0 /* core */);
+  return (rr == SW_RESET || rr == SW_CPU_RESET);
 #else
   return false;
 #endif
