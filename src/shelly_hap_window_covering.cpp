@@ -169,12 +169,11 @@ Status WindowCovering::Init() {
   if (cfg_->calibrated) {
     LOG(LL_INFO, ("WC %d: mp %.2f, mt_ms %d, cur_pos %.2f", id(),
                   cfg_->move_power, cfg_->move_time_ms, cur_pos_));
-  } 
-  else if(cfg_->man_cal) {
+  } else if (cfg_->man_cal) {
     LOG(LL_INFO, ("WC %d: mp %.2f, mt_ms %d, mtlpos_ms %d, cur_pos %.2f", id(),
-      cfg_->move_power, cfg_->move_time_ms, cfg_->move_time_limit_pos_ms, cur_pos_));
-  }
-  else {
+                  cfg_->move_power, cfg_->move_time_ms,
+                  cfg_->move_time_limit_pos_ms, cur_pos_));
+  } else {
     LOG(LL_INFO, ("WC %d: not calibrated", id()));
   }
   state_timer_.Reset(100, MGOS_TIMER_REPEAT);
@@ -205,11 +204,10 @@ StatusOr<std::string> WindowCovering::GetInfoJSON() const {
       "cal_done: %B, man_cal: %B, move_time_ms: %d, "
       "move_time_limit_pos_ms: %d, move_power: %d, "
       "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d}",
-      id(), type(), cfg_->name, 
-      cfg_->in_mode, cfg_->swap_inputs, cfg_->swap_outputs, 
-      cfg_->calibrated, cfg_->man_cal, cfg_->move_time_ms,
-      cfg_->move_time_limit_pos_ms, (int) cfg_->move_power, 
-      (int) state_, StateStr(state_), (int) cur_pos_, (int) tgt_pos_);
+      id(), type(), cfg_->name, cfg_->in_mode, cfg_->swap_inputs,
+      cfg_->swap_outputs, cfg_->calibrated, cfg_->man_cal, cfg_->move_time_ms,
+      cfg_->move_time_limit_pos_ms, (int) cfg_->move_power, (int) state_,
+      StateStr(state_), (int) cur_pos_, (int) tgt_pos_);
 }
 
 Status WindowCovering::SetConfig(const std::string &config_json,
@@ -217,16 +215,14 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   struct mgos_config_wc cfg = *cfg_;
   cfg.name = nullptr;
   int in_mode = -1, move_time_ms = -1, move_time_limit_pos_ms = -1;
-  int8_t man_cal=-1, swap_inputs = -1, swap_outputs = -1;
+  int8_t man_cal = -1, swap_inputs = -1, swap_outputs = -1;
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, in_mode: %d, "
              "man_cal: %B, move_time_ms: %d, "
              "move_time_limit_pos_ms: %d, "
              "swap_inputs: %B, swap_outputs: %B}",
-             &cfg.name, &in_mode, 
-             &man_cal, &move_time_ms, 
-             &move_time_limit_pos_ms, 
-             &swap_inputs, &swap_outputs);
+             &cfg.name, &in_mode, &man_cal, &move_time_ms,
+             &move_time_limit_pos_ms, &swap_inputs, &swap_outputs);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -247,7 +243,7 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   }
   if (man_cal != -1 && man_cal != cfg_->man_cal) {
     cfg_->man_cal = man_cal;
-    if(man_cal && cfg_->calibrated) {
+    if (man_cal && cfg_->calibrated) {
       cfg_->calibrated = false;
     }
     *restart_required = true;
@@ -256,7 +252,8 @@ Status WindowCovering::SetConfig(const std::string &config_json,
     cfg_->move_time_ms = move_time_ms;
     *restart_required = true;
   }
-  if (move_time_limit_pos_ms != -1 && move_time_limit_pos_ms != cfg_->move_time_limit_pos_ms) {
+  if (move_time_limit_pos_ms != -1 &&
+      move_time_limit_pos_ms != cfg_->move_time_limit_pos_ms) {
     cfg_->move_time_limit_pos_ms = move_time_limit_pos_ms;
     *restart_required = true;
   }
@@ -590,22 +587,17 @@ void WindowCovering::RunOnce() {
       break;
     }
     case State::kMoving: {
-      bool moving_to_limit_pos = (
-          (tgt_pos_ == kFullyOpen && moving_dir_ == Direction::kOpen) 
-        ||
-          (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose)
-        );
+      bool moving_to_limit_pos =
+          ((tgt_pos_ == kFullyOpen && moving_dir_ == Direction::kOpen) ||
+           (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose));
       int moving_time_ms = (mgos_uptime_micros() - begin_) / 1000;
-      // if manually calibrated move `move_to_end_time_ms` instead of 
-      // `move_time_ms`, in order to really reach the limit 
-      // (Caution: this works for motors, that stop at their limit 
+      // if manually calibrated move `move_to_end_time_ms` instead of
+      // `move_time_ms`, in order to really reach the limit
+      // (Caution: this works for motors, that stop at their limit
       // positions by themselves, only).
-      float pos_diff = moving_time_ms / 
-        (moving_to_limit_pos && cfg_->man_cal ? 
-          move_limit_ms_per_pct_ 
-        : 
-          move_ms_per_pct_
-        );
+      float pos_diff = moving_time_ms / (moving_to_limit_pos && cfg_->man_cal
+                                             ? move_limit_ms_per_pct_
+                                             : move_ms_per_pct_);
       float new_cur_pos =
           (moving_dir_ == Direction::kOpen ? move_start_pos_ + pos_diff
                                            : move_start_pos_ - pos_diff);
@@ -637,7 +629,7 @@ void WindowCovering::RunOnce() {
           (want_move_dir != moving_dir_ && want_move_dir != Direction::kNone);
       // If moving to one of the limit positions, keep moving
       // until no current is flowing. But, if manually calibrated
-      // move `move_to_end_time_ms` instead of `move_time_ms`, in order 
+      // move `move_to_end_time_ms` instead of `move_time_ms`, in order
       // to really reach the limit (Caution: this works for motors, that
       // stop at their limit positions by themselves, only).
       if (moving_to_limit_pos && !reverse && !cfg_->man_cal) {
