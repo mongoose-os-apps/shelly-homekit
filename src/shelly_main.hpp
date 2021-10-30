@@ -28,7 +28,13 @@
 #include "shelly_input.hpp"
 #include "shelly_output.hpp"
 #include "shelly_pm.hpp"
+#include "shelly_reset.hpp"
 #include "shelly_temp_sensor.hpp"
+
+#define AUTH_USER "admin"
+#define AUTH_FILE_NAME "passwd256"
+#define ACL_FILE_NAME "rpc_acl.json"
+#define KVS_FILE_NAME "kvs.json"
 
 namespace shelly {
 
@@ -50,18 +56,17 @@ void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
 
 void RestartService();
 
-bool WipeDevice();
-
-bool IsSoftReboot();
-
 StatusOr<int> GetSystemTemperature();
 
 #define SHELLY_SERVICE_FLAG_UPDATE (1 << 0)
 #define SHELLY_SERVICE_FLAG_REBOOT (1 << 1)
 #define SHELLY_SERVICE_FLAG_OVERHEAT (1 << 2)
+#define SHELLY_SERVICE_FLAG_REVERT (1 << 3)
 uint8_t GetServiceFlags();
 
 HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request);
+
+int GetOTAProgress();
 
 // Implemented for each model.
 

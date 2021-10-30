@@ -190,10 +190,12 @@ std::string WindowCovering::name() const {
 }
 
 StatusOr<std::string> WindowCovering::GetInfo() const {
-  return mgos::SPrintf("c:%d mp:%.2f mt_ms:%d cp:%.2f tp:%.2f lemd:%d lhmd:%d",
-                       cfg_->calibrated, cfg_->move_power, cfg_->move_time_ms,
-                       cur_pos_, tgt_pos_, (int) last_ext_move_dir_,
-                       (int) last_hap_move_dir_);
+  return mgos::SPrintf(
+      "c:%d mp:%.2f mt_ms:%d cp:%.2f tp:%.2f "
+      "md:%d lemd:%d lhmd:%d",
+      cfg_->calibrated, cfg_->move_power, cfg_->move_time_ms, cur_pos_,
+      tgt_pos_, (int) moving_dir_, (int) last_ext_move_dir_,
+      (int) last_hap_move_dir_);
 }
 
 StatusOr<std::string> WindowCovering::GetInfoJSON() const {
@@ -264,6 +266,9 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   }
   if (swap_outputs != -1 && swap_outputs != cfg_->swap_outputs) {
     cfg_->swap_outputs = swap_outputs;
+    // As movement direction is now reversed, position is now incorrect too.
+    // Let's re-calibrate.
+    cfg_->calibrated = false;
     *restart_required = true;
   }
   return Status::OK();
@@ -488,7 +493,7 @@ void WindowCovering::RunOnce() {
       const float p0 = p0v.ValueOrDie();
       LOG_EVERY_N(LL_INFO, 8, ("WC %d: P0 = %.3f", id(), p0));
       if (p0 < cfg_->idle_power_thr &&
-          (mgos_uptime_micros() - begin_ > 1000000)) {
+          (mgos_uptime_micros() - begin_ > cfg_->max_ramp_up_time_ms * 1000)) {
         out_open_->SetState(false, ss);
         SetInternalState(State::kPostCal0);
       }
@@ -577,7 +582,7 @@ void WindowCovering::RunOnce() {
         break;
       }
       int elapsed_us = (mgos_uptime_micros() - begin_);
-      if (elapsed_us > 1000000) {
+      if (elapsed_us > cfg_->max_ramp_up_time_ms * 1000) {
         LOG(LL_ERROR, ("Failed to start moving"));
         tgt_state_ = State::kError;
         SetInternalState(State::kStop);
@@ -637,8 +642,8 @@ void WindowCovering::RunOnce() {
       // stop at their limit positions by themselves, only).
       if (moving_to_limit_pos && !reverse && !cfg_->man_cal) {
         LOG_EVERY_N(LL_INFO, 8, ("Moving to %d, p %.2f", (int) tgt_pos_, p));
-        if (p > cfg_->idle_power_thr ||
-            (mgos_uptime_micros() - begin_ < 1000000)) {
+        if (p > cfg_->idle_power_thr || (mgos_uptime_micros() - begin_ <
+                                         cfg_->max_ramp_up_time_ms * 1000)) {
           // Still moving or ramping up.
           break;
         } else {
@@ -696,7 +701,7 @@ void WindowCovering::HandleInputEvent01(Direction dir, Input::Event ev,
   bool stop = false;
   bool is_toggle = (cfg_->in_mode == (int) InMode::kSeparateToggle);
   if (state) {
-    if (moving_dir_ == Direction::kNone || moving_dir_ != dir) {
+    if (moving_dir_ == Direction::kNone) {
       float pos = (dir == Direction::kOpen ? kFullyOpen : kFullyClosed);
       last_ext_move_dir_ = dir;
       SetTgtPos(pos, "ext");

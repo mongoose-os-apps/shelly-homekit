@@ -40,8 +40,8 @@ void InputPin::Init() {
   mgos_gpio_set_button_handler(cfg_.pin, cfg_.pull, MGOS_GPIO_INT_EDGE_ANY, 20,
                                GPIOIntHandler, this);
   bool state = GetState();
-  LOG(LL_INFO, ("InputPin %d: pin %d, on_value %d, state %s", id(), cfg_.pin,
-                cfg_.on_value, OnOff(state)));
+  LOG(LL_INFO, ("%s %d: pin %d, on_value %d, state %s", "InputPin", id(),
+                cfg_.pin, cfg_.on_value, OnOff(state)));
 }
 
 void InputPin::SetInvert(bool invert) {

@@ -31,7 +31,9 @@ class Output {
   int id() const;
   virtual bool GetState() = 0;
   virtual Status SetState(bool on, const char *source) = 0;
+  virtual Status SetStatePWM(float duty, const char *source) = 0;
   virtual Status Pulse(bool on, int duration_ms, const char *source) = 0;
+  virtual void SetInvert(bool out_invert) = 0;
 
  private:
   const int id_;
@@ -46,7 +48,13 @@ class OutputPin : public Output {
   // Output interface impl.
   bool GetState() override;
   Status SetState(bool on, const char *source) override;
+  Status SetStatePWM(float duty, const char *source) override;
   Status Pulse(bool on, int duration_ms, const char *source) override;
+  int pin() const;
+  void SetInvert(bool out_invert) override;
+
+ protected:
+  bool out_invert_ = false;
 
  private:
   void PulseTimerCB();

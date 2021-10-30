@@ -34,16 +34,15 @@
 #if CS_PLATFORM == CS_P_ESP8266
 #include "esp_coredump.h"
 #include "esp_rboot.h"
-extern "C" {
-#include "user_interface.h"
-}
 #endif
 
 #include "HAP.h"
 #include "HAPAccessoryServer+Internal.h"
 #include "HAPPlatform+Init.h"
 #include "HAPPlatformAccessorySetup+Init.h"
+#include "HAPPlatformBLEPeripheralManager+Init.h"
 #include "HAPPlatformKeyValueStore+Init.h"
+#include "HAPPlatformMFiTokenAuth+Init.h"
 #include "HAPPlatformServiceDiscovery+Init.h"
 #include "HAPPlatformTCPStreamManager+Init.h"
 
@@ -61,7 +60,6 @@ extern "C" {
 #include "shelly_switch.hpp"
 #include "shelly_temp_sensor.hpp"
 
-#define KVS_FILE_NAME "kvs.json"
 #define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
 
@@ -86,54 +84,38 @@ static HAPIPAccessoryServerStorage s_ip_storage = {
         },
 };
 
-static HAPPlatformKeyValueStore s_kvs;
-static HAPPlatformAccessorySetup s_accessory_setup;
-static HAPAccessoryServerOptions s_server_options = {
-    .maxPairings = kHAPPairingStorage_MinElements,
-    .ip =
+#ifdef MGOS_HAVE_BT_COMMON
+// TODO: make dynamic
+static HAPBLEGATTTableElementRef gattTableElements[100];
+static HAPBLESessionCacheElementRef
+    sessionCacheElements[kHAPBLESessionCache_MinElements];
+static HAPSessionRef session;
+static uint8_t procedureBytes[2048];
+static HAPBLEProcedureRef procedures[1];
+
+static HAPPlatformBLEPeripheralManager s_blepm;
+static HAPBLEAccessoryServerStorage s_ble_storage = {
+    .gattTableElements = gattTableElements,
+    .numGATTTableElements = HAPArrayCount(gattTableElements),
+    .sessionCacheElements = sessionCacheElements,
+    .numSessionCacheElements = HAPArrayCount(sessionCacheElements),
+    .session = &session,
+    .procedures = procedures,
+    .numProcedures = HAPArrayCount(procedures),
+    .procedureBuffer =
         {
-            .transport = &kHAPAccessoryServerTransport_IP,
-#ifndef __clang__
-            .available = 0,
-#endif
-            .accessoryServerStorage = &s_ip_storage,
-        },
-    .ble =
-        {
-            .transport = nullptr,
-#ifndef __clang__
-            .available = 0,
-#endif
-            .accessoryServerStorage = nullptr,
-            .preferredAdvertisingInterval = 0,
-            .preferredNotificationDuration = 0,
+            .bytes = procedureBytes,
+            .numBytes = sizeof procedureBytes,
         },
 };
+#endif
+
+static HAPPlatformKeyValueStore s_kvs;
+static HAPPlatformAccessorySetup s_accessory_setup;
 static HAPAccessoryServerCallbacks s_callbacks;
 static HAPPlatformTCPStreamManager s_tcpm;
 static HAPPlatformServiceDiscovery s_service_discovery;
 static HAPAccessoryServerRef s_server;
-
-static HAPPlatform s_platform = {
-    .keyValueStore = &s_kvs,
-    .accessorySetup = &s_accessory_setup,
-    .setupDisplay = nullptr,
-    .setupNFC = nullptr,
-    .ip =
-        {
-            .tcpStreamManager = &s_tcpm,
-            .serviceDiscovery = &s_service_discovery,
-        },
-    .ble =
-        {
-            .blePeripheralManager = nullptr,
-        },
-    .authentication =
-        {
-            .mfiHWAuth = nullptr,
-            .mfiTokenAuth = nullptr,
-        },
-};
 
 static Input *s_btn = nullptr;
 static uint8_t s_service_flags = 0;
@@ -155,7 +137,6 @@ static std::vector<std::unique_ptr<PowerMeter>> s_pms;
 static std::vector<std::unique_ptr<mgos::hap::Accessory>> s_accs;
 static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
-static bool s_failsafe_mode = false;
 std::vector<std::unique_ptr<Component>> g_comps;
 
 template <class T>
@@ -175,25 +156,6 @@ PowerMeter *FindPM(int id) {
   return FindById(s_pms, id);
 }
 
-// Executed very early, pretty much nothing is available here.
-extern "C" void mgos_app_preinit(void) {
-#if BTN_GPIO >= 0
-  mgos_gpio_setup_input(BTN_GPIO,
-                        (BTN_DOWN ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP));
-  int i = 10;
-  while (mgos_gpio_read(BTN_GPIO) == BTN_DOWN && i > 0) {
-    mgos_msleep(10);
-    i--;
-  }
-  if (i == 0) {
-    s_failsafe_mode = true;
-#if LED_GPIO >= 0
-    mgos_gpio_setup_output(LED_GPIO, LED_ON);
-#endif
-  }
-#endif
-}
-
 static void DoReset(void *arg) {
   intptr_t out_gpio = (intptr_t) arg;
   if (out_gpio >= 0) {
@@ -204,7 +166,15 @@ static void DoReset(void *arg) {
 #ifdef MGOS_SYS_CONFIG_HAVE_WIFI
   mgos_sys_config_set_wifi_sta_enable(false);
   mgos_sys_config_set_wifi_ap_enable(true);
-  mgos_sys_config_save(&mgos_sys_config, false, nullptr);
+#endif
+  mgos_sys_config_set_rpc_acl(nullptr);
+  mgos_sys_config_set_rpc_acl_file(nullptr);
+  mgos_sys_config_set_rpc_auth_file(nullptr);
+  mgos_sys_config_set_http_auth_file(nullptr);
+  if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
+    remove(AUTH_FILE_NAME);
+  }
+#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
   mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
 #endif
   CheckLED(LED_GPIO, LED_ON);
@@ -277,6 +247,13 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     sw2->set_primary(true);
     pri_acc->SetCategory(cat);
     pri_acc->AddService(sw2);
+    // This was requested in
+    // https://github.com/mongoose-os-apps/shelly-homekit/issues/237 however,
+    // without https://github.com/mongoose-os-libs/dns-sd/issues/5 it causes
+    // confusion when multiple accessories advertise the same name (reported in
+    // https://github.com/mongoose-os-apps/shelly-homekit/issues/561).
+    // So for now we're going back to less readable but unique accessory names.
+    // pri_acc->SetName(sw2->name());
     return;
   }
   if (!sw_hidden) {
@@ -287,7 +264,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
     acc->AddService(sw2);
     accs->push_back(std::move(acc));
   }
-  if (sw_cfg->in_mode == 3) {
+  if (sw_cfg->in_mode == (int) InMode::kDetached) {
     hap::CreateHAPInput(id, in_cfg, comps, accs, svr);
   }
 }
@@ -318,23 +295,33 @@ static bool StartService(bool quiet) {
     for (auto &in : s_inputs) {
       in->SetInvert(false);
     }
+    for (auto &out : s_outputs) {
+      out->SetInvert(false);
+    }
     CreateComponents(&g_comps, &s_accs, &s_server);
     s_accs.shrink_to_fit();
     g_comps.shrink_to_fit();
   }
 
-  if (!mgos_hap_config_valid()) {
+  if (!HAPAccessoryServerIsPaired(&s_server) && !mgos_hap_config_valid()) {
     if (!quiet) {
       LOG(LL_INFO, ("=== Accessory not provisioned"));
     }
     return false;
   }
+  HAPDeviceIDString device_id;
+  if (HAPDeviceIDGetAsString(&s_kvs, &device_id) != kHAPError_None) {
+    device_id.stringValue[0] = '\0';
+  }
+  const char *uuid = mgos_sys_config_get_hap_mfi_uuid();
+  if (uuid == NULL) uuid = "<n/a>";
   uint16_t cn;
   if (HAPAccessoryServerGetCN(&s_kvs, &cn) != kHAPError_None) {
     cn = 0;
   }
   if (s_accs.size() == 1) {
-    LOG(LL_INFO, ("=== Starting HAP %s (CN %d)", "server", cn));
+    LOG(LL_INFO, ("=== Starting HAP %s (ID %s, UUID %s, CN %d)", "server",
+                  device_id.stringValue, uuid, cn));
     HAPAccessoryServerStart(&s_server, s_accs.front()->GetHAPAccessory());
   } else {
     if (s_hap_accs.empty()) {
@@ -344,8 +331,9 @@ static bool StartService(bool quiet) {
       s_hap_accs.push_back(nullptr);
       s_hap_accs.shrink_to_fit();
     }
-    LOG(LL_INFO, ("=== Starting HAP %s (CN %d, %d accessories)", "bridge", cn,
-                  (int) s_hap_accs.size()));
+    LOG(LL_INFO,
+        ("=== Starting HAP %s (ID %s, UUID %s, CN %d, %d accessories)",
+         "bridge", device_id.stringValue, uuid, cn, (int) s_hap_accs.size()));
     HAPAccessoryServerStartBridge(&s_server, s_accs.front()->GetHAPAccessory(),
                                   s_hap_accs.data(),
                                   false /* config changed */);
@@ -353,17 +341,22 @@ static bool StartService(bool quiet) {
   return true;
 }
 
-void StopService() {
-  if (HAPAccessoryServerGetState(&s_server) == kHAPAccessoryServerState_Idle) {
-    return;
-  }
-  LOG(LL_INFO, ("== Stopping HAP service"));
-  HAPAccessoryServerStop(&s_server);
+static void DestroyComponents() {
+  if (s_accs.empty()) return;
+  LOG(LL_INFO, ("=== Destroying accessories"));
+  s_accs.clear();
+  s_hap_accs.clear();
+  g_comps.clear();
 }
 
-static void StartHAPServerCB(HAPAccessoryServerRef *server) {
-  StartService(false /* quiet */);
-  (void) server;
+void StopService() {
+  HAPAccessoryServerState state = HAPAccessoryServerGetState(&s_server);
+  if (state == kHAPAccessoryServerState_Idle) {
+    DestroyComponents();
+    return;
+  }
+  LOG(LL_INFO, ("== Stopping HAP service (%d)", state));
+  HAPAccessoryServerStop(&s_server);
 }
 
 static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
@@ -371,9 +364,7 @@ static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
   LOG(LL_INFO, ("HAP server state: %d", st));
   if (st == kHAPAccessoryServerState_Idle) {
     // Safe to destroy components now.
-    s_accs.clear();
-    s_hap_accs.clear();
-    g_comps.clear();
+    DestroyComponents();
   }
 }
 
@@ -553,7 +544,6 @@ static void StatusTimerCB(void *arg) {
                   (unsigned long) mgos_get_free_heap_size(),
                   (unsigned long) mgos_get_heap_size(),
                   (sys_temp.ok() ? sys_temp.ValueOrDie() : 0), status.c_str()));
-    s_cnt = 0;
   }
 #ifdef MGOS_HAVE_WIFI
   if (mgos_sys_config_get_wifi_sta_enable() &&
@@ -596,13 +586,13 @@ static bool shelly_cfg_migrate(void) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
-          static_cast<int>(ShellySwitch::InitialState::kLast));
+          static_cast<int>(InitialState::kLast));
     }
 #endif
 #ifdef MGOS_CONFIG_HAVE_SW2
     if (mgos_sys_config_get_sw2_persist_state()) {
       mgos_sys_config_set_sw2_initial_state(
-          static_cast<int>(ShellySwitch::InitialState::kLast));
+          static_cast<int>(InitialState::kLast));
     }
 #endif
     mgos_sys_config_set_shelly_cfg_version(1);
@@ -649,6 +639,25 @@ static bool shelly_cfg_migrate(void) {
     mgos_sys_config_set_shelly_cfg_version(4);
     changed = true;
   }
+  if (mgos_sys_config_get_shelly_cfg_version() == 4) {
+    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+      LOG(LL_ERROR, ("Failed to increment CN"));
+    }
+    // Disable file logging.
+    if (mgos_sys_config_get_file_logger_enable()) {
+      SetDebugEnable(false);
+    }
+    mgos_sys_config_set_shelly_cfg_version(5);
+    changed = true;
+  }
+  if (mgos_sys_config_get_shelly_cfg_version() == 5) {
+    if (mgos_sys_config_get_rpc_acl_file() != nullptr) {
+      mgos_sys_config_set_rpc_acl(mgos_sys_config_get_default__const_rpc_acl());
+      mgos_sys_config_set_rpc_acl_file(nullptr);
+    }
+    mgos_sys_config_set_shelly_cfg_version(6);
+    changed = true;
+  }
   return changed;
 }
 
@@ -658,12 +667,12 @@ static void RebootCB(int ev, void *ev_data, void *userdata) {
       kHAPAccessoryServerState_Running) {
     HAPAccessoryServerStop(&s_server);
   }
-  if (ev == MGOS_EVENT_REBOOT) {
+  if (ev == MGOS_EVENT_REBOOT &&
+      !(s_service_flags & SHELLY_SERVICE_FLAG_REVERT)) {
     // Increment CN on every reboot, because why not.
     // This will cover firmware update as well as other configuration changes.
-    uint16_t cn;
-    if (HAPAccessoryServerGetCN(&s_kvs, &cn) != kHAPError_None) {
-      cn = 0;
+    if (HAPAccessoryServerIncrementCN(&s_kvs) != kHAPError_None) {
+      LOG(LL_ERROR, ("Failed to increment CN"));
     }
   }
   (void) ev;
@@ -739,6 +748,7 @@ static void SetupButton(int pin, bool on_value) {
 }
 
 static void OTABeginCB(int ev, void *ev_data, void *userdata) {
+  static double s_wait_start = 0;
   struct mgos_ota_begin_arg *arg = (struct mgos_ota_begin_arg *) ev_data;
   // Some other callback objected.
   if (arg->result != MGOS_UPD_OK) return;
@@ -755,11 +765,38 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
     return;
   }
   // Stop the HAP server.
+  if (!(s_service_flags & SHELLY_SERVICE_FLAG_UPDATE)) {
+    s_wait_start = mgos_uptime();
+  }
   s_service_flags |= SHELLY_SERVICE_FLAG_UPDATE;
+  s_service_flags &= ~SHELLY_SERVICE_FLAG_REVERT;
+  // Are we reverting to stock? Stock fw does not have "hk_model"
+  char *hk_model = nullptr;
+  json_scanf(arg->mi.manifest.p, arg->mi.manifest.len, "{shelly_hk_model: %Q}",
+             &hk_model);
+  mgos::ScopedCPtr hk_model_owner(hk_model);
+  if (hk_model == nullptr) {
+    // hk_model was added in 2.9.1, for now we also check version in the
+    // manifest to double-check: stock has manifest version always set to "1.0"
+    // while HK has actual version there.
+    // This check can be removed after a few versions with hk_model.
+    if (mg_vcmp(&arg->mi.version, "1.0") == 0) {
+      LOG(LL_INFO, ("This is a revert to stock firmware"));
+      s_service_flags |= SHELLY_SERVICE_FLAG_REVERT;
+    }
+  }
   if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
-    arg->result = MGOS_UPD_WAIT;
-    StopService();
-    return;
+    // There is a bug in HAP server where it will get stuck and fail to shut
+    // down reported to happen after approximately 25 days. This is a workaround
+    // until it's fixed.
+    if (mgos_uptime() - s_wait_start > 10) {
+      LOG(LL_WARN,
+          ("Server failed to stop, proceeding with the update anyway"));
+    } else {
+      arg->result = MGOS_UPD_WAIT;
+      StopService();
+      return;
+    }
   }
   LOG(LL_INFO, ("Starting firmware update"));
   (void) ev;
@@ -767,12 +804,37 @@ static void OTABeginCB(int ev, void *ev_data, void *userdata) {
   (void) userdata;
 }
 
+static void WipeDeviceRevertToStockCB(void *) {
+  WipeDeviceRevertToStock();
+}
+
+static int8_t s_ota_progress = -1;
+
+int GetOTAProgress() {
+  return s_ota_progress;
+}
+
 static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
   struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
   // Restart server in case of error.
   // In case of success we are going to reboot anyway.
-  if (arg->state == MGOS_OTA_STATE_ERROR) {
-    s_service_flags &= ~SHELLY_SERVICE_FLAG_UPDATE;
+  if (arg->state == MGOS_OTA_STATE_PROGRESS) {
+    s_ota_progress = arg->progress_percent;
+  } else if (arg->state == MGOS_OTA_STATE_ERROR) {
+    s_ota_progress = -1;
+    s_service_flags &=
+        ~(SHELLY_SERVICE_FLAG_UPDATE | SHELLY_SERVICE_FLAG_REVERT);
+  } else if (arg->state == MGOS_OTA_STATE_SUCCESS) {
+    s_ota_progress = 100;
+#if CS_PLATFORM == CS_P_ESP8266
+    // Disable flash core dump because it would overwite the new fw.
+    esp_core_dump_set_flash_area(0, 0);
+#endif
+    if (s_service_flags & SHELLY_SERVICE_FLAG_REVERT) {
+      // For some reason if WipeDeviceRevertToStock is done inline the client
+      // doesn't get a response to the POST request.
+      mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
+    }
   }
   (void) ev;
   (void) ev_data;
@@ -790,10 +852,22 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "index.html",
       "conf9_backup.json",
       // Obsolete files from previopus versions.
-      "style.css",
       "axios.min.js.gz",
-      "style.css.gz",
+      "favicon.ico",
       "logo.png",
+      "rpc_acl.json",
+      "style.css",
+      "style.css.gz",
+      // Plus firmware stuff that we don't need.
+      "bundle.css.gz",
+      "bundle.js.gz",
+      "ca.pem",
+      "index.html",
+      "init.js",
+      "rpc_acl_auth.json",
+      "rpc_acl_no_auth.json",
+      "storage.json",
+      "tzinfo",
   };
   for (const char *skip_fn : s_skip_files) {
     if (strcmp(file_name, skip_fn) == 0) return false;
@@ -806,43 +880,42 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
   return (stat(buf, &st) != 0);
 }
 
-bool WipeDevice() {
-  static const char *s_wipe_files[] = {
-      "conf2.json",
-      "conf9.json",
-      KVS_FILE_NAME,
-  };
-  bool wiped = false;
-  for (const char *wipe_fn : s_wipe_files) {
-    if (remove(wipe_fn) == 0) wiped = true;
+static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
+                        void *user_data) {
+  if (ev != MG_EV_HTTP_REQUEST) return;
+  struct http_message *hm = (struct http_message *) ev_data;
+  const char *file = nullptr, *type = nullptr;
+  if (mg_vcasecmp(&hm->method, "GET") == 0) {
+    if (mg_vcmp(&hm->uri, "/") == 0 || mg_vcmp(&hm->uri, "/ota") == 0) {
+      file = "index.html.gz";
+      type = "text/html";
+    } else if (mg_vcmp(&hm->uri, "/favicon.ico") == 0) {
+      file = "favicon.ico.gz";
+      type = "image/x-icon";
+    }
   }
-#if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
-  if (wiped) {
-    mgos_vfs_gc("/");
+  if (file == nullptr) {
+    mg_http_send_error(nc, 404, nullptr);
+    nc->flags |= MG_F_SEND_AND_CLOSE;
+    return;
   }
-#endif
-  return wiped;
-}
-
-bool IsSoftReboot() {
-#if CS_PLATFORM == CS_P_ESP8266
-  const struct rst_info *ri = system_get_rst_info();
-  return (ri->reason == REASON_SOFT_RESTART);
-#else
-  return false;
-#endif
+  mg_http_serve_file(nc, hm, file, mg_mk_str(type),
+                     mg_mk_str("Content-Encoding: gzip\r\nPragma: no-cache"));
+  (void) user_data;
 }
 
 void InitApp() {
-  if (s_failsafe_mode) {
-    if (WipeDevice()) {
-      LOG(LL_INFO, ("== Wiped config, rebooting"));
-      mgos_system_restart_after(100);
-      return;
-    } else {
-      LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
-      shelly_rpc_service_init(nullptr, nullptr, nullptr);
-    }
+  struct mg_http_endpoint_opts opts = {};
+  mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
+  // Support /ota?url=... updates a-la stock.
+  mgos_register_http_endpoint_opt("/ota", HTTPHandler, opts);
+
+  if (IsFailsafeMode()) {
+    LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
+    shelly_rpc_service_init(nullptr, nullptr, nullptr);
+#if LED_GPIO >= 0
+    mgos_gpio_setup_output(LED_GPIO, LED_ON);
+#endif
     return;
   }
 
@@ -870,8 +943,70 @@ void InitApp() {
   s_callbacks.handleUpdatedState = HAPServerStateUpdateCB;
 
   // Initialize accessory server.
-  HAPAccessoryServerCreate(&s_server, &s_server_options, &s_platform,
-                           &s_callbacks, nullptr /* context */);
+  HAPAccessoryServerOptions server_options = {
+    .maxPairings = kHAPPairingStorage_MinElements,
+#if HAP_IP
+    .ip =
+        {
+            .transport = &kHAPAccessoryServerTransport_IP,
+#ifndef __clang__
+            .available = 0,
+#endif
+            .accessoryServerStorage = &s_ip_storage,
+        },
+#endif
+#if HAP_BLE
+    .ble =
+        {
+            .transport = nullptr,
+#ifndef __clang__
+            .available = 0,
+#endif
+            .accessoryServerStorage = nullptr,
+            .preferredAdvertisingInterval = 0,
+            .preferredNotificationDuration = 0,
+        },
+#endif
+  };
+  static struct HAPPlatformMFiTokenAuth s_mfi_auth;
+  HAPPlatformMFiTokenAuthOptions mfi_opts = {};
+  HAPPlatformMFiTokenAuthCreate(&s_mfi_auth, &mfi_opts);
+  HAPPlatform platform = {
+      .keyValueStore = &s_kvs,
+      .accessorySetup = &s_accessory_setup,
+      .setupDisplay = nullptr,
+      .setupNFC = nullptr,
+      .ip =
+          {
+              .tcpStreamManager = &s_tcpm,
+              .serviceDiscovery = &s_service_discovery,
+          },
+      .ble =
+          {
+              .blePeripheralManager = nullptr,
+          },
+      .authentication =
+          {
+              .mfiHWAuth = nullptr,
+              .mfiTokenAuth = &s_mfi_auth,
+          },
+  };
+#ifdef MGOS_HAVE_BT_COMMON
+  // BLE Preipheral Manager.
+  if (mgos_sys_config_get_bt_enable()) {
+    static HAPPlatformBLEPeripheralManagerOptions blepm_opts = {};
+    HAPPlatformBLEPeripheralManagerCreate(&s_blepm, &blepm_opts);
+    platform.ble.blePeripheralManager = &s_blepm;
+    server_options.ble.transport = &kHAPAccessoryServerTransport_BLE;
+    server_options.ble.accessoryServerStorage = &s_ble_storage;
+    server_options.ble.preferredAdvertisingInterval =
+        HAPBLEAdvertisingIntervalCreateFromMilliseconds(417.5f);
+    server_options.ble.preferredNotificationDuration =
+        kHAPBLENotification_MinDuration;
+  }
+#endif
+  HAPAccessoryServerCreate(&s_server, &server_options, &platform, &s_callbacks,
+                           nullptr /* context */);
 
   if (shelly_cfg_migrate()) {
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
@@ -886,7 +1021,10 @@ void InitApp() {
   // House-keeping timer.
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, StatusTimerCB, nullptr);
 
-  mgos_hap_add_rpc_service_cb(&s_server, StartHAPServerCB);
+  mgos_hap_add_rpc_service_cb(
+      &s_server,
+      [](HAPAccessoryServerRef *) { HAPAccessoryServerStop(&s_server); },
+      [](HAPAccessoryServerRef *) { StartService(false /* quiet */); });
 
   shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
 
@@ -899,13 +1037,13 @@ void InitApp() {
   mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
 
   SetupButton(BTN_GPIO, BTN_DOWN);
+
+  (void) s_ip_storage;
 }
 
 }  // namespace shelly
 
-extern "C" {
-enum mgos_app_init_result mgos_app_init(void) {
+extern "C" enum mgos_app_init_result mgos_app_init(void) {
   shelly::InitApp();
   return MGOS_APP_INIT_SUCCESS;
-}
 }

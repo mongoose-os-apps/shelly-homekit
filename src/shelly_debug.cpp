@@ -50,6 +50,7 @@ struct EnumHAPSessionsContext {
 static void EnumHAPSessions(void *vctx, HAPAccessoryServerRef *svr_,
                             HAPSessionRef *s, bool *) {
   EnumHAPSessionsContext *ctx = (EnumHAPSessionsContext *) vctx;
+#if HAP_IP
   size_t si = HAPAccessoryServerGetIPSessionIndex(svr_, s);
   const HAPAccessoryServer *svr = (const HAPAccessoryServer *) svr_;
   const HAPIPSession *is = &svr->ip.storage->sessions[si];
@@ -57,7 +58,10 @@ static void EnumHAPSessions(void *vctx, HAPAccessoryServerRef *svr_,
   mg_printf(ctx->nc, "  %d: s %p ts %p o %d st %d ts %lu\r\n", (int) si, s,
             (void *) sd->tcpStream, sd->tcpStreamIsOpen, sd->state,
             (unsigned long) sd->stamp);
+#endif
   ctx->num_sessions++;
+  (void) svr_;
+  (void) s;
 }
 
 void shelly_debug_write_nc(struct mg_connection *nc) {
@@ -67,6 +71,7 @@ void shelly_debug_write_nc(struct mg_connection *nc) {
   }
   HAPPlatformTCPStreamManagerStats tcpm_stats = {};
   HAPPlatformTCPStreamManagerGetStats(s_tcpm, &tcpm_stats);
+  HAPNetworkPort lport = HAPPlatformTCPStreamManagerGetListenerPort(s_tcpm);
   mg_printf(nc,
             "App: %s %s %s\r\n"
             "Uptime: %.2lf\r\n"
@@ -77,8 +82,7 @@ void shelly_debug_write_nc(struct mg_connection *nc) {
             MGOS_APP, mgos_sys_ro_vars_get_fw_version(),
             mgos_sys_ro_vars_get_fw_id(), mgos_uptime(),
             (unsigned long) mgos_get_free_heap_size(),
-            (unsigned long) mgos_get_min_free_heap_size(),
-            HAPPlatformTCPStreamManagerGetListenerPort(s_tcpm), cn,
+            (unsigned long) mgos_get_min_free_heap_size(), lport, cn,
             (unsigned) tcpm_stats.numPendingTCPStreams,
             (unsigned) tcpm_stats.numActiveTCPStreams,
             (unsigned) tcpm_stats.maxNumTCPStreams);
@@ -91,7 +95,7 @@ void shelly_debug_write_nc(struct mg_connection *nc) {
     struct mg_mgr *mgr = mgos_get_mgr();
     for (nc2 = mg_next(mgr, NULL); nc2 != NULL; nc2 = mg_next(mgr, nc2)) {
       if (nc2->listener == NULL ||
-          ntohs(nc2->listener->sa.sin.sin_port) != 9000) {
+          ntohs(nc2->listener->sa.sin.sin_port) != lport) {
         continue;
       }
       char addr[32];
@@ -200,7 +204,7 @@ void mg_http_handler_wrapper(struct mg_connection *nc, int ev, void *ev_data,
     nc->flags &= ~MG_F_SEND_AND_CLOSE;
     nc->proto_handler = nullptr;
     nc->handler = DebugLogTailHandler;
-    LOG(LL_INFO, ("Tailing"));
+    LOG(LL_INFO, ("%s log file, sending new entries", "End of"));
   }
 }
 
@@ -224,6 +228,7 @@ static void DebugLogHandler(struct mg_connection *nc, int ev, void *ev_data,
                             "Pragma: no-store\r\n");
       s_tail_conns.push_front(nc);
       nc->handler = DebugLogTailHandler;
+      LOG(LL_INFO, ("%s log file, sending new entries", "No"));
     }
     return;
   }

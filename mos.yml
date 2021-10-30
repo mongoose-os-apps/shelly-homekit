@@ -1,7 +1,6 @@
-author: 'Deomid "rojer" Ryabkov'
+author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.8.0-alpha1
-platform: esp8266
+version: 2.11.0-alpha1
 
 libs_version: latest
 modules_version: latest
@@ -20,32 +19,34 @@ filesystem:
   - fs
 
 config_schema:
-  - ["http.index_files", "index.html.gz"]
-  - ["http.extra_headers", "Pragma: no-cache"]
-  - ["sntp.enable", true]
   - ["debug.event_level", 3]
+  - ["dns_sd.txt", "fw_type=homekit"]  # To be easily distinguishable from stock.
   - ["file_logger.level", 3]
   - ["file_logger.max_num_files", 1]
   - ["file_logger.max_file_size", 16000]
   - ["file_logger.buf_size", 1000]
-  - ["wifi.sta_all_chan_scan", true]
+  - ["http.auth_algo", 1]  # SHA-256
+  - ["http.auth_domain", ""]
+  - ["rpc.auth_algo", 1]  # SHA-256
+  - ["rpc.auth_domain", ""]
+  - ["sntp.enable", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported)"}]
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
   - ["shelly.overheat_off", "i", 90, {title: "Overheat protection mode turns off when the temperature is back below this threshold"}]
-  - ["bl0937.power_coeff", "d", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
 
   - ["sw", "o", {title: "Switch settings", abstract: true}]
   - ["sw.name", "s", "", {title: "Name of the switch"}]
   - ["sw.enable", "b", true, {title: "Enable this switch in the accessory"}]
+  - ["sw.out_inverted", "b", false, {title: "Invert output, set to true for normally open output"}]
   - ["sw.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
   - ["sw.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
   - ["sw.state", "b", false, {title: "State of the switch"}]
   - ["sw.svc_type", "i", 0, {title: "HAP service type, -1 = disable, 0 = switch, 1 = outlet, 2 = lock, 3 = valve"}]
-  - ["sw.valve_type", "i", 1, {title: "HAP valve type (if svc is 3), -1 = disable, 0 = GenericValve, 1 = Irrigation, 2 = ShowerHead, 3 = WaterFaucet"}]
+  - ["sw.valve_type", "i", 1, {title: "HAP valve type (if svc is 3), -1 = disable, 0 = GenericValve, 1 = Irrigation"}] # see for details about non supported types https://github.com/mongoose-os-apps/shelly-homekit/issues/510
   - ["sw.initial_state", "i", 3, {title: "Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
   - ["sw.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
   - ["sw.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
@@ -73,6 +74,7 @@ config_schema:
   - ["wc.move_power", "d", 0.0, {title: "Power consumption during movement, watts"}]
   - ["wc.move_time_ms", "i", 0, {title: "Move time, in millseconds"}]
   - ["wc.move_time_limit_pos_ms", "i", 0, {title: "Move time to limit position, in milliseconds"}]
+  - ["wc.max_ramp_up_time_ms", "i", 5000, {title: "Maximum ramp up time, in millseconds"}]
   - ["wc.current_pos", "d", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
   - ["gdo", "o", {title: "Garage door settings", abstract: true}]
@@ -81,7 +83,24 @@ config_schema:
   - ["gdo.open_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
   - ["gdo.out_mode", "i", 0, {title: "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close)"}]
   - ["gdo.move_time_ms", "i", 30000, {title: "Movement time, ms"}]
+  - ["gdo.begin_move_time_ms", "i", 7000, {title: "Time allowed for movement to begin, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {title: "Output active time, ms"}]
+
+  - ["lb", "o", {title: "Light bulb settings", abstract: true}]
+  - ["lb.name", "s", "Light bulb", {title: "Accessory name"}]
+  - ["lb.enable", "b", true, {title: "Enable this light in the accessory"}]
+  - ["lb.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
+  - ["lb.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
+  - ["lb.state", "b", false, {title: "State of the light"}]
+  - ["lb.hue", "i", 0, {title: "Hue of the light"}]
+  - ["lb.brightness", "i", 100, {title: "Brightness of the light"}]
+  - ["lb.saturation", "i", 100, {title: "Saturation of the light"}]
+  - ["lb.initial_state", "i", 3, {title: "Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
+  - ["lb.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
+  - ["lb.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
+  - ["lb.transition_time", "i", 2000, {title: "Time in milliseconds how long a transition will take"}]
+
+  - ["_const.rpc_acl", "s", '[{"ch_type": "UART", "acl": "*"},{"method": "Shelly.GetInfo", "acl": "*"},{"method": "*", "ch_type": "HTTP", "acl": "admin"},{"method": "*", "ch_type": "WS_in", "acl": "admin"}]', {}]
 
   # Preserved from stock.
   - ["k_apparent", "i", 1750000, {}]
@@ -94,38 +113,43 @@ config_schema:
   - ["ssw.in_mode", "i", 0, {}]
 
 build_vars:
+  # BLE disabled for most models.
+  MGOS_HAP_BLE: 0
   # Enables storing setup info in the config and a simple RPC service to configure it.
   MGOS_HAP_SIMPLE_CONFIG: 1
+  MGOS_FW_EXTRA_ATTRS: shelly_hk_model=${build_vars.MODEL}
 
 cdefs:
   PRODUCT_VENDOR: '"Allterco"'
   PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
   BTN_GPIO: -1
-  BTN_NOISY: 0
-  HAP_LOG_LEVEL: 0  # This saves ~44K on esp8266.
+  BTN_NOISY: 1
+  RST_GPIO_INIT: -1
+  SHELLY_HAVE_DUAL_INPUT_MODES: 0
 
 libs:
-  - origin: https://github.com/mongoose-os-libs/core
-  - origin: https://github.com/mongoose-os-libs/file-logger
-  - origin: https://github.com/mongoose-os-libs/homekit-adk
-  - origin: https://github.com/mongoose-os-libs/mqtt
-  - origin: https://github.com/mongoose-os-libs/ota-http-server
-  - origin: https://github.com/mongoose-os-libs/rpc-service-config
-  - origin: https://github.com/mongoose-os-libs/rpc-service-fs
-  - origin: https://github.com/mongoose-os-libs/rpc-service-ota
-  - origin: https://github.com/mongoose-os-libs/rpc-uart
-  - origin: https://github.com/mongoose-os-libs/http-server
-  - origin: https://github.com/mongoose-os-libs/rpc-mqtt
-  - origin: https://github.com/mongoose-os-libs/rpc-ws
-  - origin: https://github.com/mongoose-os-libs/sntp
+  - location: ./libreset
+  - location: https://github.com/mongoose-os-libs/core
+  - location: https://github.com/mongoose-os-libs/file-logger
+  - location: https://github.com/mongoose-os-libs/homekit-adk
+  - location: https://github.com/mongoose-os-libs/http-server
+  - location: https://github.com/mongoose-os-libs/ota-http-server
+  - location: https://github.com/mongoose-os-libs/rpc-service-config
+  - location: https://github.com/mongoose-os-libs/rpc-service-fs
+  - location: https://github.com/mongoose-os-libs/rpc-service-ota
+  - location: https://github.com/mongoose-os-libs/rpc-uart
+  # Not enough space on 2.5
+  # - location: https://github.com/mongoose-os-libs/rpc-mqtt
+  - location: https://github.com/mongoose-os-libs/rpc-ws
+  - location: https://github.com/mongoose-os-libs/sntp
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
     apply:
       name: switch1 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -157,7 +181,7 @@ conds:
     apply:
       name: switch1l # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -169,11 +193,11 @@ conds:
         LED_ON: 0
         BTN_GPIO: 13
         BTN_DOWN: 0
-        BTN_NOISY: 1
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-L"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
+        SHELLY_HAVE_DUAL_INPUT_MODES: 1
       config_schema:
         - ["device.id", "shelly1l-??????"]
         - ["shelly.name", "shelly1l-??????"]
@@ -192,12 +216,11 @@ conds:
         - ["ssw2", "ssw", {title: "SSW2 settings"}]
         - ["ssw2.name", "Input 2"]
 
-
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
       name: switch1pm # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -209,7 +232,6 @@ conds:
         LED_ON: 0
         BTN_GPIO: 2
         BTN_DOWN: 0
-        BTN_NOISY: 1
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHSW-PM"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
@@ -226,6 +248,7 @@ conds:
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.79942025]  # (16 + 1010 + 1935) / (8.53 + 561 + 1076)
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
@@ -235,7 +258,7 @@ conds:
     apply:
       name: switch
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -276,9 +299,9 @@ conds:
       includes:
         - src/ADE7953
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
-        - origin: https://github.com/mongoose-os-libs/ade7953
+        - location: https://github.com/mongoose-os-libs/ade7953
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
@@ -322,7 +345,7 @@ conds:
     apply:
       name: ix3
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -333,7 +356,6 @@ conds:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"SHIX3-1"'
         MG_ENABLE_SSL: 0
-        # HAP_LOG_LEVEL: 0
         LED_GPIO: 5
         LED_ON: 0
         BTN_GPIO: 4
@@ -364,7 +386,7 @@ conds:
     apply:
       name: shelly-plug2 # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         # Note: 4 MB flash chip
@@ -387,13 +409,14 @@ conds:
         - ["sw1.in_mode", -1]
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 8.59980831]  # (16 + 1010 + 1935) / (2.01 + 117.3 + 225)
 
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
         FLASH_SIZE: 2097152
@@ -418,7 +441,115 @@ conds:
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
         - ["sw1.state_led_en", 1]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
+
+  - when: build_vars.MODEL == "ShellyPlus1"
+    apply:
+      name: Plus1
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 25
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"Plus1"'
+      config_schema:
+        - ["device.id", "ShellyPlus1-????????????"]
+        - ["shelly.name", "ShellyPlus1-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
+        - ["ssw1.name", "Input"]
+
+  - when: build_vars.MODEL == "ShellyPlus1PM"
+    apply:
+      name: Plus1PM
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 25
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"Plus1PM"'
+      config_schema:
+        - ["device.id", "ShellyPlus1-????????????"]
+        - ["shelly.name", "ShellyPlus1-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
+        # Calibration values from stock
+        - ["bl0937_0", "o", {title: "BL0937 calibration"}]
+        - ["bl0937_0.apower_scale", "f", 2.028531, {title: "BL0937 apower scale"}]
+        - ["bl0937_0.voltage_scale", "f", 0.15510, {title: "BL0937 voltage scale"}]
+        - ["bl0937_0.current_scale", "f", 0.01287, {title: "BL0937 current scale"}]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
+        - ["ssw1.name", "Input"]
+
+  - when: build_vars.MODEL == "ShellyRGBW2"
+    apply:
+      name: rgbw2-color # To allow OTA from stock fw.
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x7000  # To be compatible with stock firmware.
+        MGOS_ROOT_FS_TYPE: SPIFFS
+      cdefs:
+        LED_GPIO: 2
+        LED_ON: 0
+        BTN_GPIO: 13
+        BTN_DOWN: 0
+        BTN_NOISY: 0
+        RST_GPIO_INIT: 15 # reset GPIO 15 to prevent green flash on startup
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHRGBW2-color"'
+        # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW"
+        - ["device.id", "shellyrgbw2-??????"]
+        - ["shelly.name", "shellyrgbw2-??????"]
+        - ["wifi.ap.ssid", "shellyrgbw2-??????"]
+        - ["lb1", "lb", {title: "RGB 1 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
 
   - when: mos.platform != "ubuntu"
     apply:
@@ -430,28 +561,42 @@ conds:
         - ["wifi.ap.dhcp_start", "192.168.33.2"]
         - ["wifi.ap.dhcp_end", "192.168.33.100"]
         - ["wifi.sta_connect_timeout", 15]
+        - ["wifi.sta_roam_rssi_thr", -80]
+        - ["wifi.sta_roam_interval", 600]
         # This is a mitigation for devices dropping of wifi and never coming back.
         # While this is being investigated, the workaround is to reboot if not connected for 5 minutes when supposed to be.
         - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
-        - origin: https://github.com/mongoose-os-libs/adc
-        - origin: https://github.com/mongoose-os-libs/wifi
+        - location: https://github.com/mongoose-os-libs/adc
+        - location: https://github.com/mongoose-os-libs/pwm
+        - location: https://github.com/mongoose-os-libs/wifi
+      cdefs:
+        # Size fine-tuning, saves substantial amount of RAM vs defaults.
+        HAP_SESSION_SIZE: 392
+        HAP_IP_SESSION_SIZE: 600
+        # XXX: fix size calculation with and without BLE
+        XHAP_ACCESSORY_SERVER_SIZE: 1680
+        HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
+        HAP_DISABLE_ASSERTS: 1       # 32K
+        HAP_DISABLE_PRECONDITIONS: 1 # 40K
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
+      sources:
+        - src/mock/pwm
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
+        BTN_NOISY: 0
       config_schema:
         - ["device.id", "ShellyU-????"]
         - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
-        - ["http.document_root", "."]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -462,19 +607,20 @@ conds:
     apply:
       sources:
         - src/Shelly25/shelly_init_components.cpp  # Same components as Shelly25
+        - src/mock/pwm
       libs:
-        - origin: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
+        BTN_NOISY: 0
       config_schema:
         - ["device.id", "ShellyU25-????"]
         - ["shelly.name", "ShellyU25-????"]
         - ["file_logger.dir", "./"]
-        - ["http.document_root", "."]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU25 SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -489,5 +635,34 @@ conds:
         - ["wc1.name", "Window 1"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "ShellyU25 GDO"]
+
+  # Test device for BLE development.
+  - when: build_vars.MODEL == "ShellyT32"
+    apply:
+      libs:
+        # adding bt-common enables BLE support at compile time 
+        - origin: https://github.com/mongoose-os-libs/bt-common
+        - origin: https://github.com/mongoose-os-libs/ethernet
+      build_vars:
+        APP_SLOT_SIZE: 0x1b0000
+        MGOS_HAP_BLE: 1
+      cdefs:
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"XXX"'
+        SHELLY_HAVE_PM: 0
+        BTN_NOISY: 0
+      config_schema:
+        # - ["bt.enable", true]
+        - ["bt.adv_enable", false] # ADK controls advertisement.
+        - ["bt.keep_enabled", true]
+        - ["bt.random_address", true]
+        - ["device.id", "ShellyT32-????"]
+        - ["shelly.name", "ShellyT32-????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.name", "SWT32"]
+        - ["sw1.in_mode", 0]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "SSWT32"]
+        - ["in1.sensor.name", "ST32"]
 
 manifest_version: 2020-01-29

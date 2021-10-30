@@ -53,6 +53,11 @@ input[type=password], input[type=text] {
   font-size: 14px;
 }
 
+input[type=range] {
+  margin: 0;
+}
+
+
 h1 {
   margin: 0;
   padding-top: 0.5em;
@@ -72,7 +77,6 @@ h1 {
 }
 
 .form-wrap-control {
-  padding: 0 0.3em;
   margin: 0.4em 0;
   display: inline-flex;
   flex-wrap: inherit;
@@ -251,4 +255,31 @@ input:checked + .slider:before {
 
 .comma-list li:last-child:after {
   content: "";
+}
+
+#color_preview, #color_name, #hue_value, #saturation_value, #brightness_value {
+  display: inline-block;
+  min-width: 60px;
+  text-align: right;
+  min-height: 15px;
+}
+
+#color_preview {
+  width: 140px;
+}
+
+#hap_setup_info {
+  text-align: center;
+}
+
+#qrcode_container {
+  width: 160px;
+  height: 160px;
+  margin-top: 15px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#hap_setup_code {
+  font-weight: bold;
 }

@@ -6,14 +6,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Install mos build tool
-        run: |
-          sudo add-apt-repository ppa:mongoose-os/mos -y
-          sudo apt -q install mos -y
       - name: Checkout code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Check formatting
+        run: make check-format
+      - name: Install mos build tool
+        run: |
+          sudo add-apt-repository -y ppa:mongoose-os/mos
+          sudo apt -q install -y mos-latest
       - name: Build project
         run: make release RELEASE_SUFFIX=$(.github/version.py --suffix)
       - name: Upload build artifacts

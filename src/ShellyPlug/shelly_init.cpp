@@ -30,7 +30,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   mgos_gpio_setup_output(14, 0);  // Red
   mgos_gpio_setup_output(16, 0);  // Blue
   std::unique_ptr<PowerMeter> pm(
-      new BL0937PowerMeter(1, 5 /* CF */, -1 /* CF1 */, -1 /* SEL */, 3));
+      new BL0937PowerMeter(1, 5 /* CF */, -1 /* CF1 */, -1 /* SEL */, 3,
+                           mgos_sys_config_get_bl0937_power_coeff()));
   const Status &st = pm->Init();
   if (st.ok()) {
     pms->emplace_back(std::move(pm));

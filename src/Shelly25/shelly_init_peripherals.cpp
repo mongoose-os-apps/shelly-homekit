@@ -39,6 +39,9 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
       .apower_scale_1 = (1 / 164.0),
       .aenergy_scale_0 = (1 / 25240.0),
       .aenergy_scale_1 = (1 / 25240.0),
+      .voltage_pga_gain = 0,
+      .current_pga_gain_0 = 0,
+      .current_pga_gain_1 = 0,
   };
 
   s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
@@ -56,6 +59,12 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
 
   pms->emplace_back(std::move(pm1));
   pms->emplace_back(std::move(pm2));
+
+  // GPIO16 is connected to ADE7953's IRQ pin.
+  // We don't use the functionality but unlike all the other pins
+  // GPIO16 defaults to output on reset so we reconfigure it as input
+  // to avoid the conflict.
+  mgos_gpio_setup_input(16, MGOS_GPIO_PULL_NONE);
 
   return Status::OK();
 }
