@@ -73,8 +73,9 @@ class WindowCovering : public Component, public mgos::hap::Service {
     kMove = 20,
     kRampUp = 22,
     kMoving = 23,
-    kStop = 24,
-    kStopping = 25,
+    kMovingToFullPos = 24,
+    kStop = 25,
+    kStopping = 26,
     // Error states
     kError = 100,
   };
@@ -105,6 +106,10 @@ class WindowCovering : public Component, public mgos::hap::Service {
 
   Direction GetDesiredMoveDirection();
   void Move(Direction dir);
+
+  bool MeasurePowerAndCheckForPMError(float &power);
+
+  bool CheckForObstacle(float power);
 
   void RunOnce();
 
