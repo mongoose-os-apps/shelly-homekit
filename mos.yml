@@ -453,7 +453,6 @@ conds:
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
-            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -461,10 +460,11 @@ conds:
         BTN_DOWN: 0
         PRODUCT_HW_REV: '"0.1.6"'
         STOCK_FW_MODEL: '"Plus1"'
+        xMGOS_CONFIG_DEV_1: '"aux"'
       config_schema:
-        - ["device.id", "ShellyPlus1-????????????"]
-        - ["shelly.name", "ShellyPlus1-????????????"]
-        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
+        - ["device.id", "ShellyPlus1-??????"]
+        - ["shelly.name", "ShellyPlus1-??????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-??????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -488,7 +488,6 @@ conds:
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
-            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -497,9 +496,9 @@ conds:
         PRODUCT_HW_REV: '"0.1.6"'
         STOCK_FW_MODEL: '"Plus1PM"'
       config_schema:
-        - ["device.id", "ShellyPlus1-????????????"]
-        - ["shelly.name", "ShellyPlus1-????????????"]
-        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
+        - ["device.id", "ShellyPlus1PM-??????"]
+        - ["shelly.name", "ShellyPlus1PM-??????"]
+        - ["wifi.ap.ssid", "ShellyPlus1PM-??????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -644,11 +643,14 @@ conds:
       build_vars:
         APP_SLOT_SIZE: 0x1b0000
         MGOS_HAP_BLE: 1
+        MGOS_ROOT_FS_TYPE: LFS
+        ESP_IDF_EXTRA_PARTITION: "aux,data,0x88,0x3f0000,48K,encrypted"
       cdefs:
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"XXX"'
         SHELLY_HAVE_PM: 0
         BTN_NOISY: 0
+        MGOS_CONFIG_DEV_3: '"aux"'
       config_schema:
         # - ["bt.enable", true]
         - ["bt.adv_enable", false] # ADK controls advertisement.
