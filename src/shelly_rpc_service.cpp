@@ -29,6 +29,7 @@
 #include "shelly_debug.hpp"
 #include "shelly_hap_switch.hpp"
 #include "shelly_main.hpp"
+#include "shelly_wifi_config.hpp"
 
 namespace shelly {
 
@@ -36,7 +37,7 @@ static HAPAccessoryServerRef *s_server;
 static HAPPlatformKeyValueStoreRef s_kvs;
 static HAPPlatformTCPStreamManagerRef s_tcpm;
 
-static void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st) {
+void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st) {
   if (st.ok()) {
     mg_rpc_send_responsef(ri, nullptr);
     return;
@@ -57,8 +58,17 @@ static void PublishHTTP() {
   mgos_http_server_publish_dns_sd(txt.c_str());
 }
 
+void ReportRPCRequest(struct mg_rpc_request_info *ri) {
+  char *info = ri->ch->get_info(ri->ch);
+  if (info != nullptr) {
+    ReportClientRequest(info);
+    free(info);
+  }
+}
+
 static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                            struct mg_rpc_frame_info *fi, struct mg_str args) {
+  ReportRPCRequest(ri);
   mg_rpc_send_responsef(
       ri,
       "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
@@ -78,6 +88,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                               struct mg_rpc_frame_info *fi,
                               struct mg_str args) {
+  ReportRPCRequest(ri);
   const char *device_id = mgos_sys_config_get_device_id();
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
   bool hap_running = (HAPAccessoryServerGetState(s_server) ==

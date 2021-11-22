@@ -15,12 +15,20 @@
  * limitations under the License.
  */
 
+#include "shelly_common.hpp"
+
 #include "HAP.h"
+
+extern "C" struct mg_rpc_request_info;
 
 namespace shelly {
 
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm);
+
+void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st);
+
+void ReportRPCRequest(struct mg_rpc_request_info *ri);
 
 }  // namespace shelly

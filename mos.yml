@@ -638,14 +638,18 @@ conds:
     apply:
       libs:
         # adding bt-common enables BLE support at compile time 
-        - origin: https://github.com/mongoose-os-libs/bt-common
-        - origin: https://github.com/mongoose-os-libs/ethernet
+        #- origin: https://github.com/mongoose-os-libs/bt-common
+        #- origin: https://github.com/mongoose-os-libs/ethernet
       build_vars:
         APP_SLOT_SIZE: 0x1b0000
         MGOS_HAP_BLE: 1
         MGOS_ROOT_FS_TYPE: LFS
         ESP_IDF_EXTRA_PARTITION: "aux,data,0x88,0x3f0000,48K,encrypted"
       cdefs:
+        LED_GPIO: 13
+        LED_ON: 1
+        BTN_GPIO: 34
+        BTN_DOWN: 0
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"XXX"'
         SHELLY_HAVE_PM: 0
@@ -658,6 +662,7 @@ conds:
         - ["bt.random_address", true]
         - ["device.id", "ShellyT32-????"]
         - ["shelly.name", "ShellyT32-????"]
+        - ["wifi.ap.ssid", "ShellyT32-??????"]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "SWT32"]
         - ["sw1.in_mode", 0]

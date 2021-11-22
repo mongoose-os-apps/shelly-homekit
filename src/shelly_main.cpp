@@ -59,6 +59,7 @@
 #include "shelly_rpc_service.hpp"
 #include "shelly_switch.hpp"
 #include "shelly_temp_sensor.hpp"
+#include "shelly_wifi_config.hpp"
 
 #define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
@@ -163,10 +164,7 @@ static void DoReset(void *arg) {
   }
   s_identify_count = 2;
   LOG(LL_INFO, ("Performing reset"));
-#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
-  mgos_sys_config_set_wifi_sta_enable(false);
-  mgos_sys_config_set_wifi_ap_enable(true);
-#endif
+  ResetWifiConfig();
   mgos_sys_config_set_rpc_acl(nullptr);
   mgos_sys_config_set_rpc_acl_file(nullptr);
   mgos_sys_config_set_rpc_auth_file(nullptr);
@@ -174,9 +172,6 @@ static void DoReset(void *arg) {
   if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
     remove(AUTH_FILE_NAME);
   }
-#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
-  mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
-#endif
   CheckLED(LED_GPIO, LED_ON);
 }
 
@@ -387,18 +382,13 @@ static void CheckLED(int pin, bool led_act) {
     off_ms = 0;
     goto out;
   }
-#ifdef MGOS_HAVE_WIFI
   // Are we connecting to wifi right now?
-  if ((mgos_sys_config_get_wifi_sta_enable() ||
-       mgos_sys_config_get_wifi_sta1_enable() ||
-       mgos_sys_config_get_wifi_sta2_enable()) &&
-      mgos_wifi_get_status() != MGOS_WIFI_IP_ACQUIRED) {
+  if (IsConnectingToWifi()) {
     LOG(LL_DEBUG, ("LED: WiFi"));
     on_ms = 200;
     off_ms = 200;
     goto out;
   }
-#endif
   if (mgos_ota_is_in_progress()) {
     LOG(LL_DEBUG, ("LED: OTA"));
     on_ms = 250;
@@ -899,6 +889,11 @@ static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
     nc->flags |= MG_F_SEND_AND_CLOSE;
     return;
   }
+  {
+    char addr[32] = {};
+    mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
+    ReportClientRequest(addr);
+  }
   mg_http_serve_file(nc, hm, file, mg_mk_str(type),
                      mg_mk_str("Content-Encoding: gzip\r\nPragma: no-cache"));
   (void) user_data;
@@ -1037,6 +1032,8 @@ void InitApp() {
   mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
 
   SetupButton(BTN_GPIO, BTN_DOWN);
+
+  InitWifiConfigManager();
 
   (void) s_ip_storage;
 }
