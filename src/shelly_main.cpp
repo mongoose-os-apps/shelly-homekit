@@ -25,9 +25,6 @@
 #include "mgos_http_server.h"
 #include "mgos_ota.h"
 #include "mgos_rpc.h"
-#ifdef MGOS_HAVE_WIFI
-#include "mgos_wifi.h"
-#endif
 
 #include "mongoose.h"
 
@@ -367,6 +364,8 @@ static void CheckLED(int pin, bool led_act) {
   if (pin < 0) return;
   int on_ms = 0, off_ms = 0;
   static int s_on_ms = 0, s_off_ms = 0;
+  const WifiInfo &wi = GetWifiInfo();
+  const WifiConfig &wc = GetWifiConfig();
   // Identify sequence requested by controller.
   if (s_identify_count > 0) {
     LOG(LL_DEBUG, ("LED: identify (%d)", s_identify_count));
@@ -383,7 +382,7 @@ static void CheckLED(int pin, bool led_act) {
     goto out;
   }
   // Are we connecting to wifi right now?
-  if (GetWifiInfo().sta_connecting) {
+  if (wi.sta_connecting) {
     LOG(LL_DEBUG, ("LED: WiFi"));
     on_ms = 200;
     off_ms = 200;
@@ -395,26 +394,23 @@ static void CheckLED(int pin, bool led_act) {
     off_ms = 250;
     goto out;
   }
+  // Indicate WiFi provisioning status.
+  if (wi.ap_enabled && !(wc.sta.enable || wc.sta1.enable)) {
+    LOG(LL_DEBUG, ("LED: WiFi provisioning"));
+    off_ms = 25;
+    on_ms = 875;
+    goto out;
+  }
   // HAP server status (if WiFi is provisioned).
   if (HAPAccessoryServerGetState(&s_server) !=
       kHAPAccessoryServerState_Running) {
     off_ms = 875;
     on_ms = 25;
     LOG(LL_DEBUG, ("LED: HAP provisioning"));
-  } else {
-#ifdef MGOS_HAVE_WIFI
-    // Indicate WiFi provisioning status.
-    if (mgos_sys_config_get_wifi_ap_enable()) {
-      LOG(LL_DEBUG, ("LED: WiFi provisioning"));
-      off_ms = 25;
-      on_ms = 875;
-    }
-#endif
-    if (on_ms == 0 && !HAPAccessoryServerIsPaired(&s_server)) {
-      LOG(LL_DEBUG, ("LED: Pairing"));
-      off_ms = 500;
-      on_ms = 500;
-    }
+  } else if (!HAPAccessoryServerIsPaired(&s_server)) {
+    LOG(LL_DEBUG, ("LED: Pairing"));
+    off_ms = 500;
+    on_ms = 500;
   }
 out:
   if (on_ms > 0) {
