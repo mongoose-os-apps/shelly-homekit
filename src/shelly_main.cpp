@@ -531,17 +531,16 @@ static void StatusTimerCB(void *arg) {
                   (unsigned long) mgos_get_heap_size(),
                   (sys_temp.ok() ? sys_temp.ValueOrDie() : 0), status.c_str()));
   }
-#ifdef MGOS_HAVE_WIFI
-  if (mgos_sys_config_get_wifi_sta_enable() &&
+#ifdef MGOS_SYS_CONFIG_HAVE_SHELLY_WIFI_CONNECT_REBOOT_TIMEOUT
+  const WifiConfig &wc = GetWifiConfig();
+  if ((wc.sta.enable || wc.sta1.enable) &&
       mgos_sys_config_get_shelly_wifi_connect_reboot_timeout() > 0) {
     static int64_t s_last_connected = 0;
     int64_t now = mgos_uptime_micros();
-    struct mgos_net_ip_info ip_info;
-    if (mgos_net_get_ip_info(MGOS_NET_IF_TYPE_WIFI, MGOS_NET_IF_WIFI_STA,
-                             &ip_info)) {
+    const WifiInfo &wi = GetWifiInfo();
+    if (!wi.sta_connected) {
       s_last_connected = now;
-    } else if (AllComponentsIdle()) {  // Only reboot if all components are
-                                       // idle.
+    } else if (AllComponentsIdle()) {  // Only if all components are idle.
       int64_t timeout_micros =
           mgos_sys_config_get_shelly_wifi_connect_reboot_timeout() * 1000000;
       if (now - s_last_connected > timeout_micros) {
@@ -550,7 +549,7 @@ static void StatusTimerCB(void *arg) {
       }
     }
   }
-#endif  // MGOS_HAVE_WIFI
+#endif  // MGOS_SYS_CONFIG_HAVE_SHELLY_WIFI_CONNECT_REBOOT_TIMEOUT
   (void) arg;
 }
 
