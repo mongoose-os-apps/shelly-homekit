@@ -383,7 +383,7 @@ static void CheckLED(int pin, bool led_act) {
     goto out;
   }
   // Are we connecting to wifi right now?
-  if (IsConnectingToWifi()) {
+  if (GetWifiInfo().sta_connecting) {
     LOG(LL_DEBUG, ("LED: WiFi"));
     on_ms = 200;
     off_ms = 200;

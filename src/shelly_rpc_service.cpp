@@ -101,39 +101,27 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   }
   bool debug_en = mgos_sys_config_get_file_logger_enable();
   int flags = GetServiceFlags();
-#ifdef MGOS_HAVE_WIFI
-  const char *wifi_ssid = mgos_sys_config_get_wifi_sta_ssid();
-  const char *wifi_pass = mgos_sys_config_get_wifi_sta_pass();
-  int wifi_rssi = mgos_wifi_sta_get_rssi();
-  char wifi_ip[16] = {};
-  struct mgos_net_ip_info ip_info = {};
-  if (mgos_net_get_ip_info(MGOS_NET_IF_TYPE_WIFI, MGOS_NET_IF_WIFI_STA,
-                           &ip_info)) {
-    mgos_net_ip_to_str(&ip_info.ip, wifi_ip);
-  }
-  const char *wifi_ap_ssid = mgos_sys_config_get_wifi_ap_ssid();
-  const char *wifi_ap_ip = mgos_sys_config_get_wifi_ap_ip();
-  if (wifi_ssid == NULL) wifi_ssid = "";
-  if (wifi_pass == NULL) wifi_pass = "";
+  WifiConfig wc = GetWifiConfig();
+  WifiInfo wi = GetWifiInfo();
+  bool wifi_en = (wc.sta.enable || wc.sta1.enable);
   /* Do not return plaintext password, mix it up with SSID and device ID. */
   uint32_t digest[8];
   mbedtls_sha256_context ctx;
   mbedtls_sha256_init(&ctx);
   mbedtls_sha256_starts_ret(&ctx, 0 /* is224 */);
   mbedtls_sha256_update_ret(&ctx, (uint8_t *) device_id, strlen(device_id));
-  mbedtls_sha256_update_ret(&ctx, (uint8_t *) wifi_ssid, strlen(wifi_ssid));
-  mbedtls_sha256_update_ret(&ctx, (uint8_t *) wifi_pass, strlen(wifi_pass));
+  mbedtls_sha256_update_ret(&ctx, (uint8_t *) wc.sta.ssid.data(),
+                            wc.sta.ssid.length());
+  mbedtls_sha256_update_ret(&ctx, (uint8_t *) wc.sta.pass.data(),
+                            wc.sta.pass.length());
   mbedtls_sha256_finish_ret(&ctx, (uint8_t *) digest);
   mbedtls_sha256_free(&ctx);
-#endif
   std::string res = mgos::JSONPrintStringf(
       "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
       "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
       "auth_en: %B, auth_domain: %Q, "
-#ifdef MGOS_HAVE_WIFI
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass_h: \"%08x%08x%08x%08x\", "
       "wifi_rssi: %d, wifi_ip: %Q, wifi_ap_ssid: %Q, wifi_ap_ip: %Q, "
-#endif
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
@@ -143,15 +131,11 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
       mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
       false /* failsafe_mode */, IsAuthEn(),
-      mgos_sys_config_get_rpc_auth_domain(),
-#ifdef MGOS_HAVE_WIFI
-      mgos_sys_config_get_wifi_sta_enable(), (wifi_ssid ? wifi_ssid : ""),
+      mgos_sys_config_get_rpc_auth_domain(), wifi_en, wc.sta.ssid.c_str(),
       (unsigned int) digest[0], (unsigned int) digest[2],
-      (unsigned int) digest[4], (unsigned int) digest[6], wifi_rssi, wifi_ip,
-      (wifi_ap_ssid ? wifi_ap_ssid : ""), (wifi_ap_ip ? wifi_ap_ip : ""),
-#endif
-      hap_cn, hap_running, hap_paired,
-      (unsigned) tcpm_stats.numPendingTCPStreams,
+      (unsigned int) digest[4], (unsigned int) digest[6], wi.sta_rssi,
+      wi.sta_ip.c_str(), wc.ap.ssid.c_str(), "192.168.33.1", hap_cn,
+      hap_running, hap_paired, (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
 #ifdef MGOS_SYS_CONFIG_HAVE_WC1  // wc_avail
@@ -465,6 +449,46 @@ static void SetAuthHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) fi;
 }
 
+static void GetWifiConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                                 struct mg_rpc_frame_info *fi,
+                                 struct mg_str args) {
+  std::string cfg_json = GetWifiConfig().ToJSON();
+  mg_rpc_send_responsef(ri, "%s", cfg_json.c_str());
+  (void) cb_arg;
+  (void) fi;
+  (void) args;
+}
+
+static void SetWifiConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
+                                 struct mg_rpc_frame_info *fi,
+                                 struct mg_str args) {
+  ReportRPCRequest(ri);
+  WifiConfig cfg = GetWifiConfig();
+  int8_t ap_enable = -1, sta_enable = -1, sta1_enable = -1;
+  char *ap_ssid = nullptr, *ap_pass = nullptr;
+  char *sta_ssid = nullptr, *sta_pass = nullptr;
+  char *sta1_ssid = nullptr, *sta1_pass = nullptr;
+  json_scanf(args.p, args.len, ri->args_fmt, &ap_enable, &ap_ssid, &ap_pass,
+             &sta_enable, &sta_ssid, &sta_pass, &sta1_enable, &sta1_ssid,
+             &sta1_pass);
+  mgos::ScopedCPtr o1(ap_ssid), o2(ap_pass);
+  mgos::ScopedCPtr o3(sta_ssid), o4(sta_pass), o5(sta1_ssid), o6(sta1_pass);
+  if (ap_enable != -1) cfg.ap.enable = ap_enable;
+  if (ap_ssid != nullptr) cfg.ap.ssid = ap_ssid;
+  if (ap_pass != nullptr) cfg.ap.pass = ap_pass;
+  if (sta_enable != -1) cfg.sta.enable = sta_enable;
+  if (sta_ssid != nullptr) cfg.sta.ssid = sta_ssid;
+  if (sta_pass != nullptr) cfg.sta.pass = sta_pass;
+  if (sta1_enable != -1) cfg.sta1.enable = sta1_enable;
+  if (sta1_ssid != nullptr) cfg.sta1.ssid = sta1_ssid;
+  if (sta1_pass != nullptr) cfg.sta1.pass = sta1_pass;
+  Status st = SetWifiConfig(cfg);
+  SendStatusResp(ri, st);
+  (void) cb_arg;
+  (void) fi;
+  (void) args;
+}
+
 bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
                              HAPPlatformKeyValueStoreRef kvs,
                              HAPPlatformTCPStreamManagerRef tcpm) {
@@ -489,6 +513,13 @@ bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
     mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetAuth",
                        "{user: %Q, realm: %Q, ha1: %Q}", SetAuthHandler,
                        nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetWifiConfig", "",
+                       GetWifiConfigHandler, nullptr);
+    mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetWifiConfig",
+                       ("{ap: {enable: %B, ssid: %Q, pass: %Q}, "
+                        "sta: {enable: %B, ssid: %Q, pass: %Q}, "
+                        "sta1: {enable: %B, ssid: %Q, pass: %Q}}"),
+                       SetWifiConfigHandler, nullptr);
   }
   mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetDebugInfo", "",
                      GetDebugInfoHandler, nullptr);

@@ -58,9 +58,19 @@ Status SetWifiConfig(const WifiConfig &cfg);
 
 void ResetWifiConfig();
 
-void ReportClientRequest(const std::string &client_addr);
+struct WifiInfo {
+  bool ap_enabled = false;
+  bool sta_connecting = false;
+  bool sta_connected = false;
+  // When connected:
+  int sta_rssi = 0;
+  std::string sta_ip;
+  std::string sta_ssid;
+};
 
-bool IsConnectingToWifi();
+WifiInfo GetWifiInfo();
+
+void ReportClientRequest(const std::string &client_addr);
 
 void InitWifiConfigManager();
 

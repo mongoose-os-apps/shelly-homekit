@@ -550,6 +550,9 @@ conds:
 
   - when: mos.platform != "ubuntu"
     apply:
+      sources:
+        - src/noisy_input_pin
+        - src/wifi_config
       config_schema:
         - ["wifi.ap.pass", ""]
         - ["wifi.ap.keep_enabled", false]
@@ -581,6 +584,7 @@ conds:
     apply:
       sources:
         - src/mock/pwm
+        - src/mock/wifi_config
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
