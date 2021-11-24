@@ -254,7 +254,7 @@ static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
     LOG(LL_ERROR, ("SetConfig ok, %d", restart_required));
     mgos_sys_config_save(&mgos_sys_config, false /* try once */, nullptr);
     if (restart_required) {
-      LOG(LL_INFO, ("Configuration change requires server restart"));
+      LOG(LL_INFO, ("Configuration change requires %s", "server restart"));
       RestartService();
     }
   }

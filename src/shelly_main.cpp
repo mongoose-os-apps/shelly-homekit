@@ -570,7 +570,7 @@ bool mgos_sys_config_get_wifi_sta_enable(void) {
 }
 #endif
 
-static bool shelly_cfg_migrate(void) {
+static bool shelly_cfg_migrate(bool *reboot_required) {
   bool changed = false;
   if (mgos_sys_config_get_shelly_cfg_version() == 0) {
 #ifdef MGOS_CONFIG_HAVE_SW1
@@ -646,6 +646,20 @@ static bool shelly_cfg_migrate(void) {
       mgos_sys_config_set_rpc_acl_file(nullptr);
     }
     mgos_sys_config_set_shelly_cfg_version(6);
+    changed = true;
+  }
+  if (mgos_sys_config_get_shelly_cfg_version() == 6) {
+    // https://github.com/mongoose-os-apps/shelly-homekit/issues/850
+    // AP + STA was not a supported config until now, disable AP
+    // if no password is set. If there is, then this is a Plus device
+    // and user must have configured it intentionally.
+    if (mgos_sys_config_get_wifi_ap_enable() &&
+        mgos_sys_config_get_wifi_sta_enable() &&
+        mgos_conf_str_empty(mgos_sys_config_get_wifi_ap_pass())) {
+      mgos_sys_config_set_wifi_ap_enable(false);
+      *reboot_required = true;
+    }
+    mgos_sys_config_set_shelly_cfg_version(7);
     changed = true;
   }
   return changed;
@@ -1003,9 +1017,15 @@ void InitApp() {
   HAPAccessoryServerCreate(&s_server, &server_options, &platform, &s_callbacks,
                            nullptr /* context */);
 
-  if (shelly_cfg_migrate()) {
+  bool reboot_required = false;
+  if (shelly_cfg_migrate(&reboot_required)) {
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          nullptr /* msg */);
+    if (reboot_required) {
+      mgos_system_restart_after(500);
+      LOG(LL_INFO, ("Configuration change requires %s", "reboot"));
+      return;
+    }
   }
 
   LOG(LL_INFO, ("=== Creating peripherals"));

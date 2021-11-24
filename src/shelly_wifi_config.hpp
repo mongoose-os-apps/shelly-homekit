@@ -72,6 +72,8 @@ WifiInfo GetWifiInfo();
 
 void ReportClientRequest(const std::string &client_addr);
 
+std::string ScreenPassword(const std::string &pw);
+
 void InitWifiConfigManager();
 
 }  // namespace shelly

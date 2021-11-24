@@ -555,7 +555,6 @@ conds:
         - src/wifi_config
       config_schema:
         - ["wifi.ap.pass", ""]
-        - ["wifi.ap.keep_enabled", false]
         - ["wifi.ap.ip", "192.168.33.1"]
         - ["wifi.ap.gw", ""]
         - ["wifi.ap.dhcp_start", "192.168.33.2"]

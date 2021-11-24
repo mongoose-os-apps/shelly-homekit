@@ -30,7 +30,7 @@ bool WifiSTAConfig::operator==(const WifiSTAConfig &other) const {
           ip == other.ip && netmask == other.netmask && gw == other.gw);
 }
 
-static std::string ScreenPassword(const std::string &pw) {
+std::string ScreenPassword(const std::string &pw) {
   std::string spw(pw);
   for (auto it = spw.begin(); it != spw.end(); it++) {
     *it = '*';

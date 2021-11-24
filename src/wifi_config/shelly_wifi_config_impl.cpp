@@ -27,35 +27,6 @@
 
 namespace shelly {
 
-bool WifiAPConfig::operator==(const WifiAPConfig &other) const {
-  return (enable == other.enable && ssid == other.ssid && pass == other.pass);
-}
-
-bool WifiSTAConfig::operator==(const WifiSTAConfig &other) const {
-  return (enable == other.enable && ssid == other.ssid && pass == other.pass &&
-          ip == other.ip && netmask == other.netmask && gw == other.gw);
-}
-
-static std::string ScreenPassword(const std::string &pw) {
-  std::string spw(pw);
-  for (auto it = spw.begin(); it != spw.end(); it++) {
-    *it = '*';
-  }
-  return spw;
-}
-
-std::string WifiConfig::ToJSON() const {
-  std::string ap_pw = ScreenPassword(ap.pass);
-  std::string sta_pw = ScreenPassword(sta.pass);
-  std::string sta1_pw = ScreenPassword(sta1.pass);
-  return mgos::JSONPrintStringf(
-      "{ap: {enable: %B, ssid: %Q, pass: %Q}, "
-      "sta: {enable: %B, ssid: %Q, pass: %Q}, "
-      "sta1: {enable: %B, ssid: %Q, pass: %Q}}",
-      ap.enable, ap.ssid.c_str(), ap_pw.c_str(), sta.enable, sta.ssid.c_str(),
-      sta_pw.c_str(), sta1.enable, sta1.ssid.c_str(), sta1_pw.c_str());
-}
-
 class WifiConfigManager {
  public:
   WifiConfigManager();
@@ -113,7 +84,7 @@ static constexpr const char *ns(const char *s) {
 WifiConfigManager::WifiConfigManager()
     : process_timer_(std::bind(&WifiConfigManager::Process, this)) {
   void APConfigFromSys(struct mgos_config_wifi_ap & scfg, WifiAPConfig & cfg);
-  current_.ap.enable = false;
+  current_.ap.enable = mgos_sys_config_get_wifi_ap_enable();
   current_.ap.ssid = ns(mgos_sys_config_get_wifi_ap_ssid());
   current_.ap.pass = ns(mgos_sys_config_get_wifi_ap_pass());
   ap_enabled_ = mgos_sys_config_get_wifi_ap_enable();
