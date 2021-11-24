@@ -563,8 +563,9 @@ conds:
         - ["wifi.sta_roam_rssi_thr", -80]
         - ["wifi.sta_roam_interval", 600]
         # This is a mitigation for devices dropping of wifi and never coming back.
-        # While this is being investigated, the workaround is to reboot if not connected for 5 minutes when supposed to be.
-        - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
+        # This is believed to be fixed, default has been flipped back to 0 in 2.11.0.
+        # Consider removing in later releases.
+        - ["shelly.wifi_connect_reboot_timeout", "i", 0, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
         - location: https://github.com/mongoose-os-libs/adc
         - location: https://github.com/mongoose-os-libs/pwm
