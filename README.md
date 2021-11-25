@@ -19,7 +19,7 @@ Summary of supported devices and features
 |Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✗|
 |Roller shutter mode|✗|✗|✗|✗|✗|✗|✓|✗|✗|
 |Power measurement|✗|✓|-|✓|✓|✗|✓|✗|-|
-|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✓|
+|RGB(W)/CCT|✗|✗|✗|✗|✗|✗|✗|✗|✓|
 
 _✓ supported, - possible but not supported yet, ✗ not possible_  
 _Switch & Co. includes lock, outlet, valve_

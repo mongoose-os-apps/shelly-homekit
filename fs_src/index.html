@@ -64,6 +64,7 @@
           <option id="sys_mode_2" value="2">Garage Door Opener</option>
           <option id="sys_mode_3" value="3">RGB</option>
           <option id="sys_mode_4" value="4">RGBW</option>
+          <option id="sys_mode_5" value="5">CCT</option>
         </select>
       </div>
       <div class="button-container">
@@ -763,13 +764,17 @@
         <span id="color_preview"></span>
         <span id="color_name"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="hue_container">
         <label>Hue:</label>
         <input type="range" id="hue" min="0" max="360"><span id="hue_value"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="saturation_container">
         <label>Saturation:</label>
         <input type="range" id="saturation" min="0" max="100"><span id="saturation_value"></span>
+      </div>
+      <div class="form-control" id="colortemperature_container">
+        <label>Color Temperature:</label>
+        <input type="range" id="colortemperature" min="50" max="400"><span id="colortemperature_value"></span>
       </div>
       <div class="form-control">
         <label>Brightness:</label>

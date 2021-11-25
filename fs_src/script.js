@@ -541,6 +541,7 @@ function findOrAddContainer(cd) {
       };
       el(c, "hue").onchange =
       el(c, "saturation").onchange =
+      el(c, "colortemperature").onchange =
       el(c, "brightness").onchange = function (ev) {
         setComponentState(c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
         setPreviewColor(c);
@@ -566,7 +567,8 @@ function rgbState(c, newState) {
     state: newState,
     hue: el(c, "hue").value,
     saturation: el(c, "saturation").value,
-    brightness: el(c, "brightness").value
+    brightness: el(c, "brightness").value,
+    colortemperature: el(c, "colortemperature").value
   }
 }
 
@@ -629,7 +631,12 @@ function updateComponent(cd) {
       }
 
       if (cd.type == 11) { // kLightBulb
-        headText = "RGB";
+        if(lastInfo.sys_mode == 5) {
+          headText = "CCT";
+        }
+        else {
+          headText = "RGB";
+        }
         if (cd.name) headText += ` (${cd.name})`;
         updateInnerText(el(c, "head"), headText);
         setValueIfNotModified(el(c, "name"), cd.name);
@@ -638,6 +645,7 @@ function updateComponent(cd) {
           updateInnerText(el(c, "power_stats"), `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
           el(c, "power_stats_container").style.display = "block";
         }
+        slideIfNotModified(el(c, "colortemperature"), cd.colortemperature);
         slideIfNotModified(el(c, "hue"), cd.hue);
         slideIfNotModified(el(c, "saturation"), cd.saturation);
         slideIfNotModified(el(c, "brightness"), cd.brightness);
@@ -780,6 +788,7 @@ function updateElement(key, value, info) {
       } else {
         if (el("sys_mode_3")) el("sys_mode_3").remove();
         if (el("sys_mode_4")) el("sys_mode_4").remove();
+        if (el("sys_mode_5")) el("sys_mode_5").remove();
       }
       updateInnerText(el(key), value);
       break;
@@ -894,6 +903,10 @@ function updateElement(key, value, info) {
       else if (el("sys_mode_2")) el("sys_mode_2").remove();
       break;
     case "sys_mode":
+      let showct = (value == 5)
+      el("hue_container").style.display =  showct ? "none" : "block";
+      el("saturation_container").style.display = showct ? "none" : "block";
+      el("colortemperature_container").style.display = showct ? "block" : "none" ;
       selectIfNotModified(el("sys_mode"), value);
       break;
     case "sys_temp":
@@ -1606,9 +1619,16 @@ el("revert_btn").onclick = function () {
 function setPreviewColor(c) {
   let h = el(c, "hue").value / 360;
   let s = el(c, "saturation").value / 100;
+  let t = el(c, "colortemperature").value;
+  let r, g, b;
 
-  // use fixed 100% for v, because we want to control brightness over pwm frequence
-  let [r, g, b] = hsv2rgb(h, s, 100);
+  // use fixed 100% for v, because we want to control brightness over pwm frequency
+  if(lastInfo.sys_mode == 5) {
+    [r, g, b] = colortemp2rgb(t, 100);
+  }
+  else {
+    [r, g, b] = hsv2rgb(h, s, 100);
+  }
 
   r = Math.round(r * 2.55);
   g = Math.round(g * 2.55);
@@ -1621,6 +1641,30 @@ function setPreviewColor(c) {
   el(c, "hue_value").innerHTML = `${el(c, "hue").value}&#176;`;
   el(c, "saturation_value").innerHTML = `${el(c, "saturation").value}%`;
   el(c, "brightness_value").innerHTML = `${el(c, "brightness").value}%`;
+  el(c, "colortemperature_value").innerHTML = `${el(c, "colortemperature").value}mired`;
+}
+
+function clamprgb(val) {
+    let min = 0;
+    let max = 255;
+    return val < min ? min : val > max ? max : val;
+}
+
+function colortemp2rgb(t, v) {
+  //Formula by Tanner Helland
+  var temperature = 1000000.0 / t / 100.0;
+  var scale = 1 / 2.55;
+  
+  return [
+    (temperature <= 66 ? 255 :
+    clamprgb(329.698727446  * Math.pow(temperature - 60.0, -0.1332047592)  )) * scale,
+    (temperature <= 66 ?
+    clamprgb( 99.4708025861 * Math.log(temperature)        - 161.1195681661) :
+    clamprgb(288.1221695283 * Math.pow(temperature - 60.0, -0.0755148492)  )) * scale,
+    (temperature >= 66 ? 255 :
+    temperature <= 19 ? 0 :
+    clamprgb(138.5177312231 * Math.log(temperature - 10.0) - 305.0447927307)) * scale
+  ];
 }
 
 function hsv2rgb(h, s, v) {

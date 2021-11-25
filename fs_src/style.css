@@ -257,7 +257,7 @@ input:checked + .slider:before {
   content: "";
 }
 
-#color_preview, #color_name, #hue_value, #saturation_value, #brightness_value {
+#color_preview, #color_name, #hue_value, #saturation_value, #brightness_value, #colortemperature_value {
   display: inline-block;
   min-width: 60px;
   text-align: right;

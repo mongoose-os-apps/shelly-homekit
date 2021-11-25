@@ -58,9 +58,12 @@ class LightBulb : public Component, public mgos::hap::Service {
   void UpdateOnOff(bool on, const std::string &source, bool force = false);
   void SetHue(int hue, const std::string &source);
   void SetSaturation(int saturation, const std::string &source);
+  void SetColorTemperature(int colortemperature, const std::string &source);
   void SetBrightness(int brightness, const std::string &source);
 
   bool IsAutoOffEnabled() const;
+
+  void ColortemperaturetoRGBW(RGBW &rgbw) const;
 
   void SaveState();
   void ResetAutoOff();
@@ -73,8 +76,9 @@ class LightBulb : public Component, public mgos::hap::Service {
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
   mgos::hap::BoolCharacteristic *on_characteristic;
   mgos::hap::UInt8Characteristic *brightness_characteristic;
-  mgos::hap::UInt32Characteristic *hue_characteristic;
-  mgos::hap::UInt32Characteristic *saturation_characteristic;
+  mgos::hap::UInt32Characteristic *hue_characteristic = nullptr;
+  mgos::hap::UInt32Characteristic *saturation_characteristic = nullptr;
+  mgos::hap::UInt32Characteristic *colortemperature_characteristic = nullptr;
 
   mgos::Timer auto_off_timer_;
   bool dirty_ = false;

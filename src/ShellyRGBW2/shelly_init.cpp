@@ -46,7 +46,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   std::unique_ptr<LightBulbController> lightbulb_controller;
 
-  if (mgos_sys_config_get_shelly_mode() == 4) {
+  if (mgos_sys_config_get_shelly_mode() == 4 or
+      mgos_sys_config_get_shelly_mode() == 5) {
     lightbulb_controller.reset(new RGBWController(
         lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
   } else {

@@ -102,33 +102,64 @@ Status LightBulb::Init() {
       },
       kHAPCharacteristicDebugDescription_Brightness);
   AddChar(brightness_characteristic);
-  // Hue
-  hue_characteristic = new mgos::hap::UInt32Characteristic(
-      iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
-      std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, cfg_->hue),
-      true /* supports_notification */,
-      [this](HAPAccessoryServerRef *server UNUSED_ARG,
-             const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
-             uint32_t value) {
-        LOG(LL_DEBUG, ("Hue write %d: %d", id(), static_cast<int>(value)));
-        SetHue(value, "HAP");
-        return kHAPError_None;
-      },
-      kHAPCharacteristicDebugDescription_Hue);
-  AddChar(hue_characteristic);
-  // Saturation
-  saturation_characteristic = new mgos::hap::UInt32Characteristic(
-      iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
-      std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, cfg_->saturation),
-      true /* supports_notification */,
-      [this](HAPAccessoryServerRef *server UNUSED_ARG,
-             const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
-             uint32_t value) {
-        SetSaturation(value, "HAP");
-        return kHAPError_None;
-      },
-      kHAPCharacteristicDebugDescription_Saturation);
-  AddChar(saturation_characteristic);
+
+  // HAP forbids simultaneous presence of color temperature and hue/saturation
+  // to be able to distinguish between RGB and CCT light bulbs CCT Mode
+  if (mgos_sys_config_get_shelly_mode() == 5) {
+    // CCT Mode
+    // Color Temperature
+    colortemperature_characteristic = new mgos::hap::UInt32Characteristic(
+        iid++, &kHAPCharacteristicType_ColorTemperature, 50, 400, 1,
+        [this](HAPAccessoryServerRef *server UNUSED_ARG,
+               const HAPUInt32CharacteristicReadRequest *request UNUSED_ARG,
+               uint32_t *value) {
+          LOG(LL_INFO,
+              ("Color Temperature read %d: %d", id(), cfg_->colortemperature));
+          *value = static_cast<uint32_t>(cfg_->colortemperature);
+          return kHAPError_None;
+        },
+
+        true /* supports_notification */,
+        [this](HAPAccessoryServerRef *server UNUSED_ARG,
+               const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
+               uint32_t value) {
+          LOG(LL_INFO, ("Color Temperature write %d: %d", id(),
+                        static_cast<int>(value)));
+          SetColorTemperature(value, "HAP");
+          return kHAPError_None;
+        },
+        kHAPCharacteristicDebugDescription_ColorTemperature);
+    AddChar(colortemperature_characteristic);
+  } else {
+    // RGB(W) Mode
+    // Hue
+    hue_characteristic = new mgos::hap::UInt32Characteristic(
+        iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
+        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, cfg_->hue),
+        true /* supports_notification */,
+        [this](HAPAccessoryServerRef *server UNUSED_ARG,
+               const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
+               uint32_t value) {
+          LOG(LL_DEBUG, ("Hue write %d: %d", id(), static_cast<int>(value)));
+          SetHue(value, "HAP");
+          return kHAPError_None;
+        },
+        kHAPCharacteristicDebugDescription_Hue);
+    AddChar(hue_characteristic);
+    // Saturation
+    saturation_characteristic = new mgos::hap::UInt32Characteristic(
+        iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
+        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, cfg_->saturation),
+        true /* supports_notification */,
+        [this](HAPAccessoryServerRef *server UNUSED_ARG,
+               const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
+               uint32_t value) {
+          SetSaturation(value, "HAP");
+          return kHAPError_None;
+        },
+        kHAPCharacteristicDebugDescription_Saturation);
+    AddChar(saturation_characteristic);
+  }
 
   if (in_ != nullptr) {
     handler_id_ =
@@ -164,6 +195,90 @@ Status LightBulb::Init() {
   return Status::OK();
 }
 
+void LightBulb::HSVtoRGBW(RGBW &rgbw) const {
+  float h = cfg_->hue / 360.0f;
+  float s = cfg_->saturation / 100.0f;
+  float v = cfg_->brightness / 100.0f;
+
+  if (cfg_->saturation == 0) {
+    // if saturation is zero than all rgb channels same as brightness
+    rgbw.r = rgbw.g = rgbw.b = v;
+  } else {
+    // otherwise calc rgb from hsv (hue, saturation, brightness)
+    int i = static_cast<int>(h * 6);
+    float f = (h * 6.0f - i);
+    float p = v * (1.0f - s);
+    float q = v * (1.0f - f * s);
+    float t = v * (1.0f - (1.0f - f) * s);
+
+    switch (i % 6) {
+      case 0:  // 0° ≤ h < 60°
+        rgbw.r = v;
+        rgbw.g = t;
+        rgbw.b = p;
+        break;
+
+      case 1:  // 60° ≤ h < 120°
+        rgbw.r = q;
+        rgbw.g = v;
+        rgbw.b = p;
+        break;
+
+      case 2:  // 120° ≤ h < 180°
+        rgbw.r = p;
+        rgbw.g = v;
+        rgbw.b = t;
+        break;
+
+      case 3:  // 180° ≤ h < 240°
+        rgbw.r = p;
+        rgbw.g = q;
+        rgbw.b = v;
+        break;
+
+      case 4:  // 240° ≤ h < 300°
+        rgbw.r = t;
+        rgbw.g = p;
+        rgbw.b = v;
+        break;
+
+      case 5:  // 300° ≤ h < 360°
+        rgbw.r = v;
+        rgbw.g = p;
+        rgbw.b = q;
+        break;
+    }
+  }
+
+  if (out_w_ != nullptr) {
+    // apply white channel to rgb if available
+    rgbw.w = std::min(rgbw.r, std::min(rgbw.g, rgbw.b));
+    rgbw.r = rgbw.r - rgbw.w;
+    rgbw.g = rgbw.g - rgbw.w;
+    rgbw.b = rgbw.b - rgbw.w;
+  } else {
+    // otherwise turn white channel off
+    rgbw.w = 0.0f;
+  }
+}
+
+void LightBulb::ColortemperaturetoRGBW(RGBW &rgbw) const {
+  float v = cfg_->brightness / 100.0f;
+
+  // brightness and colortemperature in mired to cw, ww values
+  int temp_max = 400;
+  int temp_min = 50;
+  float temp = cfg_->colortemperature;
+  temp -= temp_min;
+  temp /= (temp_max - temp_min);
+  rgbw.ww0 = temp * v;
+  rgbw.cw0 = (1.0f - temp) * v;
+
+  // unused so far, mirror first values
+  rgbw.ww1 = rgbw.ww0;
+  rgbw.cw1 = rgbw.cw0;
+}
+
 void LightBulb::UpdateOnOff(bool on, const std::string &source, bool force) {
   if (!force && cfg_->state == static_cast<int>(on)) return;
 
@@ -194,6 +309,22 @@ void LightBulb::SetHue(int hue, const std::string &source) {
   controller_->UpdateOutput();
 }
 
+void LightBulb::SetColorTemperature(int colortemperature,
+                                    const std::string &source) {
+  if (cfg_->colortemperature == colortemperature) return;
+
+  LOG(LL_INFO, ("Color Temperature changed (%s): %d => %d", source.c_str(),
+                cfg_->colortemperature, colortemperature));
+
+  cfg_->colortemperature = colortemperature;
+  dirty_ = true;
+  if (colortemperature_characteristic != nullptr) {
+    colortemperature_characteristic->RaiseEvent();
+  }
+
+  StartTransition();
+}
+
 void LightBulb::SetSaturation(int saturation, const std::string &source) {
   if (cfg_->saturation == saturation) return;
 
@@ -202,7 +333,9 @@ void LightBulb::SetSaturation(int saturation, const std::string &source) {
 
   cfg_->saturation = saturation;
   dirty_ = true;
-  saturation_characteristic->RaiseEvent();
+  if (saturation_characteristic != nullptr) {
+    saturation_characteristic->RaiseEvent();
+  }
 
   controller_->UpdateOutput();
 }
@@ -215,16 +348,23 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
 
   cfg_->brightness = brightness;
   dirty_ = true;
-  brightness_characteristic->RaiseEvent();
+  if (brightness_characteristic != nullptr) {
+    brightness_characteristic->RaiseEvent();
+  }
 
   controller_->UpdateOutput();
 }
 
 StatusOr<std::string> LightBulb::GetInfo() const {
   const_cast<LightBulb *>(this)->SaveState();
-  return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i",
-                       OnOff(controller_->IsOn()), cfg_->brightness, cfg_->hue,
-                       cfg_->saturation);
+  if (mgos_sys_config_get_shelly_mode() == 5) {
+    return mgos::SPrintf("sta: %s, b: %i, ct: %i", OnOff(controller_->IsOn()),
+                         cfg_->brightness, cfg_->colortemperature);
+  } else {
+    return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i",
+                         OnOff(controller->IsOn()), cfg_->brightness, cfg_->hue,
+                         cfg_->saturation);
+  }
 }
 
 StatusOr<std::string> LightBulb::GetInfoJSON() const {
@@ -232,10 +372,12 @@ StatusOr<std::string> LightBulb::GetInfoJSON() const {
       "{id: %d, type: %d, name: %Q, state: %B, "
       " brightness: %d, hue: %d, saturation: %d, "
       " in_inverted: %B, initial: %d, in_mode: %d, "
-      "auto_off: %B, auto_off_delay: %.3f, transition_time: %d}",
+      "auto_off: %B, auto_off_delay: %.3f, transition_time: %d, "
+      "colortemperature: %d}",
       id(), type(), cfg_->name, cfg_->state, cfg_->brightness, cfg_->hue,
       cfg_->saturation, cfg_->in_inverted, cfg_->initial_state, cfg_->in_mode,
-      cfg_->auto_off, cfg_->auto_off_delay, cfg_->transition_time);
+      cfg_->auto_off, cfg_->auto_off_delay, cfg_->transition_time,
+      cfg_->colortemperature);
 }
 
 Status LightBulb::SetConfig(const std::string &config_json,
@@ -301,11 +443,12 @@ void LightBulb::SaveState() {
 
 Status LightBulb::SetState(const std::string &state_json) {
   int8_t state = -1;
-  int brightness = -1, hue = -1, saturation = -1;
+  int brightness = -1, hue = -1, saturation = -1, colortemperature = -1;
 
   json_scanf(state_json.c_str(), state_json.size(),
-             "{state: %B, brightness: %d, hue: %d, saturation: %d}", &state,
-             &brightness, &hue, &saturation);
+             "{state: %B, brightness: %d, hue: %d, saturation: %d, "
+             "colortemperature: %d}",
+             &state, &brightness, &hue, &saturation, &colortemperature);
 
   if (hue != -1 && (hue < 0 || hue > 360)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid hue: %d (only 0-360)",
@@ -322,10 +465,18 @@ Status LightBulb::SetState(const std::string &state_json) {
                         "invalid brightness: %d (only 0-100)", brightness);
   }
 
+  if (colortemperature != -1 &&
+      (colortemperature < 50 || colortemperature > 400)) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT,
+                        "invalid colortemperature: %d (only 50-400)",
+                        colortemperature);
+  }
+
   if (state != -1) UpdateOnOff(static_cast<bool>(state), "RPC");
   if (hue != -1) SetHue(hue, "RPC");
   if (saturation != -1) SetSaturation(saturation, "RPC");
   if (brightness != -1) SetBrightness(brightness, "RPC");
+  if (colortemperature != -1) SetColorTemperature(colortemperature, "RPC");
 
   return Status::OK();
 }
