@@ -116,23 +116,78 @@
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/WiFi-Settings"
      target="_blank">?</a>
   <h1>WiFi Settings</h1>
+
+  <div class="tab_wrapper">
+    <input class="tab_radio" id="one" name="group" type="radio" checked>
+    <input class="tab_radio" id="two" name="group" type="radio">
+    <input class="tab_radio" id="three" name="group" type="radio">
+    <div class="tabs">
+      <label class="tab" id="tab1" for="one">WiFi 1</label>
+      <label class="tab" id="tab2" for="two">WiFI 2</label>
+      <label class="tab" id="tab3" for="three">AP</label>
+    </div>
+    <div class="panels">
+      <div class="panel" id="panel1">
+        <div class="form">
+          <div class="form-control">
+            <label>Enable:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Network:</label>
+            <input type="text" id="wifi_ssid">
+          </div>
+          <div class="form-control">
+            <label>Password:</label>
+            <input type="password" id="wifi_pass">
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="panel2">
+        <div class="form">
+          <div class="form-control">
+            <label>Enable:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi1_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Network:</label>
+            <input type="text" id="wifi1_ssid">
+          </div>
+          <div class="form-control">
+            <label>Password:</label>
+            <input type="password" id="wifi1_pass">
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="panel3">
+        <div class="form">
+          <div class="form-control">
+            <label>Enable:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi_ap_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Network:</label>
+            <input type="text" id="wifi_ap_ssid">
+          </div>
+          <div class="form-control">
+            <label>Password:</label>
+            <input type="password" id="wifi_ap_pass">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="form">
     <div>
-      <div class="form-control">
-        <label>Enable:</label>
-        <label class="switch">
-          <input type="checkbox" id="wifi_en">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label>WiFi Network:</label>
-        <input type="text" id="wifi_ssid">
-      </div>
-      <div class="form-control">
-        <label>WiFi Password:</label>
-        <input type="password" id="wifi_pass">
-      </div>
       <div class="form-control" id="wifi_rssi_container">
         <label>RSSI:</label>
         <span id="wifi_rssi"></span>

@@ -794,6 +794,7 @@ function updateElement(key, value, info) {
       updateInnerText(el("device_name"), value);
       setValueIfNotModified(el("sys_name"), value);
       break;
+
     case "wifi_en":
       checkIfNotModified(el("wifi_en"), value);
       break;
@@ -803,6 +804,25 @@ function updateElement(key, value, info) {
     case "wifi_pass_h":
       el("wifi_pass").placeholder = (value ? "(hidden)" : "(empty)");
       break;
+    case "wifi1_en":
+      checkIfNotModified(el("wifi1_en"), value);
+      break;
+    case "wifi1_ssid":
+      setValueIfNotModified(el("wifi1_ssid"), value);
+      break;
+    case "wifi1_pass":
+      el("wifi1_pass").placeholder = (value ? "(hidden)" : "(empty)");
+      break;
+    case "wifi_ap_en":
+      checkIfNotModified(el("wifi_ap_en"), value);
+      break;
+    case "wifi_ssid":
+      setValueIfNotModified(el("wifi_ap_ssid"), value);
+      break;
+    case "wifi_ap_pass_h":
+      el("wifi_pass").placeholder = (value ? "(hidden)" : "(empty)");
+      break;
+
     case "wifi_rssi":
     case "host":
       updateInnerText(el(key), value);

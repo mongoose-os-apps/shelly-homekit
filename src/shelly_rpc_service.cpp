@@ -103,7 +103,6 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   int flags = GetServiceFlags();
   WifiConfig wc = GetWifiConfig();
   WifiInfo wi = GetWifiInfo();
-  bool wifi_en = (wc.sta.enable || wc.sta1.enable);
   /* Do not return plaintext password, mix it up with SSID and device ID. */
   uint32_t digest[8];
   mbedtls_sha256_context ctx;
@@ -121,7 +120,11 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
       "auth_en: %B, auth_domain: %Q, "
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass_h: \"%08x%08x%08x%08x\", "
-      "wifi_rssi: %d, wifi_ip: %Q, wifi_ap_ssid: %Q, wifi_ap_ip: %Q, "
+      "wifi1_en: %B, wifi1_ssid: %Q, wifi1_pass_set: %B, "
+      "wifi_ap_en: %B, wifi_ap_ssid: %Q, wifi_ap_pass_set: %B, "
+      "wifi_ap_ip: %Q, "
+      "wifi_connecting: %B, wifi_connected: %B, wifi_conn_ssid: %Q, "
+      "wifi_conn_rssi: %d, wifi_conn_ip: %Q, "
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
@@ -131,11 +134,14 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
       mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
       false /* failsafe_mode */, IsAuthEn(),
-      mgos_sys_config_get_rpc_auth_domain(), wifi_en, wc.sta.ssid.c_str(),
+      mgos_sys_config_get_rpc_auth_domain(), wc.sta.enable, wc.sta.ssid.c_str(),
       (unsigned int) digest[0], (unsigned int) digest[2],
-      (unsigned int) digest[4], (unsigned int) digest[6], wi.sta_rssi,
-      wi.sta_ip.c_str(), wc.ap.ssid.c_str(), "192.168.33.1", hap_cn,
-      hap_running, hap_paired, (unsigned) tcpm_stats.numPendingTCPStreams,
+      (unsigned int) digest[4], (unsigned int) digest[6], wc.sta1.enable,
+      wc.sta1.ssid.c_str(), !wc.sta1.pass.empty(), wc.ap.enable,
+      wc.ap.ssid.c_str(), !wc.ap.pass.empty(), mgos_sys_config_get_wifi_ap_ip(),
+      wi.sta_connecting, wi.sta_connected, wi.sta_ssid.c_str(), wi.sta_rssi,
+      wi.sta_ip.c_str(), hap_cn, hap_running, hap_paired,
+      (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
 #ifdef MGOS_SYS_CONFIG_HAVE_WC1  // wc_avail

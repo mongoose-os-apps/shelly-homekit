@@ -283,3 +283,55 @@ input:checked + .slider:before {
 #hap_setup_code {
   font-weight: bold;
 }
+
+.tab_wrapper {
+  display:flex;
+  flex-direction: column;
+  align-items: left;
+  padding: 1em 0;
+}
+.tab {
+  cursor: pointer;
+  #margin: 0px 2px;
+  padding: 10px 20px;
+  display: inline-block;
+  border-radius: 10px 10px 0 0;
+  #border-color: black;
+  #box-shadow: 0 0.5rem 0.8rem #00000080;
+}
+.panels{
+  background:#fffffff6;
+  #box-shadow: 0 2rem 2rem #00000080;
+  #width:100%;
+  #max-width:200px;
+  border-radius: 0 0 10px 10px;
+  #overflow:hidden;
+  padding:20px;
+}
+.panel{
+  display:none;
+  animation: fadein .8s;
+}
+@keyframes fadein {
+    from {
+        opacity:0;
+    }
+    to {
+        opacity:1;
+    }
+}
+.tab_radio {
+  display: none;
+}
+#one:checked ~ .panels #panel1,
+#two:checked ~ .panels #panel2,
+#three:checked ~ .panels #panel3{
+  display:block
+}
+#one:checked ~ .tabs #tab1,
+#two:checked ~ .tabs #tab2,
+#three:checked ~ .tabs #tab3{
+  background:#fffffff6;
+  color:#000;
+  border-top: 3px solid #000;
+}
