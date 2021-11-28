@@ -562,6 +562,7 @@ conds:
         - ["wifi.sta_connect_timeout", 15]
         - ["wifi.sta_roam_rssi_thr", -80]
         - ["wifi.sta_roam_interval", 600]
+        - ["wifi.ap.keep_enabled", "b", false, {title: "Keep WiFi AP enabled even when STA is connected"}]
         # This is a mitigation for devices dropping of wifi and never coming back.
         # This is believed to be fixed, default has been flipped back to 0 in 2.11.0.
         # Consider removing in later releases.

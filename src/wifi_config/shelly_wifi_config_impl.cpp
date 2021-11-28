@@ -52,10 +52,12 @@ class WifiConfigManager {
 
   static bool APConfigToSys(const WifiAPConfig &cfg,
                             struct mgos_config_wifi_ap &scfg);
+  static Status ValidateAPConfig(const WifiAPConfig &cfg);
   static void STAConfigFromSys(struct mgos_config_wifi_sta &scfg,
                                WifiSTAConfig &cfg);
   static bool STAConfigToSys(const WifiSTAConfig &cfg,
                              struct mgos_config_wifi_sta &scfg);
+  static Status ValidateSTAConfig(const WifiSTAConfig &cfg);
   void Process();
   void SaveConfig();
   void CheckAPEnabled();
@@ -64,13 +66,13 @@ class WifiConfigManager {
 
   State state_ = State::kIdle;
   double last_change_ = 0;
-  bool ap_enabled_ = false;
+  bool ap_running_ = false;
   bool connect_failed_ = false;
-  WifiConfig current_;
-  bool have_backup_ = false;
-  WifiConfig backup_;
-  double last_ap_client_active_ = 0;
+  WifiConfig cur_;
+  WifiConfig new_;
+  WifiConfig *act_;
   bool ap_config_changed_ = false;
+  double last_ap_client_active_ = 0;
 
   mgos::Timer process_timer_;
 };
@@ -84,12 +86,13 @@ static constexpr const char *ns(const char *s) {
 WifiConfigManager::WifiConfigManager()
     : process_timer_(std::bind(&WifiConfigManager::Process, this)) {
   void APConfigFromSys(struct mgos_config_wifi_ap & scfg, WifiAPConfig & cfg);
-  current_.ap.enable = mgos_sys_config_get_wifi_ap_enable();
-  current_.ap.ssid = ns(mgos_sys_config_get_wifi_ap_ssid());
-  current_.ap.pass = ns(mgos_sys_config_get_wifi_ap_pass());
-  ap_enabled_ = mgos_sys_config_get_wifi_ap_enable();
-  STAConfigFromSys(mgos_sys_config.wifi.sta, current_.sta);
-  STAConfigFromSys(mgos_sys_config.wifi.sta1, current_.sta1);
+  cur_.ap.enable = mgos_sys_config_get_wifi_ap_keep_enabled();
+  cur_.ap.ssid = ns(mgos_sys_config_get_wifi_ap_ssid());
+  mgos_expand_mac_address_placeholders((char *) cur_.ap.ssid.data());
+  cur_.ap.pass = ns(mgos_sys_config_get_wifi_ap_pass());
+  ap_running_ = mgos_sys_config_get_wifi_ap_enable();
+  STAConfigFromSys(mgos_sys_config.wifi.sta, cur_.sta);
+  STAConfigFromSys(mgos_sys_config.wifi.sta1, cur_.sta1);
   mgos_event_add_group_handler(
       MGOS_WIFI_EV_BASE,
       [](int ev, void *ev_data, void *arg) {
@@ -97,35 +100,59 @@ WifiConfigManager::WifiConfigManager()
       },
       this);
   process_timer_.Reset(1000, MGOS_TIMER_REPEAT);
+  act_ = &cur_;
 }
 
 WifiConfigManager::~WifiConfigManager() {
 }
 
 Status WifiConfigManager::SetConfig(const WifiConfig &cfg) {
-  bool sta_changed = !(cfg.sta == current_.sta) || !(cfg.sta1 == current_.sta1);
-  ap_config_changed_ = !(cfg.ap == current_.ap);
-  current_ = cfg;
-  if (sta_changed) SetState(State::kDisconnect);
+  Status st = ValidateAPConfig(cfg.ap);
+  if (!st.ok()) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid %s config", "AP");
+  }
+  st = ValidateSTAConfig(cfg.sta);
+  if (!st.ok()) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid %s config", "STA");
+  }
+  st = ValidateSTAConfig(cfg.sta1);
+  if (!st.ok()) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid %s config", "STA1");
+  }
+  bool sta_config_changed = !(cfg.sta == cur_.sta) || !(cfg.sta1 == cur_.sta1);
+  ap_config_changed_ = !(cfg.ap == cur_.ap);
+  std::string cs = cur_.ToJSON();
+  LOG(LL_INFO, ("New config: %s %d %d", cs.c_str(), sta_config_changed,
+                ap_config_changed_));
+  if (!sta_config_changed && !ap_config_changed_) return Status::OK();
+  new_ = cfg;
+  connect_failed_ = false;
+  if (sta_config_changed) {
+    act_ = &new_;
+    SetState(State::kDisconnect);
+  }
+  if (ap_config_changed_) {
+    cur_.ap = new_.ap;
+  }
   return Status::OK();
 }
 
 WifiConfig WifiConfigManager::GetConfig() {
-  return current_;
+  return *act_;
 }
 
 void WifiConfigManager::ResetConfig() {
-  bool should_reset_ap = !(current_.sta.enable || current_.sta1.enable);
+  bool should_reset_ap = !(cur_.sta.enable || cur_.sta1.enable);
   LOG(LL_INFO, ("Resetting %s settings", "STA"));
-  current_.sta.enable = false;
-  current_.sta1.enable = false;
+  cur_.sta.enable = false;
+  cur_.sta1.enable = false;
   // If called while no STA is configured, reset AP settings as well.
   if (should_reset_ap) {
     LOG(LL_INFO, ("Resetting %s settings", "AP"));
-    current_.ap.ssid = ns(mgos_config_get_default_wifi_ap_ssid());
+    cur_.ap.ssid = ns(mgos_config_get_default_wifi_ap_ssid());
     mgos_expand_mac_address_placeholders(
-        const_cast<char *>(current_.ap.ssid.c_str()));
-    current_.ap.pass = ns(mgos_config_get_default_wifi_ap_pass());
+        const_cast<char *>(cur_.ap.ssid.c_str()));
+    cur_.ap.pass = ns(mgos_config_get_default_wifi_ap_pass());
     ap_config_changed_ = true;
   }
   SaveConfig();
@@ -135,9 +162,29 @@ void WifiConfigManager::ResetConfig() {
 
 WifiInfo WifiConfigManager::GetInfo() {
   WifiInfo info;
-  info.ap_enabled = ap_enabled_;
-  info.sta_connecting = (state_ == State::kConnecting);
-  info.sta_connected = (state_ == State::kConnected);
+  info.ap_running = ap_running_;
+  switch (state_) {
+    case State::kIdle:
+      info.status = "Not connected";
+      break;
+    case State::kDisconnect:
+    case State::kDisconnecting:
+      if (new_.sta.enable || new_.sta1.enable) {
+        info.status = "Connecting";
+      } else {
+        info.status = "Disconnecting";
+      }
+      break;
+    case State::kConnect:
+    case State::kConnecting:
+      info.sta_connecting = true;
+      info.status = "Connecting";
+      break;
+    case State::kConnected:
+      info.status = "Connected";
+      info.sta_connected = true;
+      break;
+  }
   if (info.sta_connected) {
     info.sta_rssi = mgos_wifi_sta_get_rssi();
     std::unique_ptr<char> ssid(mgos_wifi_get_connected_ssid());
@@ -149,6 +196,12 @@ WifiInfo WifiConfigManager::GetInfo() {
       mgos_net_ip_to_str(&ip_info.ip, ip_str);
       info.sta_ip = ip_str;
     }
+  }
+  if (connect_failed_) {
+    info.status += " (reverted)";
+  }
+  if (info.ap_running) {
+    info.status += ", AP active";
   }
   return info;
 }
@@ -176,7 +229,7 @@ void WifiConfigManager::Process() {
       CheckAPEnabled();
       break;
     case State::kDisconnect: {
-      connect_failed_ = false;
+      if (mgos_uptime() - last_change_ < 1) break;
       mgos_wifi_disconnect();
       SetState(State::kDisconnecting);
       break;
@@ -186,31 +239,30 @@ void WifiConfigManager::Process() {
       SetState(State::kConnect);
       break;
     case State::kConnect: {
-      connect_failed_ = false;
       bool enabled = false;
       mgos_wifi_sta_clear_cfgs();
-      if (current_.sta.enable) {
+      if (act_->sta.enable) {
         mgos_config_wifi_sta cfg;
         mgos_config_wifi_sta_set_defaults(&cfg);
-        STAConfigToSys(current_.sta, cfg);
+        STAConfigToSys(act_->sta, cfg);
         mgos_wifi_sta_add_cfg(&cfg);
         mgos_config_wifi_sta_free(&cfg);
         enabled = true;
       }
-      std::string sp = ScreenPassword(current_.sta.pass);
-      LOG(LL_INFO, ("STA  config: %d %s %s", current_.sta.enable,
-                    current_.sta.ssid.c_str(), sp.c_str()));
-      if (current_.sta1.enable) {
+      std::string sp = ScreenPassword(act_->sta.pass);
+      LOG(LL_INFO, ("STA  config: %d %s %s", act_->sta.enable,
+                    act_->sta.ssid.c_str(), sp.c_str()));
+      if (act_->sta1.enable) {
         mgos_config_wifi_sta cfg;
         mgos_config_wifi_sta_set_defaults(&cfg);
-        STAConfigToSys(current_.sta1, cfg);
+        STAConfigToSys(act_->sta1, cfg);
         mgos_wifi_sta_add_cfg(&cfg);
         mgos_config_wifi_sta_free(&cfg);
         enabled = true;
       }
-      std::string sp1 = ScreenPassword(current_.sta1.pass);
-      LOG(LL_INFO, ("STA1 config: %d %s %s", current_.sta1.enable,
-                    current_.sta1.ssid.c_str(), sp1.c_str()));
+      std::string sp1 = ScreenPassword(act_->sta1.pass);
+      LOG(LL_INFO, ("STA1 config: %d %s %s", act_->sta1.enable,
+                    act_->sta1.ssid.c_str(), sp1.c_str()));
       if (enabled) {
         mgos_wifi_connect();
         SetState(State::kConnecting);
@@ -220,16 +272,22 @@ void WifiConfigManager::Process() {
         cfg.enable = false;
         mgos_wifi_setup_sta(&cfg);
         mgos_config_wifi_sta_free(&cfg);
+        if (act_ == &new_) {
+          cur_ = new_;
+          act_ = &cur_;
+        }
         SetState(State::kIdle);
       }
       break;
     }
     case State::kConnecting: {
       if (mgos_wifi_get_status() == MGOS_WIFI_IP_ACQUIRED) {
-        // Ok, this config worked, save it as backup.
-        backup_ = current_;
-        have_backup_ = true;
-        SaveConfig();
+        if (act_ == &new_) {
+          // Ok, this config worked, make current and save.
+          cur_ = new_;
+          act_ = &cur_;
+          SaveConfig();
+        }
         SetState(State::kConnected);
         break;
       }
@@ -237,6 +295,12 @@ void WifiConfigManager::Process() {
           mgos_sys_config_get_wifi_sta_connect_timeout() * 2) {
         LOG(LL_ERROR, ("Connection failed"));
         connect_failed_ = true;
+        if (act_ == &new_) {
+          std::string cs = cur_.ToJSON();
+          LOG(LL_INFO, ("Reverting to previous config: %s", cs.c_str()));
+          act_ = &cur_;
+        }
+        SetState(State::kDisconnect);
       }
       break;
     }
@@ -265,9 +329,28 @@ bool WifiConfigManager::APConfigToSys(const WifiAPConfig &cfg,
     scfg.enable = cfg.enable;
     changed = true;
   }
+  if (scfg.keep_enabled != cfg.enable) {
+    scfg.keep_enabled = cfg.enable;
+    changed = true;
+  }
   changed |= SetStrIfChanged(cfg.ssid, &scfg.ssid);
   changed |= SetStrIfChanged(cfg.pass, &scfg.pass);
   return changed;
+}
+
+// static
+Status WifiConfigManager::ValidateAPConfig(const WifiAPConfig &cfg) {
+  struct mgos_config_wifi_ap scfg;
+  mgos_config_wifi_ap_set_defaults(&scfg);
+  Status st;
+  char *err_msg = NULL;
+  APConfigToSys(cfg, scfg);
+  if (!mgos_wifi_validate_ap_cfg(&scfg, &err_msg)) {
+    st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "%s", err_msg);
+  }
+  mgos_config_wifi_ap_free(&scfg);
+  free(err_msg);
+  return st;
 }
 
 // static
@@ -297,13 +380,28 @@ bool WifiConfigManager::STAConfigToSys(const WifiSTAConfig &cfg,
   return changed;
 }
 
+// static
+Status WifiConfigManager::ValidateSTAConfig(const WifiSTAConfig &cfg) {
+  struct mgos_config_wifi_sta scfg;
+  mgos_config_wifi_sta_set_defaults(&scfg);
+  Status st;
+  char *err_msg = NULL;
+  STAConfigToSys(cfg, scfg);
+  if (!mgos_wifi_validate_sta_cfg(&scfg, &err_msg)) {
+    st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "%s", err_msg);
+  }
+  mgos_config_wifi_sta_free(&scfg);
+  free(err_msg);
+  return st;
+}
+
 void WifiConfigManager::SaveConfig() {
   bool changed = false;
   struct mgos_config_wifi wcfg;
   mgos_config_wifi_set_defaults(&wcfg);
-  changed |= APConfigToSys(current_.ap, wcfg.ap);
-  changed |= STAConfigToSys(current_.sta, wcfg.sta);
-  changed |= STAConfigToSys(current_.sta1, wcfg.sta1);
+  changed |= APConfigToSys(cur_.ap, wcfg.ap);
+  changed |= STAConfigToSys(cur_.sta, wcfg.sta);
+  changed |= STAConfigToSys(cur_.sta1, wcfg.sta1);
   if (changed) {
     mgos_config_wifi_copy(&wcfg, &mgos_sys_config.wifi);
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
@@ -314,27 +412,27 @@ void WifiConfigManager::SaveConfig() {
 
 void WifiConfigManager::CheckAPEnabled() {
   // We want AP enabled if there is no STA config
-  bool want_ap = current_.ap.enable;
-  if (!(current_.sta.enable || current_.sta1.enable)) want_ap = true;
-  if (connect_failed_) want_ap = true;
-  if (want_ap == ap_enabled_ && !ap_config_changed_) return;
+  bool want_ap = cur_.ap.enable;
+  if (!(cur_.sta.enable || cur_.sta1.enable)) want_ap = true;
+  if (want_ap == ap_running_ && !ap_config_changed_) return;
   // Delay any changes until boot time connection has had a chance to settle.
-  if ((current_.sta.enable || current_.sta1.enable) && mgos_uptime() < 10) {
+  if ((cur_.sta.enable || cur_.sta1.enable) && mgos_uptime() < 10) {
     return;
   }
   // Do not disable AP if there are active clients.
-  if (!want_ap && (mgos_uptime() - last_ap_client_active_) < 60) {
+  if (!want_ap && last_ap_client_active_ > 0 &&
+      (mgos_uptime() - last_ap_client_active_) < 60) {
     return;
   }
   struct mgos_config_wifi_ap cfg;
   mgos_config_wifi_ap_set_defaults(&cfg);
   cfg.enable = want_ap;
-  mgos_conf_set_str(&cfg.ssid, current_.ap.ssid.c_str());
-  mgos_conf_set_str(&cfg.pass, current_.ap.pass.c_str());
+  mgos_conf_set_str(&cfg.ssid, cur_.ap.ssid.c_str());
+  mgos_conf_set_str(&cfg.pass, cur_.ap.pass.c_str());
   LOG(LL_INFO, ("%s AP %s", (want_ap ? "Enabling" : "Disabling"), cfg.ssid));
   if (mgos_wifi_setup_ap(&cfg)) {
     ap_config_changed_ = false;
-    ap_enabled_ = want_ap;
+    ap_running_ = want_ap;
     SaveConfig();
   }
   mgos_config_wifi_ap_free(&cfg);
@@ -351,9 +449,10 @@ void WifiConfigManager::SetState(State state) {
 void WifiConfigManager::WifiEvent(int ev, void *) {
   // This catches initial automatic connection on boot.
   if (ev == MGOS_WIFI_EV_STA_CONNECTING) {
-    SetState(State::kConnecting);
+    if (state_ != State::kDisconnect) {
+      SetState(State::kConnecting);
+    }
   }
-  Process();
 }
 
 WifiConfig GetWifiConfig() {

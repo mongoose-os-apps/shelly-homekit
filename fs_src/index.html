@@ -142,7 +142,7 @@
           </div>
           <div class="form-control">
             <label>Password:</label>
-            <input type="password" id="wifi_pass">
+            <input type="password" id="wifi_pass" placeholder="(empty)">
           </div>
         </div>
       </div>
@@ -161,14 +161,14 @@
           </div>
           <div class="form-control">
             <label>Password:</label>
-            <input type="password" id="wifi1_pass">
+            <input type="password" id="wifi1_pass" placeholder="(empty)">
           </div>
         </div>
       </div>
       <div class="panel" id="panel3">
         <div class="form">
           <div class="form-control">
-            <label>Enable:</label>
+            <label>Enable permanently:</label>
             <label class="switch">
               <input type="checkbox" id="wifi_ap_en">
               <span class="slider round"></span>
@@ -180,7 +180,7 @@
           </div>
           <div class="form-control">
             <label>Password:</label>
-            <input type="password" id="wifi_ap_pass">
+            <input type="password" id="wifi_ap_pass" placeholder="(empty)">
           </div>
         </div>
       </div>
@@ -188,17 +188,21 @@
   </div>
   <div class="form">
     <div>
-      <div class="form-control" id="wifi_rssi_container">
-        <label>RSSI:</label>
-        <span id="wifi_rssi"></span>
+      <div class="form-control" id="wifi_status_container">
+        <label>Status:</label>
+        <span id="wifi_status"></span>
       </div>
-      <div class="form-control" id="host_container">
-        <label>Host:</label>
-        <span id="host"></span>
+      <div class="form-control" id="wifi_conn_ssid_container">
+        <label>Network:</label>
+        <span id="wifi_conn_ssid"></span>
       </div>
-      <div class="form-control" id="wifi_ip_container">
+      <div class="form-control" id="wifi_conn_ip_container">
         <label>IP:</label>
-        <span id="wifi_ip"></span>
+        <span id="wifi_conn_ip"></span>
+      </div>
+      <div class="form-control" id="wifi_conn_rssi_container">
+        <label>RSSI:</label>
+        <span id="wifi_conn_rssi"></span>
       </div>
       <div class="button-container">
         <button id="wifi_save_btn">
@@ -249,6 +253,10 @@
       <div class="form-control">
         <label>Device ID:</label>
         <span id="device_id"></span>
+      </div>
+      <div class="form-control" id="host_container">
+        <label>Host:</label>
+        <span id="host"></span>
       </div>
       <div class="form-control" id="uptime_container" style="display: none">
         <label>Uptime:</label>

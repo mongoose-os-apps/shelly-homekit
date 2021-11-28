@@ -29,6 +29,7 @@ button {
 }
 
 .button-container{
+  padding-top: 1em;
   text-align: center;
 }
 
@@ -60,12 +61,12 @@ input[type=range] {
 
 h1 {
   margin: 0;
-  padding-top: 0.5em;
+  padding-bottom: 0.5em;
   text-align: center;
 }
 
 .container {
-  padding: 0 1em;
+  padding: 1em;
   margin: 1em auto;
   max-width: 440px;
   background: #fefefe;
@@ -92,7 +93,6 @@ h1 {
 }
 
 .form {
-  padding: 1em 0;
 }
 
 .badge {
@@ -285,53 +285,56 @@ input:checked + .slider:before {
 }
 
 .tab_wrapper {
-  display:flex;
+  display: flex;
   flex-direction: column;
   align-items: left;
-  padding: 1em 0;
 }
 .tab {
   cursor: pointer;
   #margin: 0px 2px;
   padding: 10px 20px;
   display: inline-block;
+  border-width: 1px;
   border-radius: 10px 10px 0 0;
-  #border-color: black;
+  border-color: #0071e3;
   #box-shadow: 0 0.5rem 0.8rem #00000080;
 }
 .panels{
-  background:#fffffff6;
-  #box-shadow: 0 2rem 2rem #00000080;
-  #width:100%;
-  #max-width:200px;
-  border-radius: 0 0 10px 10px;
-  #overflow:hidden;
-  padding:20px;
+  padding-left: 1em;
+  padding-right: 1em;
+  border-radius: 0 10px 10px 10px;
+  border-left: 1px solid #0071e3;
+  border-right: 1px solid #0071e3;
+  border-bottom: 1px solid #0071e3;
+  border-top: 1px solid #0071e3;
 }
 .panel{
-  display:none;
-  animation: fadein .8s;
+  display: none;
+  animation: fadein .5s;
 }
 @keyframes fadein {
-    from {
-        opacity:0;
-    }
-    to {
-        opacity:1;
-    }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .tab_radio {
   display: none;
 }
 #one:checked ~ .panels #panel1,
 #two:checked ~ .panels #panel2,
-#three:checked ~ .panels #panel3{
-  display:block
+#three:checked ~ .panels #panel3 {
+  display: block;
+}
+#two:checked ~ .panels,
+#three:checked ~ .panels {
+  border-top-left-radius: 10px;
 }
 #one:checked ~ .tabs #tab1,
 #two:checked ~ .tabs #tab2,
 #three:checked ~ .tabs #tab3{
-  background:#fffffff6;
-  color:#000;
-  border-top: 3px solid #000;
+  border-top: 3px solid #0071e3;
+  border-left: 1px solid #0071e3;
+  border-right: 1px solid #0071e3;
+  border-bottom: 1px solid #0071e3;
+  background: #0071e3;
+  color: white;
 }

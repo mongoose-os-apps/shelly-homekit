@@ -24,13 +24,14 @@ let lastInfo = null;
 let infoLevel = 0;
 let host = null;
 let socket = null;
-let connectionTries = 0;
+let isConnected = false;
 
 let pauseAutoRefresh = false;
 let pendingGetInfo = false;
 let updateInProgress = false;
+let lastFwBuild = "";
 
-let pendingRequests = {};  // id -> Promise.
+let pendingRequests = {};
 
 let nextRequestID = Math.ceil(Math.random() * 10000);
 let authRequired = false;
@@ -70,11 +71,12 @@ el("sys_save_btn").onclick = function () {
     setTimeout(() => {
       el("sys_save_spinner").className = "";
       pauseAutoRefresh = false;
+      resetLastSetValue();
       refreshUI();
     }, 1300);
   }).catch(function (err) {
     el("sys_save_spinner").className = "";
-    if (err.response) err = err.response.data.message;
+    if (err.message) err = err.message;
     pauseAutoRefresh = false;
     alert(err);
   });
@@ -97,8 +99,7 @@ el("hap_setup_btn").onclick = function () {
   }
   console.log(input, seed, code, id);
   callDevice("HAP.Setup", {"code": code, "id": id})
-    .then(function (resp) {
-      let info = resp.result;
+    .then(function (info) {
       console.log(info);
       if (!info) return;
       el("hap_setup_code").innerText = info.code;
@@ -112,12 +113,11 @@ el("hap_setup_btn").onclick = function () {
         correctLevel: QRCode.CorrectLevel.Q,
       });
       el("hap_setup_info").style.display = "block";
-      getInfo();
+      resetLastSetValue();
+      refreshUI();
     })
     .catch(function (err) {
-      if (err.response) {
-        err = err.response.data.message;
-      }
+      if (err.message) err = err.message;
       alert(err);
     }).finally(function () {
       el("hap_setup_spinner").className = "";
@@ -132,12 +132,11 @@ el("hap_reset_btn").onclick = function () {
   callDevice("HAP.Reset", {"reset_server": true, "reset_code": true})
     .then(function () {
       el("hap_reset_spinner").className = "";
-      getInfo();
+      resetLastSetValue();
+      refreshUI();
     })
     .catch(function (err) {
-      if (err.response) {
-        err = err.response.data.message;
-      }
+      if (err.message) err = err.message;
       alert(err);
     });
 };
@@ -155,55 +154,38 @@ el("fw_upload_btn").onclick = function () {
 el("wifi_save_btn").onclick = function () {
   el("wifi_spinner").className = "spin";
   let data = {
-    config: {
-      wifi: {
-        sta: {enable: el("wifi_en").checked, ssid: el("wifi_ssid").value},
-        ap: {enable: !el("wifi_en").checked},
-      },
+    sta: {
+      enable: el("wifi_en").checked,
+      ssid: el("wifi_ssid").value,
     },
-    reboot: true,
+    sta1: {
+      enable: el("wifi1_en").checked,
+      ssid: el("wifi1_ssid").value,
+    },
+    ap: {
+      enable: el("wifi_ap_en").checked,
+      ssid: el("wifi_ap_ssid").value,
+    },
   };
-  if (el("wifi_pass").value && el("wifi_pass").value.length >= 8) {
-    data.config.wifi.sta.pass = el("wifi_pass").value;
+  if (el("wifi_pass").value != lastInfo.wifi_pass) {
+    data.sta.pass = el("wifi_pass").value;
   }
-  let oldPauseAutoRefresh = pauseAutoRefresh;
-  pauseAutoRefresh = true;
-  callDevice("Config.Set", data).then(function () {
-    let dn = el("device_name").innerText;
-    if (data.config.wifi.sta.enable) {
-      document.body.innerHTML = `
-        <div class='container'><h1>Rebooting...</h1>
-          <p>Device is rebooting and connecting to <b>${el("wifi_ssid").value}</b>.</p>
-          <p>
-            Connect to the same network and visit
-            <a href='http://${dn}.local/'>http://${dn}.local/</a>.
-          </p>
-          <p>
-            If device cannot be contacted, see
-            <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
-          </p>
-        </div>."`;
-    } else {
-      document.body.innerHTML = `
-        <div class='container'><h1>Rebooting...</h1>
-          <p>Device is rebooting into AP mode.</p>
-          <p>
-            It can be reached by connecting to <b>${lastInfo.wifi_ap_ssid}</b>
-            and navigating to <a href='http://${lastInfo.wifi_ap_ip}/'>http://${lastInfo.wifi_ap_ip}/</a>.
-          </p>
-          <p>
-            If device cannot be contacted, see
-            <a href='https://github.com/mongoose-os-apps/shelly-homekit/wiki/Recovery'>here</a> for recovery options.
-          </p>
-        </div>."`;
-    }
+  if (el("wifi1_pass").value != lastInfo.wifi1_pass) {
+    data.sta1.pass = el("wifi1_pass").value;
+  }
+  if (el("wifi_ap_pass").value != lastInfo.wifi_ap_pass) {
+    data.ap.pass = el("wifi_ap_pass").value;
+  }
+  callDevice("Shelly.SetWifiConfig", data).then(function (q) {
+    el("wifi_conn_rssi_container").style.display = "none";
+    el("wifi_conn_ip_container").style.display = "none";
+    resetLastSetValue();
+    refreshUI();
   }).catch(function (err) {
     el("wifi_spinner").className = "";
-    pauseAutoRefresh = oldPauseAutoRefresh;
-    if (err.response) {
-      err = err.response.data.message;
-    }
+    if (err.message) err = err.message;
     alert(err);
+    console.log(err);
   });
 };
 
@@ -220,13 +202,12 @@ function setComponentConfig(c, cfg, spinner) {
       setTimeout(() => {
         if (spinner) spinner.className = "";
         pauseAutoRefresh = false;
+        resetLastSetValue();
         refreshUI();
       }, 1300);
     }).catch(function (err) {
     if (spinner) spinner.className = "";
-    if (err.response) {
-      err = err.response.data.message;
-    }
+    if (err.message) err = err.message;
     alert(err);
     pauseAutoRefresh = false;
   });
@@ -242,14 +223,14 @@ function setComponentState(c, state, spinner) {
   callDevice("Shelly.SetState", data)
     .then(function () {
       if (spinner) spinner.className = "";
+      resetLastSetValue();
       refreshUI();
-    }).catch(function (err) {
-    if (spinner) spinner.className = "";
-    if (err.response) {
-      err = err.response.data.message;
-    }
-    alert(err);
-  });
+    })
+    .catch(function (err) {
+      if (spinner) spinner.className = "";
+      if (err.message) err = err.message;
+      alert(err);
+    });
 }
 
 function autoOffDelayValid(value) {
@@ -794,39 +775,26 @@ function updateElement(key, value, info) {
       updateInnerText(el("device_name"), value);
       setValueIfNotModified(el("sys_name"), value);
       break;
-
     case "wifi_en":
-      checkIfNotModified(el("wifi_en"), value);
-      break;
-    case "wifi_ssid":
-      setValueIfNotModified(el("wifi_ssid"), value);
-      break;
-    case "wifi_pass_h":
-      el("wifi_pass").placeholder = (value ? "(hidden)" : "(empty)");
-      break;
     case "wifi1_en":
-      checkIfNotModified(el("wifi1_en"), value);
-      break;
-    case "wifi1_ssid":
-      setValueIfNotModified(el("wifi1_ssid"), value);
-      break;
-    case "wifi1_pass":
-      el("wifi1_pass").placeholder = (value ? "(hidden)" : "(empty)");
-      break;
     case "wifi_ap_en":
-      checkIfNotModified(el("wifi_ap_en"), value);
+      checkIfNotModified(el(key), value);
       break;
     case "wifi_ssid":
-      setValueIfNotModified(el("wifi_ap_ssid"), value);
+    case "wifi1_ssid":
+    case "wifi_ap_ssid":
+    case "wifi_pass":
+    case "wifi1_pass":
+    case "wifi_ap_pass":
+      setValueIfNotModified(el(key), value);
       break;
-    case "wifi_ap_pass_h":
-      el("wifi_pass").placeholder = (value ? "(hidden)" : "(empty)");
-      break;
-
-    case "wifi_rssi":
     case "host":
+    case "wifi_conn_ip":
+    case "wifi_conn_rssi":
+    case "wifi_conn_ssid":
+    case "wifi_status":
       updateInnerText(el(key), value);
-      el(`${key}_container`).style.display = (value !== 0) ? "block" : "none";
+      el(`${key}_container`).style.display = (value ? "block" : "none");
       break;
     case "wifi_ip":
       if (value !== undefined) {
@@ -843,6 +811,9 @@ function updateElement(key, value, info) {
       } else {
         updateInnerText(el("wifi_ip"), "Not connected");
       }
+      break;
+    case "wifi_connecting":
+      el("wifi_spinner").className = (value ? "spin" : "");
       break;
     case "hap_paired":
       if (value) {
@@ -921,10 +892,14 @@ function updateElement(key, value, info) {
 
 function getInfo() {
   return new Promise(function (resolve, reject) {
+    if (pendingGetInfo) {
+      reject(new Error("already connecting"));
+      return;
+    }
+    pendingGetInfo = true;
     let method = (infoLevel == 1 ? "Shelly.GetInfoExt" : "Shelly.GetInfo");
-
-    callDevice(method).then(function (res) {
-      let info = res.result;
+    callDevice(method).then(function (info) {
+      pendingGetInfo = false;
 
       if (!info) {
         reject();
@@ -945,9 +920,9 @@ function getInfo() {
       }
 
       if (infoLevel == 0) {
-        infoLevel++;
+        infoLevel = 1;
         // Get extended info.
-        resolve(getInfo());
+        getInfo();
         return;
       }
 
@@ -971,7 +946,7 @@ function getInfo() {
       console.log(err);
       infoLevel = 0;
       reject(err);
-    });
+    }).finally(() => pendingGetInfo = false);
   });
 }
 
@@ -1030,35 +1005,34 @@ function connectWebSocket() {
   setupHost();
 
   return new Promise(function(resolve, reject) {
-    socket = new WebSocket(`ws://${host}/rpc`);
-    connectionTries += 1;
+    let url = `ws://${host}/rpc`;
+    console.log(`Connecting to ${url}...`);
+    socket = new WebSocket(url);
 
     socket.onclose = function(event) {
-      console.log(`[close] Connection died (code ${event.code})`);
-      el("notify_disconnected").style.display = "inline"
-      // attempt to reconnect
-      setTimeout(function() {
-        connectWebSocket()
-          // reload the page once we reconnect (the web ui could have changed)
-          .then(() => reloadPage())
-          .catch(() => console.log("[error] Could not reconnect to Shelly"));
-      }, Math.min(3000, connectionTries * 1000));
-    };
-
-    socket.onerror = function(error) {
-      el("notify_disconnected").style.display = "inline"
+      let error = `[close] Connection died (code ${event.code})`;
+      if (isConnected) {
+        console.log(error);
+      }
+      el("notify_disconnected").style.display = "inline";
       let pr = pendingRequests;
       pendingRequests = {};
       for (let id in pr) {
         pr[id].reject(error);
       }
       reject(error);
+      socket = null;
+    };
+
+    socket.onerror = function(error) {
+      console.log(`[error] Connection error`, error);
+      socket.close();
     };
 
     socket.onopen = function() {
       console.log("[open] Connection established");
       el("notify_disconnected").style.display = "none";
-      connectionTries = 0;
+      isConnected = true;
       resolve(socket);
     };
 
@@ -1068,7 +1042,7 @@ function connectWebSocket() {
       let ri = pendingRequests[id];
       if (!ri) return;
       delete pendingRequests[id];
-      console.log(`[<-] ${id} ${ri.method}`, ri, resp);
+      console.log("[<-]", resp);
       if (resp.error && resp.error.code == 401) {
         rpcAuth = null;
         let authReq = JSON.parse(resp.error.message);
@@ -1085,8 +1059,9 @@ function connectWebSocket() {
         if (ar) {
           console.log("Retrying with auth...");
           callDeviceAuth(ri.method, ri.params, ar)
-              .then(function (resp) { ri.resolve(resp); })
-              .catch(function (err) { ri.reject(err); });
+              .then((resp) => ri.resolve(resp))
+              .catch((err) => ri.reject(err))
+              .finally(() => el("auth_log_in_spinner").className = "");
         } else {
           if (lastInfo !== null) {
             // Locked out, reload UI.
@@ -1105,7 +1080,11 @@ function connectWebSocket() {
           setVar(authInfoKey, ri.ar.ai, maxAuthAge);
           rpcAuth = ri.ar.rpcAuth;
         }
-        ri.resolve(resp);
+        if (resp.error) {
+          ri.reject(resp.error);
+        } else {
+          ri.resolve(resp.result);
+        }
       }
     };
 
@@ -1181,38 +1160,50 @@ function callDeviceAuth(method, params, ar) {
   let id = nextRequestID++;
   return new Promise(function(resolve, reject) {
     try {
-      console.log(`[->] ${id} ${method}`, params, ar);
       let frame = {
           "id": id,
           "method": method,
-          "params": params,
       };
+      if (params) {
+        frame.params = params;
+      }
       if (ar) {
         frame.auth = ar.rpcAuth;
       } else if (rpcAuth) {
         frame.auth = rpcAuth;
       }
+      console.log("[->]", frame);
       socket.send(JSON.stringify(frame));
-      pendingRequests[id] = {
+      let pr = {
+          id: id,
           method: method,
           params: params,
           ar: ar,
           resolve: resolve,
           reject: reject,
       };
+      pendingRequests[id] = pr;
+      setTimeout(() => {
+        if (!pendingRequests[id]) return;
+        delete pendingRequests[id];
+        pr.reject(new Error("Request timeout"));
+        if (socket) {
+          socket.close();
+        }
+      }, 3000);
     } catch (e) {
       reject(e);
     }
   });
 }
 
-function callDevice(method, params = []) {
+function callDevice(method, params) {
   return callDeviceAuth(method, params, null);
 }
 
 function doLogin() {
   el("auth_log_in_spinner").className = "spin";
-  getInfo().finally(() => el("auth_log_in_spinner").className = "");
+  getInfo();
 }
 
 el("auth_log_in_btn").onclick = function () {
@@ -1258,7 +1249,7 @@ el("sec_save_btn").onclick = function () {
     setVar(authInfoKey, undefined);
     reloadPage();
   }).catch(function (err) {
-    if (err.response) err = err.response.data.message;
+    if (err.message) err = err.message;
     alert(err);
   }).finally(function() {
     el("sec_save_spinner").className = "";
@@ -1269,29 +1260,53 @@ el("sec_save_btn").onclick = function () {
 
 // noinspection JSUnusedGlobalSymbols
 function onLoad() {
-  connectWebSocket().then(() => {
-    getInfo().catch((err) => {
-      console.log("getInfo() rejected", err);
-    });
-  });
-  setInterval(refreshUI, 1000);
-  if (location.pathname === "/ota") {
-    let params = new URLSearchParams(location.search.substring(1));
-    return downloadUpdate(params.get("url"), el("fw_spinner"), el("update_status"));
-  } else if (location.pathname !== "/") {
-    reloadPage();
+  if (location.protocol != "file:") {
+    if (location.pathname === "/ota") {
+      let params = new URLSearchParams(location.search.substring(1));
+      return downloadUpdate(params.get("url"), el("fw_spinner"), el("update_status"));
+    } else if (location.pathname !== "/") {
+      reloadPage();
+    }
   }
+  setInterval(refreshUI, 1000);
+  refreshUI();
 }
+
+let connectStarted = 0;
 
 function refreshUI() {
   // if the socket is open and connected and the page is visible to the user
   if (document.hidden) return;
-  if (socket.readyState !== 1) return;
-  if (pauseAutoRefresh || pendingGetInfo) return;
-  pendingGetInfo = true;
+  if (!socket) {
+    connectStarted = (new Date()).getTime();
+    connectWebSocket()
+      .then(() => refreshUI())
+      .catch(() => {});
+    return;
+  }
+  if (socket.readyState !== 1) {
+    el("notify_disconnected").style.display = "inline";
+    let now = (new Date()).getTime();
+    if (now - connectStarted >= 3000) {
+      console.log("Connection timed out");
+      socket.close();
+      socket = null;
+    }
+    return;
+  }
+  if (pauseAutoRefresh) return;
   getInfo()
-    .then((info) => checkUpdateIfNeeded(info))
-    .finally(() => pendingGetInfo = false);
+    .then(function(info) {
+      if (lastFwBuild && info.fw_build != lastFwBuild) {
+        // Firmware changed, reload.
+        reloadPage();
+        return;
+      } else {
+        lastFwBuild = info.fw_build;
+      }
+      checkUpdateIfNeeded(info);
+    })
+  .catch((err) => {});
 }
 
 function setValueIfNotModified(e, newValue) {
@@ -1299,8 +1314,9 @@ function setValueIfNotModified(e, newValue) {
   if (e.selected ||                    // the user has selected / highlighted the input field OR
     e.lastSetValue === e.value ||      // the value has not been changed by the user OR
     (e.lastSetValue !== undefined &&   // a value has previously been set AND
-      e.lastSetValue !== e.value))     // it is not currently the same as the visible value
+      e.lastSetValue !== e.value)) {   // it is not currently the same as the visible value
     return;
+  }
   e.value = e.lastSetValue = newValue;
 }
 
@@ -1311,6 +1327,13 @@ function checkIfNotModified(e, newState) {
       e.lastSetValue !== e.checked))   // it is not currently the same as the visible value
     return;
   e.checked = e.lastSetValue = newState;
+}
+
+function resetLastSetValue() {
+  let els = document.getElementsByTagName("input");
+  for (let i = 0; i < els.length; i++) {
+    if (els[i].lastSetValue) els[i].lastSetValue = undefined;
+  }
 }
 
 function slideIfNotModified(e, newValue) {

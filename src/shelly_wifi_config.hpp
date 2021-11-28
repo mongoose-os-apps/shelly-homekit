@@ -19,8 +19,6 @@
 
 #include <string>
 
-#include "mgos_timers.hpp"
-
 #include "shelly_common.hpp"
 
 namespace shelly {
@@ -59,9 +57,10 @@ Status SetWifiConfig(const WifiConfig &cfg);
 void ResetWifiConfig();
 
 struct WifiInfo {
-  bool ap_enabled = false;
+  bool ap_running = false;
   bool sta_connecting = false;
   bool sta_connected = false;
+  std::string status;
   // When connected:
   int sta_rssi = 0;
   std::string sta_ip;

@@ -115,16 +115,20 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
                             wc.sta.pass.length());
   mbedtls_sha256_finish_ret(&ctx, (uint8_t *) digest);
   mbedtls_sha256_free(&ctx);
+  std::string wifi_pass = ScreenPassword(wc.sta.pass);
+  std::string wifi1_pass = ScreenPassword(wc.sta1.pass);
+  std::string wifi_ap_pass = ScreenPassword(wc.ap.pass);
   std::string res = mgos::JSONPrintStringf(
       "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
       "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
       "auth_en: %B, auth_domain: %Q, "
-      "wifi_en: %B, wifi_ssid: %Q, wifi_pass_h: \"%08x%08x%08x%08x\", "
-      "wifi1_en: %B, wifi1_ssid: %Q, wifi1_pass_set: %B, "
-      "wifi_ap_en: %B, wifi_ap_ssid: %Q, wifi_ap_pass_set: %B, "
-      "wifi_ap_ip: %Q, "
+      "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
+      "wifi_pass_h: \"%08x%08x%08x%08x\", "
+      "wifi1_en: %B, wifi1_ssid: %Q, wifi1_pass: %Q, "
+      "wifi_ap_en: %B, wifi_ap_ssid: %Q, wifi_ap_pass: %Q, wifi_ap_ip: %Q, "
       "wifi_connecting: %B, wifi_connected: %B, wifi_conn_ssid: %Q, "
       "wifi_conn_rssi: %d, wifi_conn_ip: %Q, "
+      "wifi_status: %Q, "
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
@@ -135,12 +139,13 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
       false /* failsafe_mode */, IsAuthEn(),
       mgos_sys_config_get_rpc_auth_domain(), wc.sta.enable, wc.sta.ssid.c_str(),
-      (unsigned int) digest[0], (unsigned int) digest[2],
+      wifi_pass.c_str(), (unsigned int) digest[0], (unsigned int) digest[2],
       (unsigned int) digest[4], (unsigned int) digest[6], wc.sta1.enable,
-      wc.sta1.ssid.c_str(), !wc.sta1.pass.empty(), wc.ap.enable,
-      wc.ap.ssid.c_str(), !wc.ap.pass.empty(), mgos_sys_config_get_wifi_ap_ip(),
-      wi.sta_connecting, wi.sta_connected, wi.sta_ssid.c_str(), wi.sta_rssi,
-      wi.sta_ip.c_str(), hap_cn, hap_running, hap_paired,
+      wc.sta1.ssid.c_str(), wifi1_pass.c_str(), wc.ap.enable,
+      wc.ap.ssid.c_str(), wifi_ap_pass.c_str(),
+      mgos_sys_config_get_wifi_ap_ip(), wi.sta_connecting, wi.sta_connected,
+      wi.sta_ssid.c_str(), wi.sta_rssi, wi.sta_ip.c_str(), wi.status.c_str(),
+      hap_cn, hap_running, hap_paired,
       (unsigned) tcpm_stats.numPendingTCPStreams,
       (unsigned) tcpm_stats.numActiveTCPStreams,
       (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
