@@ -1647,7 +1647,7 @@ function setPreviewColor(c) {
 function clamprgb(val) {
     let min = 0;
     let max = 255;
-    return val < min ? min : val > max ? max : val;
+    return Math.max(min, Math.min(val, max))
 }
 
 function colortemp2rgb(t, v) {
