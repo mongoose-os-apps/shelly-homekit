@@ -63,8 +63,6 @@ class LightBulb : public Component, public mgos::hap::Service {
 
   bool IsAutoOffEnabled() const;
 
-  void ColortemperaturetoRGBW(RGBW &rgbw) const;
-
   void SaveState();
   void ResetAutoOff();
   void DisableAutoOff();

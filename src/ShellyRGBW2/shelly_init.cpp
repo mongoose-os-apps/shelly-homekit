@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "shelly_cct_controller.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_light_bulb.hpp"
 #include "shelly_input_pin.hpp"
@@ -27,10 +28,10 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  outputs->emplace_back(new OutputPin(1, 12, 1));  // R
-  outputs->emplace_back(new OutputPin(2, 15, 1));  // G
-  outputs->emplace_back(new OutputPin(3, 14, 1));  // B
-  outputs->emplace_back(new OutputPin(4, 4, 1));   // W
+  outputs->emplace_back(new OutputPin(1, 12, 1));  // R / CW0
+  outputs->emplace_back(new OutputPin(2, 15, 1));  // G / WW0
+  outputs->emplace_back(new OutputPin(3, 14, 1));  // B / CW1
+  outputs->emplace_back(new OutputPin(4, 4, 1));   // W / WW1
   auto *in = new InputPin(1, 5, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 0, _1, _2));
   in->Init();
@@ -46,10 +47,12 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   std::unique_ptr<LightBulbController> lightbulb_controller;
 
-  if (mgos_sys_config_get_shelly_mode() == 4 or
-      mgos_sys_config_get_shelly_mode() == 5) {
+  if (mgos_sys_config_get_shelly_mode() == 4) {
     lightbulb_controller.reset(new RGBWController(
         lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
+  } else if (mgos_sys_config_get_shelly_mode() == 5) {
+    lightbulb_controller.reset(
+        new CCTController(lb_cfg, FindOutput(1), FindOutput(2)));
   } else {
     lightbulb_controller.reset(new RGBWController(
         lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));

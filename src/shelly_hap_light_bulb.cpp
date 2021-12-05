@@ -195,90 +195,6 @@ Status LightBulb::Init() {
   return Status::OK();
 }
 
-void LightBulb::HSVtoRGBW(RGBW &rgbw) const {
-  float h = cfg_->hue / 360.0f;
-  float s = cfg_->saturation / 100.0f;
-  float v = cfg_->brightness / 100.0f;
-
-  if (cfg_->saturation == 0) {
-    // if saturation is zero than all rgb channels same as brightness
-    rgbw.r = rgbw.g = rgbw.b = v;
-  } else {
-    // otherwise calc rgb from hsv (hue, saturation, brightness)
-    int i = static_cast<int>(h * 6);
-    float f = (h * 6.0f - i);
-    float p = v * (1.0f - s);
-    float q = v * (1.0f - f * s);
-    float t = v * (1.0f - (1.0f - f) * s);
-
-    switch (i % 6) {
-      case 0:  // 0° ≤ h < 60°
-        rgbw.r = v;
-        rgbw.g = t;
-        rgbw.b = p;
-        break;
-
-      case 1:  // 60° ≤ h < 120°
-        rgbw.r = q;
-        rgbw.g = v;
-        rgbw.b = p;
-        break;
-
-      case 2:  // 120° ≤ h < 180°
-        rgbw.r = p;
-        rgbw.g = v;
-        rgbw.b = t;
-        break;
-
-      case 3:  // 180° ≤ h < 240°
-        rgbw.r = p;
-        rgbw.g = q;
-        rgbw.b = v;
-        break;
-
-      case 4:  // 240° ≤ h < 300°
-        rgbw.r = t;
-        rgbw.g = p;
-        rgbw.b = v;
-        break;
-
-      case 5:  // 300° ≤ h < 360°
-        rgbw.r = v;
-        rgbw.g = p;
-        rgbw.b = q;
-        break;
-    }
-  }
-
-  if (out_w_ != nullptr) {
-    // apply white channel to rgb if available
-    rgbw.w = std::min(rgbw.r, std::min(rgbw.g, rgbw.b));
-    rgbw.r = rgbw.r - rgbw.w;
-    rgbw.g = rgbw.g - rgbw.w;
-    rgbw.b = rgbw.b - rgbw.w;
-  } else {
-    // otherwise turn white channel off
-    rgbw.w = 0.0f;
-  }
-}
-
-void LightBulb::ColortemperaturetoRGBW(RGBW &rgbw) const {
-  float v = cfg_->brightness / 100.0f;
-
-  // brightness and colortemperature in mired to cw, ww values
-  int temp_max = 400;
-  int temp_min = 50;
-  float temp = cfg_->colortemperature;
-  temp -= temp_min;
-  temp /= (temp_max - temp_min);
-  rgbw.ww0 = temp * v;
-  rgbw.cw0 = (1.0f - temp) * v;
-
-  // unused so far, mirror first values
-  rgbw.ww1 = rgbw.ww0;
-  rgbw.cw1 = rgbw.cw0;
-}
-
 void LightBulb::UpdateOnOff(bool on, const std::string &source, bool force) {
   if (!force && cfg_->state == static_cast<int>(on)) return;
 
@@ -322,7 +238,7 @@ void LightBulb::SetColorTemperature(int colortemperature,
     colortemperature_characteristic->RaiseEvent();
   }
 
-  StartTransition();
+  controller_->UpdateOutput();
 }
 
 void LightBulb::SetSaturation(int saturation, const std::string &source) {
@@ -362,8 +278,8 @@ StatusOr<std::string> LightBulb::GetInfo() const {
                          cfg_->brightness, cfg_->colortemperature);
   } else {
     return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i",
-                         OnOff(controller->IsOn()), cfg_->brightness, cfg_->hue,
-                         cfg_->saturation);
+                         OnOff(controller_->IsOn()), cfg_->brightness,
+                         cfg_->hue, cfg_->saturation);
   }
 }
 
