@@ -38,6 +38,10 @@ class RGBWController : public LightBulbController {
 
   void UpdateOutput() override;
 
+  bool SupportsColor() override {
+    return true;
+  }
+
  protected:
   void TransitionTimerCB();
   void HSVtoRGBW(State &state) const;

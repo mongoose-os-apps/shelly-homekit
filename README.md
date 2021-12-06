@@ -20,7 +20,8 @@ Summary of supported devices and features
 |Roller shutter mode|✗|✗|✗|✗|✗|✗|✓|✗|✗|
 |Power measurement|✗|✓|-|✓|✓|✗|✓|✗|-|
 |RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✓|
-|CCT|✗|✗|✗|✗|✗|✗|✗|✗|✓|
+|CCT (WW,CW)|✗|✗|✗|✗|✗|✗|✗|✗|✓|
+|White Mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|
 
 _✓ supported, - possible but not supported yet, ✗ not possible_  
 _Switch & Co. includes lock, outlet, valve_

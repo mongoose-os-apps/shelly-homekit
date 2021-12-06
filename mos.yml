@@ -32,7 +32,7 @@ config_schema:
   - ["sntp.enable", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - CCT (if supported)"}]
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - CCT (if supported), 6 - White Mode (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
@@ -544,7 +544,10 @@ conds:
         - ["device.id", "shellyrgbw2-??????"]
         - ["shelly.name", "shellyrgbw2-??????"]
         - ["wifi.ap.ssid", "shellyrgbw2-??????"]
-        - ["lb1", "lb", {title: "RGB 1 settings"}]
+        - ["lb1", "lb", {title: "Light 1 settings"}]
+        - ["lb2", "lb", {title: "Light 2 settings"}]
+        - ["lb3", "lb", {title: "Light 3 settings"}]
+        - ["lb4", "lb", {title: "Light 4 settings"}]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]

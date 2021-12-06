@@ -634,6 +634,9 @@ function updateComponent(cd) {
         if(lastInfo.sys_mode == 5) {
           headText = "CCT";
         }
+          else if(lastInfo.sys_mode == 6) {
+          headText = "Light";
+        }
         else {
           headText = "RGB";
         }
@@ -789,6 +792,7 @@ function updateElement(key, value, info) {
         if (el("sys_mode_3")) el("sys_mode_3").remove();
         if (el("sys_mode_4")) el("sys_mode_4").remove();
         if (el("sys_mode_5")) el("sys_mode_5").remove();
+        if (el("sys_mode_6")) el("sys_mode_6").remove();
       }
       updateInnerText(el(key), value);
       break;
@@ -904,9 +908,11 @@ function updateElement(key, value, info) {
       break;
     case "sys_mode":
       let showct = (value == 5)
-      el("hue_container").style.display =  showct ? "none" : "block";
-      el("saturation_container").style.display = showct ? "none" : "block";
-      el("colortemperature_container").style.display = showct ? "block" : "none" ;
+      let showcolor = (value == 3) || (value == 4)
+      el("hue_container").style.display              = showcolor ? "block" : "none";
+      el("saturation_container").style.display       = showcolor ? "block" : "none";
+      el("colortemperature_container").style.display = showct ? "block" : "none";
+      el("color_container").style.display = showct || showcolor ? "block" : "none";
       selectIfNotModified(el("sys_mode"), value);
       break;
     case "sys_temp":

@@ -29,6 +29,13 @@ class LightBulbController {
 
   virtual void UpdateOutput() = 0;
 
+  virtual bool SupportsColor() {
+    return false;
+  }
+  virtual bool SupportsTemperature() {
+    return false;
+  }
+
   bool IsOn() const;
   bool IsOff() const;
 

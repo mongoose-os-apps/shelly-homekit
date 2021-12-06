@@ -19,6 +19,7 @@
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_light_bulb.hpp"
 #include "shelly_input_pin.hpp"
+#include "shelly_light_controller.hpp"
 #include "shelly_main.hpp"
 #include "shelly_rgbw_controller.hpp"
 
@@ -43,39 +44,63 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  auto *lb_cfg = (struct mgos_config_lb *) mgos_sys_config_get_lb1();
-
   std::unique_ptr<LightBulbController> lightbulb_controller;
+  std::unique_ptr<hap::LightBulb> hap_light;
+  struct mgos_config_lb *lb_cfg;
 
-  if (mgos_sys_config_get_shelly_mode() == 4) {
-    lightbulb_controller.reset(new RGBWController(
-        lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
-  } else if (mgos_sys_config_get_shelly_mode() == 5) {
-    lightbulb_controller.reset(
-        new CCTController(lb_cfg, FindOutput(1), FindOutput(2)));
-  } else {
-    lightbulb_controller.reset(new RGBWController(
-        lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
+  struct mgos_config_lb *lb_cfgs[4] = {
+      (struct mgos_config_lb *) mgos_sys_config_get_lb1(),
+      (struct mgos_config_lb *) mgos_sys_config_get_lb2(),
+      (struct mgos_config_lb *) mgos_sys_config_get_lb3(),
+      (struct mgos_config_lb *) mgos_sys_config_get_lb4(),
+  };
 
-    FindOutput(4)->SetStatePWM(0.0f, "cc");
+  int ndev = 1;
+
+  if (mgos_sys_config_get_shelly_mode() == 5) {
+    ndev = 2;
+  } else if (mgos_sys_config_get_shelly_mode() == 6) {
+    ndev = 4;
   }
 
-  std::unique_ptr<hap::LightBulb> rgbw_light(new hap::LightBulb(
-      1, FindInput(1), std::move(lightbulb_controller), lb_cfg));
+  int out_pin = 1;
+  bool first_detatched_input = true;
 
-  if (rgbw_light == nullptr || !rgbw_light->Init().ok()) {
-    return;
-  }
+  for (int i = 0; i < ndev; i++) {
+    lb_cfg = lb_cfgs[i];
 
-  rgbw_light->set_primary(true);
-  mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-  pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
-  pri_acc->AddService(rgbw_light.get());
-  comps->emplace_back(std::move(rgbw_light));
+    if (mgos_sys_config_get_shelly_mode() == 3) {
+      lightbulb_controller.reset(new RGBWController(
+          lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
+      FindOutput(4)->SetStatePWM(0.0f, "cc");
+    } else if (mgos_sys_config_get_shelly_mode() == 4) {
+      lightbulb_controller.reset(new RGBWController(
+          lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
+    } else if (mgos_sys_config_get_shelly_mode() == 5) {
+      lightbulb_controller.reset(new CCTController(
+          lb_cfg, FindOutput(out_pin), FindOutput(out_pin+1)));
+        out_pin += 2;
+    } else {  // mode 6
+      lightbulb_controller.reset(
+          new LightController(lb_cfg, FindOutput(out_pin++)));
+    }
 
-  if (lb_cfg->in_mode == 3) {
-    hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
+    hap_light.reset(new hap::LightBulb(
+        i + 1, FindInput(1), std::move(lightbulb_controller), lb_cfg));
+
+    if (hap_light == nullptr || !hap_light->Init().ok()) {
+      return;
+    }
+
+    mgos::hap::Accessory *pri_acc = (*accs)[0].get();
+    pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
+    pri_acc->AddService(hap_light.get());
+    comps->emplace_back(std::move(hap_light));
+
+    if (lb_cfg->in_mode == 3 && first_detatched_input) {
+      hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
+      first_detatched_input = false;
+    }
   }
 }
-
 }  // namespace shelly

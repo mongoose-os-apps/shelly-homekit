@@ -104,8 +104,8 @@ Status LightBulb::Init() {
   AddChar(brightness_characteristic);
 
   // HAP forbids simultaneous presence of color temperature and hue/saturation
-  // to be able to distinguish between RGB and CCT light bulbs CCT Mode
-  if (mgos_sys_config_get_shelly_mode() == 5) {
+  // to be able to distinguish between RGB and CCT light bulbs
+  if (controller_->SupportsTemperature()) {
     // CCT Mode
     // Color Temperature
     colortemperature_characteristic = new mgos::hap::UInt32Characteristic(
@@ -130,7 +130,7 @@ Status LightBulb::Init() {
         },
         kHAPCharacteristicDebugDescription_ColorTemperature);
     AddChar(colortemperature_characteristic);
-  } else {
+  } else if (controller_->SupportsColor()) {
     // RGB(W) Mode
     // Hue
     hue_characteristic = new mgos::hap::UInt32Characteristic(
@@ -273,14 +273,9 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
 
 StatusOr<std::string> LightBulb::GetInfo() const {
   const_cast<LightBulb *>(this)->SaveState();
-  if (mgos_sys_config_get_shelly_mode() == 5) {
-    return mgos::SPrintf("sta: %s, b: %i, ct: %i", OnOff(controller_->IsOn()),
-                         cfg_->brightness, cfg_->colortemperature);
-  } else {
-    return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i",
-                         OnOff(controller_->IsOn()), cfg_->brightness,
-                         cfg_->hue, cfg_->saturation);
-  }
+  return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i, ct: %i",
+                       OnOff(controller_->IsOn()), cfg_->brightness, cfg_->hue,
+                       cfg_->saturation, cfg_->colortemperature);
 }
 
 StatusOr<std::string> LightBulb::GetInfoJSON() const {

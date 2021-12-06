@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include "mgos.hpp"
-#include "mgos_hap_chars.hpp"
 #include "mgos_timers.hpp"
 #include "shelly_light_bulb_controller.hpp"
 #include "shelly_output.hpp"
@@ -24,30 +22,22 @@
 #pragma once
 
 namespace shelly {
-class CCTController : public LightBulbController {
+class LightController : public LightBulbController {
  public:
-  CCTController(struct mgos_config_lb *cfg, Output *out_ww, Output *out_cw);
-  CCTController(const CCTController &other) = delete;
-  virtual ~CCTController();
+  LightController(struct mgos_config_lb *cfg, Output *out_w);
+  LightController(const LightController &other) = delete;
+  virtual ~LightController();
 
   struct State {
-    float ww;
-    float cw;
+    float w;
   };
 
   void UpdateOutput() override;
 
-  bool SupportsTemperature() override {
-    return true;
-  }
-
  protected:
   void TransitionTimerCB();
-  void ColortemperaturetoWhiteChannels(State &state) const;
 
-  mgos::hap::UInt32Characteristic *colortemperature_characteristic;
-
-  Output *const out_ww_, *const out_cw_;
+  Output *const out_w_;
   mgos::Timer transition_timer_;
   int64_t transition_start_ = 0;
   State state_start_{};
