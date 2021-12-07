@@ -540,7 +540,7 @@ conds:
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
-        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW"
+        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW, 5 - CCT, 6 - White Mode
         - ["device.id", "shellyrgbw2-??????"]
         - ["shelly.name", "shellyrgbw2-??????"]
         - ["wifi.ap.ssid", "shellyrgbw2-??????"]
@@ -641,6 +641,32 @@ conds:
         - ["wc1.name", "Window 1"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "ShellyU25 GDO"]
+
+  - when: build_vars.MODEL == "ShellyURGBW2"
+    apply:
+      sources:
+        - src/ShellyRGBW2/shelly_init.cpp  # Same components as Shelly25
+        - src/mock/pwm
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+          variant: ubuntu-nossl
+      cdefs:
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '""'
+        MG_ENABLE_SSL: 0
+        SHELLY_HAVE_PM: 0
+        BTN_NOISY: 0
+      config_schema:
+        - ["device.id", "ShellyRGBW2-????"]
+        - ["shelly.name", "ShellyRGBW2-????"]
+        - ["file_logger.dir", "./"]
+        - ["lb1", "lb", {title: "Light 1 settings"}]
+        - ["lb2", "lb", {title: "Light 2 settings"}]
+        - ["lb3", "lb", {title: "Light 3 settings"}]
+        - ["lb4", "lb", {title: "Light 4 settings"}]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
 
   # Test device for BLE development.
   - when: build_vars.MODEL == "ShellyT32"

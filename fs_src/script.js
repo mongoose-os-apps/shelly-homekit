@@ -783,7 +783,7 @@ function updateElement(key, value, info) {
       updateInnerText(el("uptime"), durationStr(value));
       break;
     case "model":
-      if (value == "ShellyRGBW2") {
+      if (value.endsWith("RGBW2")) {
         el("sys_mode_container").style.display = "block";
         if (el("sys_mode_0")) el("sys_mode_0").remove();
       } else {
