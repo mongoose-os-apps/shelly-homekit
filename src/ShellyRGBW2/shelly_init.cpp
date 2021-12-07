@@ -77,9 +77,9 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
     } else if (mgos_sys_config_get_shelly_mode() == 5) {
-      lightbulb_controller.reset(new CCTController(
-          lb_cfg, FindOutput(out_pin), FindOutput(out_pin+1)));
-        out_pin += 2;
+      lightbulb_controller.reset(new CCTController(lb_cfg, FindOutput(out_pin),
+                                                   FindOutput(out_pin + 1)));
+      out_pin += 2;
     } else {  // mode 6
       lightbulb_controller.reset(
           new LightController(lb_cfg, FindOutput(out_pin++)));
