@@ -633,11 +633,9 @@ function updateComponent(cd) {
       if (cd.type == 11) { // kLightBulb
         if(lastInfo.sys_mode == 5) {
           headText = "CCT";
-        }
-          else if(lastInfo.sys_mode == 6) {
+        } else if(lastInfo.sys_mode == 6) {
           headText = "Light";
-        }
-        else {
+        } else {
           headText = "RGB";
         }
         if (cd.name) headText += ` (${cd.name})`;
@@ -1631,8 +1629,7 @@ function setPreviewColor(c) {
   // use fixed 100% for v, because we want to control brightness over pwm frequency
   if(lastInfo.sys_mode == 5) {
     [r, g, b] = colortemp2rgb(t, 100);
-  }
-  else {
+  } else {
     [r, g, b] = hsv2rgb(h, s, 100);
   }
 
