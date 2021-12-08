@@ -23,17 +23,16 @@ namespace shelly {
 
 class LightBulbController {
  public:
+  enum class BulbType { kBrightness = 0, kColortemperature = 1, kHueSat = 2 };
+
   explicit LightBulbController(struct mgos_config_lb *cfg);
   LightBulbController(const LightBulbController &other) = delete;
   virtual ~LightBulbController();
 
   virtual void UpdateOutput() = 0;
 
-  virtual bool SupportsColor() {
-    return false;
-  }
-  virtual bool SupportsTemperature() {
-    return false;
+  virtual BulbType Type() {
+    return BulbType::kBrightness;
   }
 
   bool IsOn() const;

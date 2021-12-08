@@ -38,8 +38,8 @@ class RGBWController : public LightBulbController {
 
   void UpdateOutput() override;
 
-  bool SupportsColor() override {
-    return true;
+  BulbType Type() override {
+    return BulbType::kHueSat;
   }
 
  protected:

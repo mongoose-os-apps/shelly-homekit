@@ -105,7 +105,7 @@ Status LightBulb::Init() {
 
   // HAP forbids simultaneous presence of color temperature and hue/saturation
   // to be able to distinguish between RGB and CCT light bulbs
-  if (controller_->SupportsTemperature()) {
+  if (controller_->Type() == LightBulbController::BulbType::kColortemperature) {
     // CCT Mode
     // Color Temperature
     colortemperature_characteristic = new mgos::hap::UInt32Characteristic(
@@ -130,7 +130,7 @@ Status LightBulb::Init() {
         },
         kHAPCharacteristicDebugDescription_ColorTemperature);
     AddChar(colortemperature_characteristic);
-  } else if (controller_->SupportsColor()) {
+  } else if (controller_->Type() == LightBulbController::BulbType::kHueSat) {
     // RGB(W) Mode
     // Hue
     hue_characteristic = new mgos::hap::UInt32Characteristic(
@@ -284,11 +284,11 @@ StatusOr<std::string> LightBulb::GetInfoJSON() const {
       " brightness: %d, hue: %d, saturation: %d, "
       " in_inverted: %B, initial: %d, in_mode: %d, "
       "auto_off: %B, auto_off_delay: %.3f, transition_time: %d, "
-      "colortemperature: %d}",
+      "colortemperature: %d, bulb_type: %d}",
       id(), type(), cfg_->name, cfg_->state, cfg_->brightness, cfg_->hue,
       cfg_->saturation, cfg_->in_inverted, cfg_->initial_state, cfg_->in_mode,
       cfg_->auto_off, cfg_->auto_off_delay, cfg_->transition_time,
-      cfg_->colortemperature);
+      cfg_->colortemperature, controller_->Type());
 }
 
 Status LightBulb::SetConfig(const std::string &config_json,

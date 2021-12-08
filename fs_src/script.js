@@ -532,6 +532,15 @@ function findOrAddContainer(cd) {
     case 11: // RGB
       c = el("rgb_template").cloneNode(true);
       c.id = elId;
+
+      let value = cd.bulb_type;
+      let showct = (value == 1)
+      let showcolor = (value == 2)
+      el(c ,"hue_container").style.display              = showcolor ? "block" : "none";
+      el(c ,"saturation_container").style.display       = showcolor ? "block" : "none";
+      el(c ,"colortemperature_container").style.display = showct ? "block" : "none";
+      el(c ,"color_container").style.display = showct || showcolor ? "block" : "none";
+
       el(c, "state").onchange = function (ev) {
         setComponentState(c, rgbState(c, !c.data.state), el(c, "set_spinner"));
         markInputChanged(ev);
@@ -544,7 +553,7 @@ function findOrAddContainer(cd) {
       el(c, "colortemperature").onchange =
       el(c, "brightness").onchange = function (ev) {
         setComponentState(c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
-        setPreviewColor(c);
+        setPreviewColor(c, cd.bulb_type);
         markInputChanged(ev);
       };
       el(c, "auto_off").onchange = function (ev) {
@@ -631,12 +640,12 @@ function updateComponent(cd) {
       }
 
       if (cd.type == 11) { // kLightBulb
-        if(lastInfo.sys_mode == 5) {
+        if(cd.bulb_type == 1) {
           headText = "CCT";
-        } else if(lastInfo.sys_mode == 6) {
-          headText = "Light";
-        } else {
+        } else if(cd.bulb_type == 2) {
           headText = "RGB";
+        } else {
+          headText = "Light";
         }
         if (cd.name) headText += ` (${cd.name})`;
         updateInnerText(el(c, "head"), headText);
@@ -651,7 +660,7 @@ function updateComponent(cd) {
         slideIfNotModified(el(c, "saturation"), cd.saturation);
         slideIfNotModified(el(c, "brightness"), cd.brightness);
         setValueIfNotModified(el(c, "transition_time"), cd.transition_time);
-        setPreviewColor(c);
+        setPreviewColor(c, cd.bulb_type);
       }
       break;
     }
@@ -791,6 +800,7 @@ function updateElement(key, value, info) {
         if (el("sys_mode_4")) el("sys_mode_4").remove();
         if (el("sys_mode_5")) el("sys_mode_5").remove();
         if (el("sys_mode_6")) el("sys_mode_6").remove();
+        if (el("sys_mode_7")) el("sys_mode_7").remove();
       }
       updateInnerText(el(key), value);
       break;
@@ -905,12 +915,6 @@ function updateElement(key, value, info) {
       else if (el("sys_mode_2")) el("sys_mode_2").remove();
       break;
     case "sys_mode":
-      let showct = (value == 5)
-      let showcolor = (value == 3) || (value == 4)
-      el("hue_container").style.display              = showcolor ? "block" : "none";
-      el("saturation_container").style.display       = showcolor ? "block" : "none";
-      el("colortemperature_container").style.display = showct ? "block" : "none";
-      el("color_container").style.display = showct || showcolor ? "block" : "none";
       selectIfNotModified(el("sys_mode"), value);
       break;
     case "sys_temp":
@@ -1620,14 +1624,14 @@ el("revert_btn").onclick = function () {
   downloadUpdate(stockURL, el("fw_spinner"), el("revert_status"));
 };
 
-function setPreviewColor(c) {
+function setPreviewColor(c, bulb_type) {
   let h = el(c, "hue").value / 360;
   let s = el(c, "saturation").value / 100;
   let t = el(c, "colortemperature").value;
   let r, g, b;
 
   // use fixed 100% for v, because we want to control brightness over pwm frequency
-  if(lastInfo.sys_mode == 5) {
+  if(bulb_type == 1) {
     [r, g, b] = colortemp2rgb(t, 100);
   } else {
     [r, g, b] = hsv2rgb(h, s, 100);

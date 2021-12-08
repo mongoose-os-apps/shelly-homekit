@@ -55,12 +55,16 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       (struct mgos_config_lb *) mgos_sys_config_get_lb4(),
   };
 
+  int mode = mgos_sys_config_get_shelly_mode();
+
   int ndev = 1;
 
-  if (mgos_sys_config_get_shelly_mode() == 5) {
+  if (mode == 5) {
     ndev = 2;
-  } else if (mgos_sys_config_get_shelly_mode() == 6) {
+  } else if (mode == 6) {
     ndev = 4;
+  } else if (mode == 7) {
+    ndev = 2;
   }
 
   int out_pin = 1;
@@ -69,20 +73,25 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   for (int i = 0; i < ndev; i++) {
     lb_cfg = lb_cfgs[i];
 
-    if (mgos_sys_config_get_shelly_mode() == 3) {
+    if (mode == 3) {
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
       FindOutput(4)->SetStatePWM(0.0f, "cc");
-    } else if (mgos_sys_config_get_shelly_mode() == 4) {
+    } else if (mode == 4) {
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
-    } else if (mgos_sys_config_get_shelly_mode() == 5) {
+    } else if (mode == 5) {
       lightbulb_controller.reset(new CCTController(lb_cfg, FindOutput(out_pin),
                                                    FindOutput(out_pin + 1)));
       out_pin += 2;
-    } else {  // mode 6
+    } else if (mode == 6) {
       lightbulb_controller.reset(
           new LightController(lb_cfg, FindOutput(out_pin++)));
+    } else {  // mode 7 (RGB+W)
+      lightbulb_controller.reset(new RGBWController(
+          lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
+      mode = 6;  // last bulb is w
+      out_pin += 3;
     }
 
     hap_light.reset(new hap::LightBulb(

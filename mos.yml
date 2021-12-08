@@ -32,7 +32,7 @@ config_schema:
   - ["sntp.enable", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - CCT (if supported), 6 - White Mode (if supported)"}]
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - CCT (if supported), 6 - White Mode (if supported), 7 RGB+W (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]

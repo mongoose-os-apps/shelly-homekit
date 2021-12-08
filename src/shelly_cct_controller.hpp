@@ -37,8 +37,8 @@ class CCTController : public LightBulbController {
 
   void UpdateOutput() override;
 
-  bool SupportsTemperature() override {
-    return true;
+  BulbType Type() override {
+    return BulbType::kColortemperature;
   }
 
  protected:
