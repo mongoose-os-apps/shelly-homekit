@@ -10,3 +10,4 @@ core-*
 *.zip
 flash-shelly.auth.yaml
 fs/conf*.json
+.venv
