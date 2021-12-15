@@ -282,6 +282,7 @@ function nDigitString(num, digits) {
 function rgbSetConfig(c) {
   let name = el(c, "name").value;
   let initialState = el(c, "initial").value;
+  let svcType = el(c, "svc_type").value;
   let autoOff = el(c, "auto_off").checked;
   let autoOffDelay = el(c, "auto_off_delay").value;
   let spinner = el(c, "save_spinner");
@@ -298,6 +299,7 @@ function rgbSetConfig(c) {
 
   let cfg = {
     name: name,
+    svc_type: svcType,
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
     in_inverted: el(c, "in_inverted").checked,
@@ -599,13 +601,18 @@ function updateComponent(cd) {
         el(c, "power_stats_container").style.display = "block";
       }
       if (cd.svc_type !== undefined) {
+        if (cd.hap_optional !== undefined && cd.hap_optional == 0) {
+          el(c, "svc_type_container").style.display = "none";
+        }
         selectIfNotModified(el(c, "svc_type"), cd.svc_type);
-        if (cd.svc_type == 3) {
-          selectIfNotModified(el(c, "valve_type"), cd.valve_type);
-          el(c, "valve_type_container").style.display = "block";
-          updateInnerText(el(c, "valve_type_label"), "Valve Type:");
-        } else {
-          el(c, "valve_type_container").style.display = "none";
+        if (cd.type != 11) {
+          if (cd.svc_type == 3) {
+            selectIfNotModified(el(c, "valve_type"), cd.valve_type);
+            el(c, "valve_type_container").style.display = "block";
+            updateInnerText(el(c, "valve_type_label"), "Valve Type:");
+          } else {
+            el(c, "valve_type_container").style.display = "none";
+          }
         }
       }
       selectIfNotModified(el(c, "initial"), cd.initial);

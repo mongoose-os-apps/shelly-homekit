@@ -32,7 +32,7 @@ config_schema:
   - ["sntp.enable", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - CCT (if supported), 6 - White Mode (if supported), 7 RGB+W (if supported)"}]
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - RGB+W (if supported), 6 - CCT (if supported), 7 - White Mode (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
@@ -86,6 +86,7 @@ config_schema:
 
   - ["lb", "o", {title: "Light bulb settings", abstract: true}]
   - ["lb.name", "s", "Light bulb", {title: "Accessory name"}]
+  - ["lb.svc_type", "i", 0, {title: "HAP service type, -1 = disable (if available), 0 = normal"}]
   - ["lb.enable", "b", true, {title: "Enable this light in the accessory"}]
   - ["lb.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
   - ["lb.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
@@ -540,7 +541,7 @@ conds:
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
-        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW, 5 - CCT, 6 - White Mode
+        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW, 5 - RGB+W, 6 - CCT, 7 - White
         - ["device.id", "shellyrgbw2-??????"]
         - ["shelly.name", "shellyrgbw2-??????"]
         - ["wifi.ap.ssid", "shellyrgbw2-??????"]

@@ -59,52 +59,60 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   int ndev = 1;
 
-  if (mode == 5) {
+  if (mode == 6) {
     ndev = 2;
-  } else if (mode == 6) {
-    ndev = 4;
   } else if (mode == 7) {
+    ndev = 4;
+  } else if (mode == 5) {
     ndev = 2;
   }
 
   int out_pin = 1;
   bool first_detatched_input = true;
+  bool is_optional = false;
 
   for (int i = 0; i < ndev; i++) {
     lb_cfg = lb_cfgs[i];
 
-    if (mode == 3) {
+    if (mode == 3) {  // RGB
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
       FindOutput(4)->SetStatePWM(0.0f, "cc");
-    } else if (mode == 4) {
+    } else if (mode == 4) {  // RGBW
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
-    } else if (mode == 5) {
+    } else if (mode == 6) {  // CCT
       lightbulb_controller.reset(new CCTController(lb_cfg, FindOutput(out_pin),
                                                    FindOutput(out_pin + 1)));
       out_pin += 2;
-    } else if (mode == 6) {
+      is_optional = true;
+    } else if (mode == 7) {  // White mode
       lightbulb_controller.reset(
           new LightController(lb_cfg, FindOutput(out_pin++)));
-    } else {  // mode 7 (RGB+W)
+      is_optional = true && (mgos_sys_config_get_shelly_mode() != 7);
+    } else {  // mode 5 (RGB+W)
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
-      mode = 6;  // last bulb is w
+      mode = 7;  // last bulb is White
       out_pin += 3;
     }
 
-    hap_light.reset(new hap::LightBulb(
-        i + 1, FindInput(1), std::move(lightbulb_controller), lb_cfg));
+    hap_light.reset(new hap::LightBulb(i + 1, FindInput(1),
+                                       std::move(lightbulb_controller), lb_cfg,
+                                       is_optional));
 
     if (hap_light == nullptr || !hap_light->Init().ok()) {
       return;
     }
 
-    mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-    pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
-    pri_acc->AddService(hap_light.get());
-    comps->emplace_back(std::move(hap_light));
+    bool sw_hidden = is_optional && (lb_cfg->svc_type == -1);
+
+    if (!sw_hidden) {
+      mgos::hap::Accessory *pri_acc = (*accs)[0].get();
+      pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
+      pri_acc->AddService(hap_light.get());
+      comps->emplace_back(std::move(hap_light));
+    }
 
     if (lb_cfg->in_mode == 3 && first_detatched_input) {
       hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
