@@ -59,11 +59,11 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   int ndev = 1;
 
-  if (mode == 6) {
+  if (mode == (int) Mode::kCCT) {
     ndev = 2;
-  } else if (mode == 7) {
+  } else if (mode == (int) Mode::kWhite) {
     ndev = 4;
-  } else if (mode == 5) {
+  } else if (mode == (int) Mode::kRGBpW) {
     ndev = 2;
   }
 
@@ -74,26 +74,26 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   for (int i = 0; i < ndev; i++) {
     lb_cfg = lb_cfgs[i];
 
-    if (mode == 3) {  // RGB
+    if (mode == (int) Mode::kRGB) {
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
       FindOutput(4)->SetStatePWM(0.0f, "cc");
-    } else if (mode == 4) {  // RGBW
+    } else if (mode == (int) Mode::kRGBW) {
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), FindOutput(4)));
-    } else if (mode == 6) {  // CCT
+    } else if (mode == (int) Mode::kCCT) {
       lightbulb_controller.reset(new CCTController(lb_cfg, FindOutput(out_pin),
                                                    FindOutput(out_pin + 1)));
       out_pin += 2;
       is_optional = true;
-    } else if (mode == 7) {  // White mode
+    } else if (mode == (int) Mode::kWhite) {
       lightbulb_controller.reset(
           new LightController(lb_cfg, FindOutput(out_pin++)));
-      is_optional = true && (mgos_sys_config_get_shelly_mode() != 7);
-    } else {  // mode 5 (RGB+W)
+      is_optional = (mgos_sys_config_get_shelly_mode() != (int) Mode::kRGBpW);
+    } else {  // Mode::kRGBpW
       lightbulb_controller.reset(new RGBWController(
           lb_cfg, FindOutput(1), FindOutput(2), FindOutput(3), nullptr));
-      mode = 7;  // last bulb is White
+      mode = (int) Mode::kWhite;  // last bulb is White
       out_pin += 3;
     }
 
@@ -114,7 +114,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       comps->emplace_back(std::move(hap_light));
     }
 
-    if (lb_cfg->in_mode == 3 && first_detatched_input) {
+    if (lb_cfg->in_mode == (int) InMode::kDetached && first_detatched_input) {
       hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
       first_detatched_input = false;
     }

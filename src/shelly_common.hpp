@@ -107,4 +107,16 @@ enum class InitialState {
   kMax,
 };
 
+enum class Mode {
+  kDefault = 0,
+  kRollerShutter = 1,
+  kGarageDoor = 2,
+  kRGB = 3,
+  kRGBW = 4,
+  kRGBpW = 5,
+  kCCT = 6,
+  kWhite = 7,
+  kMax,
+};
+
 }  // namespace shelly
