@@ -18,6 +18,7 @@
 // Options.
 const maxAuthAge = 24 * 60 * 60;
 const updateCheckInterval = 24 * 60 * 60;
+const uiRefreshInterval = 1;
 
 // Globals.
 let lastInfo = null;
@@ -153,14 +154,22 @@ el("fw_upload_btn").onclick = function () {
 
 el("wifi_save_btn").onclick = function () {
   el("wifi_spinner").className = "spin";
+  let sta_static = el("wifi_ip_en").checked;
+  let sta1_static = el("wifi1_ip_en").checked;
   let data = {
     sta: {
       enable: el("wifi_en").checked,
       ssid: el("wifi_ssid").value,
+      ip: (sta_static ? el("wifi_ip").value : ""),
+      netmask: (sta_static ? el("wifi_netmask").value : ""),
+      gw: (sta_static ? el("wifi_gw").value : ""),
     },
     sta1: {
       enable: el("wifi1_en").checked,
       ssid: el("wifi1_ssid").value,
+      ip: (sta1_static ? el("wifi1_ip").value : ""),
+      netmask: (sta1_static ? el("wifi1_netmask").value : ""),
+      gw: (sta1_static ? el("wifi1_gw").value : ""),
     },
     ap: {
       enable: el("wifi_ap_en").checked,
@@ -457,14 +466,16 @@ function findOrAddContainer(cd) {
     case 2: // Lock
       c = el("sw_template").cloneNode(true);
       c.id = elId;
-      el(c, "state").onchange = function () {
+      el(c, "state").onchange = function (ev) {
         setComponentState(c, {state: !c.data.state}, el(c, "set_spinner"));
+        markInputChanged(ev);
       };
       el(c, "save_btn").onclick = function () {
         swSetConfig(c);
       };
-      el(c, "auto_off").onchange = function () {
+      el(c, "auto_off").onchange = function (ev) {
         el(c, "auto_off_delay_container").style.display = this.checked ? "block" : "none";
+        markInputChanged(ev);
       };
       break;
     case 3: // Stateless Programmable Switch (aka input in detached mode).
@@ -521,20 +532,23 @@ function findOrAddContainer(cd) {
     case 11: // RGB
       c = el("rgb_template").cloneNode(true);
       c.id = elId;
-      el(c, "state").onchange = function () {
+      el(c, "state").onchange = function (ev) {
         setComponentState(c, rgbState(c, !c.data.state), el(c, "set_spinner"));
+        markInputChanged(ev);
       };
       el(c, "save_btn").onclick = function () {
         rgbSetConfig(c);
       };
       el(c, "hue").onchange =
       el(c, "saturation").onchange =
-      el(c, "brightness").onchange = function () {
+      el(c, "brightness").onchange = function (ev) {
         setComponentState(c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
         setPreviewColor(c);
+        markInputChanged(ev);
       };
-      el(c, "auto_off").onchange = function () {
+      el(c, "auto_off").onchange = function (ev) {
         el(c, "auto_off_delay_container").style.display = this.checked ? "block" : "none";
+        markInputChanged(ev);
       };
       break;
     default:
@@ -745,6 +759,12 @@ function updateComponent(cd) {
       console.log(`Unhandled component type: ${cd.type}`);
   }
   c.data = cd;
+  addInputChangeHandlers(c);
+}
+
+function updateStaticIPVisibility() {
+  el(`wifi_ip_container`).style.display = (el(`wifi_ip_en`).checked ? "block" : "none");
+  el(`wifi1_ip_container`).style.display = (el(`wifi1_ip_en`).checked ? "block" : "none");
 }
 
 function updateElement(key, value, info) {
@@ -786,7 +806,17 @@ function updateElement(key, value, info) {
     case "wifi_pass":
     case "wifi1_pass":
     case "wifi_ap_pass":
+    case "wifi_netmask":
+    case "wifi1_netmask":
+    case "wifi_gw":
+    case "wifi1_gw":
       setValueIfNotModified(el(key), value);
+      break;
+    case "wifi_ip":
+    case "wifi1_ip":
+      setValueIfNotModified(el(key), value);
+      checkIfNotModified(el(`${key}_en`), (value != ""));
+      updateStaticIPVisibility();
       break;
     case "host":
     case "wifi_conn_ip":
@@ -1268,7 +1298,12 @@ function onLoad() {
       reloadPage();
     }
   }
-  setInterval(refreshUI, 1000);
+  setInterval(refreshUI, uiRefreshInterval * 1000);
+  el("wifi_ip_en").onchange = el("wifi1_ip_en").onchange = function(ev) {
+    updateStaticIPVisibility();
+    markInputChanged(ev);
+  };
+  addInputChangeHandlers(document);
   refreshUI();
 }
 
@@ -1310,43 +1345,48 @@ function refreshUI() {
 }
 
 function setValueIfNotModified(e, newValue) {
-  // do not update the value of the input field if
-  if (e.selected ||                    // the user has selected / highlighted the input field OR
-    e.lastSetValue === e.value ||      // the value has not been changed by the user OR
-    (e.lastSetValue !== undefined &&   // a value has previously been set AND
-      e.lastSetValue !== e.value)) {   // it is not currently the same as the visible value
+  // do not update the value of the input field if the field currently has
+  // focus or has changed since changes have been last saved.
+  if (document.activeElement === e || e.dataset.changed == "true" || e.value === newValue) {
     return;
   }
-  e.value = e.lastSetValue = newValue;
+  e.value = newValue;
 }
 
 function checkIfNotModified(e, newState) {
   // do not update the checked value if
-  if (e.lastSetValue === e.checked ||  // the value has not changed (unnecessary) OR
-    (e.lastSetValue !== undefined &&   // a value has previously been set AND
-      e.lastSetValue !== e.checked))   // it is not currently the same as the visible value
-    return;
-  e.checked = e.lastSetValue = newState;
-}
-
-function resetLastSetValue() {
-  let els = document.getElementsByTagName("input");
-  for (let i = 0; i < els.length; i++) {
-    if (els[i].lastSetValue) els[i].lastSetValue = undefined;
-  }
+  if (newState === e.checked || e.dataset.changed === "true") return;
+  e.checked = newState;
 }
 
 function slideIfNotModified(e, newValue) {
-  // do not update the value of the input field if
-  if (e.lastSetValue === e.value &&    // the value has not been changed by the user AND
-    (e.lastSetValue !== undefined &&   // a value has previously been set AND
-      e.lastSetValue !== e.value))     // it is not currently the same as the visible value
-    return;
-  e.value = e.lastSetValue = newValue.toString();
+  if (newValue === e.value || e.dataset.changed === "true") return;
+  e.value = newValue.toString();
 }
 
 function selectIfNotModified(e, newSelection) {
   setValueIfNotModified(e, newSelection);
+}
+
+function markInputChanged(ev) {
+  console.log("CHANGED", ev.target);
+  ev.target.dataset.changed = "true";
+}
+
+function addInputChangeHandlers(el) {
+  let inputs = el.getElementsByTagName("input");
+  for (let i = 0; i < inputs.length; i++) {
+    if (inputs[i].onchange) continue;
+    inputs[i].dataset.changed = "false";
+    inputs[i].onchange = markInputChanged;
+  }
+}
+
+function resetLastSetValue() {
+  let inputs = document.getElementsByTagName("input");
+  for (let i = 0; i < inputs.length; i++) {
+    inputs[i].dataset.changed = "false";
+  }
 }
 
 function updateInnerText(e, newInnerText) {

@@ -44,10 +44,12 @@ std::string WifiConfig::ToJSON() const {
   std::string sta1_pw = ScreenPassword(sta1.pass);
   return mgos::JSONPrintStringf(
       "{ap: {enable: %B, ssid: %Q, pass: %Q}, "
-      "sta: {enable: %B, ssid: %Q, pass: %Q}, "
-      "sta1: {enable: %B, ssid: %Q, pass: %Q}}",
+      "sta: {enable: %B, ssid: %Q, pass: %Q, ip: %Q, netmask: %Q, gw: %Q}, "
+      "sta1: {enable: %B, ssid: %Q, pass: %Q, ip: %Q, netmask: %Q, gw: %Q}}",
       ap.enable, ap.ssid.c_str(), ap_pw.c_str(), sta.enable, sta.ssid.c_str(),
-      sta_pw.c_str(), sta1.enable, sta1.ssid.c_str(), sta1_pw.c_str());
+      sta_pw.c_str(), sta.ip.c_str(), sta.netmask.c_str(), sta.gw.c_str(),
+      sta1.enable, sta1.ssid.c_str(), sta1_pw.c_str(), sta.ip.c_str(),
+      sta.netmask.c_str(), sta.gw.c_str());
 }
 
 }  // namespace shelly

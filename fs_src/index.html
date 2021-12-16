@@ -117,13 +117,13 @@
      target="_blank">?</a>
   <h1>WiFi Settings</h1>
 
-  <div class="tab_wrapper">
+  <div class="tab_wrapper" id="wifi_container">
     <input class="tab_radio" id="one" name="group" type="radio" checked>
     <input class="tab_radio" id="two" name="group" type="radio">
     <input class="tab_radio" id="three" name="group" type="radio">
     <div class="tabs">
       <label class="tab" id="tab1" for="one">WiFi 1</label>
-      <label class="tab" id="tab2" for="two">WiFI 2</label>
+      <label class="tab" id="tab2" for="two">WiFi 2</label>
       <label class="tab" id="tab3" for="three">AP</label>
     </div>
     <div class="panels">
@@ -144,6 +144,27 @@
             <label>Password:</label>
             <input type="password" id="wifi_pass" placeholder="(empty)">
           </div>
+          <div class="form-control">
+            <label>Static IP:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi_ip_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="wifi_ip_container">
+            <div class="form-control">
+              <label>IP:</label>
+              <input type="text" id="wifi_ip">
+            </div>
+            <div class="form-control">
+              <label>Netmask:</label>
+              <input type="text" id="wifi_netmask">
+            </div>
+            <div class="form-control">
+              <label>Gateway:</label>
+              <input type="text" id="wifi_gw">
+            </div>
+          </div>
         </div>
       </div>
       <div class="panel" id="panel2">
@@ -162,6 +183,27 @@
           <div class="form-control">
             <label>Password:</label>
             <input type="password" id="wifi1_pass" placeholder="(empty)">
+          </div>
+          <div class="form-control">
+            <label>Static IP:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi1_ip_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="wifi1_ip_container">
+            <div class="form-control">
+              <label>IP:</label>
+              <input type="text" id="wifi1_ip">
+            </div>
+            <div class="form-control">
+              <label>Netmask:</label>
+              <input type="text" id="wifi1_netmask">
+            </div>
+            <div class="form-control">
+              <label>Gateway:</label>
+              <input type="text" id="wifi1_gw">
+            </div>
           </div>
         </div>
       </div>

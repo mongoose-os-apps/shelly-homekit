@@ -109,21 +109,20 @@ WifiConfigManager::~WifiConfigManager() {
 Status WifiConfigManager::SetConfig(const WifiConfig &cfg) {
   Status st = ValidateAPConfig(cfg.ap);
   if (!st.ok()) {
-    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid %s config", "AP");
+    return mgos::Annotatef(st, "Invalid %s config", "AP");
   }
   st = ValidateSTAConfig(cfg.sta);
   if (!st.ok()) {
-    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid %s config", "STA");
+    return mgos::Annotatef(st, "Invalid %s config", "STA");
   }
   st = ValidateSTAConfig(cfg.sta1);
   if (!st.ok()) {
-    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid %s config", "STA1");
+    return mgos::Annotatef(st, "Invalid %s config", "STA1");
   }
   bool sta_config_changed = !(cfg.sta == cur_.sta) || !(cfg.sta1 == cur_.sta1);
   ap_config_changed_ = !(cfg.ap == cur_.ap);
-  std::string cs = cur_.ToJSON();
-  LOG(LL_INFO, ("New config: %s %d %d", cs.c_str(), sta_config_changed,
-                ap_config_changed_));
+  LOG(LL_INFO, ("New config: %s %d %d", cfg.ToJSON().c_str(),
+                sta_config_changed, ap_config_changed_));
   if (!sta_config_changed && !ap_config_changed_) return Status::OK();
   new_ = cfg;
   connect_failed_ = false;
@@ -296,8 +295,8 @@ void WifiConfigManager::Process() {
         LOG(LL_ERROR, ("Connection failed"));
         connect_failed_ = true;
         if (act_ == &new_) {
-          std::string cs = cur_.ToJSON();
-          LOG(LL_INFO, ("Reverting to previous config: %s", cs.c_str()));
+          LOG(LL_INFO,
+              ("Reverting to previous config: %s", cur_.ToJSON().c_str()));
           act_ = &cur_;
         }
         SetState(State::kDisconnect);
@@ -475,55 +474,8 @@ void ReportClientRequest(const std::string &client_addr) {
   s_mgr->ReportClientRequest(client_addr);
 }
 
-static void GetWifiConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
-                                 struct mg_rpc_frame_info *fi,
-                                 struct mg_str args) {
-  std::string cfg_json = s_mgr->GetConfig().ToJSON();
-  mg_rpc_send_responsef(ri, "%s", cfg_json.c_str());
-  (void) cb_arg;
-  (void) fi;
-  (void) args;
-}
-
-static void SetWifiConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
-                                 struct mg_rpc_frame_info *fi,
-                                 struct mg_str args) {
-  ReportRPCRequest(ri);
-  WifiConfig cfg = s_mgr->GetConfig();
-  int8_t ap_enable = -1, sta_enable = -1, sta1_enable = -1;
-  char *ap_ssid = nullptr, *ap_pass = nullptr;
-  char *sta_ssid = nullptr, *sta_pass = nullptr;
-  char *sta1_ssid = nullptr, *sta1_pass = nullptr;
-  json_scanf(args.p, args.len, ri->args_fmt, &ap_enable, &ap_ssid, &ap_pass,
-             &sta_enable, &sta_ssid, &sta_pass, &sta1_enable, &sta1_ssid,
-             &sta1_pass);
-  mgos::ScopedCPtr o1(ap_ssid), o2(ap_pass);
-  mgos::ScopedCPtr o3(sta_ssid), o4(sta_pass), o5(sta1_ssid), o6(sta1_pass);
-  if (ap_enable != -1) cfg.ap.enable = ap_enable;
-  if (ap_ssid != nullptr) cfg.ap.ssid = ap_ssid;
-  if (ap_pass != nullptr) cfg.ap.pass = ap_pass;
-  if (sta_enable != -1) cfg.sta.enable = sta_enable;
-  if (sta_ssid != nullptr) cfg.sta.ssid = sta_ssid;
-  if (sta_pass != nullptr) cfg.sta.pass = sta_pass;
-  if (sta1_enable != -1) cfg.sta1.enable = sta1_enable;
-  if (sta1_ssid != nullptr) cfg.sta1.ssid = sta1_ssid;
-  if (sta1_pass != nullptr) cfg.sta1.pass = sta1_pass;
-  Status st = s_mgr->SetConfig(cfg);
-  SendStatusResp(ri, st);
-  (void) cb_arg;
-  (void) fi;
-  (void) args;
-}
-
 void InitWifiConfigManager() {
   s_mgr.reset(new WifiConfigManager());
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.GetWifiConfig", "",
-                     GetWifiConfigHandler, nullptr);
-  mg_rpc_add_handler(mgos_rpc_get_global(), "Shelly.SetWifiConfig",
-                     ("{ap: {enable: %B, ssid: %Q, pass: %Q}, "
-                      "sta: {enable: %B, ssid: %Q, pass: %Q}, "
-                      "sta1: {enable: %B, ssid: %Q, pass: %Q}}"),
-                     SetWifiConfigHandler, nullptr);
 }
 
 }  // namespace shelly
