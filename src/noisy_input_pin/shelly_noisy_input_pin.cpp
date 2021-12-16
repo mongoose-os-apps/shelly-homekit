@@ -34,6 +34,8 @@ typedef uint32_t sample_t;
 inline static sample_t ReadGPIOReg() {
   return READ_PERI_REG(GPIO_IN_REG);
 }
+#else
+typedef uint16_t sample_t;
 #endif
 
 namespace shelly {

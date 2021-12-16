@@ -550,9 +550,11 @@ conds:
 
   - when: mos.platform != "ubuntu"
     apply:
+      sources:
+        - src/noisy_input_pin
+        - src/wifi_config
       config_schema:
         - ["wifi.ap.pass", ""]
-        - ["wifi.ap.keep_enabled", false]
         - ["wifi.ap.ip", "192.168.33.1"]
         - ["wifi.ap.gw", ""]
         - ["wifi.ap.dhcp_start", "192.168.33.2"]
@@ -560,9 +562,11 @@ conds:
         - ["wifi.sta_connect_timeout", 15]
         - ["wifi.sta_roam_rssi_thr", -80]
         - ["wifi.sta_roam_interval", 600]
+        - ["wifi.ap.keep_enabled", "b", false, {title: "Keep WiFi AP enabled even when STA is connected"}]
         # This is a mitigation for devices dropping of wifi and never coming back.
-        # While this is being investigated, the workaround is to reboot if not connected for 5 minutes when supposed to be.
-        - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
+        # This is believed to be fixed, default has been flipped back to 0 in 2.11.0.
+        # Consider removing in later releases.
+        - ["shelly.wifi_connect_reboot_timeout", "i", 0, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
         - location: https://github.com/mongoose-os-libs/adc
         - location: https://github.com/mongoose-os-libs/pwm
@@ -581,6 +585,7 @@ conds:
     apply:
       sources:
         - src/mock/pwm
+        - src/mock/wifi_config
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
@@ -638,14 +643,21 @@ conds:
     apply:
       libs:
         # adding bt-common enables BLE support at compile time 
-        - origin: https://github.com/mongoose-os-libs/bt-common
-        - origin: https://github.com/mongoose-os-libs/ethernet
+        #- origin: https://github.com/mongoose-os-libs/bt-common
+        #- origin: https://github.com/mongoose-os-libs/ethernet
       build_vars:
         APP_SLOT_SIZE: 0x1b0000
         MGOS_HAP_BLE: 1
         MGOS_ROOT_FS_TYPE: LFS
         ESP_IDF_EXTRA_PARTITION: "aux,data,0x88,0x3f0000,48K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
       cdefs:
+        LED_GPIO: 13
+        LED_ON: 1
+        BTN_GPIO: 34
+        BTN_DOWN: 0
         PRODUCT_HW_REV: '"1.0"'
         STOCK_FW_MODEL: '"XXX"'
         SHELLY_HAVE_PM: 0
@@ -655,9 +667,9 @@ conds:
         # - ["bt.enable", true]
         - ["bt.adv_enable", false] # ADK controls advertisement.
         - ["bt.keep_enabled", true]
-        - ["bt.random_address", true]
         - ["device.id", "ShellyT32-????"]
         - ["shelly.name", "ShellyT32-????"]
+        - ["wifi.ap.ssid", "ShellyT32-??????"]
         - ["sw1", "sw", {"title": "SW settings"}]
         - ["sw1.name", "SWT32"]
         - ["sw1.in_mode", 0]

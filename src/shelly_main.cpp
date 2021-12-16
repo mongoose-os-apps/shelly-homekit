@@ -25,9 +25,6 @@
 #include "mgos_http_server.h"
 #include "mgos_ota.h"
 #include "mgos_rpc.h"
-#ifdef MGOS_HAVE_WIFI
-#include "mgos_wifi.h"
-#endif
 
 #include "mongoose.h"
 
@@ -59,6 +56,7 @@
 #include "shelly_rpc_service.hpp"
 #include "shelly_switch.hpp"
 #include "shelly_temp_sensor.hpp"
+#include "shelly_wifi_config.hpp"
 
 #define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
@@ -163,10 +161,7 @@ static void DoReset(void *arg) {
   }
   s_identify_count = 2;
   LOG(LL_INFO, ("Performing reset"));
-#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
-  mgos_sys_config_set_wifi_sta_enable(false);
-  mgos_sys_config_set_wifi_ap_enable(true);
-#endif
+  ResetWifiConfig();
   mgos_sys_config_set_rpc_acl(nullptr);
   mgos_sys_config_set_rpc_acl_file(nullptr);
   mgos_sys_config_set_rpc_auth_file(nullptr);
@@ -174,9 +169,6 @@ static void DoReset(void *arg) {
   if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
     remove(AUTH_FILE_NAME);
   }
-#ifdef MGOS_SYS_CONFIG_HAVE_WIFI
-  mgos_wifi_setup((struct mgos_config_wifi *) mgos_sys_config_get_wifi());
-#endif
   CheckLED(LED_GPIO, LED_ON);
 }
 
@@ -372,6 +364,8 @@ static void CheckLED(int pin, bool led_act) {
   if (pin < 0) return;
   int on_ms = 0, off_ms = 0;
   static int s_on_ms = 0, s_off_ms = 0;
+  const WifiInfo &wi = GetWifiInfo();
+  const WifiConfig &wc = GetWifiConfig();
   // Identify sequence requested by controller.
   if (s_identify_count > 0) {
     LOG(LL_DEBUG, ("LED: identify (%d)", s_identify_count));
@@ -387,22 +381,24 @@ static void CheckLED(int pin, bool led_act) {
     off_ms = 0;
     goto out;
   }
-#ifdef MGOS_HAVE_WIFI
   // Are we connecting to wifi right now?
-  if ((mgos_sys_config_get_wifi_sta_enable() ||
-       mgos_sys_config_get_wifi_sta1_enable() ||
-       mgos_sys_config_get_wifi_sta2_enable()) &&
-      mgos_wifi_get_status() != MGOS_WIFI_IP_ACQUIRED) {
+  if (wi.sta_connecting) {
     LOG(LL_DEBUG, ("LED: WiFi"));
     on_ms = 200;
     off_ms = 200;
     goto out;
   }
-#endif
   if (mgos_ota_is_in_progress()) {
     LOG(LL_DEBUG, ("LED: OTA"));
     on_ms = 250;
     off_ms = 250;
+    goto out;
+  }
+  // Indicate WiFi provisioning status.
+  if (wi.ap_running && !(wc.sta.enable || wc.sta1.enable)) {
+    LOG(LL_DEBUG, ("LED: WiFi provisioning"));
+    off_ms = 25;
+    on_ms = 875;
     goto out;
   }
   // HAP server status (if WiFi is provisioned).
@@ -411,20 +407,10 @@ static void CheckLED(int pin, bool led_act) {
     off_ms = 875;
     on_ms = 25;
     LOG(LL_DEBUG, ("LED: HAP provisioning"));
-  } else {
-#ifdef MGOS_HAVE_WIFI
-    // Indicate WiFi provisioning status.
-    if (mgos_sys_config_get_wifi_ap_enable()) {
-      LOG(LL_DEBUG, ("LED: WiFi provisioning"));
-      off_ms = 25;
-      on_ms = 875;
-    }
-#endif
-    if (on_ms == 0 && !HAPAccessoryServerIsPaired(&s_server)) {
-      LOG(LL_DEBUG, ("LED: Pairing"));
-      off_ms = 500;
-      on_ms = 500;
-    }
+  } else if (!HAPAccessoryServerIsPaired(&s_server)) {
+    LOG(LL_DEBUG, ("LED: Pairing"));
+    off_ms = 500;
+    on_ms = 500;
   }
 out:
   if (on_ms > 0) {
@@ -545,17 +531,16 @@ static void StatusTimerCB(void *arg) {
                   (unsigned long) mgos_get_heap_size(),
                   (sys_temp.ok() ? sys_temp.ValueOrDie() : 0), status.c_str()));
   }
-#ifdef MGOS_HAVE_WIFI
-  if (mgos_sys_config_get_wifi_sta_enable() &&
+#ifdef MGOS_SYS_CONFIG_HAVE_SHELLY_WIFI_CONNECT_REBOOT_TIMEOUT
+  const WifiConfig &wc = GetWifiConfig();
+  if ((wc.sta.enable || wc.sta1.enable) &&
       mgos_sys_config_get_shelly_wifi_connect_reboot_timeout() > 0) {
     static int64_t s_last_connected = 0;
     int64_t now = mgos_uptime_micros();
-    struct mgos_net_ip_info ip_info;
-    if (mgos_net_get_ip_info(MGOS_NET_IF_TYPE_WIFI, MGOS_NET_IF_WIFI_STA,
-                             &ip_info)) {
+    const WifiInfo &wi = GetWifiInfo();
+    if (!wi.sta_connected) {
       s_last_connected = now;
-    } else if (AllComponentsIdle()) {  // Only reboot if all components are
-                                       // idle.
+    } else if (AllComponentsIdle()) {  // Only if all components are idle.
       int64_t timeout_micros =
           mgos_sys_config_get_shelly_wifi_connect_reboot_timeout() * 1000000;
       if (now - s_last_connected > timeout_micros) {
@@ -564,7 +549,7 @@ static void StatusTimerCB(void *arg) {
       }
     }
   }
-#endif  // MGOS_HAVE_WIFI
+#endif  // MGOS_SYS_CONFIG_HAVE_SHELLY_WIFI_CONNECT_REBOOT_TIMEOUT
   (void) arg;
 }
 
@@ -580,8 +565,9 @@ bool mgos_sys_config_get_wifi_sta_enable(void) {
 }
 #endif
 
-static bool shelly_cfg_migrate(void) {
+static bool shelly_cfg_migrate(bool *reboot_required) {
   bool changed = false;
+  *reboot_required = false;
   if (mgos_sys_config_get_shelly_cfg_version() == 0) {
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
@@ -899,6 +885,11 @@ static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
     nc->flags |= MG_F_SEND_AND_CLOSE;
     return;
   }
+  {
+    char addr[32] = {};
+    mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
+    ReportClientRequest(addr);
+  }
   mg_http_serve_file(nc, hm, file, mg_mk_str(type),
                      mg_mk_str("Content-Encoding: gzip\r\nPragma: no-cache"));
   (void) user_data;
@@ -1008,9 +999,15 @@ void InitApp() {
   HAPAccessoryServerCreate(&s_server, &server_options, &platform, &s_callbacks,
                            nullptr /* context */);
 
-  if (shelly_cfg_migrate()) {
+  bool reboot_required = false;
+  if (shelly_cfg_migrate(&reboot_required)) {
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          nullptr /* msg */);
+    if (reboot_required) {
+      mgos_system_restart_after(500);
+      LOG(LL_INFO, ("Configuration change requires %s", "reboot"));
+      return;
+    }
   }
 
   LOG(LL_INFO, ("=== Creating peripherals"));
@@ -1037,6 +1034,8 @@ void InitApp() {
   mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
 
   SetupButton(BTN_GPIO, BTN_DOWN);
+
+  InitWifiConfigManager();
 
   (void) s_ip_storage;
 }

@@ -15,20 +15,39 @@
  * limitations under the License.
  */
 
-#include "shelly_common.hpp"
+#include "shelly_wifi_config.hpp"
 
-#include "HAP.h"
-
-extern "C" struct mg_rpc_request_info;
+#include "mgos.hpp"
 
 namespace shelly {
 
-bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
-                             HAPPlatformKeyValueStoreRef kvs,
-                             HAPPlatformTCPStreamManagerRef tcpm);
+static WifiConfig s_cfg;
 
-void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st);
+WifiConfig GetWifiConfig() {
+  return s_cfg;
+}
 
-void ReportRPCRequest(struct mg_rpc_request_info *ri);
+Status SetWifiConfig(const WifiConfig &cfg) {
+  std::string cs = cfg.ToJSON();
+  LOG(LL_INFO, ("Set wifi config to: %s", cs.c_str()));
+  s_cfg = cfg;
+  return Status::OK();
+}
+
+void ResetWifiConfig() {
+  s_cfg = WifiConfig();
+}
+
+WifiInfo GetWifiInfo() {
+  WifiInfo empty;
+  return empty;
+}
+
+void ReportClientRequest(const std::string &client_addr) {
+  (void) client_addr;
+}
+
+void InitWifiConfigManager() {
+}
 
 }  // namespace shelly
