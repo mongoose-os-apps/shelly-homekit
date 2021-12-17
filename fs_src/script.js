@@ -825,9 +825,7 @@ function updateElement(key, value, info) {
     case "wifi_status":
       updateInnerText(el(key), value);
       el(`${key}_container`).style.display = (value ? "block" : "none");
-      break;
-    case "wifi_ip":
-      if (value !== undefined) {
+      if (key == "wifi_conn_rssi" && value != 0) {
         // These only make sense if we are connected to WiFi.
         el("update_container").style.display = "block";
         el("revert_to_stock_container").style.display = (!updateInProgress ? "block" : "none");
@@ -838,8 +836,6 @@ function updateElement(key, value, info) {
         el("donate_form_submit").style.display = "inline";
         updateInnerText(el("wifi_ip"), value);
         el("wifi_container").style.display = (!updateInProgress ? "block" : "none");
-      } else {
-        updateInnerText(el("wifi_ip"), "Not connected");
       }
       break;
     case "wifi_connecting":
@@ -1513,7 +1509,7 @@ function isNewer(v1, v2) {
 
 function checkUpdateIfNeeded(info) {
   // If device is in AP mode, we most likely don't have internet connectivity anyway.
-  if (info.wifi_rssi == 0) return;
+  if (info.wifi_conn_rssi == 0) return;
   let last_update_check = parseInt(getVar("last_update_check"));
   let now = new Date();
   let age = undefined;
