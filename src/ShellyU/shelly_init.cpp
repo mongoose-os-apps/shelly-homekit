@@ -17,9 +17,11 @@
 
 #include <cmath>
 
+#include "mgos_hap.h"
 #include "mgos_rpc.h"
 #include "mgos_sys_config.h"
 
+#include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_mock.hpp"
@@ -48,8 +50,30 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
-                  comps, accs, svr, true /* to_pri_acc */,
+                  comps, accs, svr, false /* to_pri_acc */,
                   nullptr /* led_out */);
+
+  // Sensors
+  for (int i = 0; i < 2; i++) {
+    std::unique_ptr<TempSensor> temp(new MockTempSensor(25.125 + i));
+    auto *se_cfg = (i == 0)
+                       ? (struct mgos_config_se *) mgos_sys_config_get_se1()
+                       : (struct mgos_config_se *) mgos_sys_config_get_se2();
+    std::unique_ptr<hap::TemperatureSensor> ts(
+        new hap::TemperatureSensor(i + 1, std::move(temp), se_cfg));
+    if (ts == nullptr || !ts->Init().ok()) {
+      return;
+    }
+
+    std::unique_ptr<mgos::hap::Accessory> acc(
+        new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + i,
+                                 kHAPAccessoryCategory_BridgedAccessory,
+                                 se_cfg->name, &AccessoryIdentifyCB, svr));
+    acc->AddHAPService(&mgos_hap_accessory_information_service);
+    acc->AddService(ts.get());
+    accs->push_back(std::move(acc));
+    comps->push_back(std::move(ts));
+  }
 }
 
 }  // namespace shelly

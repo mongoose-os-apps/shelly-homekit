@@ -37,6 +37,12 @@ class Component {
     kContactSensor = 9,
     kDoorbell = 10,
     kLightBulb = 11,
+    kSensor = 12,
+    kMax,
+  };
+
+  enum class SensorType {
+    kTemperatureSensor = 0,
     kMax,
   };
 

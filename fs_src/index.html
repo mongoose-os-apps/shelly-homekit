@@ -684,6 +684,31 @@
   </div>
 </div>
 
+<div class="container" id="value_template" style="display: none">
+  <a class="helpbadge"
+     href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Sensor-Settings"
+     target="_blank">?</a>
+  <h1 id="head">Sensor</h1>
+  <div class="form">
+    <div>
+      <div class="form-control">
+        <label>Name:</label>
+        <input type="text" id="name">
+      </div>
+      <div class="form-control">
+        <label>Value:</label>
+        <span id="value"></span>
+        <span id="unit"></span>
+      </div>
+      <div class="button-container">
+        <button id="save_btn">
+          <label><span id="save_spinner"></span>Save</label>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container" id="gdo_template" style="display: none">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Garage-Door-Opener-Settings"
      target="_blank">?</a>

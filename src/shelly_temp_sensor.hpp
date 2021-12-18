@@ -28,6 +28,13 @@ class TempSensor {
   TempSensor(const TempSensor &other) = delete;
 
   virtual StatusOr<float> GetTemperature() = 0;
+
+  virtual void StartUpdating(int interval) {
+    (void) interval;
+  };
+
+  typedef std::function<void()> Notifier;
+  Notifier notifier_;
 };
 
 }  // namespace shelly

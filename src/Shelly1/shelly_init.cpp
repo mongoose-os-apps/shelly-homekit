@@ -15,12 +15,19 @@
  * limitations under the License.
  */
 
+#include "mgos_hap.h"
+
 #include "shelly_hap_garage_door_opener.hpp"
+#include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
-#include "shelly_temp_sensor_ntc.hpp"
+#include "shelly_temp_sensor_ow.hpp"
+
+#define SENSORS_MAX 3
 
 namespace shelly {
+
+static std::unique_ptr<Onewire> onewire;
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
@@ -31,6 +38,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 4, _1, _2));
   in->Init();
   inputs->emplace_back(in);
+
+  onewire.reset(new Onewire(3, 0));
+
   (void) sys_temp;
   (void) pms;
 }
@@ -54,10 +64,49 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     comps->emplace_back(std::move(gdo));
     return;
   }
-  // Single switch with non-detached input = only one accessory.
-  bool to_pri_acc = (mgos_sys_config_get_sw1_in_mode() != 3);
+
+  // Sensor Discovery
+  int num_sensors = 0;
+  std::unique_ptr<OWSensorManager> manager(new OWSensorManager(onewire.get()));
+  std::vector<std::unique_ptr<TempSensor>> sensors;
+  std::unique_ptr<TempSensor> sensor;
+  while ((sensor = std::move(manager->NextAvailableSensor(0))) &&
+         (num_sensors < SENSORS_MAX)) {
+    sensors.push_back(std::move(sensor));
+    num_sensors++;
+  }
+  LOG(LL_INFO, ("Discovered %i sensors", num_sensors));
+
+  // Single switch with non-detached input and no discovered sensor = only one
+  // accessory.
+  bool to_pri_acc =
+      (num_sensors == 0) && (mgos_sys_config_get_sw1_in_mode() != 3);
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
+
+  struct mgos_config_se *se_cfgs[SENSORS_MAX] = {
+      (struct mgos_config_se *) mgos_sys_config_get_se1(),
+      (struct mgos_config_se *) mgos_sys_config_get_se2(),
+      (struct mgos_config_se *) mgos_sys_config_get_se3(),
+  };
+
+  for (unsigned int i = 0; i < sensors.size(); i++) {
+    auto *se_cfg = se_cfgs[i];
+    std::unique_ptr<hap::TemperatureSensor> ts(
+        new hap::TemperatureSensor(i + 1, std::move(sensors[i]), se_cfg));
+    if (ts == nullptr || !ts->Init().ok()) {
+      continue;
+    }
+
+    std::unique_ptr<mgos::hap::Accessory> acc(
+        new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + i,
+                                 kHAPAccessoryCategory_BridgedAccessory,
+                                 se_cfg->name, &AccessoryIdentifyCB, svr));
+    acc->AddHAPService(&mgos_hap_accessory_information_service);
+    acc->AddService(ts.get());
+    accs->push_back(std::move(acc));
+    comps->push_back(std::move(ts));
+  }
 }
 
 }  // namespace shelly

@@ -57,6 +57,7 @@ class Component_Type {
   static kContactSensor = 9;
   static kDoorbell = 10;
   static kLightBulb = 11;
+  static kTemperatureSensor = 12;
   static kMax = 12;
 };
 
@@ -405,6 +406,19 @@ function diSetConfig(c) {
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
 
+function valSetConfig(c) {
+  let name = el(c, "name").value;
+  if (name == "") {
+    alert("Name must not be empty");
+    return;
+  }
+  let cfg = {
+    name: name,
+    unit: 0, //placeholder
+  };
+  setComponentConfig(c, cfg, el(c, "save_spinner"));
+}
+
 function mosSetConfig(c) {
   let name = el(c, "name").value;
   if (name == "") {
@@ -588,6 +602,13 @@ function findOrAddContainer(cd) {
         markInputChanged(ev);
       };
       break;
+    case 12: // Value Sensor
+      c = el("value_template").cloneNode(true);
+      c.id = elId;
+      el(c, "save_btn").onclick = function () {
+        valSetConfig(c);
+      };
+      break;
     default:
       console.log(`Unhandled component type: ${cd.type}`);
   }
@@ -685,6 +706,15 @@ function updateComponent(cd) {
         setValueIfNotModified(el(c, "transition_time"), cd.transition_time);
         setPreviewColor(c);
       }
+      break;
+    }
+    case Component_Type.kTemperatureSensor: {
+      let headText = `Sensor ${cd.id}`;
+      if (cd.name) headText += ` (${cd.name})`;
+      setValueIfNotModified(el(c, "name"), cd.name);
+      updateInnerText(el(c, "head"), headText);
+      el(c, "value").innerHTML = cd.value;
+      el(c, "unit").innerHTML = (cd.unit == 0) ? `&#176;C` : `&#176;F`;
       break;
     }
     case Component_Type.kStatelessSwitch: {
