@@ -106,13 +106,17 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     }
 
     bool sw_hidden = is_optional && (lb_cfg->svc_type == -1);
+    int aid = SHELLY_HAP_AID_BASE_LIGHTING + i;
 
     if (!sw_hidden) {
-      mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-      pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
-      pri_acc->AddService(hap_light.get());
-      comps->emplace_back(std::move(hap_light));
+      std::unique_ptr<mgos::hap::Accessory> acc(
+          new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
+                                   lb_cfg->name, nullptr, svr));
+      acc->AddHAPService(&mgos_hap_accessory_information_service);
+      acc->AddService(hap_light.get());
+      accs->push_back(std::move(acc));
     }
+    comps->push_back(std::move(hap_light));
 
     if (lb_cfg->in_mode == (int) InMode::kDetached && first_detatched_input) {
       hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
