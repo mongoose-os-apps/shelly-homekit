@@ -135,12 +135,12 @@ libs:
   - location: https://github.com/mongoose-os-libs/ota-http-server
   - location: https://github.com/mongoose-os-libs/rpc-service-config
   - location: https://github.com/mongoose-os-libs/rpc-service-fs
-  - location: https://github.com/mongoose-os-libs/rpc-service-ota
   - location: https://github.com/mongoose-os-libs/rpc-uart
-  # Not enough space on 2.5
-  # - location: https://github.com/mongoose-os-libs/rpc-mqtt
   - location: https://github.com/mongoose-os-libs/rpc-ws
   - location: https://github.com/mongoose-os-libs/sntp
+  # Not enough space on 2.5
+  # - location: https://github.com/mongoose-os-libs/rpc-mqtt
+  # - location: https://github.com/mongoose-os-libs/rpc-service-ota
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
