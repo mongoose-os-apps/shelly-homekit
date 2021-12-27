@@ -82,25 +82,40 @@ Status TemperatureSensor::SetState(const std::string &state_json) {
 }
 
 void TemperatureSensor::ValueChanged() {
-  current_temperature_characteristic->RaiseEvent();
+  current_temperature_characteristic_->RaiseEvent();
 }
 
 Status TemperatureSensor::Init() {
   uint16_t iid = svc_.iid + 1;
-  current_temperature_characteristic = new mgos::hap::FloatCharacteristic(
+  current_temperature_characteristic_ = new mgos::hap::FloatCharacteristic(
       iid++, &kHAPCharacteristicType_CurrentTemperature, 0.0, 100.0, 0.1,
-      std::bind(&TemperatureSensor::HandleCurrentTemperatureRead, this, _1, _2,
-                _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPFloatCharacteristicReadRequest *request UNUSED_ARG,
+             float *value) {
+        auto tempval = temp_sensor_->GetTemperature();
+        if (!tempval.ok()) {
+          return kHAPError_Busy;
+        }
+        float temp = static_cast<float>(tempval.ValueOrDie());
+        *value = truncf(temp * 10) / 10;
+        return kHAPError_None;
+      },
+
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_CurrentTemperature);
-  AddChar(current_temperature_characteristic);
+  AddChar(current_temperature_characteristic_);
   AddChar(new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_TemperatureDisplayUnits, 0, 255, 1,
-      std::bind(&TemperatureSensor::HandleTemperatureDisplayUnitsRead, this, _1,
-                _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt8CharacteristicReadRequest *request UNUSED_ARG,
+             uint8_t *value) {
+        *value = cfg_->unit;
+        return kHAPError_None;
+      },
       true /* supports_notification */,
-      std::bind(&TemperatureSensor::HandleTemperatureDisplayUnitsWrite, this,
-                _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
+             uint8_t value UNUSED_ARG) { return kHAPError_None; },
       kHAPCharacteristicDebugDescription_TemperatureDisplayUnits));
   temp_sensor_->notifier_ = std::bind(&TemperatureSensor::ValueChanged, this);
   LOG(LL_INFO, ("Exporting Temp"));
@@ -109,43 +124,24 @@ Status TemperatureSensor::Init() {
   return Status::OK();
 }
 
-HAPError TemperatureSensor::HandleCurrentTemperatureRead(
-    HAPAccessoryServerRef *server,
-    const HAPFloatCharacteristicReadRequest *request, float *value) {
-  float temp = static_cast<float>(temp_sensor_->GetTemperature().ValueOrDie());
-  *value = truncf(temp * 10) / 10;
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError TemperatureSensor::HandleTemperatureDisplayUnitsWrite(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
-  (void) value;
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError TemperatureSensor::HandleTemperatureDisplayUnitsRead(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
-  *value = cfg_->unit;
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
 StatusOr<std::string> TemperatureSensor::GetInfo() const {
-  return mgos::SPrintf("v: %f", temp_sensor_->GetTemperature().ValueOrDie());
+  auto tempval = temp_sensor_->GetTemperature();
+  if (!tempval.ok()) {
+    return tempval.status();
+  }
+  return mgos::SPrintf("v: %f", tempval.ValueOrDie());
 }
 
 StatusOr<std::string> TemperatureSensor::GetInfoJSON() const {
-  return mgos::JSONPrintStringf(
-      "{id: %d, type: %d, sensor_type: %d, name: %Q, value: %f, unit: %d}",
-      id(), type(), sensor_type(), cfg_->name,
-      temp_sensor_->GetTemperature().ValueOrDie(), cfg_->unit);
+  std::string res = mgos::JSONPrintStringf(
+      "{id: %d, type: %d, sensor_type: %d, name: %Q, unit: %d", id(), type(),
+      sensor_type(), cfg_->name, cfg_->unit);
+  auto tempval = temp_sensor_->GetTemperature();
+  if (tempval.ok()) {
+    mgos::JSONAppendStringf(&res, ", value: %.1f", tempval.ValueOrDie());
+  }
+  res.append("}");
+  return res;
 }
 
 }  // namespace hap

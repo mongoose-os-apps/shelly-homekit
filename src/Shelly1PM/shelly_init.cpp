@@ -74,9 +74,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   // Sensor Discovery
-  std::unique_ptr<OWSensorManager> manager(new OWSensorManager(onewire.get()));
   std::vector<std::unique_ptr<TempSensor>> sensors;
-  manager->DiscoverAll(NUM_SENSORS_MAX, &sensors);
+  onewire->DiscoverAll(NUM_SENSORS_MAX, &sensors);
 
   // Single switch with non-detached input and no discovered sensor = only one
   // accessory.

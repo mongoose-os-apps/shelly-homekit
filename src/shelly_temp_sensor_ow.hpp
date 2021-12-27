@@ -34,21 +34,12 @@ class Onewire {
   Onewire(int pin_in, int pin_out);
   virtual ~Onewire();
   struct mgos_onewire *Get();
-
- private:
-  struct mgos_onewire *ow_;
-};
-
-class OWSensorManager {
- public:
-  OWSensorManager(Onewire *ow);
-  virtual ~OWSensorManager();
   void DiscoverAll(int num_sensors_max,
                    std::vector<std::unique_ptr<TempSensor>> *sensors);
-  std::unique_ptr<OWTempSensor> NextAvailableSensor(int type);
 
  private:
   struct mgos_onewire *ow_;
+  std::unique_ptr<OWTempSensor> NextAvailableSensor(int type);
 };
 
 class OWTempSensor : public TempSensor {

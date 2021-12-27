@@ -60,12 +60,8 @@ struct mgos_onewire *Onewire::Get() {
   return ow_;
 }
 
-OWSensorManager::OWSensorManager(Onewire *ow) {
-  ow_ = ow->Get();
-}
-
-void OWSensorManager::DiscoverAll(
-    int num_sensors_max, std::vector<std::unique_ptr<TempSensor>> *sensors) {
+void Onewire::DiscoverAll(int num_sensors_max,
+                          std::vector<std::unique_ptr<TempSensor>> *sensors) {
   mgos_onewire_search_clean(ow_);
   int num_sensors = 0;
   std::unique_ptr<TempSensor> sensor;
@@ -76,7 +72,7 @@ void OWSensorManager::DiscoverAll(
   LOG(LL_INFO, ("Discovered %i sensors", num_sensors));
 }
 
-std::unique_ptr<OWTempSensor> OWSensorManager::NextAvailableSensor(int type) {
+std::unique_ptr<OWTempSensor> Onewire::NextAvailableSensor(int type) {
   uint8_t rom[8] = {0};
   int mode = 0;
   std::unique_ptr<OWTempSensor> sensor;
@@ -90,9 +86,6 @@ std::unique_ptr<OWTempSensor> OWSensorManager::NextAvailableSensor(int type) {
   }
   (void) type;
   return sensor;
-}
-
-OWSensorManager::~OWSensorManager() {
 }
 
 OWTempSensor::OWTempSensor(struct mgos_onewire *ow, uint8_t *rom)

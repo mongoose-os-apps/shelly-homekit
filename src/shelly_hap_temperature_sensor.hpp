@@ -52,17 +52,7 @@ class TemperatureSensor : public Component, public mgos::hap::Service {
   std::unique_ptr<TempSensor> temp_sensor_;
   struct mgos_config_se *cfg_;
 
-  mgos::hap::FloatCharacteristic *current_temperature_characteristic;
-
-  HAPError HandleCurrentTemperatureRead(
-      HAPAccessoryServerRef *server,
-      const HAPFloatCharacteristicReadRequest *request, float *value);
-  HAPError HandleTemperatureDisplayUnitsWrite(
-      HAPAccessoryServerRef *server,
-      const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
-  HAPError HandleTemperatureDisplayUnitsRead(
-      HAPAccessoryServerRef *server,
-      const HAPUInt8CharacteristicReadRequest *request, uint8_t *value);
+  mgos::hap::FloatCharacteristic *current_temperature_characteristic_;
 };
 }  // namespace hap
 }  // namespace shelly
