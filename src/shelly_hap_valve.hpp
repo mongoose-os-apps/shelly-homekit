@@ -30,17 +30,6 @@ class Valve : public ShellySwitch {
   virtual ~Valve();
 
   Status Init() override;
-
- private:
-  HAPError HandleActiveRead(HAPAccessoryServerRef *server,
-                            const HAPUInt8CharacteristicReadRequest *request,
-                            uint8_t *value);
-  HAPError HandleActiveWrite(HAPAccessoryServerRef *server,
-                             const HAPUInt8CharacteristicWriteRequest *request,
-                             uint8_t value);
-  HAPError HandleValveTypeRead(HAPAccessoryServerRef *server,
-                               const HAPUInt8CharacteristicReadRequest *request,
-                               uint8_t *value);
 };
 
 }  // namespace hap

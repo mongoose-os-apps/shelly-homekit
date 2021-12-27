@@ -24,6 +24,7 @@
 #include "common/cs_dbg.h"
 #include "common/util/status.h"
 #include "common/util/statusor.h"
+#include "mgos_utils.h"
 
 #define SHELLY_HAP_AID_PRIMARY 0x1
 #define SHELLY_HAP_AID_BASE_SWITCH 0x100

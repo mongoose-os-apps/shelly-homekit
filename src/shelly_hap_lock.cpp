@@ -54,7 +54,13 @@ Status Lock::Init() {
       iid++, &kHAPCharacteristicType_LockTargetState, 0, 3, 1,
       std::bind(&Lock::HandleCurrentStateRead, this, _1, _2, _3),
       true /* supports_notification */,
-      std::bind(&Lock::HandleTargetStateWrite, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
+             uint8_t value) {
+        SetOutputState((value == 0), "HAP");
+        state_notify_chars_[1]->RaiseEvent();
+        return kHAPError_None;
+      },
       kHAPCharacteristicDebugDescription_LockTargetState);
   state_notify_chars_.push_back(tgt_state_char);
   AddChar(tgt_state_char);
@@ -66,16 +72,6 @@ HAPError Lock::HandleCurrentStateRead(
     HAPAccessoryServerRef *server,
     const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
   *value = (out_->GetState() ? 0 : 1);
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError Lock::HandleTargetStateWrite(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
-  SetOutputState((value == 0), "HAP");
-  state_notify_chars_[1]->RaiseEvent();
   (void) server;
   (void) request;
   return kHAPError_None;
