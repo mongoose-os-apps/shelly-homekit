@@ -59,20 +59,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     auto *se_cfg = (i == 0)
                        ? (struct mgos_config_se *) mgos_sys_config_get_se1()
                        : (struct mgos_config_se *) mgos_sys_config_get_se2();
-    std::unique_ptr<hap::TemperatureSensor> ts(
-        new hap::TemperatureSensor(i + 1, std::move(temp), se_cfg));
-    if (ts == nullptr || !ts->Init().ok()) {
-      return;
-    }
 
-    std::unique_ptr<mgos::hap::Accessory> acc(
-        new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + i,
-                                 kHAPAccessoryCategory_BridgedAccessory,
-                                 se_cfg->name, &AccessoryIdentifyCB, svr));
-    acc->AddHAPService(&mgos_hap_accessory_information_service);
-    acc->AddService(ts.get());
-    accs->push_back(std::move(acc));
-    comps->push_back(std::move(ts));
+    CreateHAPSensor(i + 1, std::move(temp), se_cfg, comps, accs, svr);
   }
 }
 

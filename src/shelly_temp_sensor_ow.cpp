@@ -49,7 +49,7 @@
 namespace shelly {
 
 Onewire::Onewire(int pin_in, int pin_out) {
-  ow_ = mgos_onewire_create_twopin(pin_in, pin_out);
+  ow_ = mgos_onewire_create_separate_io(pin_in, pin_out);
 }
 
 Onewire::~Onewire() {
@@ -62,7 +62,18 @@ struct mgos_onewire *Onewire::Get() {
 
 OWSensorManager::OWSensorManager(Onewire *ow) {
   ow_ = ow->Get();
+}
+
+void OWSensorManager::DiscoverAll(
+    int num_sensors_max, std::vector<std::unique_ptr<TempSensor>> *sensors) {
   mgos_onewire_search_clean(ow_);
+  int num_sensors = 0;
+  std::unique_ptr<TempSensor> sensor;
+  while ((sensor = NextAvailableSensor(0)) && (num_sensors < num_sensors_max)) {
+    sensors->push_back(std::move(sensor));
+    num_sensors++;
+  }
+  LOG(LL_INFO, ("Discovered %i sensors", num_sensors));
 }
 
 std::unique_ptr<OWTempSensor> OWSensorManager::NextAvailableSensor(int type) {

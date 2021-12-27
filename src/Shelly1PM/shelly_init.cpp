@@ -20,8 +20,13 @@
 #include "shelly_main.hpp"
 #include "shelly_pm_bl0937.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
+#include "shelly_temp_sensor_ow.hpp"
+
+#define NUM_SENSORS_MAX 3
 
 namespace shelly {
+
+static std::unique_ptr<Onewire> onewire;
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
@@ -32,6 +37,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 15, _1, _2));
   in->Init();
   inputs->emplace_back(in);
+
+  onewire.reset(new Onewire(3, 0));
+
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 5 /* CF */, -1 /* CF1 */, -1 /* SEL */, 2,
                            mgos_sys_config_get_bl0937_power_coeff()));
@@ -64,10 +72,29 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     comps->emplace_back(std::move(gdo));
     return;
   }
-  // Single switch with non-detached input = only one accessory.
-  bool to_pri_acc = (mgos_sys_config_get_sw1_in_mode() != 3);
+
+  // Sensor Discovery
+  std::unique_ptr<OWSensorManager> manager(new OWSensorManager(onewire.get()));
+  std::vector<std::unique_ptr<TempSensor>> sensors;
+  manager->DiscoverAll(NUM_SENSORS_MAX, &sensors);
+
+  // Single switch with non-detached input and no discovered sensor = only one
+  // accessory.
+  bool to_pri_acc =
+      (sensors.size() == 0) && (mgos_sys_config_get_sw1_in_mode() != 3);
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
+
+  struct mgos_config_se *se_cfgs[NUM_SENSORS_MAX] = {
+      (struct mgos_config_se *) mgos_sys_config_get_se1(),
+      (struct mgos_config_se *) mgos_sys_config_get_se2(),
+      (struct mgos_config_se *) mgos_sys_config_get_se3(),
+  };
+
+  for (unsigned int i = 0; i < sensors.size(); i++) {
+    auto *se_cfg = se_cfgs[i];
+    CreateHAPSensor(i + 1, std::move(sensors[i]), se_cfg, comps, accs, svr);
+  }
 }
 
 }  // namespace shelly

@@ -19,6 +19,8 @@
 
 #include "shelly_temp_sensor.hpp"
 
+#include <vector>
+
 #include <mgos_onewire.h>
 
 #include "mgos_timers.hpp"
@@ -41,6 +43,8 @@ class OWSensorManager {
  public:
   OWSensorManager(Onewire *ow);
   virtual ~OWSensorManager();
+  void DiscoverAll(int num_sensors_max,
+                   std::vector<std::unique_ptr<TempSensor>> *sensors);
   std::unique_ptr<OWTempSensor> NextAvailableSensor(int type);
 
  private:

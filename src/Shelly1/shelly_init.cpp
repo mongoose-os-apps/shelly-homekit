@@ -23,7 +23,7 @@
 #include "shelly_main.hpp"
 #include "shelly_temp_sensor_ow.hpp"
 
-#define SENSORS_MAX 3
+#define NUM_SENSORS_MAX 3
 
 namespace shelly {
 
@@ -66,25 +66,18 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   // Sensor Discovery
-  int num_sensors = 0;
   std::unique_ptr<OWSensorManager> manager(new OWSensorManager(onewire.get()));
   std::vector<std::unique_ptr<TempSensor>> sensors;
-  std::unique_ptr<TempSensor> sensor;
-  while ((sensor = std::move(manager->NextAvailableSensor(0))) &&
-         (num_sensors < SENSORS_MAX)) {
-    sensors.push_back(std::move(sensor));
-    num_sensors++;
-  }
-  LOG(LL_INFO, ("Discovered %i sensors", num_sensors));
+  manager->DiscoverAll(NUM_SENSORS_MAX, &sensors);
 
   // Single switch with non-detached input and no discovered sensor = only one
   // accessory.
   bool to_pri_acc =
-      (num_sensors == 0) && (mgos_sys_config_get_sw1_in_mode() != 3);
+      (sensors.size() == 0) && (mgos_sys_config_get_sw1_in_mode() != 3);
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
 
-  struct mgos_config_se *se_cfgs[SENSORS_MAX] = {
+  struct mgos_config_se *se_cfgs[NUM_SENSORS_MAX] = {
       (struct mgos_config_se *) mgos_sys_config_get_se1(),
       (struct mgos_config_se *) mgos_sys_config_get_se2(),
       (struct mgos_config_se *) mgos_sys_config_get_se3(),
@@ -92,20 +85,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   for (unsigned int i = 0; i < sensors.size(); i++) {
     auto *se_cfg = se_cfgs[i];
-    std::unique_ptr<hap::TemperatureSensor> ts(
-        new hap::TemperatureSensor(i + 1, std::move(sensors[i]), se_cfg));
-    if (ts == nullptr || !ts->Init().ok()) {
-      continue;
-    }
-
-    std::unique_ptr<mgos::hap::Accessory> acc(
-        new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + i,
-                                 kHAPAccessoryCategory_BridgedAccessory,
-                                 se_cfg->name, &AccessoryIdentifyCB, svr));
-    acc->AddHAPService(&mgos_hap_accessory_information_service);
-    acc->AddService(ts.get());
-    accs->push_back(std::move(acc));
-    comps->push_back(std::move(ts));
+    CreateHAPSensor(i + 1, std::move(sensors[i]), se_cfg, comps, accs, svr);
   }
 }
 
