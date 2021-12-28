@@ -414,7 +414,7 @@ function valSetConfig(c) {
   }
   let cfg = {
     name: name,
-    unit: 0, //placeholder
+    unit: parseInt(el(c, "unit").value),
   };
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
@@ -713,8 +713,21 @@ function updateComponent(cd) {
       if (cd.name) headText += ` (${cd.name})`;
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "head"), headText);
-      el(c, "value").innerHTML = cd.value;
-      el(c, "unit").innerHTML = (cd.unit == 0) ? `&#176;C` : `&#176;F`;
+      valconv = function(a) {return a}; 
+      if (cd.sensor_type !== undefined) {
+        if (cd.sensor_type == 0) {
+          el(c, "unit_0").innerHTML = `&#176;C`;
+          el(c, "unit_1").innerHTML = `&#176;F`;
+          if(cd.unit == 1) {
+            valconv = cel2far;
+          }
+        } else {
+          el(c, "unit_0").innerHTML = "?";
+          el(c, "unit_1").remove();
+        }
+      }
+      el(c, "value").innerHTML = valconv(cd.value);
+      selectIfNotModified(el(c, "unit"), cd.unit);
       break;
     }
     case Component_Type.kStatelessSwitch: {
@@ -1757,4 +1770,8 @@ function hsv2rgb(h, s, v) {
     case 5:
       return [v, p, q];
   }
+}
+
+function cel2far(v) {
+  return v * 1.8 + 32.0;
 }
