@@ -139,7 +139,7 @@ libs:
   - location: https://github.com/mongoose-os-libs/file-logger
   - location: https://github.com/mongoose-os-libs/homekit-adk
   - location: https://github.com/mongoose-os-libs/http-server
-  - location: https://github.com/markirb/onewire #back to mongoose-os-libs, once merged upstream
+  - location: https://github.com/mongoose-os-libs/onewire
   - location: https://github.com/mongoose-os-libs/ota-http-server
   - location: https://github.com/mongoose-os-libs/rpc-service-config
   - location: https://github.com/mongoose-os-libs/rpc-service-fs
