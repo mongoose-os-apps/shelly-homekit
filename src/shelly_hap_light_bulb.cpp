@@ -75,7 +75,7 @@ Status LightBulb::Init() {
              const HAPBoolCharacteristicReadRequest *request UNUSED_ARG,
              bool *value) {
         LOG(LL_DEBUG, ("On read %d: %s", id(), OnOff(value)));
-        *value = IsOn();
+        *value = controller_->IsOn();
         return kHAPError_None;
       },
       true /* supports_notification */,

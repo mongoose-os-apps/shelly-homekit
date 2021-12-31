@@ -81,12 +81,6 @@ class LightBulb : public Component, public mgos::hap::Service {
 
   mgos::Timer auto_off_timer_;
   bool dirty_ = false;
-
-  mgos::Timer transition_timer_;
-  int64_t transition_start_ = 0;
-  RGBW rgbw_start_{};
-  RGBW rgbw_now_{};
-  RGBW rgbw_end_{};
 };
 
 }  // namespace hap
