@@ -30,11 +30,16 @@ namespace hap {
 
 class TemperatureSensor : public Component, public mgos::hap::Service {
  public:
+  enum class SensorType {
+    kTemperatureSensor = 0,
+    kMax,
+  };
+
   TemperatureSensor(int id, std::unique_ptr<TempSensor> sensor,
                     struct mgos_config_se *cfg);
   virtual ~TemperatureSensor();
 
-  Component::SensorType sensor_type() const;
+  SensorType sensor_type() const;
   void ValueChanged();
 
   // Component interface impl.

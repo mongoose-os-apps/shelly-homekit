@@ -16,9 +16,10 @@
  */
 
 #include "shelly_hap_temperature_sensor.hpp"
-#include "mgos.hpp"
 
 #include <cmath>
+
+#include "mgos.hpp"
 
 namespace shelly {
 namespace hap {
@@ -41,7 +42,7 @@ Component::Type TemperatureSensor::type() const {
   return Type::kSensor;
 }
 
-Component::SensorType TemperatureSensor::sensor_type() const {
+TemperatureSensor::SensorType TemperatureSensor::sensor_type() const {
   return SensorType::kTemperatureSensor;
 }
 

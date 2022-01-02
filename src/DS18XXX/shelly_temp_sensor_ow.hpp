@@ -32,10 +32,9 @@ class OWTempSensor;
 class Onewire {
  public:
   Onewire(int pin_in, int pin_out);
-  virtual ~Onewire();
+  ~Onewire();
   struct mgos_onewire *Get();
-  void DiscoverAll(int num_sensors_max,
-                   std::vector<std::unique_ptr<TempSensor>> *sensors);
+  std::vector<std::unique_ptr<TempSensor>> DiscoverAll(int num_sensors_max);
 
  private:
   struct mgos_onewire *ow_;

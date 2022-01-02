@@ -17,11 +17,9 @@
 
 #include "shelly_temp_sensor_ow.hpp"
 
-#ifdef MGOS_HAVE_ONEWIRE
-
 #include <cmath>
 
-#include <mgos_onewire.h>
+#include "mgos_onewire.h"
 
 /* Model IDs */
 #define DS18S20MODEL 0x10 /* also DS1820 */
@@ -60,16 +58,18 @@ struct mgos_onewire *Onewire::Get() {
   return ow_;
 }
 
-void Onewire::DiscoverAll(int num_sensors_max,
-                          std::vector<std::unique_ptr<TempSensor>> *sensors) {
+std::vector<std::unique_ptr<TempSensor>> Onewire::DiscoverAll(
+    int num_sensors_max) {
+  std::vector<std::unique_ptr<TempSensor>> sensors;
   mgos_onewire_search_clean(ow_);
   int num_sensors = 0;
   std::unique_ptr<TempSensor> sensor;
   while ((sensor = NextAvailableSensor(0)) && (num_sensors < num_sensors_max)) {
-    sensors->push_back(std::move(sensor));
+    sensors.push_back(std::move(sensor));
     num_sensors++;
   }
   LOG(LL_INFO, ("Discovered %i sensors", num_sensors));
+  return sensors;
 }
 
 std::unique_ptr<OWTempSensor> Onewire::NextAvailableSensor(int type) {
@@ -165,7 +165,6 @@ void TempSensorDS18XXX::ReadTemperatureCB() {
 }
 
 void TempSensorDS18XXX::UpdateTemperatureCB() {
-  LOG(LL_INFO, ("Update temperature"));
   if (!mgos_onewire_reset(ow_)) {
     return;
   }
@@ -208,5 +207,3 @@ int TempSensorDS18XXX::ConversionTime() {
 }
 
 }  // namespace shelly
-
-#endif  // MGOS_HAVE_OW

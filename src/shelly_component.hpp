@@ -41,11 +41,6 @@ class Component {
     kMax,
   };
 
-  enum class SensorType {
-    kTemperatureSensor = 0,
-    kMax,
-  };
-
   explicit Component(int id);
   virtual ~Component();
 

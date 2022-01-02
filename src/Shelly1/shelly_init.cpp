@@ -27,7 +27,7 @@
 
 namespace shelly {
 
-static std::unique_ptr<Onewire> onewire;
+static std::unique_ptr<Onewire> s_onewire;
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
@@ -39,7 +39,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->Init();
   inputs->emplace_back(in);
 
-  onewire.reset(new Onewire(3, 0));
+  s_onewire.reset(new Onewire(3, 0));
 
   (void) sys_temp;
   (void) pms;
@@ -66,8 +66,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   // Sensor Discovery
-  std::vector<std::unique_ptr<TempSensor>> sensors;
-  onewire->DiscoverAll(NUM_SENSORS_MAX, &sensors);
+  auto sensors = s_onewire->DiscoverAll(NUM_SENSORS_MAX);
 
   // Single switch with non-detached input and no discovered sensor = only one
   // accessory.
