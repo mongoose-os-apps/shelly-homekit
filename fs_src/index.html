@@ -650,6 +650,27 @@
         <span id="cal"></span>
       </div>
       <div class="form-control">
+        <label>Manual Calibration:</label>
+        <label class="switch">
+          <input type="checkbox" id="man_cal">
+          <span class="slider round"></span>
+        </label> 
+        <div id="man_cal_warning">
+          <ion-icon name="warning" 
+            style="vertical-align: text-bottom; font-size: 24px; color: goldenrod;"></ion-icon> Caution
+        </div>
+      </div>
+      <div id="man_cal_settings">
+        <div class="form-control">
+          <label>Movement Time:</label>
+          <input type="text" id="move_time_ms" style="width: 4em; min-width: 2em;"> ms
+        </div>
+        <div class="form-control">
+          <label>Limit Time:</label>
+          <input type="text" id="move_time_limit_pos_ms" style="width: 4em; min-width: 2em;"> ms
+        </div>
+      </div>
+      <div class="form-control">
         <label>Input Mode:</label>
         <select id="in_mode">
           <option id="in_mode_0" value="0">Separate - momentary</option>
@@ -835,5 +856,6 @@
 </script>
 <script src="script.js">
 </script>
+<script src="https://unpkg.com/ionicons@5.0.0/dist/ionicons.js"></script>
 </body>
 </html>

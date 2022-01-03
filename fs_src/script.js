@@ -400,6 +400,9 @@ function wcSetConfig(c, cfg, spinner) {
     cfg = {
       name: name,
       in_mode: parseInt(el(c, "in_mode").value),
+      man_cal: el(c, "man_cal").checked,
+      move_time_ms: parseInt(el(c, "move_time_ms").value),
+      move_time_limit_pos_ms: parseInt(el(c, "move_time_limit_pos_ms").value),
       swap_inputs: el(c, "swap_inputs").checked,
       swap_outputs: el(c, "swap_outputs").checked,
     };
@@ -680,10 +683,21 @@ function updateComponent(cd) {
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "state"), cd.state_str);
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
+      checkIfNotModified(el(c, "man_cal"), cd.man_cal);
       checkIfNotModified(el(c, "swap_inputs"), cd.swap_inputs);
       checkIfNotModified(el(c, "swap_outputs"), cd.swap_outputs);
+      if(el(c, "man_cal").checked) {
+        el(c, "man_cal_warning").style.display = "inline";
+        el(c, "man_cal_settings").style.display = "block";
+      }
+      else {
+        el(c, "man_cal_warning").style.display = "none";
+        el(c, "man_cal_settings").style.display = "none";
+      }
+      setValueIfNotModified(el(c, "move_time_ms"), cd.move_time_ms);
+      setValueIfNotModified(el(c, "move_time_limit_pos_ms"), cd.move_time_limit_pos_ms);
       let posText, calText;
-      if (cd.cal_done == 1) {
+      if (cd.cal_done == 1 || cd.man_cal == 1) {
         if (cd.cur_pos != cd.tgt_pos) {
           posText = `${cd.cur_pos} -> ${cd.tgt_pos}`;
         } else {
