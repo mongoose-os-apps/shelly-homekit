@@ -69,7 +69,7 @@ config_schema:
   - ["wc.swap_inputs", "b", false, {title: "Swap inputs (2 - open, 1 - close)"}]
   - ["wc.swap_outputs", "b", false, {title: "Swap outputs (2 - open, 1 - close)"}]
   - ["wc.calibrated", "b", false, {title: "Calibration done"}]
-  - ["wc.idle_power_thr", "d", 10.0, {title: "Power consumption threshold for motor idle detection"}]
+  - ["wc.idle_power_thr", "d", 5.0, {title: "Power consumption threshold for motor idle detection"}]
   - ["wc.move_power", "d", 0.0, {title: "Power consumption during movement, watts"}]
   - ["wc.move_time_ms", "i", 0, {title: "Move time, in millseconds"}]
   - ["wc.max_ramp_up_time_ms", "i", 5000, {title: "Maximum ramp up time, in millseconds"}]
