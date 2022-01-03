@@ -23,7 +23,8 @@ namespace shelly {
 
 class BL0937PowerMeter : public PowerMeter {
  public:
-  BL0937PowerMeter(int id, int cf_pin, int cf1_pin, int sel_pin, int meas_time);
+  BL0937PowerMeter(int id, int cf_pin, int cf1_pin, int sel_pin, int meas_time,
+                   float apc);
   virtual ~BL0937PowerMeter();
 
   Status Init() override;
@@ -35,6 +36,7 @@ class BL0937PowerMeter : public PowerMeter {
   void MeasureTimerCB();
 
   const int cf_pin_, cf1_pin_, sel_pin_, meas_time_;
+  const float apc_;
 
   volatile uint32_t cf_count_ = 0, cf1_count_ = 0;
   int64_t meas_start_ = 0;

@@ -15,22 +15,39 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "shelly_wifi_config.hpp"
 
-#include "mgos_hap_chars.hpp"
-#include "shelly_switch.hpp"
+#include "mgos.hpp"
 
 namespace shelly {
-namespace hap {
 
-class Valve : public ShellySwitch {
- public:
-  Valve(int id, Input *in, Output *out, PowerMeter *out_pm, Output *led_out,
-        struct mgos_config_sw *cfg);
-  virtual ~Valve();
+static WifiConfig s_cfg;
 
-  Status Init() override;
-};
+WifiConfig GetWifiConfig() {
+  return s_cfg;
+}
 
-}  // namespace hap
+Status SetWifiConfig(const WifiConfig &cfg) {
+  std::string cs = cfg.ToJSON();
+  LOG(LL_INFO, ("Set wifi config to: %s", cs.c_str()));
+  s_cfg = cfg;
+  return Status::OK();
+}
+
+void ResetWifiConfig() {
+  s_cfg = WifiConfig();
+}
+
+WifiInfo GetWifiInfo() {
+  WifiInfo empty;
+  return empty;
+}
+
+void ReportClientRequest(const std::string &client_addr) {
+  (void) client_addr;
+}
+
+void InitWifiConfigManager() {
+}
+
 }  // namespace shelly

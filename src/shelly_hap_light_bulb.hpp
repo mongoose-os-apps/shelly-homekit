@@ -93,37 +93,6 @@ class LightBulb : public Component, public mgos::hap::Service {
   RGBW rgbw_start_{};
   RGBW rgbw_now_{};
   RGBW rgbw_end_{};
-
-  HAPError HandleOnRead(HAPAccessoryServerRef *server,
-                        const HAPBoolCharacteristicReadRequest *request,
-                        bool *value);
-  HAPError HandleOnWrite(HAPAccessoryServerRef *server,
-                         const HAPBoolCharacteristicWriteRequest *request,
-                         bool value);
-
-  HAPError HandleBrightnessRead(
-      HAPAccessoryServerRef *server,
-      const HAPUInt8CharacteristicReadRequest *request, uint8_t *value);
-
-  HAPError HandleBrightnessWrite(
-      HAPAccessoryServerRef *server,
-      const HAPUInt8CharacteristicWriteRequest *request, uint8_t value);
-
-  HAPError HandleHueRead(HAPAccessoryServerRef *server,
-                         const HAPUInt32CharacteristicReadRequest *request,
-                         uint32_t *value);
-
-  HAPError HandleHueWrite(HAPAccessoryServerRef *server,
-                          const HAPUInt32CharacteristicWriteRequest *request,
-                          uint32_t value);
-
-  HAPError HandleSaturationRead(
-      HAPAccessoryServerRef *server,
-      const HAPUInt32CharacteristicReadRequest *request, uint32_t *value);
-
-  HAPError HandleSaturationWrite(
-      HAPAccessoryServerRef *server,
-      const HAPUInt32CharacteristicWriteRequest *request, uint32_t value);
 };
 
 }  // namespace hap

@@ -116,34 +116,135 @@
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/WiFi-Settings"
      target="_blank">?</a>
   <h1>WiFi Settings</h1>
+
+  <div class="tab_wrapper" id="wifi_container">
+    <input class="tab_radio" id="one" name="group" type="radio" checked>
+    <input class="tab_radio" id="two" name="group" type="radio">
+    <input class="tab_radio" id="three" name="group" type="radio">
+    <div class="tabs">
+      <label class="tab" id="tab1" for="one">WiFi 1</label>
+      <label class="tab" id="tab2" for="two">WiFi 2</label>
+      <label class="tab" id="tab3" for="three">AP</label>
+    </div>
+    <div class="panels">
+      <div class="panel" id="panel1">
+        <div class="form">
+          <div class="form-control">
+            <label>Enable:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Network:</label>
+            <input type="text" id="wifi_ssid">
+          </div>
+          <div class="form-control">
+            <label>Password:</label>
+            <input type="password" id="wifi_pass" placeholder="(empty)">
+          </div>
+          <div class="form-control">
+            <label>Static IP:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi_ip_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="wifi_ip_container">
+            <div class="form-control">
+              <label>IP:</label>
+              <input type="text" id="wifi_ip">
+            </div>
+            <div class="form-control">
+              <label>Netmask:</label>
+              <input type="text" id="wifi_netmask">
+            </div>
+            <div class="form-control">
+              <label>Gateway:</label>
+              <input type="text" id="wifi_gw">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="panel2">
+        <div class="form">
+          <div class="form-control">
+            <label>Enable:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi1_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Network:</label>
+            <input type="text" id="wifi1_ssid">
+          </div>
+          <div class="form-control">
+            <label>Password:</label>
+            <input type="password" id="wifi1_pass" placeholder="(empty)">
+          </div>
+          <div class="form-control">
+            <label>Static IP:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi1_ip_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="wifi1_ip_container">
+            <div class="form-control">
+              <label>IP:</label>
+              <input type="text" id="wifi1_ip">
+            </div>
+            <div class="form-control">
+              <label>Netmask:</label>
+              <input type="text" id="wifi1_netmask">
+            </div>
+            <div class="form-control">
+              <label>Gateway:</label>
+              <input type="text" id="wifi1_gw">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="panel3">
+        <div class="form">
+          <div class="form-control">
+            <label>Enable permanently:</label>
+            <label class="switch">
+              <input type="checkbox" id="wifi_ap_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Network:</label>
+            <input type="text" id="wifi_ap_ssid">
+          </div>
+          <div class="form-control">
+            <label>Password:</label>
+            <input type="password" id="wifi_ap_pass" placeholder="(empty)">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="form">
     <div>
-      <div class="form-control">
-        <label>Enable:</label>
-        <label class="switch">
-          <input type="checkbox" id="wifi_en">
-          <span class="slider round"></span>
-        </label>
+      <div class="form-control" id="wifi_status_container">
+        <label>Status:</label>
+        <span id="wifi_status"></span>
       </div>
-      <div class="form-control">
-        <label>WiFi Network:</label>
-        <input type="text" id="wifi_ssid">
+      <div class="form-control" id="wifi_conn_ssid_container">
+        <label>Network:</label>
+        <span id="wifi_conn_ssid"></span>
       </div>
-      <div class="form-control">
-        <label>WiFi Password:</label>
-        <input type="password" id="wifi_pass">
-      </div>
-      <div class="form-control" id="wifi_rssi_container">
-        <label>RSSI:</label>
-        <span id="wifi_rssi"></span>
-      </div>
-      <div class="form-control" id="host_container">
-        <label>Host:</label>
-        <span id="host"></span>
-      </div>
-      <div class="form-control" id="wifi_ip_container">
+      <div class="form-control" id="wifi_conn_ip_container">
         <label>IP:</label>
-        <span id="wifi_ip"></span>
+        <span id="wifi_conn_ip"></span>
+      </div>
+      <div class="form-control" id="wifi_conn_rssi_container">
+        <label>RSSI:</label>
+        <span id="wifi_conn_rssi"></span>
       </div>
       <div class="button-container">
         <button id="wifi_save_btn">
@@ -195,7 +296,11 @@
         <label>Device ID:</label>
         <span id="device_id"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="host_container">
+        <label>Host:</label>
+        <span id="host"></span>
+      </div>
+      <div class="form-control" id="uptime_container" style="display: none">
         <label>Uptime:</label>
         <span id="uptime"></span>
       </div>
@@ -226,12 +331,10 @@
   <div class="form">
     <div>
       <div class="form-control">
-        <label>Version:</label>
-        <span id="version"></span>
+        <label>Version:</label><span id="version"></span>
       </div>
       <div class="form-wrap-control">
-        <label>Build:</label>
-        <span id="fw_build"></span>
+        <label>Build:</label><span id="fw_build"></span>
       </div>
       <div class="form-control" id="update_container" style="display: none">
         <label>Update: </label>
@@ -335,6 +438,8 @@
           <option id="in_mode_2" value="2">Edge</option>
           <option id="in_mode_3" value="3">Detached</option>
           <option id="in_mode_4" value="4">Activation</option>
+          <option id="in_mode_5" value="5">Edge (both inputs)</option>
+          <option id="in_mode_6" value="6">Activation (both inputs)</option>
         </select>
       </div>
       <div class="form-control" id="in_inverted_container" style="display: none">

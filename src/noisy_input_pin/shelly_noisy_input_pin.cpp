@@ -20,19 +20,33 @@
 #include "mgos.h"
 
 #if CS_PLATFORM == CS_P_ESP8266
-
 #include <user_interface.h>
+typedef uint16_t sample_t;
+inline static sample_t ReadGPIOReg() {
+  uint32_t gpio_vals = GPIO_REG_READ(GPIO_IN_ADDRESS);
+  // gpio_vals |= (READ_PERI_REG(RTC_GPIO_IN_DATA) & 1) << 16;  // GPIO16
+  return gpio_vals;
+}
+#elif CS_PLATFORM == CS_P_ESP32
+#include "soc/gpio_reg.h"
+// Note: supports only GPIO 0-31, for obvious reasons.
+typedef uint32_t sample_t;
+inline static sample_t ReadGPIOReg() {
+  return READ_PERI_REG(GPIO_IN_REG);
+}
+#else
+typedef uint16_t sample_t;
+#endif
 
 namespace shelly {
 
 #define NUM_SAMPLES 10
 #define SAMPLE_INTERVAL_MICROS 5000
 
-static uint32_t s_gpio_vals[NUM_SAMPLES] = {0};
-static uint32_t s_gpio_mask = 0, s_gpio_last = 0;
-static uint32_t s_cnt = 0;
-static volatile uint32_t s_meas_cnt = 0;
-static uint32_t s_int_cnt = 0;
+static sample_t s_gpio_vals[NUM_SAMPLES] = {0};
+static sample_t s_gpio_mask = 0, s_gpio_last = 0;
+static uint8_t s_cnt = 0;
+static volatile uint8_t s_meas_cnt = 0;
 static mgos_timer_id s_timer_id = MGOS_INVALID_TIMER_ID;
 
 static std::vector<NoisyInputPin *> s_noisy_inputs;
@@ -47,8 +61,7 @@ static void GPIOChangeCB(void *arg) {
 
 /* NB: Executed in ISR context */
 static IRAM void GPIOHWTimerCB(void *arg) {
-  uint32_t gpio_vals = GPIO_REG_READ(GPIO_IN_ADDRESS) & 0xffff;
-  // gpio_vals |= (READ_PERI_REG(RTC_GPIO_IN_DATA) & 1) << 16;  // GPIO16
+  sample_t gpio_vals = ReadGPIOReg();
   gpio_vals &= s_gpio_mask;
   s_gpio_vals[s_cnt++] = gpio_vals;
   if (s_cnt == NUM_SAMPLES) s_cnt = 0;
@@ -61,7 +74,6 @@ static IRAM void GPIOHWTimerCB(void *arg) {
   // Has anything changed?
   if (s_gpio_last == gpio_vals) return;
   s_gpio_last = gpio_vals;
-  s_int_cnt++;
   mgos_invoke_cb(GPIOChangeCB, nullptr, true /* from_isr */);
   (void) arg;
 }
@@ -92,6 +104,7 @@ void NoisyInputPin::Init() {
   mgos_gpio_setup_input(cfg_.pin, cfg_.pull);
   s_gpio_mask |= (1 << cfg_.pin);
   if (s_timer_id == MGOS_INVALID_TIMER_ID) {
+    LOG(LL_INFO, ("Starting sampling timer"));
     s_timer_id = mgos_set_hw_timer(SAMPLE_INTERVAL_MICROS, MGOS_TIMER_REPEAT,
                                    GPIOHWTimerCB, nullptr);
   }
@@ -99,7 +112,10 @@ void NoisyInputPin::Init() {
   while (s_meas_cnt == mc) {
     // Spin.
   }
-  GetState();
+  bool state = GetState();
+  LOG(LL_INFO, ("%s %d: pin %d, on_value %d, state %s mc %d %#x",
+                "NoisyInputPin", id(), cfg_.pin, cfg_.on_value, OnOff(state),
+                (int) s_meas_cnt, (unsigned) s_gpio_last));
 }
 
 void NoisyInputPin::Check() {
@@ -111,5 +127,3 @@ bool NoisyInputPin::ReadPin() {
 }
 
 }  // namespace shelly
-
-#endif  // CS_PLATFORM == CS_P_ESP8266

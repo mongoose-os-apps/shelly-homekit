@@ -24,6 +24,7 @@
 #include "common/cs_dbg.h"
 #include "common/util/status.h"
 #include "common/util/statusor.h"
+#include "mgos_utils.h"
 
 #define SHELLY_HAP_AID_PRIMARY 0x1
 #define SHELLY_HAP_AID_BASE_SWITCH 0x100
@@ -91,6 +92,10 @@ enum class InMode {
   kEdge = 2,
   kDetached = 3,
   kActivation = 4,
+#if SHELLY_HAVE_DUAL_INPUT_MODES
+  kEdgeBoth = 5,
+  kActivationBoth = 6,
+#endif
   kMax,
 };
 

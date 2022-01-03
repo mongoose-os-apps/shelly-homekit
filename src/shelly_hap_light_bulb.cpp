@@ -73,33 +73,63 @@ Status LightBulb::Init() {
   // On
   on_characteristic = new mgos::hap::BoolCharacteristic(
       iid++, &kHAPCharacteristicType_On,
-      std::bind(&LightBulb::HandleOnRead, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPBoolCharacteristicReadRequest *request UNUSED_ARG,
+             bool *value) {
+        LOG(LL_DEBUG, ("On read %d: %s", id(), OnOff(value)));
+        *value = IsOn();
+        return kHAPError_None;
+      },
       true /* supports_notification */,
-      std::bind(&LightBulb::HandleOnWrite, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPBoolCharacteristicWriteRequest *request UNUSED_ARG,
+             bool value) {
+        LOG(LL_DEBUG, ("On write %d: %s", id(), OnOff(value)));
+        UpdateOnOff(value, "HAP");
+        return kHAPError_None;
+      },
       kHAPCharacteristicDebugDescription_On);
   AddChar(on_characteristic);
   // Brightness
   brightness_characteristic = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_Brightness, 0, 100, 1,
-      std::bind(&LightBulb::HandleBrightnessRead, this, _1, _2, _3),
+      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, cfg_->brightness),
       true /* supports_notification */,
-      std::bind(&LightBulb::HandleBrightnessWrite, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
+             uint8_t value) {
+        LOG(LL_DEBUG,
+            ("Brightness write %d: %d", id(), static_cast<int>(value)));
+        SetBrightness(value, "HAP");
+        return kHAPError_None;
+      },
       kHAPCharacteristicDebugDescription_Brightness);
   AddChar(brightness_characteristic);
   // Hue
   hue_characteristic = new mgos::hap::UInt32Characteristic(
       iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
-      std::bind(&LightBulb::HandleHueRead, this, _1, _2, _3),
+      std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, cfg_->hue),
       true /* supports_notification */,
-      std::bind(&LightBulb::HandleHueWrite, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
+             uint32_t value) {
+        LOG(LL_DEBUG, ("Hue write %d: %d", id(), static_cast<int>(value)));
+        SetHue(value, "HAP");
+        return kHAPError_None;
+      },
       kHAPCharacteristicDebugDescription_Hue);
   AddChar(hue_characteristic);
   // Saturation
   saturation_characteristic = new mgos::hap::UInt32Characteristic(
       iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
-      std::bind(&LightBulb::HandleSaturationRead, this, _1, _2, _3),
+      std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, cfg_->saturation),
       true /* supports_notification */,
-      std::bind(&LightBulb::HandleSaturationWrite, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
+             uint32_t value) {
+        SetSaturation(value, "HAP");
+        return kHAPError_None;
+      },
       kHAPCharacteristicDebugDescription_Saturation);
   AddChar(saturation_characteristic);
 
@@ -467,9 +497,15 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
           UpdateOnOff(state, "switch");
           break;
         case InMode::kEdge:
+#if SHELLY_HAVE_DUAL_INPUT_MODES
+        case InMode::kEdgeBoth:
+#endif
           UpdateOnOff(IsOff(), "ext_edge");
           break;
         case InMode::kActivation:
+#if SHELLY_HAVE_DUAL_INPUT_MODES
+        case InMode::kActivationBoth:
+#endif
           if (state) {
             UpdateOnOff(true, "ext_act");
           } else if (IsOn() && IsAutoOffEnabled()) {
@@ -497,86 +533,6 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
     case Input::Event::kMax:
       break;
   }
-}
-
-HAPError LightBulb::HandleOnRead(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicReadRequest *request, bool *value) {
-  LOG(LL_INFO, ("On read %d: %s", id(), OnOff(value)));
-  *value = IsOn();
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError LightBulb::HandleOnWrite(
-    HAPAccessoryServerRef *server,
-    const HAPBoolCharacteristicWriteRequest *request, bool value) {
-  LOG(LL_INFO, ("On write %d: %s", id(), OnOff(value)));
-  UpdateOnOff(value, "HAP");
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError LightBulb::HandleBrightnessRead(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
-  LOG(LL_INFO, ("Brightness read %d: %d", id(), cfg_->brightness));
-  *value = static_cast<uint8_t>(cfg_->brightness);
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError LightBulb::HandleBrightnessWrite(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
-  LOG(LL_INFO, ("Brightness write %d: %d", id(), static_cast<int>(value)));
-  SetBrightness(value, "HAP");
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError LightBulb::HandleHueRead(
-    HAPAccessoryServerRef *server,
-    const HAPUInt32CharacteristicReadRequest *request, uint32_t *value) {
-  LOG(LL_INFO, ("Hue read %d: %d", id(), cfg_->hue));
-  *value = static_cast<uint32_t>(cfg_->hue);
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError LightBulb::HandleHueWrite(
-    HAPAccessoryServerRef *server,
-    const HAPUInt32CharacteristicWriteRequest *request, uint32_t value) {
-  LOG(LL_INFO, ("Hue write %d: %d", id(), static_cast<int>(value)));
-  SetHue(value, "HAP");
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError LightBulb::HandleSaturationRead(
-    HAPAccessoryServerRef *server,
-    const HAPUInt32CharacteristicReadRequest *request, uint32_t *value) {
-  LOG(LL_INFO, ("Saturation read %d: %d", id(), cfg_->saturation));
-  *value = static_cast<uint32_t>(cfg_->saturation);
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError LightBulb::HandleSaturationWrite(
-    HAPAccessoryServerRef *server,
-    const HAPUInt32CharacteristicWriteRequest *request, uint32_t value) {
-  LOG(LL_INFO, ("Saturation write %d: %d", id(), static_cast<int>(value)));
-  SetSaturation(value, "HAP");
-  (void) server;
-  (void) request;
-  return kHAPError_None;
 }
 
 }  // namespace hap
