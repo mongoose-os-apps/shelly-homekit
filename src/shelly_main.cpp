@@ -453,11 +453,6 @@ static void CheckOverheat(int sys_temp) {
   }
 }
 
-void CountHAPSessions(void *ctx, HAPAccessoryServerRef *, HAPSessionRef *,
-                      bool *) {
-  (*((int *) ctx))++;
-}
-
 StatusOr<int> GetSystemTemperature() {
   if (s_sys_temp_sensor == nullptr) return mgos::Status(STATUS_NOT_FOUND, "");
   auto st = s_sys_temp_sensor->GetTemperature();
@@ -509,8 +504,12 @@ static void StatusTimerCB(void *arg) {
     HAPPlatformTCPStreamManagerStats tcpm_stats = {};
     HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
     int num_sessions = 0;
-    HAPAccessoryServerEnumerateConnectedSessions(&s_server, CountHAPSessions,
-                                                 &num_sessions);
+    HAPAccessoryServerEnumerateConnectedSessions(
+        &s_server,
+        [](void *ctx, HAPAccessoryServerRef *, HAPSessionRef *, bool *) {
+          (*((int *) ctx))++;
+        },
+        &num_sessions);
     std::string status;
     for (const auto &c : g_comps) {
       if (!status.empty()) status.append("; ");
