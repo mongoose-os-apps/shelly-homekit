@@ -392,12 +392,12 @@ void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
 }
 
 void WindowCovering::SetCurTilt(float new_cur_tilt, float p) {
-  new_cur_tilt = TrimTilt(new_cur_tilt);
+  new_cur_tilt = new_cur_tilt;
   if (new_cur_tilt == cur_tilt_) return;
   LOG_EVERY_N(LL_INFO, 8,
               ("WC %d: Cur tilt %.2f -> %.2f, P = %.2f", id(), cur_tilt_,
                new_cur_tilt, p));
-  cur_tilt_ = new_tilt_pos;
+  cur_tilt_ = new_cur_tilt;
   cfg_->current_tilt = cur_tilt_;
   cur_tilt_char_->RaiseEvent();
 }
@@ -407,7 +407,7 @@ void WindowCovering::SetTgtTilt(float new_tgt_tilt, const char *src) {
   if (new_tgt_tilt == tgt_tilt_) return;
   LOG(LL_INFO,
       ("WC %d: Tgt tilt %.2f -> %.2f (%s)", id(), tgt_tilt_, new_tgt_tilt, src));
-  tgt_tilt_ = new_tilt_pos;
+  tgt_tilt_ = new_tgt_tilt;
   tgt_tilt_char_->RaiseEvent();
 }
 // We want tile taps to cycle the open-stop-close-stop sequence.
