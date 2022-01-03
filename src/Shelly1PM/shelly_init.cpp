@@ -73,7 +73,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   // Sensor Discovery
   s_onewire.reset(new Onewire(3, 0));
-  auto sensors = s_onewire->DiscoverAll(NUM_SENSORS_MAX);
+  auto sensors = s_onewire->DiscoverAll();
   if (sensors.size() == 0) {
     s_onewire.reset(nullptr);  // free gpio pin
   }
@@ -91,7 +91,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       (struct mgos_config_se *) mgos_sys_config_get_se3(),
   };
 
-  for (unsigned int i = 0; i < sensors.size(); i++) {
+  for (unsigned int i = 0; i < NUM_SENSORS_MAX; i++) {
     auto *se_cfg = se_cfgs[i];
     CreateHAPSensor(i + 1, std::move(sensors[i]), se_cfg, comps, accs, svr);
   }

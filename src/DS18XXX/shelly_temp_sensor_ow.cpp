@@ -74,17 +74,14 @@ struct mgos_onewire *Onewire::Get() {
   return ow_;
 }
 
-std::vector<std::unique_ptr<TempSensor>> Onewire::DiscoverAll(
-    int num_sensors_max) {
+std::vector<std::unique_ptr<TempSensor>> Onewire::DiscoverAll() {
   std::vector<std::unique_ptr<TempSensor>> sensors;
   mgos_onewire_search_clean(ow_);
-  int num_sensors = 0;
   std::unique_ptr<TempSensor> sensor;
-  while ((sensor = NextAvailableSensor(0)) && (num_sensors < num_sensors_max)) {
+  while (sensor = NextAvailableSensor(0)) {
     sensors.push_back(std::move(sensor));
-    num_sensors++;
   }
-  LOG(LL_INFO, ("Discovered %i sensors", num_sensors));
+  LOG(LL_INFO, ("Discovered %i sensors", sensors.size()));
   return sensors;
 }
 
