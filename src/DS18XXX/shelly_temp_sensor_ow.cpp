@@ -19,6 +19,7 @@
 
 #include <cmath>
 
+#include "mgos_gpio.h"
 #include "mgos_onewire.h"
 
 /* Model IDs */
@@ -58,11 +59,15 @@ struct __attribute__((__packed__)) rom {
 namespace shelly {
 
 Onewire::Onewire(int pin_in, int pin_out) {
+  pin_out_ = pin_out;
   ow_ = mgos_onewire_create_separate_io(pin_in, pin_out);
 }
 
 Onewire::~Onewire() {
   mgos_onewire_close(ow_);
+
+  // release output pin
+  mgos_gpio_setup_input(pin_out_, MGOS_GPIO_PULL_UP);
 }
 
 struct mgos_onewire *Onewire::Get() {

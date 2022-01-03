@@ -39,8 +39,6 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->Init();
   inputs->emplace_back(in);
 
-  s_onewire.reset(new Onewire(3, 0));
-
   (void) sys_temp;
   (void) pms;
 }
@@ -66,7 +64,11 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   // Sensor Discovery
+  s_onewire.reset(new Onewire(3, 0));
   auto sensors = s_onewire->DiscoverAll(NUM_SENSORS_MAX);
+  if (sensors.size() == 0) {
+    s_onewire.reset(nullptr);  // free gpio pin
+  }
 
   // Single switch with non-detached input and no discovered sensor = only one
   // accessory.
