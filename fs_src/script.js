@@ -1773,5 +1773,5 @@ function hsv2rgb(h, s, v) {
 }
 
 function cel2far(v) {
-  return v * 1.8 + 32.0;
+  return Math.round((v * 1.8 + 32.0) * 10) / 10;
 }

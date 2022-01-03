@@ -25,9 +25,10 @@
 
 #include "mgos_timers.hpp"
 
-namespace shelly {
+struct scratchpad;
+struct rom;
 
-class OWTempSensor;
+namespace shelly {
 
 class Onewire {
  public:
@@ -38,48 +39,38 @@ class Onewire {
 
  private:
   struct mgos_onewire *ow_;
-  std::unique_ptr<OWTempSensor> NextAvailableSensor(int type);
+
+  int pin_out_;
+  std::unique_ptr<TempSensor> NextAvailableSensor(int type);
 };
 
-class OWTempSensor : public TempSensor {
+class TempSensorDS18XXX : public TempSensor {
  public:
-  OWTempSensor(struct mgos_onewire *ow, uint8_t *rom);
-  virtual ~OWTempSensor();
+  TempSensorDS18XXX(struct mgos_onewire *ow, struct rom *rom);
+  virtual ~TempSensorDS18XXX();
 
-  virtual StatusOr<float> GetTemperature() override = 0;
+  StatusOr<float> GetTemperature() override;
 
+  static bool SupportsFamily(uint8_t family);
+  virtual void StartUpdating(int interval) override;
+
+ private:
   float cached_temperature_;
-  uint8_t rom_[8];
+  struct rom *rom_;
   struct mgos_onewire *ow_;
 
   mgos::Timer meas_timer_;
   mgos::Timer read_timer_;
 
-  virtual void StartUpdating(int interval) override;
-
- private:
-  virtual void ReadTemperatureCB() = 0;
-  virtual void UpdateTemperatureCB() = 0;
-};
-
-class TempSensorDS18XXX : public OWTempSensor {
- public:
-  TempSensorDS18XXX(struct mgos_onewire *ow, uint8_t *rom);
-  virtual ~TempSensorDS18XXX();
-  static bool SupportsFamily(uint8_t family);
-
-  StatusOr<float> GetTemperature() override;
-
- private:
   int ConversionTime();
   unsigned int GetResolution();
   unsigned int resolution_;
 
-  virtual void ReadTemperatureCB() override;
-  virtual void UpdateTemperatureCB() override;
+  virtual void ReadTemperatureCB();
+  virtual void UpdateTemperatureCB();
 
-  void ReadScratchpad(uint8_t *scratchpad, size_t len);
-  bool VerifyScratchpad(uint8_t *scratchpad);
+  void ReadScratchpad(struct scratchpad *scratchpad);
+  bool VerifyScratchpad(struct scratchpad *scratchpad);
   bool ReadPowerSupply();
 };
 

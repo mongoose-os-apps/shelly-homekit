@@ -22,17 +22,11 @@
 #include "mgos_onewire.h"
 
 /* Model IDs */
-#define DS18S20MODEL 0x10 /* also DS1820 */
+#define DS18S20MODEL 0x10
 #define DS18B20MODEL 0x28
 #define DS1822MODEL 0x22
 #define DS1825MODEL 0x3B
-
-/* Scratchpad size */
-#define SCRATCHPAD_SIZE 9
-
-/* Scratchpad locations */
-#define CONFIGURATION 4
-#define SCRATCHPAD_CRC 8
+#define DS28EA00MODEL 0x42
 
 /* Device resolution */
 #define TEMP_9_BIT 0x1F  /* 9 bit */
@@ -43,6 +37,23 @@
 #define CONVERT_T 0x44
 #define READ_SCRATCHPAD 0xBE
 #define READ_POWER_SUPPLY 0xB4
+
+struct __attribute__((__packed__)) scratchpad {
+  int16_t temperature;
+  uint8_t th;
+  uint8_t tl;
+  uint8_t configuration;
+  uint8_t rfu;
+  uint8_t count_remain;
+  uint8_t count_per_c;
+  uint8_t crc;
+};
+
+struct __attribute__((__packed__)) rom {
+  uint8_t family;
+  uint64_t serial;
+  uint8_t crc;
+};
 
 namespace shelly {
 
@@ -72,14 +83,14 @@ std::vector<std::unique_ptr<TempSensor>> Onewire::DiscoverAll(
   return sensors;
 }
 
-std::unique_ptr<OWTempSensor> Onewire::NextAvailableSensor(int type) {
-  uint8_t rom[8] = {0};
+std::unique_ptr<TempSensor> Onewire::NextAvailableSensor(int type) {
+  struct rom rom = {0};
   int mode = 0;
-  std::unique_ptr<OWTempSensor> sensor;
-  if (mgos_onewire_next(ow_, rom, mode)) {
-    uint8_t family = rom[0];
+  std::unique_ptr<TempSensor> sensor;
+  if (mgos_onewire_next(ow_, (uint8_t *) &rom, mode)) {
+    uint8_t family = rom.family;
     if (TempSensorDS18XXX::SupportsFamily(family)) {
-      sensor.reset(new TempSensorDS18XXX(ow_, rom));
+      sensor.reset(new TempSensorDS18XXX(ow_, &rom));
     } else {
       LOG(LL_INFO, ("Found non-supported device"));
     }
@@ -88,32 +99,26 @@ std::unique_ptr<OWTempSensor> Onewire::NextAvailableSensor(int type) {
   return sensor;
 }
 
-OWTempSensor::OWTempSensor(struct mgos_onewire *ow, uint8_t *rom)
-    : cached_temperature_(0),
-      meas_timer_(std::bind(&OWTempSensor::UpdateTemperatureCB, this)),
-      read_timer_(std::bind(&OWTempSensor::ReadTemperatureCB, this)) {
-  memcpy(rom_, rom, 8);
-  ow_ = ow;
-}
-
-OWTempSensor::~OWTempSensor() {
-}
-
-void OWTempSensor::StartUpdating(int interval) {
+void TempSensorDS18XXX::StartUpdating(int interval) {
   meas_timer_.Reset(interval, MGOS_TIMER_REPEAT | MGOS_TIMER_RUN_NOW);
 }
 
-TempSensorDS18XXX::TempSensorDS18XXX(struct mgos_onewire *ow, uint8_t *rom)
-    : OWTempSensor(ow, rom) {
+TempSensorDS18XXX::TempSensorDS18XXX(struct mgos_onewire *ow,
+                                     struct rom *rom_content)
+    : cached_temperature_(0),
+      meas_timer_(std::bind(&TempSensorDS18XXX::UpdateTemperatureCB, this)),
+      read_timer_(std::bind(&TempSensorDS18XXX::ReadTemperatureCB, this)) {
+  rom_ = new rom();
+  memcpy(rom_, rom_content, sizeof(struct rom));
+  ow_ = ow;
   resolution_ = GetResolution();
-  uint64_t serial_mask = 0xFFFFFFFFFFFF;
-  uint64_t serial_ = ((*(uint64_t *) rom) >> 8) & serial_mask;
   LOG(LL_INFO, ("DS18XXX: model: %02X, serial number: %" PRIx64
                 ", resolution: %d, parasitic power: %d",
-                rom[0], serial_, resolution_, ReadPowerSupply()));
+                rom_->family, rom_->serial, resolution_, ReadPowerSupply()));
 }
 
 TempSensorDS18XXX ::~TempSensorDS18XXX() {
+  delete rom_;
 }
 
 StatusOr<float> TempSensorDS18XXX::GetTemperature() {
@@ -122,40 +127,50 @@ StatusOr<float> TempSensorDS18XXX::GetTemperature() {
 
 bool TempSensorDS18XXX::SupportsFamily(uint8_t family) {
   if (family == DS18B20MODEL or family == DS18S20MODEL or
-      family == DS1822MODEL or family == DS1825MODEL) {
+      family == DS1822MODEL or family == DS1825MODEL or
+      family == DS28EA00MODEL) {
     return true;
   }
   return false;
 }
 
-void TempSensorDS18XXX::ReadScratchpad(uint8_t *scratchpad, size_t len) {
+void TempSensorDS18XXX::ReadScratchpad(struct scratchpad *scratchpad) {
   if (!mgos_onewire_reset(ow_)) {
     return;
   }
-  mgos_onewire_select(ow_, rom_);
+  mgos_onewire_select(ow_, (uint8_t *) rom_);
   mgos_onewire_write(ow_, READ_SCRATCHPAD);
-  mgos_onewire_read_bytes(ow_, scratchpad, len);
+  mgos_onewire_read_bytes(ow_, (uint8_t *) scratchpad,
+                          sizeof(struct scratchpad));
 }
 
 bool TempSensorDS18XXX::ReadPowerSupply() {
   if (!mgos_onewire_reset(ow_)) {
     return false;
   }
-  mgos_onewire_select(ow_, rom_);
+  mgos_onewire_select(ow_, (uint8_t *) rom_);
   mgos_onewire_write(ow_, READ_POWER_SUPPLY);
   return (mgos_onewire_read_bit(ow_) == 0);
 }
 
-bool TempSensorDS18XXX::VerifyScratchpad(uint8_t *scratchpad) {
-  return mgos_onewire_crc8(scratchpad, 8) == scratchpad[SCRATCHPAD_CRC];
+bool TempSensorDS18XXX::VerifyScratchpad(struct scratchpad *scratchpad) {
+  return mgos_onewire_crc8((uint8_t *) scratchpad,
+                           sizeof(struct scratchpad) - 1) == scratchpad->crc;
 }
 
 void TempSensorDS18XXX::ReadTemperatureCB() {
-  uint8_t temp[SCRATCHPAD_SIZE];
-  ReadScratchpad(temp, SCRATCHPAD_SIZE);
-  if (VerifyScratchpad(temp)) {
-    uint16_t temp_s = temp[1] << 8 | temp[0];
-    float temperature = temp_s * 0.0625;
+  struct scratchpad temp = {0};
+  float temperature = 0;
+  ReadScratchpad(&temp);
+  if (VerifyScratchpad(&temp)) {
+    int16_t temp_s = temp.temperature;
+    if (rom_->family == DS18S20MODEL) {
+      temperature =
+          ((int16_t)(temp_s & 0xFFFE) / 2.0) - 0.25 +
+          ((float) (temp.count_per_c - temp.count_remain) / temp.count_per_c);
+    } else {
+      temperature = temp_s * 0.0625;
+    }
     LOG(LL_INFO, ("Read temperature %f", temperature));
     cached_temperature_ = temperature;
     if (notifier_) {
@@ -168,19 +183,19 @@ void TempSensorDS18XXX::UpdateTemperatureCB() {
   if (!mgos_onewire_reset(ow_)) {
     return;
   }
-  mgos_onewire_select(ow_, rom_);
+  mgos_onewire_select(ow_, (uint8_t *) rom_);
   mgos_onewire_write(ow_, CONVERT_T);
   int time = ConversionTime();
   read_timer_.Reset(time, 0);
 }
 
 unsigned int TempSensorDS18XXX::GetResolution() {
-  uint8_t scratchpad[SCRATCHPAD_SIZE] = {0};
-  ReadScratchpad(scratchpad, SCRATCHPAD_SIZE);
-  if (!VerifyScratchpad(scratchpad)) {
+  struct scratchpad scratchpad = {0};
+  ReadScratchpad(&scratchpad);
+  if (!VerifyScratchpad(&scratchpad)) {
     return 0;
   }
-  switch (scratchpad[CONFIGURATION]) {
+  switch (scratchpad.configuration) {
     case TEMP_12_BIT:
       return 12;
     case TEMP_11_BIT:
