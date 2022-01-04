@@ -120,6 +120,20 @@ bool WipeDevice() {
   return wiped;
 }
 
+void SanitizeSysConfig() {
+#ifdef MGOS_CONFIG_HAVE_WIFI
+  struct mgos_config_wifi wifi_cfg = {};
+  mgos_config_wifi_copy(mgos_sys_config_get_wifi(), &wifi_cfg);
+  // Load config up to level 8, just before the user level.
+  mgos_sys_config_load_level(&mgos_sys_config, MGOS_CONFIG_LEVEL_VENDOR_8);
+  // Copy WiFi settings back.
+  mgos_config_wifi_copy(&wifi_cfg, &mgos_sys_config.wifi);
+  mgos_config_wifi_free(&wifi_cfg);
+  // Save the config. Only WiFi settings will be saved to conf9.json.
+  mgos_sys_config_save(&mgos_sys_config, false, nullptr);
+#endif  // MGOS_CONFIG_HAVE_WIFI
+}
+
 void WipeDeviceRevertToStock() {
   // Files that we brought and want to remove so as not to pollute stock.
   static const char *s_wipe_files_stock[] = {
@@ -129,20 +143,7 @@ void WipeDeviceRevertToStock() {
     remove(wipe_fn);
   }
   WipeDevice();
-#ifdef MGOS_CONFIG_HAVE_WIFI
-  mgos_wifi_disconnect();
-  struct mgos_config_wifi wifi_cfg = {};
-  mgos_config_wifi_copy(mgos_sys_config_get_wifi(), &wifi_cfg);
-  // Reset entire sys config to defaults.
-  mgos_config_set_defaults(&mgos_sys_config);
-  // Copy WiFi STA settings back.
-  mgos_config_wifi_sta_copy(&wifi_cfg.sta, &mgos_sys_config.wifi.sta);
-  mgos_config_wifi_sta_copy(&wifi_cfg.sta1, &mgos_sys_config.wifi.sta1);
-  mgos_config_wifi_sta_copy(&wifi_cfg.sta2, &mgos_sys_config.wifi.sta2);
-  mgos_config_wifi_free(&wifi_cfg);
-  // Save the config. Only WiFi settings will be saved to conf9.json.
-  mgos_sys_config_save(&mgos_sys_config, false, nullptr);
-#endif  // MGOS_CONFIG_HAVE_WIFI
+  SanitizeSysConfig();
 }
 
 bool IsSoftReboot() {

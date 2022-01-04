@@ -564,10 +564,13 @@ bool mgos_sys_config_get_wifi_sta_enable(void) {
 }
 #endif
 
-static bool shelly_cfg_migrate(bool *reboot_required) {
+static bool MigrateConfig(bool *reboot_required) {
   bool changed = false;
   *reboot_required = false;
   if (mgos_sys_config_get_shelly_cfg_version() == 0) {
+    // Very first migration after conversion, reset all settings to defaults
+    // except WiFi.
+    SanitizeSysConfig();
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
@@ -836,7 +839,7 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "relaydata",
       "index.html",
       "conf9_backup.json",
-      // Obsolete files from previopus versions.
+      // Obsolete files from previous versions.
       "axios.min.js.gz",
       "favicon.ico",
       "logo.png",
@@ -844,6 +847,8 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "style.css",
       "style.css.gz",
       // Plus firmware stuff that we don't need.
+      "api_math.js",
+      "api_rpc.js",
       "bundle.css.gz",
       "bundle.js.gz",
       "ca.pem",
@@ -999,7 +1004,7 @@ void InitApp() {
                            nullptr /* context */);
 
   bool reboot_required = false;
-  if (shelly_cfg_migrate(&reboot_required)) {
+  if (MigrateConfig(&reboot_required)) {
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          nullptr /* msg */);
     if (reboot_required) {
