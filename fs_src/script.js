@@ -51,7 +51,7 @@ function el(container, id) {
 }
 
 function checkName(name) {
-  return !!name.match(/^[a-z0-9\-]{1,63}$/i)
+  return !!name.match(/^[a-z0-9\-]{1,63}$/i);
 }
 
 el("sys_save_btn").onclick = function () {
@@ -254,7 +254,7 @@ function dateStringToSeconds(dateString) {
     days, hours, minutes, seconds, milliseconds
   } = dateString.match(
     /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\.(?<milliseconds>\d{3})/
-  ).groups
+  ).groups;
 
   return parseInt(days) * 24 * 3600 +
     parseInt(hours) * 3600 +
@@ -402,6 +402,7 @@ function wcSetConfig(c, cfg, spinner) {
       in_mode: parseInt(el(c, "in_mode").value),
       swap_inputs: el(c, "swap_inputs").checked,
       swap_outputs: el(c, "swap_outputs").checked,
+      tilt_time_ms: el(c, "tilt_time_ms").value,
     };
   }
   setComponentConfig(c, cfg, spinner);
@@ -446,7 +447,7 @@ el("reboot_btn").onclick = function () {
   callDevice("Sys.Reboot", {delay_ms: 500}).then(function () {
     alert("System is rebooting and will reconnect when ready.");
   });
-}
+};
 
 el("reset_btn").onclick = function () {
   if(!confirm("Device configuration will be wiped and return to AP mode. Are you sure?")) return;
@@ -454,7 +455,7 @@ el("reset_btn").onclick = function () {
   callDevice("Shelly.WipeDevice", {}).then(function () {
     alert("Device configuration has been reset, it will reboot in AP mode.");
   });
-}
+};
 
 function findOrAddContainer(cd) {
   let elId = `c${cd.type}-${cd.id}`;
@@ -495,7 +496,7 @@ function findOrAddContainer(cd) {
         setComponentState(c, {tgt_pos: 0}, el(c, "close_spinner"));
       };
       el(c, "save_btn").onclick = function () {
-        wcSetConfig(c, null, el(c, "save_spinner"))
+        wcSetConfig(c, null, el(c, "save_spinner"));
       };
       el(c, "cal_btn").onclick = function () {
         setComponentState(c, {state: 10}, null);
@@ -682,6 +683,7 @@ function updateComponent(cd) {
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       checkIfNotModified(el(c, "swap_inputs"), cd.swap_inputs);
       checkIfNotModified(el(c, "swap_outputs"), cd.swap_outputs);
+      setValueIfNotModified(el(c, "tilt_time_ms"), cd.tile_time_ms);
       let posText, calText;
       if (cd.cal_done == 1) {
         if (cd.cur_pos != cd.tgt_pos) {
@@ -1488,7 +1490,7 @@ async function uploadFW(blob, spinner, status, ar) {
 
 // major.minor.patch-variantN
 function parseVersion(versionString) {
-  version = versionString.match(/^(?<major>\d+).(?<minor>\d+).(?<patch>\d+)-?(?<variant>[a-z]*)(?<varSeq>\d*)$/).groups
+  version = versionString.match(/^(?<major>\d+).(?<minor>\d+).(?<patch>\d+)-?(?<variant>[a-z]*)(?<varSeq>\d*)$/).groups;
   version.major = parseInt(version.major);
   version.minor = parseInt(version.minor);
   version.patch = parseInt(version.patch);
@@ -1579,7 +1581,7 @@ function checkUpdate() {
       se.className = "";
       e.innerHTML = `
         Version ${latestVersion} is available.
-        See <a href="${relNotesURL}" target="_blank">release notes</a>.`
+        See <a href="${relNotesURL}" target="_blank">release notes</a>.`;
       el("update_btn_text").innerText = "Install";
       el("update_btn").onclick = function () {
         return downloadUpdate(updateURL, el("fw_spinner"), el("update_status"));

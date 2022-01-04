@@ -101,7 +101,11 @@ class WindowCovering : public Component, public mgos::hap::Service {
   void SetCurPos(float new_cur_pos, float p);
   void SetTgtPos(float new_tgt_pos, const char *src);
 
+  void SetCurTilt(float new_cur_tilt, float p);
+  void SetTgtTilt(float new_tgt_tilt, const char *src);
+
   void HAPSetTgtPos(float value);
+  void HAPSetTgtTilt(float value);
 
   Direction GetDesiredMoveDirection();
   void Move(Direction dir);
@@ -124,11 +128,15 @@ class WindowCovering : public Component, public mgos::hap::Service {
 
   mgos::hap::Characteristic *cur_pos_char_ = nullptr;
   mgos::hap::Characteristic *tgt_pos_char_ = nullptr;
+  mgos::hap::Characteristic *cur_tilt_char_ = nullptr;
+  mgos::hap::Characteristic *tgt_tilt_char_ = nullptr;
   mgos::hap::Characteristic *pos_state_char_ = nullptr;
   mgos::hap::Characteristic *obst_char_ = nullptr;
 
   float cur_pos_ = kNotSet;
   float tgt_pos_ = kNotSet;
+  float cur_tilt_ = kNotSet;
+  float tgt_tilt_ = kNotSet;
 
   State state_ = State::kIdle;
   State tgt_state_ = State::kNone;
