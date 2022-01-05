@@ -21,12 +21,11 @@
 
 #include <vector>
 
-#include <mgos_onewire.h>
-
 #include "mgos_timers.hpp"
 
-struct scratchpad;
-struct rom;
+struct mgos_onewire;
+struct Scratchpad;
+struct ROM;
 
 namespace shelly {
 
@@ -46,7 +45,7 @@ class Onewire {
 
 class TempSensorDS18XXX : public TempSensor {
  public:
-  TempSensorDS18XXX(struct mgos_onewire *ow, struct rom *rom);
+  TempSensorDS18XXX(struct mgos_onewire *ow, struct ROM *rom);
   virtual ~TempSensorDS18XXX();
 
   StatusOr<float> GetTemperature() override;
@@ -56,7 +55,7 @@ class TempSensorDS18XXX : public TempSensor {
 
  private:
   float cached_temperature_;
-  struct rom *rom_;
+  struct ROM *rom_;
   struct mgos_onewire *ow_;
 
   mgos::Timer meas_timer_;
@@ -69,8 +68,8 @@ class TempSensorDS18XXX : public TempSensor {
   virtual void ReadTemperatureCB();
   virtual void UpdateTemperatureCB();
 
-  void ReadScratchpad(struct scratchpad *scratchpad);
-  bool VerifyScratchpad(struct scratchpad *scratchpad);
+  void ReadScratchpad(struct Scratchpad *scratchpad);
+  bool VerifyScratchpad(struct Scratchpad *scratchpad);
   bool ReadPowerSupply();
 };
 

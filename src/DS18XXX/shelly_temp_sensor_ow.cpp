@@ -39,7 +39,7 @@
 #define READ_SCRATCHPAD 0xBE
 #define READ_POWER_SUPPLY 0xB4
 
-struct __attribute__((__packed__)) scratchpad {
+struct __attribute__((__packed__)) Scratchpad {
   int16_t temperature;
   uint8_t th;
   uint8_t tl;
@@ -50,7 +50,7 @@ struct __attribute__((__packed__)) scratchpad {
   uint8_t crc;
 };
 
-struct __attribute__((__packed__)) rom {
+struct __attribute__((__packed__)) ROM {
   uint8_t family;
   uint64_t serial;
   uint8_t crc;
@@ -86,7 +86,7 @@ std::vector<std::unique_ptr<TempSensor>> Onewire::DiscoverAll() {
 }
 
 std::unique_ptr<TempSensor> Onewire::NextAvailableSensor(int type) {
-  struct rom rom = {0};
+  struct ROM rom = {0};
   int mode = 0;
   std::unique_ptr<TempSensor> sensor;
   if (mgos_onewire_next(ow_, (uint8_t *) &rom, mode)) {
@@ -106,12 +106,12 @@ void TempSensorDS18XXX::StartUpdating(int interval) {
 }
 
 TempSensorDS18XXX::TempSensorDS18XXX(struct mgos_onewire *ow,
-                                     struct rom *rom_content)
+                                     struct ROM *rom_content)
     : cached_temperature_(0),
       meas_timer_(std::bind(&TempSensorDS18XXX::UpdateTemperatureCB, this)),
       read_timer_(std::bind(&TempSensorDS18XXX::ReadTemperatureCB, this)) {
-  rom_ = new rom();
-  memcpy(rom_, rom_content, sizeof(struct rom));
+  rom_ = new ROM();
+  memcpy(rom_, rom_content, sizeof(struct ROM));
   ow_ = ow;
   resolution_ = GetResolution();
   LOG(LL_INFO, ("DS18XXX: model: %02X, serial number: %" PRIx64
@@ -136,14 +136,14 @@ bool TempSensorDS18XXX::SupportsFamily(uint8_t family) {
   return false;
 }
 
-void TempSensorDS18XXX::ReadScratchpad(struct scratchpad *scratchpad) {
+void TempSensorDS18XXX::ReadScratchpad(struct Scratchpad *scratchpad) {
   if (!mgos_onewire_reset(ow_)) {
     return;
   }
   mgos_onewire_select(ow_, (uint8_t *) rom_);
   mgos_onewire_write(ow_, READ_SCRATCHPAD);
   mgos_onewire_read_bytes(ow_, (uint8_t *) scratchpad,
-                          sizeof(struct scratchpad));
+                          sizeof(struct Scratchpad));
 }
 
 bool TempSensorDS18XXX::ReadPowerSupply() {
@@ -155,13 +155,13 @@ bool TempSensorDS18XXX::ReadPowerSupply() {
   return (mgos_onewire_read_bit(ow_) == 0);
 }
 
-bool TempSensorDS18XXX::VerifyScratchpad(struct scratchpad *scratchpad) {
+bool TempSensorDS18XXX::VerifyScratchpad(struct Scratchpad *scratchpad) {
   return mgos_onewire_crc8((uint8_t *) scratchpad,
-                           sizeof(struct scratchpad) - 1) == scratchpad->crc;
+                           sizeof(struct Scratchpad) - 1) == scratchpad->crc;
 }
 
 void TempSensorDS18XXX::ReadTemperatureCB() {
-  struct scratchpad temp = {0};
+  struct Scratchpad temp = {0};
   float temperature = 0;
   ReadScratchpad(&temp);
   if (VerifyScratchpad(&temp)) {
@@ -192,7 +192,7 @@ void TempSensorDS18XXX::UpdateTemperatureCB() {
 }
 
 unsigned int TempSensorDS18XXX::GetResolution() {
-  struct scratchpad scratchpad = {0};
+  struct Scratchpad scratchpad = {0};
   ReadScratchpad(&scratchpad);
   if (!VerifyScratchpad(&scratchpad)) {
     return 0;
