@@ -129,6 +129,10 @@ void SanitizeSysConfig() {
   // Copy WiFi settings back.
   mgos_config_wifi_copy(&wifi_cfg, &mgos_sys_config.wifi);
   mgos_config_wifi_free(&wifi_cfg);
+  char *device_id = strdup(mgos_sys_config_get_device_id());
+  mgos_expand_mac_address_placeholders(device_id);
+  mgos_sys_config_set_device_id(device_id);
+  free(device_id);
   // Save the config. Only WiFi settings will be saved to conf9.json.
   mgos_sys_config_save(&mgos_sys_config, false, nullptr);
 #endif  // MGOS_CONFIG_HAVE_WIFI
