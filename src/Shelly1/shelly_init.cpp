@@ -83,7 +83,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       (struct mgos_config_se *) mgos_sys_config_get_se3(),
   };
 
-  for (unsigned int i = 0; i < NUM_SENSORS_MAX; i++) {
+  for (unsigned int i = 0;
+       i < std::min((size_t) NUM_SENSORS_MAX, sensors.size()); i++) {
     auto *se_cfg = se_cfgs[i];
     CreateHAPSensor(i + 1, std::move(sensors[i]), se_cfg, comps, accs, svr);
   }

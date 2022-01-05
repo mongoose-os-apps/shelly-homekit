@@ -114,9 +114,14 @@ Status TemperatureSensor::Init() {
         return kHAPError_None;
       },
       true /* supports_notification */,
-      [](HAPAccessoryServerRef *server UNUSED_ARG,
-         const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
-         uint8_t value UNUSED_ARG) { return kHAPError_None; },
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
+             uint8_t value) {
+        if (value >= 0 && value <= 1) {
+          cfg_->unit = value;
+        }
+        return kHAPError_None;
+      },
       kHAPCharacteristicDebugDescription_TemperatureDisplayUnits));
   temp_sensor_->notifier_ = std::bind(&TemperatureSensor::ValueChanged, this);
   LOG(LL_INFO, ("Exporting Temp"));
