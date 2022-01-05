@@ -19,6 +19,7 @@
 const maxAuthAge = 24 * 60 * 60;
 const updateCheckInterval = 24 * 60 * 60;
 const uiRefreshInterval = 1;
+const rpcRequestTimeoutMs = 10000;
 
 // Globals.
 let lastInfo = null;
@@ -1216,7 +1217,7 @@ function callDeviceAuth(method, params, ar) {
         if (socket) {
           socket.close();
         }
-      }, 3000);
+      }, rpcRequestTimeoutMs);
     } catch (e) {
       reject(e);
     }
