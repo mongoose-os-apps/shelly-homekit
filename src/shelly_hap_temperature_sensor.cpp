@@ -97,7 +97,7 @@ void TemperatureSensor::ValueChanged() {
 Status TemperatureSensor::Init() {
   uint16_t iid = svc_.iid + 1;
   current_temperature_characteristic_ = new mgos::hap::FloatCharacteristic(
-      iid++, &kHAPCharacteristicType_CurrentTemperature, 0.0, 100.0, 0.1,
+      iid++, &kHAPCharacteristicType_CurrentTemperature, -55.0, 125.0, 0.1,
       [this](HAPAccessoryServerRef *server UNUSED_ARG,
              const HAPFloatCharacteristicReadRequest *request UNUSED_ARG,
              float *value) {
