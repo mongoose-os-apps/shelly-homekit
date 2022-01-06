@@ -86,10 +86,7 @@ static void GetInfoHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) args;
 }
 
-static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
-                              struct mg_rpc_frame_info *fi,
-                              struct mg_str args) {
-  ReportRPCRequest(ri);
+static void AppendBasicInfoExt(std::string *res) {
   const char *device_id = mgos_sys_config_get_device_id();
   bool hap_paired = HAPAccessoryServerIsPaired(s_server);
   bool hap_running = (HAPAccessoryServerGetState(s_server) ==
@@ -102,6 +99,45 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   }
   bool debug_en = mgos_sys_config_get_file_logger_enable();
   int flags = GetServiceFlags();
+  mgos::JSONAppendStringf(
+      res,
+      "device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
+      "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
+      "auth_en: %B, auth_domain: %Q, "
+      "hap_cn: %d, hap_running: %B, hap_paired: %B, "
+      "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
+      "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
+      "debug_en: %B, ",
+      device_id, mgos_sys_config_get_shelly_name(), MGOS_APP,
+      CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
+      mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
+      mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
+      false /* failsafe_mode */, IsAuthEn(),
+      mgos_sys_config_get_rpc_auth_domain(), hap_cn, hap_running, hap_paired,
+      (unsigned) tcpm_stats.numPendingTCPStreams,
+      (unsigned) tcpm_stats.numActiveTCPStreams,
+      (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
+#ifdef MGOS_SYS_CONFIG_HAVE_WC1  // wc_avail
+      true,
+#else
+      false,
+#endif
+#ifdef MGOS_SYS_CONFIG_HAVE_GDO1  // gdo_avail
+      true,
+#else
+      false,
+#endif
+      debug_en);
+  auto sys_temp = GetSystemTemperature();
+  if (sys_temp.ok()) {
+    mgos::JSONAppendStringf(res, "sys_temp: %d, overheat_on: %B, ",
+                            sys_temp.ValueOrDie(),
+                            (flags & SHELLY_SERVICE_FLAG_OVERHEAT));
+  }
+}
+
+static void AppendWifiInfoExt(std::string *res) {
+  const char *device_id = mgos_sys_config_get_device_id();
   WifiConfig wc = GetWifiConfig();
   WifiInfo wi = GetWifiInfo();
   /* Do not return plaintext password, mix it up with SSID and device ID. */
@@ -119,13 +155,8 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   std::string wifi_pass = ScreenPassword(wc.sta.pass);
   std::string wifi1_pass = ScreenPassword(wc.sta1.pass);
   std::string wifi_ap_pass = ScreenPassword(wc.ap.pass);
-  OTAProgress otap;
-  auto otaps = GetOTAProgress();
-  if (otaps.ok()) otap = otaps.ValueOrDie();
-  std::string res = mgos::JSONPrintStringf(
-      "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
-      "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
-      "auth_en: %B, auth_domain: %Q, "
+  mgos::JSONAppendStringf(
+      res,
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
       "wifi_pass_h: \"%08x%08x%08x%08x\", "
       "wifi_ip: %Q, wifi_netmask: %Q, wifi_gw: %Q, "
@@ -134,63 +165,52 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       "wifi_ap_en: %B, wifi_ap_ssid: %Q, wifi_ap_pass: %Q, "
       "wifi_connecting: %B, wifi_connected: %B, wifi_conn_ssid: %Q, "
       "wifi_conn_rssi: %d, wifi_conn_ip: %Q, "
-      "wifi_status: %Q, "
-      "hap_cn: %d, hap_running: %B, hap_paired: %B, "
-      "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
-      "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
-      "debug_en: %B, ota_progress: %d, ota_version: %Q, ota_build: %Q",
-      device_id, mgos_sys_config_get_shelly_name(), MGOS_APP,
-      CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
-      mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
-      mgos_sys_ro_vars_get_fw_id(), (int) mgos_uptime(),
-      false /* failsafe_mode */, IsAuthEn(),
-      mgos_sys_config_get_rpc_auth_domain(), wc.sta.enable, wc.sta.ssid.c_str(),
-      wifi_pass.c_str(), (unsigned int) digest[0], (unsigned int) digest[2],
+      "wifi_status: %Q, ",
+      wc.sta.enable, wc.sta.ssid.c_str(), wifi_pass.c_str(),
+      (unsigned int) digest[0], (unsigned int) digest[2],
       (unsigned int) digest[4], (unsigned int) digest[6], wc.sta.ip.c_str(),
       wc.sta.netmask.c_str(), wc.sta.gw.c_str(), wc.sta1.enable,
       wc.sta1.ssid.c_str(), wifi1_pass.c_str(), wc.sta1.ip.c_str(),
       wc.sta1.netmask.c_str(), wc.sta1.gw.c_str(), wc.ap.enable,
       wc.ap.ssid.c_str(), wifi_ap_pass.c_str(), wi.sta_connecting,
       wi.sta_connected, wi.sta_ssid.c_str(), wi.sta_rssi, wi.sta_ip.c_str(),
-      wi.status.c_str(), hap_cn, hap_running, hap_paired,
-      (unsigned) tcpm_stats.numPendingTCPStreams,
-      (unsigned) tcpm_stats.numActiveTCPStreams,
-      (unsigned) tcpm_stats.maxNumTCPStreams, mgos_sys_config_get_shelly_mode(),
-#ifdef MGOS_SYS_CONFIG_HAVE_WC1  // wc_avail
-      true,
-#else
-      false,
-#endif
-#ifdef MGOS_SYS_CONFIG_HAVE_GDO1  // gdo_avail
-      true,
-#else
-      false,
-#endif
-      debug_en, otap.progress_pct, otap.version.c_str(), otap.build.c_str());
-  auto sys_temp = GetSystemTemperature();
-  if (sys_temp.ok()) {
-    mgos::JSONAppendStringf(&res, ", sys_temp: %d, overheat_on: %B",
-                            sys_temp.ValueOrDie(),
-                            (flags & SHELLY_SERVICE_FLAG_OVERHEAT));
-  }
-  mgos::JSONAppendStringf(&res, ", components: [");
+      wi.status.c_str());
+}
+
+static void AppendOTAInfoExt(std::string *res) {
+  OTAProgress otap;
+  auto otaps = GetOTAProgress();
+  if (otaps.ok()) otap = otaps.ValueOrDie();
+  mgos::JSONAppendStringf(
+      res, "ota_progress: %d, ota_version: %Q, ota_build: %Q, ",
+      otap.progress_pct, otap.version.c_str(), otap.build.c_str());
+}
+
+static void AppendCompoentInfoExt(std::string *res) {
+  mgos::JSONAppendStringf(res, "components: [");
   bool first = true;
   for (const auto &c : g_comps) {
     const auto &is = c->GetInfoJSON();
     if (is.ok()) {
-      if (!first) res.append(", ");
-      res.append(is.ValueOrDie());
+      if (!first) res->append(", ");
+      res->append(is.ValueOrDie());
       first = false;
     }
   }
+  res->append("]");
+}
 
-  mgos::JSONAppendStringf(&res, "]}");
-
-  mg_rpc_send_responsef(ri, "%s", res.c_str());
-
-  (void) cb_arg;
-  (void) fi;
-  (void) args;
+static void GetInfoExtHandler(struct mg_rpc_request_info *ri,
+                              void *cb_arg UNUSED_ARG,
+                              struct mg_rpc_frame_info *fi UNUSED_ARG,
+                              struct mg_str args UNUSED_ARG) {
+  std::string res;
+  AppendBasicInfoExt(&res);
+  AppendWifiInfoExt(&res);
+  AppendOTAInfoExt(&res);
+  AppendCompoentInfoExt(&res);
+  ReportRPCRequest(ri);
+  mg_rpc_send_responsef(ri, "{%s}", res.c_str());
 }
 
 static void SetConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
