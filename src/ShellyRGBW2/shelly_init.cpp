@@ -105,10 +105,17 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       return;
     }
 
+    bool to_pri_acc = (ndev == 1);  // only device will become primary accessory
+                                    // regardless of sw_hidden status
     bool sw_hidden = is_optional && (lb_cfg->svc_type == -1);
     int aid = SHELLY_HAP_AID_BASE_LIGHTING + i;
 
-    if (!sw_hidden) {
+    mgos::hap::Accessory *pri_acc = accs->front().get();
+    if (to_pri_acc) {
+      hap_light->set_primary(true);
+      pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
+      pri_acc->AddService(hap_light.get());
+    } else if (!sw_hidden) {
       std::unique_ptr<mgos::hap::Accessory> acc(
           new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
                                    lb_cfg->name, nullptr, svr));
