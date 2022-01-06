@@ -106,13 +106,9 @@ Status TemperatureSensor::Init() {
       kHAPCharacteristicDebugDescription_CurrentTemperature);
   AddChar(current_temperature_characteristic_);
   AddChar(new mgos::hap::UInt8Characteristic(
-      iid++, &kHAPCharacteristicType_TemperatureDisplayUnits, 0, 255, 1,
-      [this](HAPAccessoryServerRef *server UNUSED_ARG,
-             const HAPUInt8CharacteristicReadRequest *request UNUSED_ARG,
-             uint8_t *value) {
-        *value = cfg_->unit;
-        return kHAPError_None;
-      },
+      iid++, &kHAPCharacteristicType_TemperatureDisplayUnits, 0, 1, 1,
+      std::bind(&mgos::hap
+                : ReadUInt8<int>, _1, _2, _3, cfg_->unit),
       true /* supports_notification */,
       [this](HAPAccessoryServerRef *server UNUSED_ARG,
              const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
