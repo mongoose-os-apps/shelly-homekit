@@ -102,6 +102,7 @@ std::unique_ptr<TempSensor> Onewire::NextAvailableSensor(int type) {
 }
 
 void TempSensorDS18XXX::StartUpdating(int interval) {
+  read_timer_.Clear();  // Clear eventually pending read
   meas_timer_.Reset(interval, MGOS_TIMER_REPEAT | MGOS_TIMER_RUN_NOW);
 }
 

@@ -415,6 +415,7 @@ function valSetConfig(c) {
   let cfg = {
     name: name,
     unit: parseInt(el(c, "unit").value),
+    update_interval: parseInt(el(c, "update_interval").value),
   };
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
@@ -728,6 +729,7 @@ function updateComponent(cd) {
       }
       el(c, "value").innerHTML = valconv(cd.value);
       selectIfNotModified(el(c, "unit"), cd.unit);
+      setValueIfNotModified(el(c, "update_interval"), cd.update_interval);
       break;
     }
     case Component_Type.kStatelessSwitch: {

@@ -41,6 +41,7 @@ config_schema:
   - ["se", "o", {title: "Sensor settings", abstract: true}]
   - ["se.name", "s", "", {title: "Name of the sensor"}]
   - ["se.unit", "i", 0, {title: "Display unit of the Sensor"}] # is dependant on the sensor type, for temperature: 0 - Celsius, 1 - Farenheit, other sensors 0 - default
+  - ["se.update_interval", "i", 1, {title: "Update Interval of the sensor in seconds, minimum 1s"}]
 
   - ["sw", "o", {title: "Switch settings", abstract: true}]
   - ["sw.name", "s", "", {title: "Name of the switch"}]

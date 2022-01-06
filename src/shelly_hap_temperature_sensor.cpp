@@ -54,8 +54,9 @@ Status TemperatureSensor::SetConfig(const std::string &config_json,
                                     bool *restart_required) {
   struct mgos_config_se cfg = *cfg_;
   cfg.name = nullptr;
-  json_scanf(config_json.c_str(), config_json.size(), "{name: %Q, unit: %d",
-             &cfg.name, &cfg.unit);
+  json_scanf(config_json.c_str(), config_json.size(),
+             "{name: %Q, unit: %d, update_interval: %d", &cfg.name, &cfg.unit,
+             &cfg.update_interval);
 
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
@@ -66,6 +67,9 @@ Status TemperatureSensor::SetConfig(const std::string &config_json,
   if (cfg.unit < 0 || cfg.unit > 1) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid unit");
   }
+  if (cfg.update_interval < 1) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid update interval");
+  }
   // Now copy over.
   if (cfg_->name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
@@ -73,6 +77,10 @@ Status TemperatureSensor::SetConfig(const std::string &config_json,
   }
   if (cfg_->unit != cfg.unit) {
     cfg_->unit = cfg.unit;
+  }
+  if (cfg_->update_interval != cfg.update_interval) {
+    cfg_->update_interval = cfg.update_interval;
+    temp_sensor_->StartUpdating(cfg_->update_interval * 1000);
   }
   return Status::OK();
 }
@@ -107,8 +115,7 @@ Status TemperatureSensor::Init() {
   AddChar(current_temperature_characteristic_);
   AddChar(new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_TemperatureDisplayUnits, 0, 1, 1,
-      std::bind(&mgos::hap
-                : ReadUInt8<int>, _1, _2, _3, cfg_->unit),
+      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, cfg_->unit),
       true /* supports_notification */,
       [this](HAPAccessoryServerRef *server UNUSED_ARG,
              const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
@@ -122,7 +129,7 @@ Status TemperatureSensor::Init() {
   temp_sensor_->notifier_ = std::bind(&TemperatureSensor::ValueChanged, this);
   LOG(LL_INFO, ("Exporting Temp"));
 
-  temp_sensor_->StartUpdating(5000);
+  temp_sensor_->StartUpdating(cfg_->update_interval * 1000);
   return Status::OK();
 }
 
@@ -136,8 +143,10 @@ StatusOr<std::string> TemperatureSensor::GetInfo() const {
 
 StatusOr<std::string> TemperatureSensor::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
-      "{id: %d, type: %d, sensor_type: %d, name: %Q, unit: %d", id(), type(),
-      sensor_type(), cfg_->name, cfg_->unit);
+      "{id: %d, type: %d, sensor_type: %d, name: %Q, unit: %d, "
+      "update_interval: %d",
+      id(), type(), sensor_type(), cfg_->name, cfg_->unit,
+      cfg_->update_interval);
   auto tempval = temp_sensor_->GetTemperature();
   if (tempval.ok()) {
     mgos::JSONAppendStringf(&res, ", value: %.1f", tempval.ValueOrDie());
