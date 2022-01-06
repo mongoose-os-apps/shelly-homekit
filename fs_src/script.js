@@ -784,12 +784,12 @@ function updateElement(key, value, info) {
       }
       updateInnerText(el(key), value);
       break;
-    case "device_id":
     case "version":
-      updateInnerText(el(key), value);
-      break;
     case "fw_build":
-      updateInnerText(el("fw_build"), value);
+      if (value !== undefined && (value >= 0 && value < 100)) break;
+      // fallthrough;
+    case "device_id":
+      updateInnerText(el(key), value);
       break;
     case "name":
       document.title = value;
@@ -910,8 +910,10 @@ function updateElement(key, value, info) {
       break;
     case "ota_progress":
       if (value !== undefined && (value >= 0 && value < 100)) {
-        setTimeout(() => setUpdateInProgress(true), 0);
+        updateInnerText(el("version"), `${info.version} -> ${info.ota_version}`);
+        updateInnerText(el("fw_build"), info.ota_build);
         updateInnerText(el("update_status"), `${value}%`);
+        setTimeout(() => setUpdateInProgress(true), 0);
       }
       break;
   }

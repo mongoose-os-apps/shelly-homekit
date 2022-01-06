@@ -29,6 +29,7 @@
 #include "shelly_debug.hpp"
 #include "shelly_hap_switch.hpp"
 #include "shelly_main.hpp"
+#include "shelly_ota.hpp"
 #include "shelly_wifi_config.hpp"
 
 namespace shelly {
@@ -118,6 +119,9 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   std::string wifi_pass = ScreenPassword(wc.sta.pass);
   std::string wifi1_pass = ScreenPassword(wc.sta1.pass);
   std::string wifi_ap_pass = ScreenPassword(wc.ap.pass);
+  OTAProgress otap;
+  auto otaps = GetOTAProgress();
+  if (otaps.ok()) otap = otaps.ValueOrDie();
   std::string res = mgos::JSONPrintStringf(
       "{device_id: %Q, name: %Q, app: %Q, model: %Q, stock_fw_model: %Q, "
       "host: %Q, version: %Q, fw_build: %Q, uptime: %d, failsafe_mode: %B, "
@@ -134,7 +138,7 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
       "hap_cn: %d, hap_running: %B, hap_paired: %B, "
       "hap_ip_conns_pending: %u, hap_ip_conns_active: %u, "
       "hap_ip_conns_max: %u, sys_mode: %d, wc_avail: %B, gdo_avail: %B, "
-      "debug_en: %B, ota_progress: %d",
+      "debug_en: %B, ota_progress: %d, ota_version: %Q, ota_build: %Q",
       device_id, mgos_sys_config_get_shelly_name(), MGOS_APP,
       CS_STRINGIFY_MACRO(PRODUCT_MODEL), CS_STRINGIFY_MACRO(STOCK_FW_MODEL),
       mgos_dns_sd_get_host_name(), mgos_sys_ro_vars_get_fw_version(),
@@ -162,7 +166,7 @@ static void GetInfoExtHandler(struct mg_rpc_request_info *ri, void *cb_arg,
 #else
       false,
 #endif
-      debug_en, GetOTAProgress());
+      debug_en, otap.progress_pct, otap.version.c_str(), otap.build.c_str());
   auto sys_temp = GetSystemTemperature();
   if (sys_temp.ok()) {
     mgos::JSONAppendStringf(&res, ", sys_temp: %d, overheat_on: %B",
@@ -518,9 +522,9 @@ static void SetWifiConfigHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) fi;
 }
 
-bool shelly_rpc_service_init(HAPAccessoryServerRef *server,
-                             HAPPlatformKeyValueStoreRef kvs,
-                             HAPPlatformTCPStreamManagerRef tcpm) {
+bool RPCServiceInit(HAPAccessoryServerRef *server,
+                    HAPPlatformKeyValueStoreRef kvs,
+                    HAPPlatformTCPStreamManagerRef tcpm) {
   s_server = server;
   s_kvs = kvs;
   s_tcpm = tcpm;
