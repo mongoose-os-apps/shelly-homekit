@@ -111,15 +111,8 @@ Status LightBulb::Init() {
     // Color Temperature
     colortemperature_characteristic = new mgos::hap::UInt32Characteristic(
         iid++, &kHAPCharacteristicType_ColorTemperature, 50, 400, 1,
-        [this](HAPAccessoryServerRef *server UNUSED_ARG,
-               const HAPUInt32CharacteristicReadRequest *request UNUSED_ARG,
-               uint32_t *value) {
-          LOG(LL_INFO,
-              ("Color Temperature read %d: %d", id(), &cfg_->colortemperature));
-          *value = static_cast<uint32_t>(cfg_->colortemperature);
-          return kHAPError_None;
-        },
-
+        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3,
+                  &cfg_->colortemperature),
         true /* supports_notification */,
         [this](HAPAccessoryServerRef *server UNUSED_ARG,
                const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
