@@ -39,11 +39,7 @@ TemperatureSensor::~TemperatureSensor() {
 }
 
 Component::Type TemperatureSensor::type() const {
-  return Type::kSensor;
-}
-
-TemperatureSensor::SensorType TemperatureSensor::sensor_type() const {
-  return SensorType::kTemperatureSensor;
+  return Type::kTemperatureSensor;
 }
 
 std::string TemperatureSensor::name() const {
@@ -115,7 +111,7 @@ Status TemperatureSensor::Init() {
   AddChar(current_temperature_characteristic_);
   AddChar(new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_TemperatureDisplayUnits, 0, 1, 1,
-      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, cfg_->unit),
+      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, &cfg_->unit),
       true /* supports_notification */,
       [this](HAPAccessoryServerRef *server UNUSED_ARG,
              const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
@@ -143,10 +139,9 @@ StatusOr<std::string> TemperatureSensor::GetInfo() const {
 
 StatusOr<std::string> TemperatureSensor::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
-      "{id: %d, type: %d, sensor_type: %d, name: %Q, unit: %d, "
+      "{id: %d, type: %d, name: %Q, unit: %d, "
       "update_interval: %d",
-      id(), type(), sensor_type(), cfg_->name, cfg_->unit,
-      cfg_->update_interval);
+      id(), type(), cfg_->name, cfg_->unit, cfg_->update_interval);
   auto tempval = temp_sensor_->GetTemperature();
   if (tempval.ok()) {
     mgos::JSONAppendStringf(&res, ", value: %.1f", tempval.ValueOrDie());

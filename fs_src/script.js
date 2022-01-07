@@ -715,17 +715,10 @@ function updateComponent(cd) {
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "head"), headText);
       valconv = function(a) {return a}; 
-      if (cd.sensor_type !== undefined) {
-        if (cd.sensor_type == 0) {
-          el(c, "unit_0").innerHTML = `&#176;C`;
-          el(c, "unit_1").innerHTML = `&#176;F`;
-          if(cd.unit == 1) {
-            valconv = cel2far;
-          }
-        } else {
-          el(c, "unit_0").innerHTML = "?";
-          el(c, "unit_1").remove();
-        }
+      el(c, "unit_0").innerHTML = `&#176;C`;
+      el(c, "unit_1").innerHTML = `&#176;F`;
+      if(cd.unit == 1) {
+        valconv = cel2far;
       }
       el(c, "value").innerHTML = valconv(cd.value);
       selectIfNotModified(el(c, "unit"), cd.unit);
