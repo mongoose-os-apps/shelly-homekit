@@ -646,7 +646,7 @@ conds:
   - when: build_vars.MODEL == "ShellyURGBW2"
     apply:
       sources:
-        - src/ShellyRGBW2/shelly_init.cpp  # Same components as Shelly25
+        - src/ShellyRGBW2/shelly_init.cpp  # Same components as ShellyRGBW2
         - src/mock/pwm
         - src/mock/wifi_config
       libs:
