@@ -51,9 +51,6 @@ class SensorBase : public Component, public mgos::hap::Service {
   Status SetState(const std::string &state_json) override;
 
  protected:
-  HAPError BoolStateCharRead(HAPAccessoryServerRef *,
-                             const HAPBoolCharacteristicReadRequest *,
-                             bool *value);
   bool state_ = false;
 
  private:

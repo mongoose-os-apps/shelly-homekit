@@ -30,4 +30,6 @@ bool IsSoftReboot();
 
 bool IsFailsafeMode();
 
+void SanitizeSysConfig();
+
 }  // namespace shelly

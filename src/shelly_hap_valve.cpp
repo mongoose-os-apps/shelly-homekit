@@ -50,16 +50,32 @@ Status Valve::Init() {
   // Active
   auto *active_char = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_Active, 0, 1, 1,
-      std::bind(&Valve::HandleActiveRead, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt8CharacteristicReadRequest *request UNUSED_ARG,
+             uint8_t *value) {
+        *value = (out_->GetState() ? 1 : 0);
+        return kHAPError_None;
+      },
       true /* supports_notification */,
-      std::bind(&Valve::HandleActiveWrite, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
+             uint8_t value) {
+        SetOutputState((value == 1), "HAP");
+        state_notify_chars_[1]->RaiseEvent();
+        return kHAPError_None;
+      },
       kHAPCharacteristicDebugDescription_Active);
   state_notify_chars_.push_back(active_char);
   AddChar(active_char);
   // In Use
   auto *in_use_char = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_InUse, 0, 1, 1,
-      std::bind(&Valve::HandleActiveRead, this, _1, _2, _3),
+      [this](HAPAccessoryServerRef *server UNUSED_ARG,
+             const HAPUInt8CharacteristicReadRequest *request UNUSED_ARG,
+             uint8_t *value) {
+        *value = (out_->GetState() ? 1 : 0);
+        return kHAPError_None;
+      },
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_InUse);
   state_notify_chars_.push_back(in_use_char);
@@ -67,7 +83,7 @@ Status Valve::Init() {
   // Valve Type
   auto *valve_type_char = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_ValveType, 0, 1, 1,
-      std::bind(&Valve::HandleValveTypeRead, this, _1, _2, _3),
+      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, &cfg_->valve_type),
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_ValveType);
   state_notify_chars_.push_back(valve_type_char);
@@ -77,34 +93,6 @@ Status Valve::Init() {
   AddPowerMeter(&iid);
 
   return Status::OK();
-}
-
-HAPError Valve::HandleActiveRead(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
-  *value = (out_->GetState() ? 1 : 0);
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError Valve::HandleActiveWrite(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicWriteRequest *request, uint8_t value) {
-  SetOutputState((value == 1), "HAP");
-  state_notify_chars_[1]->RaiseEvent();
-  (void) server;
-  (void) request;
-  return kHAPError_None;
-}
-
-HAPError Valve::HandleValveTypeRead(
-    HAPAccessoryServerRef *server,
-    const HAPUInt8CharacteristicReadRequest *request, uint8_t *value) {
-  *value = cfg_->valve_type;
-  (void) server;
-  (void) request;
-  return kHAPError_None;
 }
 
 }  // namespace hap

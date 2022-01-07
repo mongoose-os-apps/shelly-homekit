@@ -11,3 +11,4 @@ core-*
 fs/conf*.json
 flash-shelly.auth.yaml
 *.cfg.yaml
+.venv

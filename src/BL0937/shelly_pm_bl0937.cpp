@@ -25,12 +25,13 @@
 namespace shelly {
 
 BL0937PowerMeter::BL0937PowerMeter(int id, int cf_pin, int cf1_pin, int sel_pin,
-                                   int meas_time)
+                                   int meas_time, float apc)
     : PowerMeter(id),
       cf_pin_(cf_pin),
       cf1_pin_(cf1_pin),
       sel_pin_(sel_pin),
       meas_time_(meas_time),
+      apc_(apc),
       meas_timer_(std::bind(&BL0937PowerMeter::MeasureTimerCB, this)) {
 }
 
@@ -46,7 +47,7 @@ Status BL0937PowerMeter::Init() {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "no valid pins");
   }
   if (cf_pin_ >= 0) {
-    if (mgos_sys_config_get_bl0937_power_coeff() == 0) {
+    if (apc_ <= 0) {
       return mgos::Errorf(STATUS_INVALID_ARGUMENT, "power_coeff not set");
     }
     mgos_gpio_setup_input(cf_pin_, MGOS_GPIO_PULL_NONE);
@@ -67,6 +68,7 @@ Status BL0937PowerMeter::Init() {
   }
   meas_start_ = mgos_uptime_micros();
   meas_timer_.Reset(meas_time_ * 1000, MGOS_TIMER_REPEAT);
+  LOG(LL_INFO, ("BL0937 @ %d/%d/%d apc %f", cf_pin_, cf1_pin_, sel_pin_, apc_));
   return Status::OK();
 }
 
@@ -90,8 +92,8 @@ void BL0937PowerMeter::MeasureTimerCB() {
   if (cf_count < 2) cf_count = 0;    // Noise
   if (cf1_count < 2) cf1_count = 0;  // Noise
   float cfps = (cf_count / elapsed_sec), cf1ps = (cf1_count / elapsed_sec);
-  apa_ = cfps * mgos_sys_config_get_bl0937_power_coeff();  // Watts
-  aea_ += (apa_ / (3600.0f / meas_time_));                 // Watt-hours
+  apa_ = cfps * apc_;                       // Watts
+  aea_ += (apa_ / (3600.0f / meas_time_));  // Watt-hours
   LOG(LL_DEBUG, ("cfcnt %d cfps %.2f, cf1cnt %d cf1ps %.2f; apa %.2f aea %.2f",
                  (int) cf_count, cfps, (int) cf1_count, cf1ps, apa_, aea_));
   // Start new measurement cycle.

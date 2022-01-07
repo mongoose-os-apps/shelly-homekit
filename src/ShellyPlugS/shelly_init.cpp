@@ -31,7 +31,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   outputs->emplace_back(new OutputPin(1, 15, 1));
   s_led_out = new OutputPin(99, 0, 0);  // Red LED.
   std::unique_ptr<PowerMeter> pm(
-      new BL0937PowerMeter(1, 5 /* CF */, 14 /* CF1 */, 12 /* SEL */, 2));
+      new BL0937PowerMeter(1, 5 /* CF */, 14 /* CF1 */, 12 /* SEL */, 2,
+                           mgos_sys_config_get_bl0937_power_coeff()));
   const Status &st = pm->Init();
   if (st.ok()) {
     pms->emplace_back(std::move(pm));

@@ -17,20 +17,24 @@
 
 #pragma once
 
-#include "mgos_hap_chars.hpp"
-#include "shelly_switch.hpp"
+#include <string>
+
+#include "HAP.h"
+
+#include "shelly_common.hpp"
 
 namespace shelly {
-namespace hap {
 
-class Valve : public ShellySwitch {
- public:
-  Valve(int id, Input *in, Output *out, PowerMeter *out_pm, Output *led_out,
-        struct mgos_config_sw *cfg);
-  virtual ~Valve();
+struct OTAProgress {
+  std::string version;
+  std::string build;
+  int progress_pct = -1;
 
-  Status Init() override;
+  OTAProgress() = default;
+  OTAProgress(const std::string &version, const std::string &build);
 };
+StatusOr<OTAProgress> GetOTAProgress();
 
-}  // namespace hap
+void OTAInit(HAPAccessoryServerRef *server);
+
 }  // namespace shelly

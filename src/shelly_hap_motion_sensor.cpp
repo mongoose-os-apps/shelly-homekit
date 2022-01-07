@@ -38,7 +38,7 @@ Status MotionSensor::Init() {
   if (!st.ok()) return st;
   AddChar(new mgos::hap::BoolCharacteristic(
       svc_.iid + 2, &kHAPCharacteristicType_MotionDetected,
-      std::bind(&MotionSensor::BoolStateCharRead, this, _1, _2, _3),
+      std::bind(&mgos::hap::ReadBool<bool>, _1, _2, _3, &state_),
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_MotionDetected));
   return Status::OK();

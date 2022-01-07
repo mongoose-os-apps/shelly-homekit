@@ -69,7 +69,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
         break;
       }
     }
-    comps->emplace_back(std::move(wc));
+    comps->emplace(comps->begin(), std::move(wc));
     return;
   }
   // Garage door opener mode.

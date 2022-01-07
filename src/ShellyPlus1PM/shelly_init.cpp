@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+#include "mgos.hpp"
+
+#include "nvs_flash.h"
+#include "nvs_handle.hpp"
+
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
@@ -23,18 +28,63 @@
 
 namespace shelly {
 
+static constexpr const char *kNVSPartitionName = "shelly";
+static constexpr const char *kNVSNamespace = "shelly";
+static constexpr const char *kAPowerCoeffNVSKey = "Pm0.apower";
+
+static StatusOr<float> ReadPowerCoeff() {
+  esp_err_t err = ESP_OK;
+  auto fh = nvs::open_nvs_handle_from_partition(
+      kNVSPartitionName, kNVSNamespace, NVS_READONLY, &err);
+  if (fh == nullptr) {
+    return mgos::Errorf(STATUS_NOT_FOUND, "No NVS factory data! err %d", err);
+  }
+  size_t size = 0;
+  err = fh->get_item_size(nvs::ItemType::SZ, kAPowerCoeffNVSKey, size);
+  if (err != ESP_OK) {
+    return mgos::Errorf(STATUS_NOT_FOUND, "No power calibration data!");
+  }
+  char *buf = (char *) calloc(1, size + 1);  // NUL at the end.
+  if (buf == nullptr) {
+    return mgos::Errorf(STATUS_RESOURCE_EXHAUSTED, "Out of memory");
+  }
+  mgos::ScopedCPtr buf_owner(buf);
+  err = fh->get_string(kAPowerCoeffNVSKey, buf, size);
+  if (err != ESP_OK) {
+    return mgos::Errorf(STATUS_RESOURCE_EXHAUSTED, "Failed to read key: %d",
+                        err);
+  }
+  float apc = atof(buf);
+  LOG(LL_DEBUG, ("Factory apower calibration value: %f", apc));
+  return apc;
+}
+
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  outputs->emplace_back(new OutputPin(1, 15, 1));
+  nvs_flash_init_partition(kNVSPartitionName);
+  outputs->emplace_back(new OutputPin(1, 26, 1));
   auto *in = new InputPin(1, 4, 1, MGOS_GPIO_PULL_NONE, true);
-  in->AddHandler(std::bind(&HandleInputResetSequence, in, 15, _1, _2));
+  in->AddHandler(std::bind(&HandleInputResetSequence, in, LED_GPIO, _1, _2));
   in->Init();
   inputs->emplace_back(in);
+
+  // Read factory calibration data but only if the value is default.
+  // If locally adjusted, do not override.
+  if (mgos_sys_config_get_bl0937_0_apower_scale() ==
+      mgos_sys_config_get_default_bl0937_0_apower_scale()) {
+    auto apcs = ReadPowerCoeff();
+    if (apcs.ok()) {
+      mgos_sys_config_set_bl0937_0_apower_scale(apcs.ValueOrDie());
+    } else {
+      auto ss = apcs.status().ToString();
+      LOG(LL_ERROR, ("Error reading factory calibration data: %s", ss.c_str()));
+    }
+  }
   std::unique_ptr<PowerMeter> pm(
-      new BL0937PowerMeter(1, 5 /* CF */, -1 /* CF1 */, -1 /* SEL */, 2,
-                           mgos_sys_config_get_bl0937_power_coeff()));
+      new BL0937PowerMeter(1, 5 /* CF */, 18 /* CF1 */, 23 /* SEL */, 2,
+                           mgos_sys_config_get_bl0937_0_apower_scale()));
   const Status &st = pm->Init();
   if (st.ok()) {
     pms->emplace_back(std::move(pm));
@@ -42,7 +92,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     const std::string &s = st.ToString();
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
-  sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
+  sys_temp->reset(new TempSensorSDNT1608X103F3950(32, 3.3f, 10000.0f));
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

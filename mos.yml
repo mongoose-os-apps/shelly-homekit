@@ -1,7 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.10.1
-platform: esp8266
+version: 2.11.0-alpha7
 
 libs_version: latest
 modules_version: latest
@@ -38,7 +37,6 @@ config_schema:
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
   - ["shelly.overheat_off", "i", 90, {title: "Overheat protection mode turns off when the temperature is back below this threshold"}]
-  - ["bl0937.power_coeff", "d", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
 
   - ["sw", "o", {title: "Switch settings", abstract: true}]
   - ["sw.name", "s", "", {title: "Name of the switch"}]
@@ -71,11 +69,14 @@ config_schema:
   - ["wc.swap_inputs", "b", false, {title: "Swap inputs (2 - open, 1 - close)"}]
   - ["wc.swap_outputs", "b", false, {title: "Swap outputs (2 - open, 1 - close)"}]
   - ["wc.calibrated", "b", false, {title: "Calibration done"}]
-  - ["wc.idle_power_thr", "d", 10.0, {title: "Power consumption threshold for motor idle detection"}]
-  - ["wc.move_power", "d", 0.0, {title: "Power consumption during movement, watts"}]
+  - ["wc.idle_power_thr", "f", 5.0, {title: "Power consumption threshold for motor idle detection"}]
+  - ["wc.move_power", "f", 0.0, {title: "Power consumption during movement, watts"}]
   - ["wc.move_time_ms", "i", 0, {title: "Move time, in millseconds"}]
   - ["wc.max_ramp_up_time_ms", "i", 5000, {title: "Maximum ramp up time, in millseconds"}]
-  - ["wc.current_pos", "d", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
+  - ["wc.obstruction_power_coeff", "f", 2.5, {title: "How much power consumption vs average is too much?"}]
+  - ["wc.obstruction_duration_ms", "i", 3000, {title: "How long should the overpower persist for obstruction to be reported?"}]
+  - ["wc.obstruction_time_coeff", "f", 1.5, {title: "How long is too long (compared to max)?"}]
+  - ["wc.current_pos", "f", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
 
   - ["gdo", "o", {title: "Garage door settings", abstract: true}]
   - ["gdo.name", "s", "Garage Door", {title: "Accessory name"}]
@@ -137,12 +138,12 @@ libs:
   - location: https://github.com/mongoose-os-libs/ota-http-server
   - location: https://github.com/mongoose-os-libs/rpc-service-config
   - location: https://github.com/mongoose-os-libs/rpc-service-fs
-  - location: https://github.com/mongoose-os-libs/rpc-service-ota
   - location: https://github.com/mongoose-os-libs/rpc-uart
-  # Not enough space on 2.5
-  # - location: https://github.com/mongoose-os-libs/rpc-mqtt
   - location: https://github.com/mongoose-os-libs/rpc-ws
   - location: https://github.com/mongoose-os-libs/sntp
+  # Not enough space on 2.5
+  # - location: https://github.com/mongoose-os-libs/rpc-mqtt
+  # - location: https://github.com/mongoose-os-libs/rpc-service-ota
 
 conds:
   - when: build_vars.MODEL == "Shelly1"
@@ -248,6 +249,7 @@ conds:
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.79942025]  # (16 + 1010 + 1935) / (8.53 + 561 + 1076)
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
@@ -408,6 +410,7 @@ conds:
         - ["sw1.in_mode", -1]
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 8.59980831]  # (16 + 1010 + 1935) / (2.01 + 117.3 + 225)
 
   - when: build_vars.MODEL == "ShellyPlugS"
@@ -439,7 +442,82 @@ conds:
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
         - ["sw1.state_led_en", 1]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
+
+  - when: build_vars.MODEL == "ShellyPlus1"
+    apply:
+      name: Plus1
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 25
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"Plus1"'
+        xMGOS_CONFIG_DEV_1: '"aux"'
+      config_schema:
+        - ["device.id", "ShellyPlus1-??????"]
+        - ["shelly.name", "ShellyPlus1-??????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-??????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
+        - ["ssw1.name", "Input"]
+
+  - when: build_vars.MODEL == "ShellyPlus1PM"
+    apply:
+      name: Plus1PM
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 25
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"Plus1PM"'
+      config_schema:
+        - ["device.id", "ShellyPlus1PM-??????"]
+        - ["shelly.name", "ShellyPlus1PM-??????"]
+        - ["wifi.ap.ssid", "ShellyPlus1PM-??????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", -1]
+        # Calibration values from stock
+        - ["bl0937_0", "o", {title: "BL0937 calibration"}]
+        - ["bl0937_0.apower_scale", "f", 2.028531, {title: "BL0937 apower scale"}]
+        - ["bl0937_0.voltage_scale", "f", 0.15510, {title: "BL0937 voltage scale"}]
+        - ["bl0937_0.current_scale", "f", 0.01287, {title: "BL0937 current scale"}]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
+        - ["ssw1.name", "Input"]
 
   - when: build_vars.MODEL == "ShellyRGBW2"
     apply:
@@ -475,9 +553,11 @@ conds:
 
   - when: mos.platform != "ubuntu"
     apply:
+      sources:
+        - src/noisy_input_pin
+        - src/wifi_config
       config_schema:
         - ["wifi.ap.pass", ""]
-        - ["wifi.ap.keep_enabled", false]
         - ["wifi.ap.ip", "192.168.33.1"]
         - ["wifi.ap.gw", ""]
         - ["wifi.ap.dhcp_start", "192.168.33.2"]
@@ -485,9 +565,11 @@ conds:
         - ["wifi.sta_connect_timeout", 15]
         - ["wifi.sta_roam_rssi_thr", -80]
         - ["wifi.sta_roam_interval", 600]
+        - ["wifi.ap.keep_enabled", "b", false, {title: "Keep WiFi AP enabled even when STA is connected"}]
         # This is a mitigation for devices dropping of wifi and never coming back.
-        # While this is being investigated, the workaround is to reboot if not connected for 5 minutes when supposed to be.
-        - ["shelly.wifi_connect_reboot_timeout", "i", 300, {title: "If not connected for this long when supposed to be, reboot"}]
+        # This is believed to be fixed, default has been flipped back to 0 in 2.11.0.
+        # Consider removing in later releases.
+        - ["shelly.wifi_connect_reboot_timeout", "i", 0, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
         - location: https://github.com/mongoose-os-libs/adc
         - location: https://github.com/mongoose-os-libs/pwm
@@ -496,7 +578,8 @@ conds:
         # Size fine-tuning, saves substantial amount of RAM vs defaults.
         HAP_SESSION_SIZE: 392
         HAP_IP_SESSION_SIZE: 600
-        HAP_ACCESSORY_SERVER_SIZE: 1680
+        # XXX: fix size calculation with and without BLE
+        XHAP_ACCESSORY_SERVER_SIZE: 1680
         HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
         HAP_DISABLE_ASSERTS: 1       # 32K
         HAP_DISABLE_PRECONDITIONS: 1 # 40K
@@ -505,6 +588,7 @@ conds:
     apply:
       sources:
         - src/mock/pwm
+        - src/mock/wifi_config
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
@@ -556,5 +640,44 @@ conds:
         - ["wc1.name", "Window 1"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "ShellyU25 GDO"]
+
+  # Test device for BLE development.
+  - when: build_vars.MODEL == "ShellyT32"
+    apply:
+      libs:
+        # adding bt-common enables BLE support at compile time 
+        #- origin: https://github.com/mongoose-os-libs/bt-common
+        #- origin: https://github.com/mongoose-os-libs/ethernet
+      build_vars:
+        APP_SLOT_SIZE: 0x1b0000
+        MGOS_HAP_BLE: 1
+        MGOS_ROOT_FS_TYPE: LFS
+        ESP_IDF_EXTRA_PARTITION: "aux,data,0x88,0x3f0000,48K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+      cdefs:
+        LED_GPIO: 13
+        LED_ON: 1
+        BTN_GPIO: 34
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"XXX"'
+        SHELLY_HAVE_PM: 0
+        BTN_NOISY: 0
+        MGOS_CONFIG_DEV_3: '"aux"'
+      config_schema:
+        # - ["bt.enable", true]
+        - ["bt.adv_enable", false] # ADK controls advertisement.
+        - ["bt.keep_enabled", true]
+        - ["device.id", "ShellyT32-????"]
+        - ["shelly.name", "ShellyT32-????"]
+        - ["wifi.ap.ssid", "ShellyT32-??????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.name", "SWT32"]
+        - ["sw1.in_mode", 0]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "SSWT32"]
+        - ["in1.sensor.name", "ST32"]
 
 manifest_version: 2020-01-29

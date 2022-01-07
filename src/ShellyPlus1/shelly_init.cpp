@@ -18,7 +18,6 @@
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
-#include "shelly_pm_bl0937.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
@@ -27,29 +26,20 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  outputs->emplace_back(new OutputPin(1, 15, 1));
+  outputs->emplace_back(new OutputPin(1, 26, 1));
   auto *in = new InputPin(1, 4, 1, MGOS_GPIO_PULL_NONE, true);
-  in->AddHandler(std::bind(&HandleInputResetSequence, in, 15, _1, _2));
+  in->AddHandler(std::bind(&HandleInputResetSequence, in, LED_GPIO, _1, _2));
   in->Init();
   inputs->emplace_back(in);
-  std::unique_ptr<PowerMeter> pm(
-      new BL0937PowerMeter(1, 5 /* CF */, -1 /* CF1 */, -1 /* SEL */, 2,
-                           mgos_sys_config_get_bl0937_power_coeff()));
-  const Status &st = pm->Init();
-  if (st.ok()) {
-    pms->emplace_back(std::move(pm));
-  } else {
-    const std::string &s = st.ToString();
-    LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
-  }
-  sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
+  sys_temp->reset(new TempSensorSDNT1608X103F3950(32, 3.3f, 10000.0f));
+  (void) pms;
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  // Garage door opener mode.
   if (mgos_sys_config_get_shelly_mode() == 2) {
-    // Garage door opener mode.
     auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
     std::unique_ptr<hap::GarageDoorOpener> gdo(
         new hap::GarageDoorOpener(1, FindInput(1), nullptr /* in_open */,

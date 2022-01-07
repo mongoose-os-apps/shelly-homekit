@@ -119,13 +119,6 @@ Status SensorBase::SetState(const std::string &state_json) {
   return Status::UNIMPLEMENTED();
 }
 
-HAPError SensorBase::BoolStateCharRead(HAPAccessoryServerRef *,
-                                       const HAPBoolCharacteristicReadRequest *,
-                                       bool *value) {
-  *value = state_;
-  return kHAPError_None;
-}
-
 void SensorBase::InputEventHandler(Input::Event ev, bool state) {
   if (ev != Input::Event::kChange) return;
   const auto in_mode = static_cast<InMode>(cfg_->in_mode);

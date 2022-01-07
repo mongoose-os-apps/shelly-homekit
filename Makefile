@@ -1,6 +1,7 @@
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
-.PHONY: build check-format format release upload Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2
+.PHONY: build check-format format release upload \
+        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS ShellyPlus1 ShellyPlus1PM ShellyRGBW2
 .SUFFIXES:
 
 MOS ?= mos
@@ -26,7 +27,7 @@ ifneq "$(VERBOSE)$(V)" "00"
   MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
-build: Shelly1 Shelly1L Shelly1PM Shelly2 Shelly25 ShellyI3 ShellyPlug ShellyPlugS ShellyRGBW2 ShellyU ShellyU25
+build: Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyI3 ShellyPlug ShellyPlugS ShellyPlus1 ShellyPlus1PM ShellyRGBW2
 
 release:
 	$(MAKE) build CLEAN=1 RELEASE=1
@@ -57,6 +58,14 @@ ShellyPlug: build-ShellyPlug
 ShellyPlugS: build-ShellyPlugS
 	@true
 
+ShellyPlus1: PLATFORM=esp32
+ShellyPlus1: build-ShellyPlus1
+	@true
+
+ShellyPlus1PM: PLATFORM=esp32
+ShellyPlus1PM: build-ShellyPlus1PM
+	@true
+
 ShellyRGBW2: build-ShellyRGBW2
 	@true
 
@@ -66,6 +75,10 @@ ShellyU: build-ShellyU
 
 ShellyU25: PLATFORM=ubuntu
 ShellyU25: build-ShellyU25
+	@true
+
+ShellyT32: PLATFORM=esp32
+ShellyT32: build-ShellyT32
 	@true
 
 fs/index.html.gz: $(wildcard fs_src/*) Makefile
