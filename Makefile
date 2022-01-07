@@ -109,7 +109,10 @@ ifeq "$(RELEASE)" "1"
 endif
 
 format:
-	for d in src lib*; do find $$d -name \*.cpp -o -name \*.hpp | xargs clang-format -i; done
+	for d in src lib* fs_src; do \
+	  find $$d -name \*.cpp -o -name \*.hpp -o -name script.js | \
+	    xargs clang-format -i;\
+	done
 
 check-format: format
 	@git diff --exit-code || { printf "\n== Please format your code (run make format) ==\n\n"; exit 1; }
