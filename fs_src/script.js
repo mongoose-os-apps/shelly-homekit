@@ -19,6 +19,7 @@
 const maxAuthAge = 24 * 60 * 60;
 const updateCheckInterval = 24 * 60 * 60;
 const uiRefreshInterval = 1;
+const rpcRequestTimeoutMs = 10000;
 
 // Globals.
 let lastInfo = null;
@@ -811,12 +812,12 @@ function updateElement(key, value, info) {
       }
       updateInnerText(el(key), value);
       break;
-    case "device_id":
     case "version":
-      updateInnerText(el(key), value);
-      break;
     case "fw_build":
-      updateInnerText(el("fw_build"), value);
+      if (value !== undefined && (value >= 0 && value < 100)) break;
+      // fallthrough;
+    case "device_id":
+      updateInnerText(el(key), value);
       break;
     case "name":
       document.title = value;
@@ -937,8 +938,10 @@ function updateElement(key, value, info) {
       break;
     case "ota_progress":
       if (value !== undefined && (value >= 0 && value < 100)) {
-        setTimeout(() => setUpdateInProgress(true), 0);
+        updateInnerText(el("version"), `${info.version} -> ${info.ota_version}`);
+        updateInnerText(el("fw_build"), info.ota_build);
         updateInnerText(el("update_status"), `${value}%`);
+        setTimeout(() => setUpdateInProgress(true), 0);
       }
       break;
   }
@@ -1244,7 +1247,7 @@ function callDeviceAuth(method, params, ar) {
         if (socket) {
           socket.close();
         }
-      }, 3000);
+      }, rpcRequestTimeoutMs);
     } catch (e) {
       reject(e);
     }

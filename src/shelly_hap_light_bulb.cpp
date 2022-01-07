@@ -91,7 +91,7 @@ Status LightBulb::Init() {
   // Brightness
   brightness_characteristic = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_Brightness, 0, 100, 1,
-      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, cfg_->brightness),
+      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, &cfg_->brightness),
       true /* supports_notification */,
       [this](HAPAccessoryServerRef *server UNUSED_ARG,
              const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
@@ -115,7 +115,7 @@ Status LightBulb::Init() {
                const HAPUInt32CharacteristicReadRequest *request UNUSED_ARG,
                uint32_t *value) {
           LOG(LL_INFO,
-              ("Color Temperature read %d: %d", id(), cfg_->colortemperature));
+              ("Color Temperature read %d: %d", id(), &cfg_->colortemperature));
           *value = static_cast<uint32_t>(cfg_->colortemperature);
           return kHAPError_None;
         },
@@ -136,7 +136,7 @@ Status LightBulb::Init() {
     // Hue
     hue_characteristic = new mgos::hap::UInt32Characteristic(
         iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
-        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, cfg_->hue),
+        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, &cfg_->hue),
         true /* supports_notification */,
         [this](HAPAccessoryServerRef *server UNUSED_ARG,
                const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
@@ -150,7 +150,7 @@ Status LightBulb::Init() {
     // Saturation
     saturation_characteristic = new mgos::hap::UInt32Characteristic(
         iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
-        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, cfg_->saturation),
+        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, &cfg_->saturation),
         true /* supports_notification */,
         [this](HAPAccessoryServerRef *server UNUSED_ARG,
                const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,

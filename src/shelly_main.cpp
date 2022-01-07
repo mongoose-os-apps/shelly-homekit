@@ -52,6 +52,7 @@
 #include "shelly_input.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_noisy_input_pin.hpp"
+#include "shelly_ota.hpp"
 #include "shelly_output.hpp"
 #include "shelly_rpc_service.hpp"
 #include "shelly_switch.hpp"
@@ -453,11 +454,6 @@ static void CheckOverheat(int sys_temp) {
   }
 }
 
-void CountHAPSessions(void *ctx, HAPAccessoryServerRef *, HAPSessionRef *,
-                      bool *) {
-  (*((int *) ctx))++;
-}
-
 StatusOr<int> GetSystemTemperature() {
   if (s_sys_temp_sensor == nullptr) return mgos::Status(STATUS_NOT_FOUND, "");
   auto st = s_sys_temp_sensor->GetTemperature();
@@ -469,7 +465,15 @@ uint8_t GetServiceFlags() {
   return s_service_flags;
 }
 
-static bool AllComponentsIdle() {
+void SetServiceFlags(uint8_t flags) {
+  s_service_flags |= flags;
+}
+
+void ClearServiceFlags(uint8_t flags) {
+  s_service_flags &= ~flags;
+}
+
+bool AllComponentsIdle() {
   for (const auto &c : g_comps) {
     if (!c->IsIdle()) return false;
   }
@@ -509,8 +513,12 @@ static void StatusTimerCB(void *arg) {
     HAPPlatformTCPStreamManagerStats tcpm_stats = {};
     HAPPlatformTCPStreamManagerGetStats(&s_tcpm, &tcpm_stats);
     int num_sessions = 0;
-    HAPAccessoryServerEnumerateConnectedSessions(&s_server, CountHAPSessions,
-                                                 &num_sessions);
+    HAPAccessoryServerEnumerateConnectedSessions(
+        &s_server,
+        [](void *ctx, HAPAccessoryServerRef *, HAPSessionRef *, bool *) {
+          (*((int *) ctx))++;
+        },
+        &num_sessions);
     std::string status;
     for (const auto &c : g_comps) {
       if (!status.empty()) status.append("; ");
@@ -565,10 +573,13 @@ bool mgos_sys_config_get_wifi_sta_enable(void) {
 }
 #endif
 
-static bool shelly_cfg_migrate(bool *reboot_required) {
+static bool MigrateConfig(bool *reboot_required) {
   bool changed = false;
   *reboot_required = false;
   if (mgos_sys_config_get_shelly_cfg_version() == 0) {
+    // Very first migration after conversion, reset all settings to defaults
+    // except WiFi.
+    SanitizeSysConfig();
 #ifdef MGOS_CONFIG_HAVE_SW1
     if (mgos_sys_config_get_sw1_persist_state()) {
       mgos_sys_config_set_sw1_initial_state(
@@ -733,100 +744,6 @@ static void SetupButton(int pin, bool on_value) {
   s_btn->AddHandler(ButtonHandler);
 }
 
-static void OTABeginCB(int ev, void *ev_data, void *userdata) {
-  static double s_wait_start = 0;
-  struct mgos_ota_begin_arg *arg = (struct mgos_ota_begin_arg *) ev_data;
-  // Some other callback objected.
-  if (arg->result != MGOS_UPD_OK) return;
-  // If there is some ongoing activity, wait for it to finish.
-  if (!AllComponentsIdle()) {
-    arg->result = MGOS_UPD_WAIT;
-    return;
-  }
-  // Check app name.
-  if (mg_vcmp(&arg->mi.name, MGOS_APP) != 0) {
-    LOG(LL_ERROR,
-        ("Wrong app name '%.*s'", (int) arg->mi.name.len, arg->mi.name.p));
-    arg->result = MGOS_UPD_ABORT;
-    return;
-  }
-  // Stop the HAP server.
-  if (!(s_service_flags & SHELLY_SERVICE_FLAG_UPDATE)) {
-    s_wait_start = mgos_uptime();
-  }
-  s_service_flags |= SHELLY_SERVICE_FLAG_UPDATE;
-  s_service_flags &= ~SHELLY_SERVICE_FLAG_REVERT;
-  // Are we reverting to stock? Stock fw does not have "hk_model"
-  char *hk_model = nullptr;
-  json_scanf(arg->mi.manifest.p, arg->mi.manifest.len, "{shelly_hk_model: %Q}",
-             &hk_model);
-  mgos::ScopedCPtr hk_model_owner(hk_model);
-  if (hk_model == nullptr) {
-    // hk_model was added in 2.9.1, for now we also check version in the
-    // manifest to double-check: stock has manifest version always set to "1.0"
-    // while HK has actual version there.
-    // This check can be removed after a few versions with hk_model.
-    if (mg_vcmp(&arg->mi.version, "1.0") == 0) {
-      LOG(LL_INFO, ("This is a revert to stock firmware"));
-      s_service_flags |= SHELLY_SERVICE_FLAG_REVERT;
-    }
-  }
-  if (HAPAccessoryServerGetState(&s_server) != kHAPAccessoryServerState_Idle) {
-    // There is a bug in HAP server where it will get stuck and fail to shut
-    // down reported to happen after approximately 25 days. This is a workaround
-    // until it's fixed.
-    if (mgos_uptime() - s_wait_start > 10) {
-      LOG(LL_WARN,
-          ("Server failed to stop, proceeding with the update anyway"));
-    } else {
-      arg->result = MGOS_UPD_WAIT;
-      StopService();
-      return;
-    }
-  }
-  LOG(LL_INFO, ("Starting firmware update"));
-  (void) ev;
-  (void) ev_data;
-  (void) userdata;
-}
-
-static void WipeDeviceRevertToStockCB(void *) {
-  WipeDeviceRevertToStock();
-}
-
-static int8_t s_ota_progress = -1;
-
-int GetOTAProgress() {
-  return s_ota_progress;
-}
-
-static void OTAStatusCB(int ev, void *ev_data, void *userdata) {
-  struct mgos_ota_status *arg = (struct mgos_ota_status *) ev_data;
-  // Restart server in case of error.
-  // In case of success we are going to reboot anyway.
-  if (arg->state == MGOS_OTA_STATE_PROGRESS) {
-    s_ota_progress = arg->progress_percent;
-  } else if (arg->state == MGOS_OTA_STATE_ERROR) {
-    s_ota_progress = -1;
-    s_service_flags &=
-        ~(SHELLY_SERVICE_FLAG_UPDATE | SHELLY_SERVICE_FLAG_REVERT);
-  } else if (arg->state == MGOS_OTA_STATE_SUCCESS) {
-    s_ota_progress = 100;
-#if CS_PLATFORM == CS_P_ESP8266
-    // Disable flash core dump because it would overwite the new fw.
-    esp_core_dump_set_flash_area(0, 0);
-#endif
-    if (s_service_flags & SHELLY_SERVICE_FLAG_REVERT) {
-      // For some reason if WipeDeviceRevertToStock is done inline the client
-      // doesn't get a response to the POST request.
-      mgos_set_timer(100, 0, WipeDeviceRevertToStockCB, nullptr);
-    }
-  }
-  (void) ev;
-  (void) ev_data;
-  (void) userdata;
-}
-
 extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
                                                    const char *new_fs_path,
                                                    const char *file_name) {
@@ -837,7 +754,7 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "relaydata",
       "index.html",
       "conf9_backup.json",
-      // Obsolete files from previopus versions.
+      // Obsolete files from previous versions.
       "axios.min.js.gz",
       "favicon.ico",
       "logo.png",
@@ -845,6 +762,8 @@ extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
       "style.css",
       "style.css.gz",
       // Plus firmware stuff that we don't need.
+      "api_math.js",
+      "api_rpc.js",
       "bundle.css.gz",
       "bundle.js.gz",
       "ca.pem",
@@ -903,7 +822,7 @@ void InitApp() {
 
   if (IsFailsafeMode()) {
     LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
-    shelly_rpc_service_init(nullptr, nullptr, nullptr);
+    RPCServiceInit(nullptr, nullptr, nullptr);
 #if LED_GPIO >= 0
     mgos_gpio_setup_output(LED_GPIO, LED_ON);
 #endif
@@ -1000,7 +919,7 @@ void InitApp() {
                            nullptr /* context */);
 
   bool reboot_required = false;
-  if (shelly_cfg_migrate(&reboot_required)) {
+  if (MigrateConfig(&reboot_required)) {
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
                          nullptr /* msg */);
     if (reboot_required) {
@@ -1023,19 +942,18 @@ void InitApp() {
       [](HAPAccessoryServerRef *) { HAPAccessoryServerStop(&s_server); },
       [](HAPAccessoryServerRef *) { StartService(false /* quiet */); });
 
-  shelly_rpc_service_init(&s_server, &s_kvs, &s_tcpm);
+  RPCServiceInit(&s_server, &s_kvs, &s_tcpm);
 
   DebugInit(&s_server, &s_kvs, &s_tcpm);
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
 
-  mgos_event_add_handler(MGOS_EVENT_OTA_BEGIN, OTABeginCB, nullptr);
-  mgos_event_add_handler(MGOS_EVENT_OTA_STATUS, OTAStatusCB, nullptr);
-
   SetupButton(BTN_GPIO, BTN_DOWN);
 
   InitWifiConfigManager();
+
+  OTAInit(&s_server);
 
   (void) s_ip_storage;
 }

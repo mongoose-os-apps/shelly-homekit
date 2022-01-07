@@ -39,7 +39,7 @@ Status OccupancySensor::Init() {
   if (!st.ok()) return st;
   AddChar(new mgos::hap::BoolCharacteristic(
       svc_.iid + 2, &kHAPCharacteristicType_OccupancyDetected,
-      std::bind(&mgos::hap::ReadBool<bool>, _1, _2, _3, state_),
+      std::bind(&mgos::hap::ReadBool<bool>, _1, _2, _3, &state_),
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_OccupancyDetected));
   return Status::OK();

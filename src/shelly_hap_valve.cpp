@@ -83,7 +83,7 @@ Status Valve::Init() {
   // Valve Type
   auto *valve_type_char = new mgos::hap::UInt8Characteristic(
       iid++, &kHAPCharacteristicType_ValveType, 0, 1, 1,
-      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, cfg_->valve_type),
+      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, &cfg_->valve_type),
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_ValveType);
   state_notify_chars_.push_back(valve_type_char);

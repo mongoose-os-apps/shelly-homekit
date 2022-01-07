@@ -15,20 +15,26 @@
  * limitations under the License.
  */
 
-#include "shelly_common.hpp"
+#pragma once
+
+#include <string>
 
 #include "HAP.h"
 
-extern "C" struct mg_rpc_request_info;
+#include "shelly_common.hpp"
 
 namespace shelly {
 
-void SendStatusResp(struct mg_rpc_request_info *ri, const Status &st);
+struct OTAProgress {
+  std::string version;
+  std::string build;
+  int progress_pct = -1;
 
-void ReportRPCRequest(struct mg_rpc_request_info *ri);
+  OTAProgress() = default;
+  OTAProgress(const std::string &version, const std::string &build);
+};
+StatusOr<OTAProgress> GetOTAProgress();
 
-bool RPCServiceInit(HAPAccessoryServerRef *server,
-                    HAPPlatformKeyValueStoreRef kvs,
-                    HAPPlatformTCPStreamManagerRef tcpm);
+void OTAInit(HAPAccessoryServerRef *server);
 
 }  // namespace shelly
