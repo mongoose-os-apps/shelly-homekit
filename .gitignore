@@ -8,6 +8,7 @@ releases/
 core-*
 *.gz
 *.zip
-flash-shelly.auth.yaml
 fs/conf*.json
+flash-shelly.auth.yaml
+*.cfg.yaml
 .venv
