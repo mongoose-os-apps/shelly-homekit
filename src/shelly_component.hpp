@@ -23,6 +23,7 @@ namespace shelly {
 
 class Component {
  public:
+  // NB: Keep in sync with Component_Type in JS.
   enum class Type {
     kSwitch = 0,
     kOutlet = 1,

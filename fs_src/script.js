@@ -43,6 +43,23 @@ const authUser = "admin";
 let authRealm = null;
 let rpcAuth = null;
 
+// Keep in sync with shelly::Component::Type.
+class Component_Type {
+  static kSwitch = 0;
+  static kOutlet = 1;
+  static kLock = 2;
+  static kStatelessSwitch = 3;
+  static kWindowCovering = 4;
+  static kGarageDoorOpener = 5;
+  static kDisabledInput = 6;
+  static kMotionSensor = 7;
+  static kOccupancySensor = 8;
+  static kContactSensor = 9;
+  static kDoorbell = 10;
+  static kLightBulb = 11;
+  static kMax = 12;
+};
+
 function el(container, id) {
   if (id === undefined) {
     id = container;
@@ -57,8 +74,9 @@ function checkName(name) {
 
 el("sys_save_btn").onclick = function() {
   if (!checkName(el("sys_name").value)) {
-    alert(`Name must be between 1 and 63 characters
-           and consist of letters, numbers or dashes ('-')`);
+    alert(
+        "Name must be between 1 and 63 characters " +
+        "and consist of letters, numbers or dashes ('-')");
     return;
   }
   let data = {
@@ -478,9 +496,9 @@ function findOrAddContainer(cd) {
   let c = el(elId);
   if (c) return c;
   switch (cd.type) {
-    case 0:  // Switch
-    case 1:  // Outlet
-    case 2:  // Lock
+    case Component_Type.kSwitch:
+    case Component_Type.kOutlet:
+    case Component_Type.kLock:
       c = el("sw_template").cloneNode(true);
       c.id = elId;
       el(c, "state").onchange = function(ev) {
@@ -496,15 +514,14 @@ function findOrAddContainer(cd) {
         markInputChanged(ev);
       };
       break;
-    case 3:  // Stateless Programmable Switch (aka input in detached
-             // mode).
+    case Component_Type.kStatelessSwitch:  // aka input in detached mode
       c = el("ssw_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
         sswSetConfig(c);
       };
       break;
-    case 4:  // Window Covering
+    case Component_Type.kWindowCovering:
       c = el("wc_template").cloneNode(true);
       c.id = elId;
       el(c, "open_btn").onclick = function() {
@@ -521,7 +538,7 @@ function findOrAddContainer(cd) {
         el(c, "cal_spinner").className = "spin";
       };
       break;
-    case 5:  // Garage Door Opener
+    case Component_Type.kGarageDoorOpener:
       c = el("gdo_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
@@ -531,24 +548,24 @@ function findOrAddContainer(cd) {
         setComponentState(c, {toggle: true}, el(c, "toggle_spinner"));
       };
       break;
-    case 6:  // Disabled Input.
+    case Component_Type.kDisabledInput:
       c = el("di_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
         diSetConfig(c);
       };
       break;
-    case 7:   // Motion Sensor.
-    case 8:   // Occupancy Sensor.
-    case 9:   // Contact Sensor.
-    case 10:  // Doorbell
+    case Component_Type.kMotionSensor:
+    case Component_Type.kOccupancySensor:
+    case Component_Type.kContactSensor:
+    case Component_Type.kDoorbell:
       c = el("sensor_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
         mosSetConfig(c);
       };
       break;
-    case 11:  // RGB
+    case Component_Type.kLightBulb:
       c = el("rgb_template").cloneNode(true);
       c.id = elId;
       el(c, "state").onchange = function(ev) {
@@ -593,10 +610,10 @@ function updateComponent(cd) {
   let c = findOrAddContainer(cd);
   if (!c) return;
   switch (cd.type) {
-    case 0:     // kSwitch
-    case 1:     // kOutlet
-    case 2:     // kLock
-    case 11: {  // kLightBulb
+    case Component_Type.kSwitch:
+    case Component_Type.kOutlet:
+    case Component_Type.kLock:
+    case Component_Type.kLightBulb: {
       let headText = `Switch ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -670,8 +687,7 @@ function updateComponent(cd) {
       }
       break;
     }
-    case 3: {  // Stateless Programmable Switch (aka input in detached
-               // mode).
+    case Component_Type.kStatelessSwitch: {
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -700,7 +716,7 @@ function updateComponent(cd) {
       updateInnerText(el(c, "last_event"), lastEvText);
       break;
     }
-    case 4: {  // Window Covering
+    case Component_Type.kWindowCovering: {
       updateInnerText(el(c, "head"), cd.name);
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "state"), cd.state_str);
@@ -735,7 +751,7 @@ function updateComponent(cd) {
       updateInnerText(el(c, "cal"), calText);
       break;
     }
-    case 5: {  // Garage Doot Opener
+    case Component_Type.kGarageDoorOpener: {
       updateInnerText(el(c, "head"), cd.name);
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "state"), cd.cur_state_str);
@@ -759,10 +775,10 @@ function updateComponent(cd) {
       selectIfNotModified(el(c, "type"), cd.type);
       break;
     }
-    case 7:     // Motion Sensor
-    case 8:     // Occupancy Sensor
-    case 9:     // Contact Sensor
-    case 10: {  // Doorbell
+    case Component_Type.kMotionSensor:
+    case Component_Type.kOccupancySensor:
+    case Component_Type.kContactSensor:
+    case Component_Type.kDoorbell: {
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -781,18 +797,19 @@ function updateComponent(cd) {
       updateInnerText(el(c, "status"), statusText);
       break;
     }
-    default:
+    default: {
       console.log(`Unhandled component type: ${cd.type}`);
+    }
   }
   c.data = cd;
   addInputChangeHandlers(c);
 }
 
 function updateStaticIPVisibility() {
-  el(`wifi_ip_container`).style.display =
-      (el(`wifi_ip_en`).checked ? "block" : "none");
-  el(`wifi1_ip_container`).style.display =
-      (el(`wifi1_ip_en`).checked ? "block" : "none");
+  el("wifi_ip_container").style.display =
+      (el("wifi_ip_en").checked ? "block" : "none");
+  el("wifi1_ip_container").style.display =
+      (el("wifi1_ip_en").checked ? "block" : "none");
 }
 
 function updateElement(key, value, info) {
