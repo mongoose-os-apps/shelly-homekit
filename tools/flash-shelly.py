@@ -146,7 +146,7 @@ except ImportError:
   import yaml
 
 arch = platform.system()
-app_ver = '3.0.0'  # beta5
+app_ver = '3.0.0'  # beta7
 config_file = '.cfg.yaml'
 defaults_config_file = 'flash-shelly.cfg.yaml'
 security_file = 'flash-shelly.auth.yaml'
@@ -275,7 +275,10 @@ class Detection:
   def is_shelly(self, error_message):
     if self.is_host_reachable(self.host, error_message):
       for url in [f'http://{self.wifi_ip}/settings', f'http://{self.wifi_ip}/rpc/Shelly.GetInfoExt']:
-        response = requests.get(url)
+        try:
+          response = requests.get(url)
+        except ConnectionError:
+          return False
         logger.trace(f"RESPONSE: {response}")
         if response is not None and response.status_code in (200, 401):
           if 'GetInfoExt' in url:
@@ -1458,7 +1461,7 @@ class Main:
       keyword = None
       if not download_url:
         if force_version:
-          keyword = f"Version {force_version} is not available..."
+          keyword = f"{flash_fw_type_str} Version {force_version} is not available..."
         elif device.local_file:
           keyword = "Incorrect Zip File for device..."
         if keyword is not None and not self.quiet_run:
