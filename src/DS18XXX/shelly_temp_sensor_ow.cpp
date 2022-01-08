@@ -50,12 +50,6 @@ struct __attribute__((__packed__)) Scratchpad {
   uint8_t crc;
 };
 
-struct __attribute__((__packed__)) ROM {
-  uint8_t family;
-  uint64_t serial;
-  uint8_t crc;
-};
-
 namespace shelly {
 
 Onewire::Onewire(int pin_in, int pin_out) {
@@ -92,7 +86,7 @@ std::unique_ptr<TempSensor> Onewire::NextAvailableSensor(int type) {
   if (mgos_onewire_next(ow_, (uint8_t *) &rom, mode)) {
     uint8_t family = rom.family;
     if (TempSensorDS18XXX::SupportsFamily(family)) {
-      sensor.reset(new TempSensorDS18XXX(ow_, &rom));
+      sensor.reset(new TempSensorDS18XXX(ow_, rom));
     } else {
       LOG(LL_INFO, ("Found non-supported device"));
     }
@@ -107,21 +101,21 @@ void TempSensorDS18XXX::StartUpdating(int interval) {
 }
 
 TempSensorDS18XXX::TempSensorDS18XXX(struct mgos_onewire *ow,
-                                     struct ROM *rom_content)
-    : cached_temperature_(0),
+                                     const struct ROM rom)
+    : rom_(rom),
+      cached_temperature_(0),
       meas_timer_(std::bind(&TempSensorDS18XXX::UpdateTemperatureCB, this)),
       read_timer_(std::bind(&TempSensorDS18XXX::ReadTemperatureCB, this)) {
-  rom_ = new ROM();
-  memcpy(rom_, rom_content, sizeof(struct ROM));
   ow_ = ow;
   resolution_ = GetResolution();
   LOG(LL_INFO, ("DS18XXX: model: %02X, serial number: %" PRIx64
-                ", resolution: %d, parasitic power: %d",
-                rom_->family, rom_->serial, resolution_, ReadPowerSupply()));
+                ", resolution: %d bit, parasitic power enabled: %d, conversion "
+                "time: %d ms",
+                rom_.family, rom_.serial, resolution_, ReadPowerSupply(),
+                ConversionTime(resolution_)));
 }
 
 TempSensorDS18XXX ::~TempSensorDS18XXX() {
-  delete rom_;
 }
 
 StatusOr<float> TempSensorDS18XXX::GetTemperature() {
@@ -129,34 +123,34 @@ StatusOr<float> TempSensorDS18XXX::GetTemperature() {
 }
 
 bool TempSensorDS18XXX::SupportsFamily(uint8_t family) {
-  if (family == DS18B20MODEL or family == DS18S20MODEL or
-      family == DS1822MODEL or family == DS1825MODEL or
+  if (family == DS18B20MODEL || family == DS18S20MODEL ||
+      family == DS1822MODEL || family == DS1825MODEL ||
       family == DS28EA00MODEL) {
     return true;
   }
   return false;
 }
 
-void TempSensorDS18XXX::ReadScratchpad(struct Scratchpad *scratchpad) {
+const void TempSensorDS18XXX::ReadScratchpad(struct Scratchpad *scratchpad) {
   if (!mgos_onewire_reset(ow_)) {
     return;
   }
-  mgos_onewire_select(ow_, (uint8_t *) rom_);
+  mgos_onewire_select(ow_, (uint8_t *) &rom_);
   mgos_onewire_write(ow_, READ_SCRATCHPAD);
   mgos_onewire_read_bytes(ow_, (uint8_t *) scratchpad,
                           sizeof(struct Scratchpad));
 }
 
-bool TempSensorDS18XXX::ReadPowerSupply() {
+const bool TempSensorDS18XXX::ReadPowerSupply() {
   if (!mgos_onewire_reset(ow_)) {
     return false;
   }
-  mgos_onewire_select(ow_, (uint8_t *) rom_);
+  mgos_onewire_select(ow_, (uint8_t *) &rom_);
   mgos_onewire_write(ow_, READ_POWER_SUPPLY);
   return (mgos_onewire_read_bit(ow_) == 0);
 }
 
-bool TempSensorDS18XXX::VerifyScratchpad(struct Scratchpad *scratchpad) {
+const bool TempSensorDS18XXX::VerifyScratchpad(struct Scratchpad *scratchpad) {
   return mgos_onewire_crc8((uint8_t *) scratchpad,
                            sizeof(struct Scratchpad) - 1) == scratchpad->crc;
 }
@@ -167,7 +161,7 @@ void TempSensorDS18XXX::ReadTemperatureCB() {
   ReadScratchpad(&temp);
   if (VerifyScratchpad(&temp)) {
     int16_t temp_s = temp.temperature;
-    if (rom_->family == DS18S20MODEL) {
+    if (rom_.family == DS18S20MODEL) {
       temperature =
           ((int16_t)(temp_s & 0xFFFE) / 2.0) - 0.25 +
           ((float) (temp.count_per_c - temp.count_remain) / temp.count_per_c);
@@ -186,13 +180,13 @@ void TempSensorDS18XXX::UpdateTemperatureCB() {
   if (!mgos_onewire_reset(ow_)) {
     return;
   }
-  mgos_onewire_select(ow_, (uint8_t *) rom_);
+  mgos_onewire_select(ow_, (uint8_t *) &rom_);
   mgos_onewire_write(ow_, CONVERT_T);
-  int time = ConversionTime();
+  int time = ConversionTime(resolution_);
   read_timer_.Reset(time, 0);
 }
 
-unsigned int TempSensorDS18XXX::GetResolution() {
+const unsigned int TempSensorDS18XXX::GetResolution() {
   struct Scratchpad scratchpad = {0};
   ReadScratchpad(&scratchpad);
   if (!VerifyScratchpad(&scratchpad)) {
@@ -211,8 +205,8 @@ unsigned int TempSensorDS18XXX::GetResolution() {
   return 0;
 }
 
-int TempSensorDS18XXX::ConversionTime() {
-  switch (resolution_) {
+int TempSensorDS18XXX::ConversionTime(uint8_t resolution) {
+  switch (resolution) {
     case 9:
       return 94;
     case 10:

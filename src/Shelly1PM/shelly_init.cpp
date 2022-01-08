@@ -91,8 +91,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
   };
 
-  for (unsigned int i = 0;
-       i < std::min((size_t) NUM_SENSORS_MAX, sensors.size()); i++) {
+  for (unsigned int i = 0; i < std::min((size_t) MAX_TS_NUM, sensors.size());
+       i++) {
     auto *ts_cfg = ts_cfgs[i];
     CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
                                accs, svr);

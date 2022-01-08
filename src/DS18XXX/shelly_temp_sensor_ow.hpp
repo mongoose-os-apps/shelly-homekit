@@ -25,7 +25,11 @@
 
 struct mgos_onewire;
 struct Scratchpad;
-struct ROM;
+struct __attribute__((__packed__)) ROM {
+  uint8_t family;
+  uint64_t serial;
+  uint8_t crc;
+};
 
 namespace shelly {
 
@@ -45,32 +49,32 @@ class Onewire {
 
 class TempSensorDS18XXX : public TempSensor {
  public:
-  TempSensorDS18XXX(struct mgos_onewire *ow, struct ROM *rom);
+  TempSensorDS18XXX(struct mgos_onewire *ow, const struct ROM rom);
   virtual ~TempSensorDS18XXX();
 
   StatusOr<float> GetTemperature() override;
 
   static bool SupportsFamily(uint8_t family);
+  static int ConversionTime(uint8_t resolution);
   virtual void StartUpdating(int interval) override;
 
  private:
-  float cached_temperature_;
-  struct ROM *rom_;
-  struct mgos_onewire *ow_;
+  const unsigned int GetResolution();
+
+  void ReadTemperatureCB();
+  void UpdateTemperatureCB();
+
+  const void ReadScratchpad(struct Scratchpad *scratchpad);
+  const bool VerifyScratchpad(struct Scratchpad *scratchpad);
+  const bool ReadPowerSupply();
+
+  const struct ROM rom_ = {};
+  float cached_temperature_ = 0;
+  struct mgos_onewire *ow_ = nullptr;
 
   mgos::Timer meas_timer_;
   mgos::Timer read_timer_;
-
-  int ConversionTime();
-  unsigned int GetResolution();
-  unsigned int resolution_;
-
-  virtual void ReadTemperatureCB();
-  virtual void UpdateTemperatureCB();
-
-  void ReadScratchpad(struct Scratchpad *scratchpad);
-  bool VerifyScratchpad(struct Scratchpad *scratchpad);
-  bool ReadPowerSupply();
+  unsigned int resolution_ = 0;
 };
 
 }  // namespace shelly

@@ -629,8 +629,6 @@ conds:
         - ["ts1.name", "Shelly TS"]
         - ["ts2", "ts", {title: "TS2 settings"}]
         - ["ts2.name", "Shelly TS"]
-        - ["ts3", "ts", {title: "TS3 settings"}]
-        - ["ts3.name", "Shelly TS"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
