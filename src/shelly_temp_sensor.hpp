@@ -34,6 +34,10 @@ class TempSensor {
   };
 
   typedef std::function<void()> Notifier;
+
+  void SetNotifier(Notifier notifier);
+
+ protected:
   Notifier notifier_;
 };
 

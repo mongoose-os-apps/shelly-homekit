@@ -263,12 +263,13 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
   }
 }
 
-void CreateHAPSensor(int id, std::unique_ptr<TempSensor> sensor,
-                     const struct mgos_config_se *se_cfg,
-                     std::vector<std::unique_ptr<Component>> *comps,
-                     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
-                     HAPAccessoryServerRef *svr) {
-  struct mgos_config_se *cfg = (struct mgos_config_se *) se_cfg;
+void CreateHAPTemperatureSensor(
+    int id, std::unique_ptr<TempSensor> sensor,
+    const struct mgos_config_ts *ts_cfg,
+    std::vector<std::unique_ptr<Component>> *comps,
+    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr) {
+  struct mgos_config_ts *cfg = (struct mgos_config_ts *) ts_cfg;
   std::unique_ptr<hap::TemperatureSensor> ts(
       new hap::TemperatureSensor(id, std::move(sensor), cfg));
   if (ts == nullptr || !ts->Init().ok()) {
@@ -278,7 +279,7 @@ void CreateHAPSensor(int id, std::unique_ptr<TempSensor> sensor,
   std::unique_ptr<mgos::hap::Accessory> acc(
       new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + id,
                                kHAPAccessoryCategory_BridgedAccessory,
-                               se_cfg->name, &AccessoryIdentifyCB, svr));
+                               ts_cfg->name, &AccessoryIdentifyCB, svr));
   acc->AddHAPService(&mgos_hap_accessory_information_service);
   acc->AddService(ts.get());
   accs->push_back(std::move(acc));

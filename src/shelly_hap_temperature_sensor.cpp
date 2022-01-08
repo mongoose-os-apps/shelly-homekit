@@ -25,7 +25,7 @@ namespace shelly {
 namespace hap {
 
 TemperatureSensor::TemperatureSensor(int id, std::unique_ptr<TempSensor> sensor,
-                                     struct mgos_config_se *cfg)
+                                     struct mgos_config_ts *cfg)
     : Component(id),
       Service(SHELLY_HAP_IID_BASE_TEMPERATURE_SENSOR +
                   SHELLY_HAP_IID_STEP_SENSOR * (id - 1),
@@ -33,6 +33,7 @@ TemperatureSensor::TemperatureSensor(int id, std::unique_ptr<TempSensor> sensor,
               kHAPServiceDebugDescription_TemperatureSensor),
       temp_sensor_(std::move(sensor)),
       cfg_(cfg) {
+  temp_sensor_->SetNotifier(std::bind(&TemperatureSensor::ValueChanged, this));
 }
 
 TemperatureSensor::~TemperatureSensor() {
@@ -48,7 +49,7 @@ std::string TemperatureSensor::name() const {
 
 Status TemperatureSensor::SetConfig(const std::string &config_json,
                                     bool *restart_required) {
-  struct mgos_config_se cfg = *cfg_;
+  struct mgos_config_ts cfg = *cfg_;
   cfg.name = nullptr;
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, unit: %d, update_interval: %d", &cfg.name, &cfg.unit,
@@ -81,8 +82,7 @@ Status TemperatureSensor::SetConfig(const std::string &config_json,
   return Status::OK();
 }
 
-Status TemperatureSensor::SetState(const std::string &state_json) {
-  (void) state_json;
+Status TemperatureSensor::SetState(const std::string &state_json UNUSED_ARG) {
   return Status::OK();
 }
 
@@ -122,7 +122,6 @@ Status TemperatureSensor::Init() {
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_TemperatureDisplayUnits));
-  temp_sensor_->notifier_ = std::bind(&TemperatureSensor::ValueChanged, this);
   LOG(LL_INFO, ("Exporting Temp"));
 
   temp_sensor_->StartUpdating(cfg_->update_interval * 1000);

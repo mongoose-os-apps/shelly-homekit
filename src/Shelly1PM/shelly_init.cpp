@@ -22,7 +22,7 @@
 #include "shelly_temp_sensor_ntc.hpp"
 #include "shelly_temp_sensor_ow.hpp"
 
-#define NUM_SENSORS_MAX 3
+#define MAX_TS_NUM 3
 
 namespace shelly {
 
@@ -85,16 +85,17 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
 
-  struct mgos_config_se *se_cfgs[NUM_SENSORS_MAX] = {
-      (struct mgos_config_se *) mgos_sys_config_get_se1(),
-      (struct mgos_config_se *) mgos_sys_config_get_se2(),
-      (struct mgos_config_se *) mgos_sys_config_get_se3(),
+  struct mgos_config_ts *ts_cfgs[MAX_TS_NUM] = {
+      (struct mgos_config_ts *) mgos_sys_config_get_ts1(),
+      (struct mgos_config_ts *) mgos_sys_config_get_ts2(),
+      (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
   };
 
   for (unsigned int i = 0;
        i < std::min((size_t) NUM_SENSORS_MAX, sensors.size()); i++) {
-    auto *se_cfg = se_cfgs[i];
-    CreateHAPSensor(i + 1, std::move(sensors[i]), se_cfg, comps, accs, svr);
+    auto *ts_cfg = ts_cfgs[i];
+    CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
+                               accs, svr);
   }
 }
 

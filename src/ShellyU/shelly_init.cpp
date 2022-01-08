@@ -56,11 +56,12 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   // Sensors
   for (int i = 0; i < 2; i++) {
     std::unique_ptr<TempSensor> temp(new MockTempSensor(25.125 + i));
-    auto *se_cfg = (i == 0)
-                       ? (struct mgos_config_se *) mgos_sys_config_get_se1()
-                       : (struct mgos_config_se *) mgos_sys_config_get_se2();
+    auto *ts_cfg = (i == 0)
+                       ? (struct mgos_config_ts *) mgos_sys_config_get_ts1()
+                       : (struct mgos_config_ts *) mgos_sys_config_get_ts2();
 
-    CreateHAPSensor(i + 1, std::move(temp), se_cfg, comps, accs, svr);
+    CreateHAPTemperatureSensor(i + 1, std::move(temp), ts_cfg, comps, accs,
+                               svr);
   }
 }
 

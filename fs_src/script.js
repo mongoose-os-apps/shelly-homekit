@@ -406,7 +406,7 @@ function diSetConfig(c) {
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
 
-function valSetConfig(c) {
+function tsSetConfig(c) {
   let name = el(c, "name").value;
   if (name == "") {
     alert("Name must not be empty");
@@ -603,11 +603,11 @@ function findOrAddContainer(cd) {
         markInputChanged(ev);
       };
       break;
-    case 12: // Value Sensor
-      c = el("value_template").cloneNode(true);
+    case Component_Type.kTemperatureSensor:
+      c = el("ts_template").cloneNode(true);
       c.id = elId;
-      el(c, "save_btn").onclick = function () {
-        valSetConfig(c);
+      el(c, "save_btn").onclick = function() {
+        tsSetConfig(c);
       };
       break;
     default:
@@ -714,13 +714,8 @@ function updateComponent(cd) {
       if (cd.name) headText += ` (${cd.name})`;
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "head"), headText);
-      valconv = function(a) {return a}; 
-      el(c, "unit_0").innerHTML = `&#176;C`;
-      el(c, "unit_1").innerHTML = `&#176;F`;
-      if(cd.unit == 1) {
-        valconv = cel2far;
-      }
-      el(c, "value").innerHTML = valconv(cd.value);
+      updateInnerText(
+          el(c, "value"), (cd.unit == 1) ? cel2far(cd.value) : cd.value);
       selectIfNotModified(el(c, "unit"), cd.unit);
       setValueIfNotModified(el(c, "update_interval"), cd.update_interval);
       break;

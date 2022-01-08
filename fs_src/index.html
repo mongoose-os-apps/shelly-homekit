@@ -684,7 +684,7 @@
   </div>
 </div>
 
-<div class="container" id="value_template" style="display: none">
+<div class="container" id="ts_template" style="display: none">
   <a class="helpbadge"
      href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Sensor-Settings"
      target="_blank">?</a>
@@ -699,13 +699,13 @@
         <label>Value:</label>
         <span id="value"></span>
         <select id="unit">
-          <option id="unit_0" value="0"></option>
-          <option id="unit_1" value="1"></option>
+          <option id="unit_0" value="0">&deg;C</option>
+          <option id="unit_1" value="1">&deg;F</option>
         </select>
       </div>
       <div class="form-control">
-        <label>Update Interval:</label>
-        <input type="text" id="update_interval" style="width: 2em; min-width: 2em;"> s
+        <label for="update_interval">Update Interval:</label>
+        <input type="number" id="update_interval" min="1" max="1000"><span>s</span>
       </div>
       <div class="button-container">
         <button id="save_btn">
