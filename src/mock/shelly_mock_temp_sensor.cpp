@@ -29,6 +29,10 @@ MockTempSensor::MockTempSensor(float initial_value) : value_(initial_value) {
 MockTempSensor::~MockTempSensor() {
 }
 
+Status MockTempSensor::Init() {
+  return Status::OK();
+}
+
 StatusOr<float> MockTempSensor::GetTemperature() {
   if (std::isnan(value_)) {
     return mgos::Status(STATUS_UNAVAILABLE, "failed");

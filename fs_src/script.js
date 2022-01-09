@@ -714,8 +714,15 @@ function updateComponent(cd) {
       if (cd.name) headText += ` (${cd.name})`;
       setValueIfNotModified(el(c, "name"), cd.name);
       updateInnerText(el(c, "head"), headText);
-      updateInnerText(
-          el(c, "value"), (cd.unit == 1) ? cel2far(cd.value) : cd.value);
+      let v;
+      if (cd.value !== undefined) {
+        v = (cd.unit == 1 ? cel2far(cd.value) : cd.value);
+        el(c, "unit").style.display = "inline";
+      } else {
+        v = cd.error;
+        el(c, "unit").style.display = "none";
+      }
+      updateInnerText(el(c, "value"), v);
       selectIfNotModified(el(c, "unit"), cd.unit);
       setValueIfNotModified(el(c, "update_interval"), cd.update_interval);
       break;
@@ -1441,6 +1448,7 @@ function refreshUI() {
 }
 
 function setValueIfNotModified(e, newValue) {
+  newValue = newValue.toString();
   // do not update the value of the input field if the field currently has
   // focus or has changed since changes have been last saved.
   if (document.activeElement === e || e.dataset.changed == "true" ||
@@ -1451,14 +1459,16 @@ function setValueIfNotModified(e, newValue) {
 }
 
 function checkIfNotModified(e, newState) {
+  newState = Boolean(newState);
   // do not update the checked value if
-  if (newState === e.checked || e.dataset.changed === "true") return;
+  if (newState == e.checked || e.dataset.changed === "true") return;
   e.checked = newState;
 }
 
 function slideIfNotModified(e, newValue) {
+  newValue = newValue.toString();
   if (newValue === e.value || e.dataset.changed === "true") return;
-  e.value = newValue.toString();
+  e.value = newValue;
 }
 
 function selectIfNotModified(e, newSelection) {
@@ -1466,16 +1476,22 @@ function selectIfNotModified(e, newSelection) {
 }
 
 function markInputChanged(ev) {
+  console.log("CHANGED", ev.target);
   ev.target.dataset.changed = "true";
 }
 
-function addInputChangeHandlers(el) {
-  let inputs = el.getElementsByTagName("input");
-  for (let i = 0; i < inputs.length; i++) {
-    if (inputs[i].onchange) continue;
-    inputs[i].dataset.changed = "false";
-    inputs[i].onchange = markInputChanged;
+function addOnChangeHandlers(els) {
+  for (let i = 0; i < els.length; i++) {
+    let el = els[i];
+    if (el.onchange) continue;
+    el.dataset.changed = "false";
+    el.onchange = markInputChanged;
   }
+}
+
+function addInputChangeHandlers(el) {
+  addOnChangeHandlers(el.getElementsByTagName("input"));
+  addOnChangeHandlers(el.getElementsByTagName("select"));
 }
 
 function resetLastSetValue() {
@@ -1486,6 +1502,7 @@ function resetLastSetValue() {
 }
 
 function updateInnerText(e, newInnerText) {
+  newInnerText = newInnerText.toString();
   if (e.innerText === newInnerText) return;
   e.innerText = newInnerText;
 }

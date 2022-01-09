@@ -13,16 +13,18 @@
 
 <div class="container" id="header_container">
   <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/" target="_blank">?</a>
-  <!-- logo.svg inserted below during build -->
-  <img id="logo" src="./logo.svg">
-  <h1 class="title">Shelly-<b>HomeKit</b></h1>
-  <div id="badges_container">
-    <a class="badge" id="notify_disconnected" style="display: none">Disconnected</a>
-    <a class="badge" id="notify_update" style="display: none" href="#update_container">Update</a>
-    <a class="badge" id="notify_overheat" style="display: none">Overheating</a>
-    <a class="badge" id="notify_failsafe" style="display: none">Failsafe mode</a>
+  <div id="logo_container">
+    <!-- logo.svg inserted below during build -->
+    <img id="logo" src="./logo.svg">
+    <h1 class="title">Shelly-<b>HomeKit</b></h1>
+    <div id="badges_container">
+      <a class="badge" id="notify_disconnected" style="display: none">Disconnected</a>
+      <a class="badge" id="notify_update" style="display: none" href="#update_container">Update</a>
+      <a class="badge" id="notify_overheat" style="display: none">Overheating</a>
+      <a class="badge" id="notify_failsafe" style="display: none">Failsafe mode</a>
+    </div>
   </div>
-  <h1 id="device_name">Loading ...</h1>
+  <h1 id="device_name">Loading...</h1>
 </div>
 
 <div class="container" id="auth_container" style="display: none">
@@ -697,15 +699,15 @@
       </div>
       <div class="form-control">
         <label>Value:</label>
-        <span id="value"></span>
-        <select id="unit">
+        <span id="value" style="min-width: 40px; display: inline-block;"></span>
+        <select id="unit" class="short">
           <option id="unit_0" value="0">&deg;C</option>
           <option id="unit_1" value="1">&deg;F</option>
         </select>
       </div>
       <div class="form-control">
         <label for="update_interval">Update Interval:</label>
-        <input type="number" id="update_interval" min="1" max="1000"><span>s</span>
+        <input type="number" id="update_interval" min="1" max="1000" class="short"><span>&nbsp; s</span>
       </div>
       <div class="button-container">
         <button id="save_btn">

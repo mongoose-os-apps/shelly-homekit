@@ -37,6 +37,7 @@ TemperatureSensor::TemperatureSensor(int id, std::unique_ptr<TempSensor> sensor,
 }
 
 TemperatureSensor::~TemperatureSensor() {
+  temp_sensor_->SetNotifier(nullptr);
 }
 
 Component::Type TemperatureSensor::type() const {
@@ -87,6 +88,12 @@ Status TemperatureSensor::SetState(const std::string &state_json UNUSED_ARG) {
 }
 
 void TemperatureSensor::ValueChanged() {
+  auto tr = temp_sensor_->GetTemperature();
+  if (tr.ok()) {
+    LOG(LL_DEBUG, ("TS %d: T = %.2f", id(), tr.ValueOrDie()));
+  } else {
+    LOG(LL_ERROR, ("TS %d: %s", id(), tr.status().ToString().c_str()));
+  }
   current_temperature_characteristic_->RaiseEvent();
 }
 
@@ -122,7 +129,6 @@ Status TemperatureSensor::Init() {
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_TemperatureDisplayUnits));
-  LOG(LL_INFO, ("Exporting Temp"));
 
   temp_sensor_->StartUpdating(cfg_->update_interval * 1000);
   return Status::OK();
@@ -133,17 +139,19 @@ StatusOr<std::string> TemperatureSensor::GetInfo() const {
   if (!tempval.ok()) {
     return tempval.status();
   }
-  return mgos::SPrintf("v: %f", tempval.ValueOrDie());
+  return mgos::SPrintf("t:%.2f", tempval.ValueOrDie());
 }
 
 StatusOr<std::string> TemperatureSensor::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, unit: %d, "
-      "update_interval: %d",
+      "update_interval: %d, ",
       id(), type(), cfg_->name, cfg_->unit, cfg_->update_interval);
   auto tempval = temp_sensor_->GetTemperature();
   if (tempval.ok()) {
-    mgos::JSONAppendStringf(&res, ", value: %.1f", tempval.ValueOrDie());
+    mgos::JSONAppendStringf(&res, "value: %.1f", tempval.ValueOrDie());
+  } else {
+    mgos::JSONAppendStringf(&res, "error: %.1f", tempval.ValueOrDie());
   }
   res.append("}");
   return res;

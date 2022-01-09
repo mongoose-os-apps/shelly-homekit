@@ -29,26 +29,9 @@
 #define DS1825MODEL 0x3B
 #define DS28EA00MODEL 0x42
 
-/* Device resolution */
-#define TEMP_9_BIT 0x1F  /* 9 bit */
-#define TEMP_10_BIT 0x3F /* 10 bit */
-#define TEMP_11_BIT 0x5F /* 11 bit */
-#define TEMP_12_BIT 0x7F /* 12 bit */
-
 #define CONVERT_T 0x44
 #define READ_SCRATCHPAD 0xBE
 #define READ_POWER_SUPPLY 0xB4
-
-struct __attribute__((__packed__)) Scratchpad {
-  int16_t temperature;
-  uint8_t th;
-  uint8_t tl;
-  uint8_t configuration;
-  uint8_t rfu;
-  uint8_t count_remain;
-  uint8_t count_per_c;
-  uint8_t crc;
-};
 
 namespace shelly {
 
@@ -75,24 +58,54 @@ std::vector<std::unique_ptr<TempSensor>> Onewire::DiscoverAll() {
   while (sensor = NextAvailableSensor(0)) {
     sensors.push_back(std::move(sensor));
   }
-  LOG(LL_INFO, ("Discovered %i sensors", sensors.size()));
+  LOG(LL_INFO, ("Found %i sensors", sensors.size()));
   return sensors;
 }
 
 std::unique_ptr<TempSensor> Onewire::NextAvailableSensor(int type) {
-  struct ROM rom = {0};
+  ROM rom;
   int mode = 0;
   std::unique_ptr<TempSensor> sensor;
   if (mgos_onewire_next(ow_, (uint8_t *) &rom, mode)) {
     uint8_t family = rom.family;
     if (TempSensorDS18XXX::SupportsFamily(family)) {
       sensor.reset(new TempSensorDS18XXX(ow_, rom));
+      sensor->Init();
     } else {
-      LOG(LL_INFO, ("Found non-supported device"));
+      LOG(LL_INFO, ("Found unsupported device (family %u)", family));
     }
   }
   (void) type;
   return sensor;
+}
+
+TempSensorDS18XXX::TempSensorDS18XXX(struct mgos_onewire *ow,
+                                     const Onewire::ROM &rom)
+    : ow_(ow),
+      rom_(rom),
+      meas_timer_(std::bind(&TempSensorDS18XXX::UpdateTemperatureCB, this)),
+      read_timer_(std::bind(&TempSensorDS18XXX::ReadTemperatureCB, this)) {
+  result_ =
+      mgos::Errorf(STATUS_UNAVAILABLE, "%llx: Not updated yet", rom_.serial);
+}
+
+TempSensorDS18XXX::~TempSensorDS18XXX() {
+}
+
+Status TempSensorDS18XXX::Init() {
+  auto spr = ReadScratchpad();
+  if (!spr.ok()) {
+    result_ = spr.status();
+    return spr.status();
+  }
+  const Scratchpad &sp = spr.ValueOrDie();
+
+  LOG(LL_INFO, ("DS18XXX: model: %02X, sn: %llx, "
+                "parasitic power: %s, resolution: %d",
+                (uint8_t) rom_.family, (unsigned long long) rom_.serial,
+                YesNo(ReadPowerSupply()), sp.GetResolution()));
+  conversion_time_ms_ = sp.GetConversionTimeMs();
+  return Status::OK();
 }
 
 void TempSensorDS18XXX::StartUpdating(int interval) {
@@ -100,26 +113,8 @@ void TempSensorDS18XXX::StartUpdating(int interval) {
   meas_timer_.Reset(interval, MGOS_TIMER_REPEAT | MGOS_TIMER_RUN_NOW);
 }
 
-TempSensorDS18XXX::TempSensorDS18XXX(struct mgos_onewire *ow,
-                                     const struct ROM rom)
-    : rom_(rom),
-      cached_temperature_(0),
-      meas_timer_(std::bind(&TempSensorDS18XXX::UpdateTemperatureCB, this)),
-      read_timer_(std::bind(&TempSensorDS18XXX::ReadTemperatureCB, this)) {
-  ow_ = ow;
-  resolution_ = GetResolution();
-  LOG(LL_INFO, ("DS18XXX: model: %02X, serial number: %" PRIx64
-                ", resolution: %d bit, parasitic power enabled: %d, conversion "
-                "time: %d ms",
-                rom_.family, rom_.serial, resolution_, ReadPowerSupply(),
-                ConversionTime(resolution_)));
-}
-
-TempSensorDS18XXX ::~TempSensorDS18XXX() {
-}
-
 StatusOr<float> TempSensorDS18XXX::GetTemperature() {
-  return cached_temperature_;
+  return result_;
 }
 
 bool TempSensorDS18XXX::SupportsFamily(uint8_t family) {
@@ -131,17 +126,25 @@ bool TempSensorDS18XXX::SupportsFamily(uint8_t family) {
   return false;
 }
 
-const void TempSensorDS18XXX::ReadScratchpad(struct Scratchpad *scratchpad) {
+StatusOr<TempSensorDS18XXX::Scratchpad> TempSensorDS18XXX::ReadScratchpad() {
+  Scratchpad result;
   if (!mgos_onewire_reset(ow_)) {
-    return;
+    return mgos::Errorf(STATUS_UNAVAILABLE, "%llx: Bus reset failed",
+                        rom_.serial);
   }
   mgos_onewire_select(ow_, (uint8_t *) &rom_);
   mgos_onewire_write(ow_, READ_SCRATCHPAD);
-  mgos_onewire_read_bytes(ow_, (uint8_t *) scratchpad,
-                          sizeof(struct Scratchpad));
+  mgos_onewire_read_bytes(ow_, (uint8_t *) &result, sizeof(result));
+  uint8_t crc = mgos_onewire_crc8((uint8_t *) &result, sizeof(result) - 1);
+  if (crc != result.crc) {
+    return mgos::Errorf(STATUS_DATA_LOSS,
+                        "%llx: Invalid scratchpad CRC: %#02x vs %#02x",
+                        rom_.serial, crc, result.crc);
+  }
+  return result;
 }
 
-const bool TempSensorDS18XXX::ReadPowerSupply() {
+bool TempSensorDS18XXX::ReadPowerSupply() {
   if (!mgos_onewire_reset(ow_)) {
     return false;
   }
@@ -150,68 +153,49 @@ const bool TempSensorDS18XXX::ReadPowerSupply() {
   return (mgos_onewire_read_bit(ow_) == 0);
 }
 
-const bool TempSensorDS18XXX::VerifyScratchpad(struct Scratchpad *scratchpad) {
-  return mgos_onewire_crc8((uint8_t *) scratchpad,
-                           sizeof(struct Scratchpad) - 1) == scratchpad->crc;
-}
-
 void TempSensorDS18XXX::ReadTemperatureCB() {
-  struct Scratchpad temp = {0};
-  float temperature = 0;
-  ReadScratchpad(&temp);
-  if (VerifyScratchpad(&temp)) {
-    int16_t temp_s = temp.temperature;
-    if (rom_.family == DS18S20MODEL) {
-      temperature =
-          ((int16_t)(temp_s & 0xFFFE) / 2.0) - 0.25 +
-          ((float) (temp.count_per_c - temp.count_remain) / temp.count_per_c);
-    } else {
-      temperature = temp_s * 0.0625;
-    }
-    LOG(LL_INFO, ("Read temperature %f", temperature));
-    cached_temperature_ = temperature;
-    if (notifier_) {
-      notifier_();
-    }
+  auto spr = ReadScratchpad();
+  if (!spr.ok()) {
+    result_ = spr.status();
+    LOG(LL_ERROR, ("%llx: failed to read scratchpad: %s", rom_.serial,
+                   spr.status().ToString().c_str()));
+    return;
+  }
+  const Scratchpad &sp = spr.ValueOrDie();
+  if (rom_.family == DS18S20MODEL) {
+    result_ = ((int16_t)(sp.temperature & 0xFFFE) / 2.0) - 0.25 +
+              ((float) (sp.count_per_c - sp.count_remain) / sp.count_per_c);
+  } else {
+    result_ = sp.temperature * 0.0625f;
+  }
+  conversion_time_ms_ = sp.GetConversionTimeMs();
+  if (notifier_) {
+    notifier_();
   }
 }
 
 void TempSensorDS18XXX::UpdateTemperatureCB() {
   if (!mgos_onewire_reset(ow_)) {
+    result_ =
+        mgos::Errorf(STATUS_UNAVAILABLE, "%llx: Bus reset failed", rom_.serial);
     return;
   }
   mgos_onewire_select(ow_, (uint8_t *) &rom_);
   mgos_onewire_write(ow_, CONVERT_T);
-  int time = ConversionTime(resolution_);
-  read_timer_.Reset(time, 0);
+  read_timer_.Reset(conversion_time_ms_, 0);
 }
 
-const unsigned int TempSensorDS18XXX::GetResolution() {
-  struct Scratchpad scratchpad = {0};
-  ReadScratchpad(&scratchpad);
-  if (!VerifyScratchpad(&scratchpad)) {
-    return 0;
-  }
-  switch (scratchpad.configuration) {
-    case TEMP_12_BIT:
-      return 12;
-    case TEMP_11_BIT:
-      return 11;
-    case TEMP_10_BIT:
-      return 10;
-    case TEMP_9_BIT:
-      return 9;
-  }
-  return 0;
+int TempSensorDS18XXX::Scratchpad::GetResolution() const {
+  return (9 + cfg.resolution);
 }
 
-int TempSensorDS18XXX::ConversionTime(uint8_t resolution) {
-  switch (resolution) {
-    case 9:
+int TempSensorDS18XXX::Scratchpad::GetConversionTimeMs() const {
+  switch (cfg.resolution) {
+    case 0:
       return 94;
-    case 10:
+    case 1:
       return 188;
-    case 11:
+    case 2:
       return 375;
     default:
       return 750;

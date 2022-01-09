@@ -129,7 +129,9 @@ cdefs:
   PRODUCT_VENDOR: '"Allterco"'
   PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
+  LED_ON: 0
   BTN_GPIO: -1
+  BTN_DOWN: 0
   BTN_NOISY: 1
   RST_GPIO_INIT: -1
   SHELLY_HAVE_DUAL_INPUT_MODES: 0
@@ -175,11 +177,11 @@ conds:
         - ["shelly.name", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
         - ["ts1", "ts", {title: "TS1 settings"}]
-        - ["ts1.name", "Shelly TS"]
+        - ["ts1.name", "Shelly TS1"]
         - ["ts2", "ts", {title: "TS2 settings"}]
-        - ["ts2.name", "Shelly TS"]
+        - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
-        - ["ts3.name", "Shelly TS"]
+        - ["ts3.name", "Shelly TS3"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -261,11 +263,11 @@ conds:
         - ["sw1", "sw", {title: "SW settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["ts1", "ts", {title: "TS1 settings"}]
-        - ["ts1.name", "Shelly TS"]
+        - ["ts1.name", "Shelly TS1"]
         - ["ts2", "ts", {title: "TS2 settings"}]
-        - ["ts2.name", "Shelly TS"]
+        - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
-        - ["ts3.name", "Shelly TS"]
+        - ["ts3.name", "Shelly TS3"]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]

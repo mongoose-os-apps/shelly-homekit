@@ -78,6 +78,8 @@ void ClearServiceFlags(uint8_t flags);
 
 HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request);
 
+void SetSysLEDEnable(bool enable);
+
 // Implemented for each model.
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,

@@ -24,17 +24,20 @@
 #include "mgos_timers.hpp"
 
 struct mgos_onewire;
-struct Scratchpad;
-struct __attribute__((__packed__)) ROM {
-  uint8_t family;
-  uint64_t serial;
-  uint8_t crc;
-};
 
 namespace shelly {
 
 class Onewire {
  public:
+  struct ROM {
+    uint64_t family : 8;
+    uint64_t serial : 48;
+    uint64_t crc : 8;
+
+    ROM() : family(0), serial(0), crc(0) {
+    }
+  };
+
   Onewire(int pin_in, int pin_out);
   ~Onewire();
   struct mgos_onewire *Get();
@@ -49,32 +52,48 @@ class Onewire {
 
 class TempSensorDS18XXX : public TempSensor {
  public:
-  TempSensorDS18XXX(struct mgos_onewire *ow, const struct ROM rom);
+  TempSensorDS18XXX(struct mgos_onewire *ow, const Onewire::ROM &rom);
   virtual ~TempSensorDS18XXX();
 
+  Status Init();
   StatusOr<float> GetTemperature() override;
 
   static bool SupportsFamily(uint8_t family);
-  static int ConversionTime(uint8_t resolution);
   virtual void StartUpdating(int interval) override;
 
  private:
-  const unsigned int GetResolution();
+  struct __attribute__((__packed__)) Scratchpad {
+    int16_t temperature;
+    uint8_t th;
+    uint8_t tl;
+    union {
+      uint8_t rsvd_1 : 5;
+      uint8_t resolution : 2;
+      uint8_t rsvd_0 : 1;
+      uint8_t val;
+    } cfg;
+    uint8_t rfu;
+    uint8_t count_remain;
+    uint8_t count_per_c;
+    uint8_t crc;
+
+    int GetResolution() const;
+    int GetConversionTimeMs() const;
+  };
 
   void ReadTemperatureCB();
   void UpdateTemperatureCB();
 
-  const void ReadScratchpad(struct Scratchpad *scratchpad);
-  const bool VerifyScratchpad(struct Scratchpad *scratchpad);
-  const bool ReadPowerSupply();
+  StatusOr<Scratchpad> ReadScratchpad();
+  bool ReadPowerSupply();
 
-  const struct ROM rom_ = {};
-  float cached_temperature_ = 0;
   struct mgos_onewire *ow_ = nullptr;
+  const Onewire::ROM rom_;
+  StatusOr<float> result_;
 
   mgos::Timer meas_timer_;
   mgos::Timer read_timer_;
-  unsigned int resolution_ = 0;
+  int conversion_time_ms_ = 750;
 };
 
 }  // namespace shelly

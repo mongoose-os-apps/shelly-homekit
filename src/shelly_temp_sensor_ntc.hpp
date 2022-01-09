@@ -26,6 +26,7 @@ class NTCTempSensor : public TempSensor {
   NTCTempSensor(int adc_channel, float vin, float rd);
   virtual ~NTCTempSensor();
 
+  Status Init() override;
   StatusOr<float> GetTemperature() override;
 
  protected:

@@ -63,13 +63,6 @@
 #define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
 
-#ifndef LED_ON
-#define LED_ON 0
-#endif
-#ifndef BTN_DOWN
-#define BTN_DOWN 0
-#endif
-
 namespace shelly {
 
 static HAPIPSession sessions[NUM_SESSIONS];
@@ -120,13 +113,14 @@ static HAPAccessoryServerRef s_server;
 static Input *s_btn = nullptr;
 static uint8_t s_service_flags = 0;
 static uint8_t s_identify_count = 0;
+static int8_t s_led_gpio = LED_GPIO;
 
 static void CheckLED(int pin, bool led_act);
 
 HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request) {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
   s_identify_count = 3;
-  CheckLED(LED_GPIO, LED_ON);
+  CheckLED(s_led_gpio, LED_ON);
   (void) request;
   return kHAPError_None;
 }
@@ -171,7 +165,7 @@ static void DoReset(void *arg) {
   if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
     remove(AUTH_FILE_NAME);
   }
-  CheckLED(LED_GPIO, LED_ON);
+  CheckLED(s_led_gpio, LED_ON);
 }
 
 void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
@@ -478,6 +472,10 @@ static void CheckOverheat(int sys_temp) {
   }
 }
 
+void SetSysLEDEnable(bool enable) {
+  s_led_gpio = (enable ? LED_GPIO : -1);
+}
+
 StatusOr<int> GetSystemTemperature() {
   if (s_sys_temp_sensor == nullptr) return mgos::Status(STATUS_NOT_FOUND, "");
   auto st = s_sys_temp_sensor->GetTemperature();
@@ -515,7 +513,7 @@ static void StatusTimerCB(void *arg) {
   }
   /* If provisioning information has been provided, start the server. */
   StartService(true /* quiet */);
-  CheckLED(LED_GPIO, LED_ON);
+  CheckLED(s_led_gpio, LED_ON);
   if (sys_temp.ok()) {
     CheckOverheat(sys_temp.ValueOrDie());
   }
@@ -714,7 +712,7 @@ void RestartService() {
 static void ButtonHandler(Input::Event ev, bool cur_state) {
   switch (ev) {
     case Input::Event::kChange: {
-      CheckLED(LED_GPIO, LED_ON);
+      CheckLED(s_led_gpio, LED_ON);
       break;
     }
     // Single press will toggle the switch, or cycle if there are two.
@@ -738,7 +736,7 @@ static void ButtonHandler(Input::Event ev, bool cur_state) {
       break;
     }
     case Input::Event::kLong: {
-      HandleInputResetSequence(s_btn, LED_GPIO, Input::Event::kReset,
+      HandleInputResetSequence(s_btn, s_led_gpio, Input::Event::kReset,
                                cur_state);
       break;
     }
@@ -847,9 +845,9 @@ void InitApp() {
   if (IsFailsafeMode()) {
     LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
     RPCServiceInit(nullptr, nullptr, nullptr);
-#if LED_GPIO >= 0
-    mgos_gpio_setup_output(LED_GPIO, LED_ON);
-#endif
+    if (s_led_gpio >= 0) {
+      mgos_gpio_setup_output(LED_GPIO, LED_ON);
+    }
     return;
   }
 
@@ -955,6 +953,12 @@ void InitApp() {
 
   LOG(LL_INFO, ("=== Creating peripherals"));
   CreatePeripherals(&s_inputs, &s_outputs, &s_pms, &s_sys_temp_sensor);
+  if (s_sys_temp_sensor) {
+    Status st = s_sys_temp_sensor->Init();
+    if (!st.ok()) {
+      LOG(LL_ERROR, ("Sys temp sensor init failed: %s", st.ToString().c_str()));
+    }
+  }
 
   StartService(false /* quiet */);
 

@@ -72,30 +72,35 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   // Sensor Discovery
-  s_onewire.reset(new Onewire(3, 0));
-  auto sensors = s_onewire->DiscoverAll();
-  if (sensors.size() == 0) {
-    s_onewire.reset(nullptr);  // free gpio pin
+  std::unique_ptr<Onewire> ow(std::move(s_onewire));
+  if (ow == nullptr) {
+    ow.reset(new Onewire(3, 0));
   }
+  auto sensors = ow->DiscoverAll();
 
-  // Single switch with non-detached input and no discovered sensor = only one
-  // accessory.
-  bool to_pri_acc =
-      (sensors.size() == 0) && (mgos_sys_config_get_sw1_in_mode() != 3);
+  // Single switch with non-detached input and no sensors = only one accessory.
+  bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
+                                         (int) InMode::kDetached));
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
 
-  struct mgos_config_ts *ts_cfgs[MAX_TS_NUM] = {
-      (struct mgos_config_ts *) mgos_sys_config_get_ts1(),
-      (struct mgos_config_ts *) mgos_sys_config_get_ts2(),
-      (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
-  };
+  if (!sensors.empty()) {
+    struct mgos_config_ts *ts_cfgs[MAX_TS_NUM] = {
+        (struct mgos_config_ts *) mgos_sys_config_get_ts1(),
+        (struct mgos_config_ts *) mgos_sys_config_get_ts2(),
+        (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
+    };
 
-  for (unsigned int i = 0; i < std::min((size_t) MAX_TS_NUM, sensors.size());
-       i++) {
-    auto *ts_cfg = ts_cfgs[i];
-    CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
-                               accs, svr);
+    for (size_t i = 0; i < std::min((size_t) MAX_TS_NUM, sensors.size()); i++) {
+      auto *ts_cfg = ts_cfgs[i];
+      CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
+                                 accs, svr);
+    }
+    s_onewire = std::move(ow);
+    // LED shares the same pin, we need to disable it for OW to work.
+    SetSysLEDEnable(false);
+  } else {
+    SetSysLEDEnable(true);
   }
 }
 

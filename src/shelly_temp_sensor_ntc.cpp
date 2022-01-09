@@ -29,7 +29,14 @@ namespace shelly {
 
 NTCTempSensor::NTCTempSensor(int adc_channel, float vin, float rd)
     : adc_channel_(adc_channel), vin_(vin), rd_(rd) {
-  mgos_adc_enable(adc_channel);
+}
+
+Status NTCTempSensor::Init() {
+  if (!mgos_adc_enable(adc_channel_)) {
+    return mgos::Errorf(STATUS_UNAVAILABLE, "failed to enable ADC channel %d",
+                        adc_channel_);
+  }
+  return Status::OK();
 }
 
 NTCTempSensor::~NTCTempSensor() {
