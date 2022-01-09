@@ -97,9 +97,13 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       out_pin += 3;
     }
 
-    hap_light.reset(new hap::LightBulb(i + 1, FindInput(1),
-                                       std::move(lightbulb_controller), lb_cfg,
-                                       is_optional));
+    Input *in = FindInput(1);
+    if (i != 0) {
+      in = nullptr;  // support input only for first device
+    }
+
+    hap_light.reset(new hap::LightBulb(
+        i + 1, in, std::move(lightbulb_controller), lb_cfg, is_optional));
 
     if (hap_light == nullptr || !hap_light->Init().ok()) {
       return;
@@ -108,7 +112,6 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     bool to_pri_acc = (ndev == 1);  // only device will become primary accessory
                                     // regardless of sw_hidden status
     bool sw_hidden = is_optional && (lb_cfg->svc_type == -1);
-    int aid = SHELLY_HAP_AID_BASE_LIGHTING + i;
 
     mgos::hap::Accessory *pri_acc = accs->front().get();
     if (to_pri_acc) {
@@ -116,6 +119,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
       pri_acc->AddService(hap_light.get());
     } else if (!sw_hidden) {
+      int aid = SHELLY_HAP_AID_BASE_LIGHTING + i;
+
       std::unique_ptr<mgos::hap::Accessory> acc(
           new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
                                    lb_cfg->name, nullptr, svr));
