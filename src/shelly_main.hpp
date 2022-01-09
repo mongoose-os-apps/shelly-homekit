@@ -51,6 +51,13 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      HAPAccessoryServerRef *svr, bool to_pri_acc,
                      Output *led_out = nullptr);
 
+void CreateHAPTemperatureSensor(
+    int id, std::unique_ptr<TempSensor> sensor,
+    const struct mgos_config_ts *ts_cfg,
+    std::vector<std::unique_ptr<Component>> *comps,
+    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr);
+
 void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
                               bool cur_state);
 

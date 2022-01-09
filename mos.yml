@@ -38,6 +38,11 @@ config_schema:
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
   - ["shelly.overheat_off", "i", 90, {title: "Overheat protection mode turns off when the temperature is back below this threshold"}]
 
+  - ["ts", "o", {title: "Temperature Sensor settings", abstract: true}]
+  - ["ts.name", "s", "", {title: "Name of the sensor"}]
+  - ["ts.unit", "i", 0, {title: "Display unit of the Sensor"}] # 0 - Celsius, 1 - Farenheit
+  - ["ts.update_interval", "i", 1, {title: "Update Interval of the sensor in seconds, minimum 1s"}]
+
   - ["sw", "o", {title: "Switch settings", abstract: true}]
   - ["sw.name", "s", "", {title: "Name of the switch"}]
   - ["sw.enable", "b", true, {title: "Enable this switch in the accessory"}]
@@ -149,7 +154,10 @@ conds:
   - when: build_vars.MODEL == "Shelly1"
     apply:
       name: switch1 # To allow OTA from stock fw.
+      sources:
+        - src/DS18XXX
       libs:
+        - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -166,6 +174,12 @@ conds:
         - ["device.id", "shelly1-??????"]
         - ["shelly.name", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -220,7 +234,10 @@ conds:
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
       name: switch1pm # To allow OTA from stock fw.
+      sources:
+        - src/DS18XXX
       libs:
+        - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -243,6 +260,12 @@ conds:
         - ["wifi.ap.ssid", "shelly1pm-??????"]
         - ["sw1", "sw", {title: "SW settings"}]
         - ["sw1.name", "Shelly SW"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS"]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
@@ -602,6 +625,10 @@ conds:
         - ["device.id", "ShellyU-????"]
         - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
