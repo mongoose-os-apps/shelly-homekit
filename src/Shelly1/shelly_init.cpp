@@ -86,10 +86,6 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                                  accs, svr);
     }
     s_onewire = std::move(ow);
-    // LED shares the same pin, we need to disable it for OW to work.
-    SetSysLEDEnable(false);
-  } else {
-    SetSysLEDEnable(true);
   }
 }
 
