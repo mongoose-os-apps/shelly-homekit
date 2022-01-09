@@ -4,3 +4,4 @@ SpaceAfterCStyleCast: true
 PointerBindsToType: false
 DerivePointerBinding: false
 IncludeBlocks: Preserve
+JavaScriptQuotes: Double
