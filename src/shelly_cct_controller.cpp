@@ -22,8 +22,8 @@
 
 namespace shelly {
 
-CCTController::CCTController(struct mgos_config_lb *cfg, Output *out_ww,
-                             Output *out_cw)
+CCTController::CCTController(struct mgos_config_lb *cfg, Output *out_cw,
+                             Output *out_ww)
     : LightBulbController(cfg),
       out_ww_(out_ww),
       out_cw_(out_cw),
