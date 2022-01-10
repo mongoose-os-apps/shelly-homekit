@@ -605,6 +605,27 @@ conds:
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
 
+  - when: build_vars.MODEL == "ShellyVintage"
+    apply:
+      name: bulb6w # To allow OTA from stock fw.
+      libs:
+        - origin: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        MGOS_ROOT_FS_TYPE: SPIFFS
+      cdefs:
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHVIN-1"'
+        # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["device.id", "ShellyVintage-??????"]
+        - ["shelly.name", "ShellyVintage-??????"]
+        - ["wifi.ap.ssid", "ShellyVintage-??????"]
+        - ["lb1", "lb", {title: "Light bulb settings"}]
+
   # Test device for BLE development.
   - when: build_vars.MODEL == "ShellyT32"
     apply:

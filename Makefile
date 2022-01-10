@@ -1,7 +1,7 @@
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
 .PHONY: build check-format format release upload \
-        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlus1 ShellyPlus1PM ShellyRGBW2
+        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlus1 ShellyPlus1PM ShellyRGBW2 ShellyVintage
 .SUFFIXES:
 
 MOS ?= mos
@@ -27,7 +27,7 @@ ifneq "$(VERBOSE)$(V)" "00"
   MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
-build: Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlus1 ShellyPlus1PM ShellyRGBW2
+build: Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlus1 ShellyPlus1PM ShellyRGBW2 ShellyVintage
 
 release:
 	$(MAKE) build CLEAN=1 RELEASE=1
@@ -70,6 +70,9 @@ ShellyPlus1PM: build-ShellyPlus1PM
 	@true
 
 ShellyRGBW2: build-ShellyRGBW2
+	@true
+
+ShellyVintage: build-ShellyVintage
 	@true
 
 ShellyU: PLATFORM=ubuntu
