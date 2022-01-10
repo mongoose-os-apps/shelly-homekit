@@ -12,8 +12,9 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 Summary of supported devices and features
 
 ||[1]|[1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[RGBW2]|
-|-|-|-|-|----|-----|-|---|--|-----|
+|-|-|-|-|-|-|-|-|-|-|
 |Switch & Co.|✓|✓|✓|✓|✓|✓|✓|✗|✗|
+|Temperature measurement|✓|✓|✗|✗|✗|✗|✗|✗|✗|
 |Stateless Input|✓|✓|✓|✗|✗|✓|✓|✓|✓|
 |Sensors|✓|✓|✓|✗|✗|✓|✓|✓|✓|
 |Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✗|
