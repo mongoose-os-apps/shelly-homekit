@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.11.0-alpha7
+version: 2.11.0-alpha8
 
 libs_version: latest
 modules_version: latest
@@ -37,6 +37,11 @@ config_schema:
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
   - ["shelly.overheat_off", "i", 90, {title: "Overheat protection mode turns off when the temperature is back below this threshold"}]
+
+  - ["ts", "o", {title: "Temperature Sensor settings", abstract: true}]
+  - ["ts.name", "s", "", {title: "Name of the sensor"}]
+  - ["ts.unit", "i", 0, {title: "Display unit of the Sensor"}] # 0 - Celsius, 1 - Farenheit
+  - ["ts.update_interval", "i", 1, {title: "Update Interval of the sensor in seconds, minimum 1s"}]
 
   - ["sw", "o", {title: "Switch settings", abstract: true}]
   - ["sw.name", "s", "", {title: "Name of the switch"}]
@@ -126,7 +131,9 @@ cdefs:
   PRODUCT_VENDOR: '"Allterco"'
   PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
+  LED_ON: 0
   BTN_GPIO: -1
+  BTN_DOWN: 0
   BTN_NOISY: 1
   RST_GPIO_INIT: -1
   SHELLY_HAVE_DUAL_INPUT_MODES: 0
@@ -151,7 +158,10 @@ conds:
   - when: build_vars.MODEL == "Shelly1"
     apply:
       name: switch1 # To allow OTA from stock fw.
+      sources:
+        - src/DS18XXX
       libs:
+        - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -168,6 +178,12 @@ conds:
         - ["device.id", "shelly1-??????"]
         - ["shelly.name", "shelly1-??????"]
         - ["wifi.ap.ssid", "shelly1-??????"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -222,7 +238,10 @@ conds:
   - when: build_vars.MODEL == "Shelly1PM"
     apply:
       name: switch1pm # To allow OTA from stock fw.
+      sources:
+        - src/DS18XXX
       libs:
+        - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -245,6 +264,12 @@ conds:
         - ["wifi.ap.ssid", "shelly1pm-??????"]
         - ["sw1", "sw", {title: "SW settings"}]
         - ["sw1.name", "Shelly SW"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
@@ -556,6 +581,45 @@ conds:
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
 
+  # Test device for BLE development.
+  - when: build_vars.MODEL == "ShellyT32"
+    apply:
+      libs:
+        # adding bt-common enables BLE support at compile time
+        #- origin: https://github.com/mongoose-os-libs/bt-common
+        #- origin: https://github.com/mongoose-os-libs/ethernet
+      build_vars:
+        APP_SLOT_SIZE: 0x1b0000
+        MGOS_HAP_BLE: 1
+        MGOS_ROOT_FS_TYPE: LFS
+        ESP_IDF_EXTRA_PARTITION: "aux,data,0x88,0x3f0000,48K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+      cdefs:
+        LED_GPIO: 13
+        LED_ON: 1
+        BTN_GPIO: 34
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"XXX"'
+        SHELLY_HAVE_PM: 0
+        BTN_NOISY: 0
+        MGOS_CONFIG_DEV_3: '"aux"'
+      config_schema:
+        # - ["bt.enable", true]
+        - ["bt.adv_enable", false] # ADK controls advertisement.
+        - ["bt.keep_enabled", true]
+        - ["device.id", "ShellyT32-????"]
+        - ["shelly.name", "ShellyT32-????"]
+        - ["wifi.ap.ssid", "ShellyT32-??????"]
+        - ["sw1", "sw", {"title": "SW settings"}]
+        - ["sw1.name", "SWT32"]
+        - ["sw1.in_mode", 0]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "SSWT32"]
+        - ["in1.sensor.name", "ST32"]
+
   - when: mos.platform != "ubuntu"
     apply:
       sources:
@@ -607,6 +671,10 @@ conds:
         - ["device.id", "ShellyU-????"]
         - ["shelly.name", "ShellyU-????"]
         - ["file_logger.dir", "./"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "ShellyU SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -672,44 +740,5 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
-
-  # Test device for BLE development.
-  - when: build_vars.MODEL == "ShellyT32"
-    apply:
-      libs:
-        # adding bt-common enables BLE support at compile time 
-        #- origin: https://github.com/mongoose-os-libs/bt-common
-        #- origin: https://github.com/mongoose-os-libs/ethernet
-      build_vars:
-        APP_SLOT_SIZE: 0x1b0000
-        MGOS_HAP_BLE: 1
-        MGOS_ROOT_FS_TYPE: LFS
-        ESP_IDF_EXTRA_PARTITION: "aux,data,0x88,0x3f0000,48K,encrypted"
-        ESP_IDF_SDKCONFIG_OPTS: >
-          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
-            CONFIG_FREERTOS_UNICORE=y
-      cdefs:
-        LED_GPIO: 13
-        LED_ON: 1
-        BTN_GPIO: 34
-        BTN_DOWN: 0
-        PRODUCT_HW_REV: '"1.0"'
-        STOCK_FW_MODEL: '"XXX"'
-        SHELLY_HAVE_PM: 0
-        BTN_NOISY: 0
-        MGOS_CONFIG_DEV_3: '"aux"'
-      config_schema:
-        # - ["bt.enable", true]
-        - ["bt.adv_enable", false] # ADK controls advertisement.
-        - ["bt.keep_enabled", true]
-        - ["device.id", "ShellyT32-????"]
-        - ["shelly.name", "ShellyT32-????"]
-        - ["wifi.ap.ssid", "ShellyT32-??????"]
-        - ["sw1", "sw", {"title": "SW settings"}]
-        - ["sw1.name", "SWT32"]
-        - ["sw1.in_mode", 0]
-        - ["in1", "in", {title: "Input 1 settings"}]
-        - ["in1.ssw.name", "SSWT32"]
-        - ["in1.sensor.name", "ST32"]
 
 manifest_version: 2020-01-29

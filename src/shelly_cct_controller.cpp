@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
+#include "shelly_cct_controller.hpp"
+
 #include "mgos.hpp"
 #include "mgos_hap_chars.hpp"
-
-#include "shelly_cct_controller.hpp"
 
 namespace shelly {
 

@@ -23,7 +23,11 @@ namespace shelly {
 
 class LightBulbController {
  public:
-  enum class BulbType { kBrightness = 0, kColortemperature = 1, kHueSat = 2 };
+  enum class BulbType {
+    kBrightness = 0,
+    kColortemperature = 1,
+    kHueSat = 2,
+  };
 
   explicit LightBulbController(struct mgos_config_lb *cfg);
   LightBulbController(const LightBulbController &other) = delete;

@@ -31,8 +31,8 @@ class CCTController : public LightBulbController {
   virtual ~CCTController();
 
   struct State {
-    float ww;
-    float cw;
+    float ww = 0;
+    float cw = 0;
   };
 
   void UpdateOutput() override;
@@ -50,8 +50,8 @@ class CCTController : public LightBulbController {
   Output *const out_ww_, *const out_cw_;
   mgos::Timer transition_timer_;
   int64_t transition_start_ = 0;
-  State state_start_{};
-  State state_now_{};
-  State state_end_{};
+  State state_start_;
+  State state_now_;
+  State state_end_;
 };
 }  // namespace shelly

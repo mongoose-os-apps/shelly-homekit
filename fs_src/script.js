@@ -57,7 +57,16 @@ class Component_Type {
   static kContactSensor = 9;
   static kDoorbell = 10;
   static kLightBulb = 11;
-  static kMax = 12;
+  static kTemperatureSensor = 12;
+  static kMax = 13;
+};
+
+// Keep in sync with shelly::LightBulbController::BulbType.
+class LightBulbController_BulbType {
+  static kBrightness = 0;
+  static kColortemperature = 1;
+  static kHueSat = 2;
+  static kMax = 3;
 };
 
 function el(container, id) {
@@ -407,6 +416,20 @@ function diSetConfig(c) {
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
 
+function tsSetConfig(c) {
+  let name = el(c, "name").value;
+  if (name == "") {
+    alert("Name must not be empty");
+    return;
+  }
+  let cfg = {
+    name: name,
+    unit: parseInt(el(c, "unit").value),
+    update_interval: parseInt(el(c, "update_interval").value),
+  };
+  setComponentConfig(c, cfg, el(c, "save_spinner"));
+}
+
 function mosSetConfig(c) {
   let name = el(c, "name").value;
   if (name == "") {
@@ -572,8 +595,8 @@ function findOrAddContainer(cd) {
       c.id = elId;
 
       let value = cd.bulb_type;
-      let showct = (value == 1)
-      let showcolor = (value == 2)
+      let showct = (value == LightBulbController_BulbType.kColortemperature)
+      let showcolor = (value == LightBulbController_BulbType.kHueSat)
       el(c, "hue_container").style.display = showcolor ? "block" : "none";
       el(c, "saturation_container").style.display =
           showcolor ? "block" : "none";
@@ -601,6 +624,13 @@ function findOrAddContainer(cd) {
         el(c, "auto_off_delay_container").style.display =
             this.checked ? "block" : "none";
         markInputChanged(ev);
+      };
+      break;
+    case Component_Type.kTemperatureSensor:
+      c = el("ts_template").cloneNode(true);
+      c.id = elId;
+      el(c, "save_btn").onclick = function() {
+        tsSetConfig(c);
       };
       break;
     default:
@@ -689,9 +719,9 @@ function updateComponent(cd) {
       }
 
       if (cd.type == Component_Type.kLightBulb) {
-        if (cd.bulb_type == 1) {
+        if (cd.bulb_type == LightBulbController_BulbType.kColortemperature) {
           headText = "CCT";
-        } else if (cd.bulb_type == 2) {
+        } else if (cd.bulb_type == LightBulbController_BulbType.kHueSat) {
           headText = "RGB";
         } else {
           headText = "Light";
@@ -713,6 +743,24 @@ function updateComponent(cd) {
         setValueIfNotModified(el(c, "transition_time"), cd.transition_time);
         setPreviewColor(c, cd.bulb_type);
       }
+      break;
+    }
+    case Component_Type.kTemperatureSensor: {
+      let headText = `Sensor ${cd.id}`;
+      if (cd.name) headText += ` (${cd.name})`;
+      setValueIfNotModified(el(c, "name"), cd.name);
+      updateInnerText(el(c, "head"), headText);
+      let v;
+      if (cd.value !== undefined) {
+        v = (cd.unit == 1 ? cel2far(cd.value) : cd.value);
+        el(c, "unit").style.display = "inline";
+      } else {
+        v = cd.error;
+        el(c, "unit").style.display = "none";
+      }
+      updateInnerText(el(c, "value"), v);
+      selectIfNotModified(el(c, "unit"), cd.unit);
+      setValueIfNotModified(el(c, "update_interval"), cd.update_interval);
       break;
     }
     case Component_Type.kStatelessSwitch: {
@@ -1439,6 +1487,7 @@ function refreshUI() {
 }
 
 function setValueIfNotModified(e, newValue) {
+  newValue = newValue.toString();
   // do not update the value of the input field if the field currently has
   // focus or has changed since changes have been last saved.
   if (document.activeElement === e || e.dataset.changed == "true" ||
@@ -1449,14 +1498,16 @@ function setValueIfNotModified(e, newValue) {
 }
 
 function checkIfNotModified(e, newState) {
+  newState = Boolean(newState);
   // do not update the checked value if
-  if (newState === e.checked || e.dataset.changed === "true") return;
+  if (newState == e.checked || e.dataset.changed === "true") return;
   e.checked = newState;
 }
 
 function slideIfNotModified(e, newValue) {
+  newValue = newValue.toString();
   if (newValue === e.value || e.dataset.changed === "true") return;
-  e.value = newValue.toString();
+  e.value = newValue;
 }
 
 function selectIfNotModified(e, newSelection) {
@@ -1464,16 +1515,22 @@ function selectIfNotModified(e, newSelection) {
 }
 
 function markInputChanged(ev) {
+  console.log("CHANGED", ev.target);
   ev.target.dataset.changed = "true";
 }
 
-function addInputChangeHandlers(el) {
-  let inputs = el.getElementsByTagName("input");
-  for (let i = 0; i < inputs.length; i++) {
-    if (inputs[i].onchange) continue;
-    inputs[i].dataset.changed = "false";
-    inputs[i].onchange = markInputChanged;
+function addOnChangeHandlers(els) {
+  for (let i = 0; i < els.length; i++) {
+    let el = els[i];
+    if (el.onchange) continue;
+    el.dataset.changed = "false";
+    el.onchange = markInputChanged;
   }
+}
+
+function addInputChangeHandlers(el) {
+  addOnChangeHandlers(el.getElementsByTagName("input"));
+  addOnChangeHandlers(el.getElementsByTagName("select"));
 }
 
 function resetLastSetValue() {
@@ -1484,6 +1541,7 @@ function resetLastSetValue() {
 }
 
 function updateInnerText(e, newInnerText) {
+  newInnerText = newInnerText.toString();
   if (e.innerText === newInnerText) return;
   e.innerText = newInnerText;
 }
@@ -1718,7 +1776,7 @@ function setPreviewColor(c, bulb_type) {
 
   // use fixed 100% for v, because we want to control brightness over pwm
   // frequency
-  if (bulb_type == 1) {
+  if (bulb_type == LightBulbController_BulbType.kColortemperature) {
     [r, g, b] = colortemp2rgb(t, 100);
   } else {
     [r, g, b] = hsv2rgb(h, s, 100);
@@ -1798,4 +1856,8 @@ function hsv2rgb(h, s, v) {
     case 5:
       return [v, p, q];
   }
+}
+
+function cel2far(v) {
+  return Math.round((v * 1.8 + 32.0) * 10) / 10;
 }

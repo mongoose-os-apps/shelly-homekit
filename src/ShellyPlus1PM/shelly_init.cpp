@@ -104,7 +104,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     std::unique_ptr<hap::GarageDoorOpener> gdo(
         new hap::GarageDoorOpener(1, FindInput(1), nullptr /* in_open */,
                                   FindOutput(1), FindOutput(1), gdo_cfg));
-    if (gdo == nullptr || !gdo->Init().ok()) {
+    if (gdo == nullptr) return;
+    auto st = gdo->Init();
+    if (!st.ok()) {
+      LOG(LL_ERROR, ("GDO init failed: %s", st.ToString().c_str()));
       return;
     }
     gdo->set_primary(true);

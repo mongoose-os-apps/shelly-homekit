@@ -105,7 +105,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     hap_light.reset(new hap::LightBulb(
         i + 1, in, std::move(lightbulb_controller), lb_cfg, is_optional));
 
-    if (hap_light == nullptr || !hap_light->Init().ok()) {
+    if (hap_light == nullptr) return;
+    auto st = hap_light->Init();
+    if (!st.ok()) {
+      LOG(LL_ERROR, ("LightBulb init failed: %s", st.ToString().c_str()));
       return;
     }
 

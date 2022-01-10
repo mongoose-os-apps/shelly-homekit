@@ -17,9 +17,11 @@
 
 #include <cmath>
 
+#include "mgos_hap.h"
 #include "mgos_rpc.h"
 #include "mgos_sys_config.h"
 
+#include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_mock.hpp"
@@ -48,8 +50,19 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
-                  comps, accs, svr, true /* to_pri_acc */,
+                  comps, accs, svr, false /* to_pri_acc */,
                   nullptr /* led_out */);
+
+  // Sensors
+  for (int i = 0; i < 2; i++) {
+    std::unique_ptr<TempSensor> temp(new MockTempSensor(25.125 + i));
+    auto *ts_cfg = (i == 0)
+                       ? (struct mgos_config_ts *) mgos_sys_config_get_ts1()
+                       : (struct mgos_config_ts *) mgos_sys_config_get_ts2();
+
+    CreateHAPTemperatureSensor(i + 1, std::move(temp), ts_cfg, comps, accs,
+                               svr);
+  }
 }
 
 }  // namespace shelly

@@ -18,6 +18,7 @@
 #include "shelly_reset.hpp"
 
 #include "mgos.hpp"
+#include "mgos_file_logger.h"
 #include "mgos_vfs.h"
 
 #if CS_PLATFORM == CS_P_ESP8266
@@ -112,11 +113,19 @@ bool WipeDevice() {
   for (const char *wipe_fn : s_wipe_files) {
     if (remove(wipe_fn) == 0) wiped = true;
   }
+  char *log;
+  while ((log = mgos_file_log_get_oldest_file_name()) != NULL) {
+    remove(log);
+    wiped = true;
+    free(log);
+  }
 #if defined(MGOS_HAVE_VFS_FS_SPIFFS) || defined(MGOS_HAVE_VFS_FS_LFS)
   if (wiped) {
     mgos_vfs_gc("/");
   }
 #endif
+  mgos_sys_config_set_file_logger_enable(false);
+
   return wiped;
 }
 

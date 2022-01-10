@@ -23,11 +23,23 @@ namespace shelly {
 
 class TempSensor {
  public:
+  typedef std::function<void()> Notifier;
+
   TempSensor();
   virtual ~TempSensor();
   TempSensor(const TempSensor &other) = delete;
 
+  virtual Status Init() = 0;
+
   virtual StatusOr<float> GetTemperature() = 0;
+
+  virtual void StartUpdating(int interval UNUSED_ARG) {
+  }
+
+  void SetNotifier(Notifier notifier);
+
+ protected:
+  Notifier notifier_;
 };
 
 }  // namespace shelly

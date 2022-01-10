@@ -44,9 +44,24 @@ a, a:link, a:visited {
   text-decoration: none;
 }
 
-input[type=password], input[type=text] {
-  width: 160px;
-  padding: 0.2em 0.7em;
+input[type=number], input[type=password], input[type=text] {
+  min-width: 150px;
+  padding: 3px 10px;
+  position: relative;
+  border: 1px solid #cdcdcd;
+  border-color: rgba(0, 0, 0, .15);
+  background-color: #ffffff;
+  font-size: 14px;
+}
+
+input[type=number].short, select.short {
+  min-width: 10px;
+}
+
+select {
+  min-width: 178px;
+  max-width: 178px;
+  padding: 5px 6px;
   position: relative;
   border: 1px solid #cdcdcd;
   border-color: rgba(0, 0, 0, .15);
@@ -58,10 +73,8 @@ input[type=range] {
   margin: 0;
 }
 
-
 h1 {
   margin: 0;
-  padding-bottom: 0.5em;
   text-align: center;
 }
 
@@ -83,44 +96,13 @@ h1 {
   flex-wrap: inherit;
 }
 
-.form-control input:not([type=checkbox]) {
-  min-width: 10em;
-}
-
 .form label {
-  min-width: 9.5em;
+  min-width: 100px;
+  max-width: 100px;
   display: inline-block;
 }
 
 .form {
-}
-
-.badge {
-  background-color: #ff0800;
-  border: 2px solid #ff0800;
-  border-radius: 12px;
-  box-shadow: 1px 1px 1px #282828;
-  color: #ffffff;
-  font-weight: bold;
-  font-size: 12px;
-  line-height: 9px;
-  height: 12px;
-  padding: 4px 3px 0 5px;
-  text-align: center;
-  min-width: 8px;
-}
-
-/* make sure that badge text is white
-   otherwise it will be blue if it is linked */
-a.badge {
-  color: #ffffff;
-}
-
-#badges_container {
-  margin: 8px 0;
-  padding-top: 0;
-  /* height for single row of badges */
-  min-height: 21px;
 }
 
 .helpbadge {
@@ -136,29 +118,57 @@ a.badge {
   text-align: center;
   min-width: 8px;
   position: relative;
-  margin-top: 4px;
-  margin-right: -10px;
   float: right;
 }
 
 #header_container {
-  padding: 0px 16px 10px 16px;
 }
 
-.title {
-  color: #454955;
-  font-size: 36px;
-  font-weight: lighter;
-  text-align: left;
-  line-height: normal;
+#logo_container {
+  height: 80px;
 }
 
 #logo {
   display: block;
-  margin: 8px;
+  margin: 0;
   float: left;
   width: 80px;
   height: 80px;
+}
+
+.title {
+  color: #454955;
+  font-size: 32px;
+  font-weight: lighter;
+  text-align: left;
+  line-height: normal;
+  padding: 19px 0 0 0;
+}
+
+#badges_container {
+  display: inline;
+}
+
+.badge {
+  display: inline;
+  background-color: #ff0800;
+  border: 2px solid #ff0800;
+  border-radius: 12px;
+  box-shadow: 1px 1px 1px #282828;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 9px;
+  height: 12px;
+  padding: 0 3px 0 5px;
+  text-align: center;
+  min-width: 8px;
+}
+
+/* make sure that badge text is white
+   otherwise it will be blue if it is linked */
+a.badge {
+  color: #ffffff;
 }
 
 .spin {

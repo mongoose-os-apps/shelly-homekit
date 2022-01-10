@@ -29,7 +29,7 @@ class LightController : public LightBulbController {
   virtual ~LightController();
 
   struct State {
-    float w;
+    float w = 0;
   };
 
   void UpdateOutput() override;
@@ -40,8 +40,8 @@ class LightController : public LightBulbController {
   Output *const out_w_;
   mgos::Timer transition_timer_;
   int64_t transition_start_ = 0;
-  State state_start_{};
-  State state_now_{};
-  State state_end_{};
+  State state_start_;
+  State state_now_;
+  State state_end_;
 };
 }  // namespace shelly

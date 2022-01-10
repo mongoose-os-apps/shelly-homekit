@@ -26,6 +26,7 @@ class MockTempSensor : public TempSensor {
   MockTempSensor(float initial_value);
   virtual ~MockTempSensor();
 
+  Status Init() override;
   StatusOr<float> GetTemperature() override;
 
   void SetValue(float new_value);

@@ -20,8 +20,13 @@
 #include "shelly_main.hpp"
 #include "shelly_pm_bl0937.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
+#include "shelly_temp_sensor_ow.hpp"
+
+#define MAX_TS_NUM 3
 
 namespace shelly {
+
+static std::unique_ptr<Onewire> s_onewire;
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
@@ -32,6 +37,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 15, _1, _2));
   in->Init();
   inputs->emplace_back(in);
+
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 5 /* CF */, -1 /* CF1 */, -1 /* SEL */, 2,
                            mgos_sys_config_get_bl0937_power_coeff()));
@@ -54,7 +60,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     std::unique_ptr<hap::GarageDoorOpener> gdo(
         new hap::GarageDoorOpener(1, FindInput(1), nullptr /* in_open */,
                                   FindOutput(1), FindOutput(1), gdo_cfg));
-    if (gdo == nullptr || !gdo->Init().ok()) {
+    if (gdo == nullptr) return;
+    auto st = gdo->Init();
+    if (!st.ok()) {
+      LOG(LL_ERROR, ("GDO init failed: %s", st.ToString().c_str()));
       return;
     }
     gdo->set_primary(true);
@@ -64,10 +73,38 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     comps->emplace_back(std::move(gdo));
     return;
   }
-  // Single switch with non-detached input = only one accessory.
-  bool to_pri_acc = (mgos_sys_config_get_sw1_in_mode() != 3);
+
+  // Sensor Discovery
+  std::unique_ptr<Onewire> ow(std::move(s_onewire));
+  if (ow == nullptr) {
+    ow.reset(new Onewire(3, 0));
+  }
+  auto sensors = ow->DiscoverAll();
+
+  // Single switch with non-detached input and no sensors = only one accessory.
+  bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
+                                         (int) InMode::kDetached));
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
+
+  if (!sensors.empty()) {
+    struct mgos_config_ts *ts_cfgs[MAX_TS_NUM] = {
+        (struct mgos_config_ts *) mgos_sys_config_get_ts1(),
+        (struct mgos_config_ts *) mgos_sys_config_get_ts2(),
+        (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
+    };
+
+    for (size_t i = 0; i < std::min((size_t) MAX_TS_NUM, sensors.size()); i++) {
+      auto *ts_cfg = ts_cfgs[i];
+      CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
+                                 accs, svr);
+    }
+    s_onewire = std::move(ow);
+    // LED shares the same pin, we need to disable it for OW to work.
+    SetSysLEDEnable(false);
+  } else {
+    SetSysLEDEnable(true);
+  }
 }
 
 }  // namespace shelly

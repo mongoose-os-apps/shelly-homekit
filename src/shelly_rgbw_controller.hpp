@@ -30,10 +30,10 @@ class RGBWController : public LightBulbController {
   virtual ~RGBWController();
 
   struct State {
-    float r;
-    float g;
-    float b;
-    float w;
+    float r = 0;
+    float g = 0;
+    float b = 0;
+    float w = 0;
   };
 
   void UpdateOutput() override;
@@ -49,8 +49,8 @@ class RGBWController : public LightBulbController {
   Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
   mgos::Timer transition_timer_;
   int64_t transition_start_ = 0;
-  State state_start_{};
-  State state_now_{};
-  State state_end_{};
+  State state_start_;
+  State state_now_;
+  State state_end_;
 };
 }  // namespace shelly
