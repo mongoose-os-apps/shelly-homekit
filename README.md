@@ -13,8 +13,8 @@ Summary of supported devices and features
 
 ||[1]|[1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[RGBW2]|
 |-|-|-|-|-|-|-|-|-|-|
-|Switch & Co.|✓|✓|✓|✓|✓|✓|✓|✗|✗|
-|Temperature measurement|✓|✓|✗|✗|✗|✗|✗|✗|✗|
+|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✗|✗|
+|Temperature measurement|✓<sup>2</sup>|✓<sup>2</sup>|✗|✗|✗|✗|✗|✗|✗|
 |Stateless Input|✓|✓|✓|✗|✗|✓|✓|✓|✓|
 |Sensors|✓|✓|✓|✗|✗|✓|✓|✓|✓|
 |Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✗|
@@ -22,14 +22,17 @@ Summary of supported devices and features
 |Power measurement|✗|✓|-|✓|✓|✗|✓|✗|-|
 |RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✓|
 
-_✓ supported, - possible but not supported yet, ✗ not possible_  
-_Switch & Co. includes lock, outlet, valve_
+_Notes:_  
+_✓: supported_  
+_-: possible but not supported yet_  
+_✗: not possible_  
+_1: includes lock, outlet and valve_  
+_2: With [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_
 
 Features that are not yet supported:
  * Cloud connections: no Shelly Cloud, no MQTT
  * Remote actions (web hooks)
  * Valve with timer support
- * Temperature addon
 
 ## Quick Start
 
