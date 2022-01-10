@@ -16,7 +16,7 @@ Summary of supported devices and features
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✗|✗|
 |Temperature measurement|✓<sup>2</sup>|✓<sup>2</sup>|✗|✗|✗|✗|✗|✗|✗|
 |Stateless Input|✓|✓|✓|✗|✗|✓|✓|✓|✓|
-|Sensors|✓|✓|✓|✗|✗|✓|✓|✓|✓|
+|Sensors<sup>3</sup>|✓|✓|✓|✗|✗|✓|✓|✓|✓|
 |Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✗|
 |Roller shutter mode|✗|✗|✗|✗|✗|✗|✓|✗|✗|
 |Power measurement|✗|✓|-|✓|✓|✗|✓|✗|-|
@@ -27,7 +27,8 @@ _✓: supported_
 _-: possible but not supported yet_  
 _✗: not possible_  
 _1: includes lock, outlet and valve_  
-_2: With [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_
+_2: with [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_
+_3: includes motion, occupancy, contact_
 
 Features that are not yet supported:
  * Cloud connections: no Shelly Cloud, no MQTT
