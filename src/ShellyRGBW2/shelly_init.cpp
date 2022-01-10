@@ -57,7 +57,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     FindOutput(4)->SetStatePWM(0.0f, "cc");
   }
 
-  if (rgbw_light == nullptr || !rgbw_light->Init().ok()) {
+  if (rgbw_light == nullptr) return;
+  auto st = rgbw_light->Init();
+  if (!st.ok()) {
+    LOG(LL_ERROR, ("LightBulb init failed: %s", st.ToString().c_str()));
     return;
   }
 
