@@ -94,7 +94,7 @@ config_schema:
 
   - ["lb", "o", {title: "Light bulb settings", abstract: true}]
   - ["lb.name", "s", "Light bulb", {title: "Accessory name"}]
-  - ["lb.svc_type", "i", 0, {title: "HAP service type, -1 = disable (if available), 0 = normal"}]
+  - ["lb.svc_hidden", "b", false, {title: "Whether HAP service is hidden"}]
   - ["lb.enable", "b", true, {title: "Enable this light in the accessory"}]
   - ["lb.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
   - ["lb.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]

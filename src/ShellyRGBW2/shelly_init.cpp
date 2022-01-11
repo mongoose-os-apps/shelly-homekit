@@ -114,7 +114,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
     bool to_pri_acc = (ndev == 1);  // only device will become primary accessory
                                     // regardless of sw_hidden status
-    bool sw_hidden = is_optional && (lb_cfg->svc_type == -1);
+    bool sw_hidden = is_optional && lb_cfg->svc_hidden;
 
     mgos::hap::Accessory *pri_acc = accs->front().get();
     if (to_pri_acc) {

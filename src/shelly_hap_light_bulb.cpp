@@ -274,12 +274,12 @@ StatusOr<std::string> LightBulb::GetInfo() const {
 
 StatusOr<std::string> LightBulb::GetInfoJSON() const {
   return mgos::JSONPrintStringf(
-      "{id: %d, type: %d, name: %Q, svc_type: %d, state: %B, "
+      "{id: %d, type: %d, name: %Q, svc_hidden: %B, state: %B, "
       " brightness: %d, hue: %d, saturation: %d, "
       " in_inverted: %B, initial: %d, in_mode: %d, "
       "auto_off: %B, auto_off_delay: %.3f, transition_time: %d, "
       "colortemperature: %d, bulb_type: %d, hap_optional: %d}",
-      id(), type(), cfg_->name, cfg_->svc_type, cfg_->state, cfg_->brightness,
+      id(), type(), cfg_->name, cfg_->svc_hidden, cfg_->state, cfg_->brightness,
       cfg_->hue, cfg_->saturation, cfg_->in_inverted, cfg_->initial_state,
       cfg_->in_mode, cfg_->auto_off, cfg_->auto_off_delay,
       cfg_->transition_time, cfg_->colortemperature, controller_->Type(),
@@ -293,18 +293,17 @@ Status LightBulb::SetConfig(const std::string &config_json,
   cfg.name = nullptr;
   cfg.in_mode = -2;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, svc_type: %d, in_mode: %d, in_inverted: %B, "
+             "{name: %Q, svc_hidden: %B, in_mode: %d, in_inverted: %B, "
              "initial_state: %d, "
              "auto_off: %B, auto_off_delay: %lf, transition_time: %d}",
-             &cfg.name, &cfg.svc_type, &cfg.in_mode, &in_inverted,
+             &cfg.name, &cfg.svc_hidden, &cfg.in_mode, &in_inverted,
              &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay,
              &cfg.transition_time);
 
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
-  int min_svc_type = is_optional_ ? -1 : 0;
-  if (cfg.svc_type < min_svc_type || cfg.svc_type > 0) {
-    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "svc_type");
+  if (cfg.svc_hidden && !is_optional_) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "svc_hidden");
   }
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
@@ -328,9 +327,9 @@ Status LightBulb::SetConfig(const std::string &config_json,
     mgos_conf_set_str(&cfg_->name, cfg.name);
     *restart_required = true;
   }
-  if (cfg_->svc_type != cfg.svc_type) {
+  if (cfg_->svc_hidden != cfg.svc_hidden) {
     *restart_required = true;
-    cfg_->svc_type = cfg.svc_type;
+    cfg_->svc_hidden = cfg.svc_hidden;
   }
   if (cfg.in_mode != -2 && cfg_->in_mode != cfg.in_mode) {
     if (cfg_->in_mode == (int) InMode::kDetached ||
