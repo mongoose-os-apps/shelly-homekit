@@ -1711,7 +1711,7 @@ function checkUpdate() {
       })
       .catch((error) => {
         console.log("Error", error);
-        e.innerText = errMsg;
+        e.innerHTML = errMsg;
         se.className = "";
       });
 }
