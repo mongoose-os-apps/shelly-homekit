@@ -159,6 +159,8 @@ Status LightBulb::Init() {
     handler_id_ =
         in_->AddHandler(std::bind(&LightBulb::InputEventHandler, this, _1, _2));
     in_->SetInvert(cfg_->in_inverted);
+  } else {
+    cfg_->in_mode = -2;
   }
 
   bool should_restore = (cfg_->initial_state == (int) InitialState::kLast);
