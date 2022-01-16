@@ -123,7 +123,7 @@ Status TemperatureSensor::Init() {
       [this](HAPAccessoryServerRef *server UNUSED_ARG,
              const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
              uint8_t value) {
-        if (value >= 0 && value <= 1) {
+        if (value <= 1) {
           cfg_->unit = value;
         }
         return kHAPError_None;
