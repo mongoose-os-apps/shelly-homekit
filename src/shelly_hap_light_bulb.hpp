@@ -35,7 +35,8 @@ namespace hap {
 
 class LightBulb : public Component, public mgos::hap::Service {
  public:
-  LightBulb(int id, Input *in, std::unique_ptr<LightBulbController> controller,
+  LightBulb(int id, Input *in,
+            std::unique_ptr<LightBulbControllerBase> controller,
             struct mgos_config_lb *cfg, bool is_optional);
   virtual ~LightBulb();
 
@@ -68,7 +69,7 @@ class LightBulb : public Component, public mgos::hap::Service {
   void DisableAutoOff();
 
   Input *const in_;
-  std::unique_ptr<LightBulbController> const controller_;
+  std::unique_ptr<LightBulbControllerBase> const controller_;
   struct mgos_config_lb *cfg_;
   bool is_optional_;
 

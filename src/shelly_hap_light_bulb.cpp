@@ -28,7 +28,7 @@ namespace shelly {
 namespace hap {
 
 LightBulb::LightBulb(int id, Input *in,
-                     std::unique_ptr<LightBulbController> controller,
+                     std::unique_ptr<LightBulbControllerBase> controller,
                      struct mgos_config_lb *cfg, bool is_optional)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_LIGHTING +
@@ -106,7 +106,8 @@ Status LightBulb::Init() {
 
   // HAP forbids simultaneous presence of color temperature and hue/saturation
   // to be able to distinguish between RGB and CCT light bulbs
-  if (controller_->Type() == LightBulbController::BulbType::kColortemperature) {
+  if (controller_->Type() ==
+      LightBulbControllerBase::BulbType::kColortemperature) {
     // CCT Mode
     // Color Temperature
     colortemperature_characteristic = new mgos::hap::UInt32Characteristic(
@@ -124,7 +125,8 @@ Status LightBulb::Init() {
         },
         kHAPCharacteristicDebugDescription_ColorTemperature);
     AddChar(colortemperature_characteristic);
-  } else if (controller_->Type() == LightBulbController::BulbType::kHueSat) {
+  } else if (controller_->Type() ==
+             LightBulbControllerBase::BulbType::kHueSat) {
     // RGB(W) Mode
     // Hue
     hue_characteristic = new mgos::hap::UInt32Characteristic(

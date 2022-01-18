@@ -19,18 +19,25 @@
 
 namespace shelly {
 
-LightBulbController::LightBulbController(struct mgos_config_lb *cfg)
-    : cfg_(cfg) {
+LightBulbControllerBase::LightBulbControllerBase(struct mgos_config_lb *cfg,
+                                                 Update ud)
+    : cfg_(cfg), update_(ud) {
 }
 
-LightBulbController::~LightBulbController() {
+LightBulbControllerBase::~LightBulbControllerBase() {
 }
 
-bool LightBulbController::IsOn() const {
+bool LightBulbControllerBase::IsOn() const {
   return cfg_->state != 0;
 }
 
-bool LightBulbController::IsOff() const {
+void LightBulbControllerBase::UpdateOutput() {
+  if (update_) {
+    update_();
+  }
+}
+
+bool LightBulbControllerBase::IsOff() const {
   return cfg_->state == 0;
 }
 

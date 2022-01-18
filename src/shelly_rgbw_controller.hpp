@@ -22,35 +22,47 @@
 #pragma once
 
 namespace shelly {
-class RGBWController : public LightBulbController {
+struct StateRGBW {
+  float r = 0;
+  float g = 0;
+  float b = 0;
+  float w = 0;
+
+  StateRGBW operator+(const StateRGBW &other) {
+    StateRGBW s;
+    s.r = r + other.r;
+    s.g = r + other.g;
+    s.b = r + other.b;
+    s.w = r + other.w;
+    return s;
+  }
+
+  StateRGBW operator*(const float a) const {
+    StateRGBW s;
+    s.r = a * r;
+    s.g = a * g;
+    s.b = a * b;
+    s.w = a * w;
+    return s;
+  }
+};
+class RGBWController : public LightBulbController<StateRGBW> {
  public:
   RGBWController(struct mgos_config_lb *cfg, Output *out_r, Output *out_g,
                  Output *out_b, Output *out_w);
   RGBWController(const RGBWController &other) = delete;
   virtual ~RGBWController();
 
-  struct State {
-    float r = 0;
-    float g = 0;
-    float b = 0;
-    float w = 0;
-  };
-
-  void UpdateOutput() override;
+  virtual StateRGBW ConfigToState() override;
+  virtual void ReportTransition(const StateRGBW &next,
+                                const StateRGBW &prev) override;
+  virtual void UpdatePWM(const StateRGBW &state) override;
 
   BulbType Type() override {
     return BulbType::kHueSat;
   }
 
  protected:
-  void TransitionTimerCB();
-  void HSVtoRGBW(State &state) const;
-
   Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
-  mgos::Timer transition_timer_;
-  int64_t transition_start_ = 0;
-  State state_start_;
-  State state_now_;
-  State state_end_;
 };
 }  // namespace shelly

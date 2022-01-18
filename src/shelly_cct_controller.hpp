@@ -24,34 +24,42 @@
 #pragma once
 
 namespace shelly {
-class CCTController : public LightBulbController {
+
+struct StateCCT {
+  float ww = 0;
+  float cw = 0;
+
+  StateCCT operator+(const StateCCT &other) {
+    StateCCT s;
+    s.ww = ww + other.ww;
+    s.cw = cw + other.cw;
+    return s;
+  }
+
+  StateCCT operator*(const float a) const {
+    StateCCT s;
+    s.ww = a * ww;
+    s.cw = a * cw;
+    return s;
+  }
+};
+
+class CCTController : public LightBulbController<StateCCT> {
  public:
   CCTController(struct mgos_config_lb *cfg, Output *out_ww, Output *out_cw);
   CCTController(const CCTController &other) = delete;
   virtual ~CCTController();
 
-  struct State {
-    float ww = 0;
-    float cw = 0;
-  };
-
-  void UpdateOutput() override;
+  virtual StateCCT ConfigToState() override;
+  virtual void ReportTransition(const StateCCT &next,
+                                const StateCCT &prev) override;
+  virtual void UpdatePWM(const StateCCT &state) override;
 
   BulbType Type() override {
     return BulbType::kColortemperature;
   }
 
  protected:
-  void TransitionTimerCB();
-  void ColortemperaturetoWhiteChannels(State &state) const;
-
-  mgos::hap::UInt32Characteristic *colortemperature_characteristic;
-
   Output *const out_ww_, *const out_cw_;
-  mgos::Timer transition_timer_;
-  int64_t transition_start_ = 0;
-  State state_start_;
-  State state_now_;
-  State state_end_;
 };
 }  // namespace shelly

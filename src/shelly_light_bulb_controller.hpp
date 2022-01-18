@@ -21,19 +21,20 @@
 
 namespace shelly {
 
-class LightBulbController {
+class LightBulbControllerBase {
  public:
   enum class BulbType {
     kBrightness = 0,
     kColortemperature = 1,
     kHueSat = 2,
   };
+  typedef std::function<void()> Update;
 
-  explicit LightBulbController(struct mgos_config_lb *cfg);
-  LightBulbController(const LightBulbController &other) = delete;
-  virtual ~LightBulbController();
+  LightBulbControllerBase(struct mgos_config_lb *cfg, Update ud);
+  LightBulbControllerBase(const LightBulbControllerBase &other) = delete;
+  virtual ~LightBulbControllerBase();
 
-  virtual void UpdateOutput() = 0;
+  void UpdateOutput();
 
   virtual BulbType Type() {
     return BulbType::kBrightness;
@@ -44,6 +45,67 @@ class LightBulbController {
 
  protected:
   struct mgos_config_lb *cfg_;
+
+  Update update_;
 };
 
+template <class T>
+class LightBulbController : public LightBulbControllerBase {
+ public:
+  LightBulbController(struct mgos_config_lb *cfg)
+      : LightBulbControllerBase(
+            cfg,
+            std::bind(&LightBulbController<T>::UpdateOutputSpecialized, this)),
+        transition_timer_(
+            std::bind(&LightBulbController<T>::TransitionTimerCB, this)) {
+  }
+  LightBulbController(const LightBulbControllerBase &other) = delete;
+
+ protected:
+  mgos::Timer transition_timer_;
+  int64_t transition_start_ = 0;
+
+  T state_start_;
+  T state_now_;
+  T state_end_;
+
+  virtual T ConfigToState() = 0;
+  virtual void ReportTransition(const T &next, const T &prev) = 0;
+  virtual void UpdatePWM(const T &state) = 0;
+
+  void TransitionTimerCB() {
+    int64_t elapsed = mgos_uptime_micros() - transition_start_;
+    int64_t duration = cfg_->transition_time * 1000;
+
+    if (elapsed > duration) {
+      transition_timer_.Clear();
+      state_now_ = state_end_;
+      LOG(LL_INFO, ("Transition ready"));
+    } else {
+      float alpha = static_cast<float>(elapsed) / static_cast<float>(duration);
+      state_now_ = state_end_ * alpha + state_start_ * (1 - alpha);
+    }
+
+    UpdatePWM(state_now_);
+  }
+
+  void UpdateOutputSpecialized() {
+    state_start_ = state_now_;
+    if (IsOn()) {
+      state_end_ = ConfigToState();
+    } else {
+      // turn off
+      T statezero;
+      state_end_ = statezero;
+    }
+
+    LOG(LL_INFO, ("Transition started... %d [ms]", cfg_->transition_time));
+
+    ReportTransition(state_end_, state_start_);
+
+    // restarting transition timer to fade
+    transition_start_ = mgos_uptime_micros();
+    transition_timer_.Reset(10, MGOS_TIMER_REPEAT);
+  }
+};
 }  // namespace shelly

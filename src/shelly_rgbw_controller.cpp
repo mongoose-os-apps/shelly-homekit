@@ -25,62 +25,34 @@ RGBWController::RGBWController(struct mgos_config_lb *cfg, Output *out_r,
       out_r_(out_r),
       out_g_(out_g),
       out_b_(out_b),
-      out_w_(out_w),
-      transition_timer_(std::bind(&RGBWController::TransitionTimerCB, this)) {
+      out_w_(out_w) {
 }
 
 RGBWController::~RGBWController() {
 }
 
-void RGBWController::UpdateOutput() {
-  state_start_ = state_now_;
-  if (IsOn()) {
-    HSVtoRGBW(state_end_);
-  } else {
-    // turn off
-    state_end_.r = state_end_.g = state_end_.b = state_end_.w = 0.0f;
-  }
-
-  LOG(LL_INFO, ("Transition started... %d [ms]", cfg_->transition_time));
-
-  LOG(LL_INFO, ("Output 1: %.2f => %.2f", state_start_.r, state_end_.r));
-  LOG(LL_INFO, ("Output 2: %.2f => %.2f", state_start_.g, state_end_.g));
-  LOG(LL_INFO, ("Output 3: %.2f => %.2f", state_start_.b, state_end_.b));
+void RGBWController::ReportTransition(const StateRGBW &next,
+                                      const StateRGBW &prev) {
+  LOG(LL_INFO, ("Output 1: %.2f => %.2f", prev.r, next.r));
+  LOG(LL_INFO, ("Output 2: %.2f => %.2f", prev.g, next.g));
+  LOG(LL_INFO, ("Output 3: %.2f => %.2f", prev.b, next.b));
   if (out_w_ != nullptr) {
-    LOG(LL_INFO, ("Output 4: %.2f => %.2f", state_start_.w, state_end_.w));
-  }
-
-  // restarting transition timer to fade
-  transition_start_ = mgos_uptime_micros();
-  transition_timer_.Reset(10, MGOS_TIMER_REPEAT);
-}
-
-void RGBWController::TransitionTimerCB() {
-  int64_t elapsed = mgos_uptime_micros() - transition_start_;
-  int64_t duration = cfg_->transition_time * 1000;
-
-  if (elapsed > duration) {
-    transition_timer_.Clear();
-    state_now_ = state_end_;
-    LOG(LL_INFO, ("Transition ready"));
-  } else {
-    float alpha = static_cast<float>(elapsed) / static_cast<float>(duration);
-    state_now_.r = alpha * state_end_.r + (1 - alpha) * state_start_.r;
-    state_now_.g = alpha * state_end_.g + (1 - alpha) * state_start_.g;
-    state_now_.b = alpha * state_end_.b + (1 - alpha) * state_start_.b;
-    state_now_.w = alpha * state_end_.w + (1 - alpha) * state_start_.w;
-  }
-
-  out_r_->SetStatePWM(state_now_.r, "transition");
-  out_g_->SetStatePWM(state_now_.g, "transition");
-  out_b_->SetStatePWM(state_now_.b, "transition");
-
-  if (out_w_ != nullptr) {
-    out_w_->SetStatePWM(state_now_.w, "transition");
+    LOG(LL_INFO, ("Output 4: %.2f => %.2f", prev.w, next.w));
   }
 }
 
-void RGBWController::HSVtoRGBW(State &state) const {
+void RGBWController::UpdatePWM(const StateRGBW &state) {
+  out_r_->SetStatePWM(state.r, "transition");
+  out_g_->SetStatePWM(state.g, "transition");
+  out_b_->SetStatePWM(state.b, "transition");
+
+  if (out_w_ != nullptr) {
+    out_w_->SetStatePWM(state.w, "transition");
+  }
+}
+
+StateRGBW RGBWController::ConfigToState() {
+  StateRGBW state;
   float h = cfg_->hue / 360.0f;
   float s = cfg_->saturation / 100.0f;
   float v = cfg_->brightness / 100.0f;
@@ -145,5 +117,6 @@ void RGBWController::HSVtoRGBW(State &state) const {
     // otherwise turn white channel off
     state.w = 0.0f;
   }
+  return state;
 }
 }  // namespace shelly

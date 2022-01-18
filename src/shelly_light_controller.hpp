@@ -22,26 +22,35 @@
 #pragma once
 
 namespace shelly {
-class LightController : public LightBulbController {
+
+struct StateW {
+  float w = 0;
+
+  StateW operator+(const StateW &other) {
+    StateW s;
+    s.w = w + other.w;
+    return s;
+  }
+
+  StateW operator*(const float a) const {
+    StateW s;
+    s.w = a * w;
+    return s;
+  }
+};
+
+class LightController : public LightBulbController<StateW> {
  public:
   LightController(struct mgos_config_lb *cfg, Output *out_w);
   LightController(const LightController &other) = delete;
   virtual ~LightController();
 
-  struct State {
-    float w = 0;
-  };
-
-  void UpdateOutput() override;
+  virtual StateW ConfigToState() override;
+  virtual void ReportTransition(const StateW &prev,
+                                const StateW &next) override;
+  virtual void UpdatePWM(const StateW &state) override;
 
  protected:
-  void TransitionTimerCB();
-
   Output *const out_w_;
-  mgos::Timer transition_timer_;
-  int64_t transition_start_ = 0;
-  State state_start_;
-  State state_now_;
-  State state_end_;
 };
 }  // namespace shelly

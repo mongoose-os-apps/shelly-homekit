@@ -44,7 +44,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  std::unique_ptr<LightBulbController> lightbulb_controller;
+  std::unique_ptr<LightBulbControllerBase> lightbulb_controller;
   std::unique_ptr<hap::LightBulb> hap_light;
   struct mgos_config_lb *lb_cfg;
 
