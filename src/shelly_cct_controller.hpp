@@ -26,21 +26,15 @@
 namespace shelly {
 
 struct StateCCT {
-  float ww = 0;
-  float cw = 0;
+  float ww;
+  float cw;
 
-  StateCCT operator+(const StateCCT &other) {
-    StateCCT s;
-    s.ww = ww + other.ww;
-    s.cw = cw + other.cw;
-    return s;
+  StateCCT operator+(const StateCCT &other) const {
+    return {.ww = ww + other.ww, .cw = cw + other.cw};
   }
 
-  StateCCT operator*(const float a) const {
-    StateCCT s;
-    s.ww = a * ww;
-    s.cw = a * cw;
-    return s;
+  StateCCT operator*(float a) const {
+    return {.ww = a * ww, .cw = a * cw};
   }
 };
 
@@ -48,18 +42,17 @@ class CCTController : public LightBulbController<StateCCT> {
  public:
   CCTController(struct mgos_config_lb *cfg, Output *out_ww, Output *out_cw);
   CCTController(const CCTController &other) = delete;
-  virtual ~CCTController();
+  ~CCTController();
 
-  virtual StateCCT ConfigToState() override;
-  virtual void ReportTransition(const StateCCT &next,
-                                const StateCCT &prev) override;
-  virtual void UpdatePWM(const StateCCT &state) override;
-
-  BulbType Type() override {
-    return BulbType::kColortemperature;
+  BulbType Type() final {
+    return BulbType::kCCT;
   }
 
- protected:
+ private:
   Output *const out_ww_, *const out_cw_;
+
+  StateCCT ConfigToState() final;
+  void ReportTransition(const StateCCT &next, const StateCCT &prev) final;
+  void UpdatePWM(const StateCCT &state) final;
 };
 }  // namespace shelly

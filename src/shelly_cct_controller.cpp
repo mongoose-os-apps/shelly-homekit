@@ -45,9 +45,9 @@ StateCCT CCTController::ConfigToState() {
   StateCCT state;
 
   float v = cfg_->brightness / 100.0f;
-  float temp = cfg_->colortemperature;
+  float temp = cfg_->color_temperature;
 
-  // brightness and colortemperature [mired] to cw, ww values
+  // brightness and color temperature [mired] to cw, ww values
   // uses additive mixing, so at middle temp it is 50/50
   int temp_max = 400;
   int temp_min = 50;

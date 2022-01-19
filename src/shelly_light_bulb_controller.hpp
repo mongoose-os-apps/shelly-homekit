@@ -15,19 +15,15 @@
  * limitations under the License.
  */
 
-#include "mgos.hpp"
-
 #pragma once
+
+#include "mgos.hpp"
 
 namespace shelly {
 
 class LightBulbControllerBase {
  public:
-  enum class BulbType {
-    kBrightness = 0,
-    kColortemperature = 1,
-    kHueSat = 2,
-  };
+  enum class BulbType { kWhite = 0, kCCT = 1, kRGBW };
   typedef std::function<void()> Update;
 
   LightBulbControllerBase(struct mgos_config_lb *cfg, Update ud);
@@ -36,9 +32,7 @@ class LightBulbControllerBase {
 
   void UpdateOutput();
 
-  virtual BulbType Type() {
-    return BulbType::kBrightness;
-  }
+  virtual BulbType Type() = 0;
 
   bool IsOn() const;
   bool IsOff() const;
@@ -61,13 +55,13 @@ class LightBulbController : public LightBulbControllerBase {
   }
   LightBulbController(const LightBulbControllerBase &other) = delete;
 
- protected:
+ private:
   mgos::Timer transition_timer_;
   int64_t transition_start_ = 0;
 
-  T state_start_;
-  T state_now_;
-  T state_end_;
+  T state_start_{};
+  T state_now_{};
+  T state_end_{};
 
   virtual T ConfigToState() = 0;
   virtual void ReportTransition(const T &next, const T &prev) = 0;
@@ -95,7 +89,7 @@ class LightBulbController : public LightBulbControllerBase {
       state_end_ = ConfigToState();
     } else {
       // turn off
-      T statezero;
+      T statezero{};
       state_end_ = statezero;
     }
 

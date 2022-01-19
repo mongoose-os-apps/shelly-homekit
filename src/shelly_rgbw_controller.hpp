@@ -23,46 +23,36 @@
 
 namespace shelly {
 struct StateRGBW {
-  float r = 0;
-  float g = 0;
-  float b = 0;
-  float w = 0;
+  float r;
+  float g;
+  float b;
+  float w;
 
-  StateRGBW operator+(const StateRGBW &other) {
-    StateRGBW s;
-    s.r = r + other.r;
-    s.g = r + other.g;
-    s.b = r + other.b;
-    s.w = r + other.w;
-    return s;
+  StateRGBW operator+(const StateRGBW &other) const {
+    return {
+        .r = r + other.r, .g = g + other.g, .b = b + other.b, .w = w + other.w};
   }
 
-  StateRGBW operator*(const float a) const {
-    StateRGBW s;
-    s.r = a * r;
-    s.g = a * g;
-    s.b = a * b;
-    s.w = a * w;
-    return s;
+  StateRGBW operator*(float a) const {
+    return {.r = a * r, .g = a * g, .b = a * b, .w = a * w};
   }
 };
+
 class RGBWController : public LightBulbController<StateRGBW> {
  public:
   RGBWController(struct mgos_config_lb *cfg, Output *out_r, Output *out_g,
                  Output *out_b, Output *out_w);
   RGBWController(const RGBWController &other) = delete;
-  virtual ~RGBWController();
+  ~RGBWController();
 
-  virtual StateRGBW ConfigToState() override;
-  virtual void ReportTransition(const StateRGBW &next,
-                                const StateRGBW &prev) override;
-  virtual void UpdatePWM(const StateRGBW &state) override;
-
-  BulbType Type() override {
-    return BulbType::kHueSat;
+  BulbType Type() final {
+    return BulbType::kRGBW;
   }
 
- protected:
+ private:
   Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
+  StateRGBW ConfigToState() final;
+  void ReportTransition(const StateRGBW &next, const StateRGBW &prev) final;
+  void UpdatePWM(const StateRGBW &state) final;
 };
 }  // namespace shelly

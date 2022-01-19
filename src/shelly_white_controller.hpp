@@ -24,33 +24,32 @@
 namespace shelly {
 
 struct StateW {
-  float w = 0;
+  float w;
 
-  StateW operator+(const StateW &other) {
-    StateW s;
-    s.w = w + other.w;
-    return s;
+  StateW operator+(const StateW &other) const {
+    return {.w = w + other.w};
   }
 
-  StateW operator*(const float a) const {
-    StateW s;
-    s.w = a * w;
-    return s;
+  StateW operator*(float a) const {
+    return {.w = a * w};
   }
 };
 
-class LightController : public LightBulbController<StateW> {
+class WhiteController : public LightBulbController<StateW> {
  public:
-  LightController(struct mgos_config_lb *cfg, Output *out_w);
-  LightController(const LightController &other) = delete;
-  virtual ~LightController();
+  WhiteController(struct mgos_config_lb *cfg, Output *out_w);
+  WhiteController(const WhiteController &other) = delete;
+  ~WhiteController();
 
-  virtual StateW ConfigToState() override;
-  virtual void ReportTransition(const StateW &prev,
-                                const StateW &next) override;
-  virtual void UpdatePWM(const StateW &state) override;
+  BulbType Type() final {
+    return BulbType::kWhite;
+  }
 
- protected:
+ private:
   Output *const out_w_;
+
+  StateW ConfigToState() final;
+  void ReportTransition(const StateW &prev, const StateW &next) final;
+  void UpdatePWM(const StateW &state) final;
 };
 }  // namespace shelly

@@ -19,9 +19,9 @@
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_light_bulb.hpp"
 #include "shelly_input_pin.hpp"
-#include "shelly_light_controller.hpp"
 #include "shelly_main.hpp"
 #include "shelly_rgbw_controller.hpp"
+#include "shelly_white_controller.hpp"
 
 namespace shelly {
 
@@ -88,7 +88,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       is_optional = true;
     } else if (mode == (int) Mode::kWhite) {
       lightbulb_controller.reset(
-          new LightController(lb_cfg, FindOutput(out_pin++)));
+          new WhiteController(lb_cfg, FindOutput(out_pin++)));
       is_optional = (mgos_sys_config_get_shelly_mode() != (int) Mode::kRGBpW);
     } else {  // Mode::kRGBpW
       lightbulb_controller.reset(new RGBWController(

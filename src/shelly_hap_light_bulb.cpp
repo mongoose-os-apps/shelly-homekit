@@ -106,14 +106,13 @@ Status LightBulb::Init() {
 
   // HAP forbids simultaneous presence of color temperature and hue/saturation
   // to be able to distinguish between RGB and CCT light bulbs
-  if (controller_->Type() ==
-      LightBulbControllerBase::BulbType::kColortemperature) {
+  if (controller_->Type() == LightBulbControllerBase::BulbType::kCCT) {
     // CCT Mode
     // Color Temperature
-    colortemperature_characteristic = new mgos::hap::UInt32Characteristic(
+    color_temperature_characteristic = new mgos::hap::UInt32Characteristic(
         iid++, &kHAPCharacteristicType_ColorTemperature, 50, 400, 1,
         std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3,
-                  &cfg_->colortemperature),
+                  &cfg_->color_temperature),
         true /* supports_notification */,
         [this](HAPAccessoryServerRef *server UNUSED_ARG,
                const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
@@ -124,9 +123,8 @@ Status LightBulb::Init() {
           return kHAPError_None;
         },
         kHAPCharacteristicDebugDescription_ColorTemperature);
-    AddChar(colortemperature_characteristic);
-  } else if (controller_->Type() ==
-             LightBulbControllerBase::BulbType::kHueSat) {
+    AddChar(color_temperature_characteristic);
+  } else if (controller_->Type() == LightBulbControllerBase::BulbType::kRGBW) {
     // RGB(W) Mode
     // Hue
     hue_characteristic = new mgos::hap::UInt32Characteristic(
@@ -223,17 +221,17 @@ void LightBulb::SetHue(int hue, const std::string &source) {
   controller_->UpdateOutput();
 }
 
-void LightBulb::SetColorTemperature(int colortemperature,
+void LightBulb::SetColorTemperature(int color_temperature,
                                     const std::string &source) {
-  if (cfg_->colortemperature == colortemperature) return;
+  if (cfg_->color_temperature == color_temperature) return;
 
   LOG(LL_INFO, ("Color Temperature changed (%s): %d => %d", source.c_str(),
-                cfg_->colortemperature, colortemperature));
+                cfg_->color_temperature, color_temperature));
 
-  cfg_->colortemperature = colortemperature;
+  cfg_->color_temperature = color_temperature;
   dirty_ = true;
-  if (colortemperature_characteristic != nullptr) {
-    colortemperature_characteristic->RaiseEvent();
+  if (color_temperature_characteristic != nullptr) {
+    color_temperature_characteristic->RaiseEvent();
   }
 
   controller_->UpdateOutput();
@@ -273,7 +271,7 @@ StatusOr<std::string> LightBulb::GetInfo() const {
   const_cast<LightBulb *>(this)->SaveState();
   return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i, ct: %i",
                        OnOff(controller_->IsOn()), cfg_->brightness, cfg_->hue,
-                       cfg_->saturation, cfg_->colortemperature);
+                       cfg_->saturation, cfg_->color_temperature);
 }
 
 StatusOr<std::string> LightBulb::GetInfoJSON() const {
@@ -282,11 +280,11 @@ StatusOr<std::string> LightBulb::GetInfoJSON() const {
       " brightness: %d, hue: %d, saturation: %d, "
       " in_inverted: %B, initial: %d, in_mode: %d, "
       "auto_off: %B, auto_off_delay: %.3f, transition_time: %d, "
-      "colortemperature: %d, bulb_type: %d, hap_optional: %d}",
+      "color_temperature: %d, bulb_type: %d, hap_optional: %d}",
       id(), type(), cfg_->name, cfg_->svc_hidden, cfg_->state, cfg_->brightness,
       cfg_->hue, cfg_->saturation, cfg_->in_inverted, cfg_->initial_state,
       cfg_->in_mode, cfg_->auto_off, cfg_->auto_off_delay,
-      cfg_->transition_time, cfg_->colortemperature, controller_->Type(),
+      cfg_->transition_time, cfg_->color_temperature, controller_->Type(),
       is_optional_);
 }
 
@@ -361,12 +359,12 @@ void LightBulb::SaveState() {
 
 Status LightBulb::SetState(const std::string &state_json) {
   int8_t state = -1;
-  int brightness = -1, hue = -1, saturation = -1, colortemperature = -1;
+  int brightness = -1, hue = -1, saturation = -1, color_temperature = -1;
 
   json_scanf(state_json.c_str(), state_json.size(),
              "{state: %B, brightness: %d, hue: %d, saturation: %d, "
-             "colortemperature: %d}",
-             &state, &brightness, &hue, &saturation, &colortemperature);
+             "color_temperature: %d}",
+             &state, &brightness, &hue, &saturation, &color_temperature);
 
   if (hue != -1 && (hue < 0 || hue > 360)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid hue: %d (only 0-360)",
@@ -383,18 +381,18 @@ Status LightBulb::SetState(const std::string &state_json) {
                         "invalid brightness: %d (only 0-100)", brightness);
   }
 
-  if (colortemperature != -1 &&
-      (colortemperature < 50 || colortemperature > 400)) {
+  if (color_temperature != -1 &&
+      (color_temperature < 50 || color_temperature > 400)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT,
-                        "invalid colortemperature: %d (only 50-400)",
-                        colortemperature);
+                        "invalid color_temperature: %d (only 50-400)",
+                        color_temperature);
   }
 
   if (state != -1) UpdateOnOff(static_cast<bool>(state), "RPC");
   if (hue != -1) SetHue(hue, "RPC");
   if (saturation != -1) SetSaturation(saturation, "RPC");
   if (brightness != -1) SetBrightness(brightness, "RPC");
-  if (colortemperature != -1) SetColorTemperature(colortemperature, "RPC");
+  if (color_temperature != -1) SetColorTemperature(color_temperature, "RPC");
 
   return Status::OK();
 }

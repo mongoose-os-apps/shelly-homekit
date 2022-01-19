@@ -63,9 +63,9 @@ class Component_Type {
 
 // Keep in sync with shelly::LightBulbController::BulbType.
 class LightBulbController_BulbType {
-  static kBrightness = 0;
-  static kColortemperature = 1;
-  static kHueSat = 2;
+  static kWhite = 0;
+  static kCCT = 1;
+  static kRGBW = 2;
   static kMax = 3;
 };
 
@@ -595,12 +595,12 @@ function findOrAddContainer(cd) {
       c.id = elId;
 
       let value = cd.bulb_type;
-      let showct = (value == LightBulbController_BulbType.kColortemperature)
-      let showcolor = (value == LightBulbController_BulbType.kHueSat)
+      let showct = (value == LightBulbController_BulbType.kCCT)
+      let showcolor = (value == LightBulbController_BulbType.kRGBW)
       el(c, "hue_container").style.display = showcolor ? "block" : "none";
       el(c, "saturation_container").style.display =
           showcolor ? "block" : "none";
-      el(c, "colortemperature_container").style.display =
+      el(c, "color_temperature_container").style.display =
           showct ? "block" : "none";
       el(c, "color_container").style.display =
           showct || showcolor ? "block" : "none";
@@ -613,7 +613,7 @@ function findOrAddContainer(cd) {
         rgbSetConfig(c);
       };
       el(c, "hue").onchange = el(c, "saturation").onchange =
-          el(c, "colortemperature").onchange =
+          el(c, "color_temperature").onchange =
               el(c, "brightness").onchange = function(ev) {
                 setComponentState(
                     c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
@@ -648,7 +648,7 @@ function rgbState(c, newState) {
     state: newState, hue: el(c, "hue").value,
         saturation: el(c, "saturation").value,
         brightness: el(c, "brightness").value,
-        colortemperature: el(c, "colortemperature").value
+        color_temperature: el(c, "color_temperature").value
   }
 }
 
@@ -720,9 +720,9 @@ function updateComponent(cd) {
       }
 
       if (cd.type == Component_Type.kLightBulb) {
-        if (cd.bulb_type == LightBulbController_BulbType.kColortemperature) {
+        if (cd.bulb_type == LightBulbController_BulbType.kCCT) {
           headText = "CCT";
-        } else if (cd.bulb_type == LightBulbController_BulbType.kHueSat) {
+        } else if (cd.bulb_type == LightBulbController_BulbType.kRGBW) {
           headText = "RGB";
         } else {
           headText = "Light";
@@ -737,7 +737,7 @@ function updateComponent(cd) {
               `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
           el(c, "power_stats_container").style.display = "block";
         }
-        slideIfNotModified(el(c, "colortemperature"), cd.colortemperature);
+        slideIfNotModified(el(c, "color_temperature"), cd.color_temperature);
         slideIfNotModified(el(c, "hue"), cd.hue);
         slideIfNotModified(el(c, "saturation"), cd.saturation);
         slideIfNotModified(el(c, "brightness"), cd.brightness);
@@ -1772,12 +1772,12 @@ el("revert_btn").onclick = function() {
 function setPreviewColor(c, bulb_type) {
   let h = el(c, "hue").value / 360;
   let s = el(c, "saturation").value / 100;
-  let t = el(c, "colortemperature").value;
+  let t = el(c, "color_temperature").value;
   let r, g, b;
 
   // use fixed 100% for v, because we want to control brightness over pwm
   // frequency
-  if (bulb_type == LightBulbController_BulbType.kColortemperature) {
+  if (bulb_type == LightBulbController_BulbType.kCCT) {
     [r, g, b] = colortemp2rgb(t, 100);
   } else {
     [r, g, b] = hsv2rgb(h, s, 100);
@@ -1797,8 +1797,8 @@ function setPreviewColor(c, bulb_type) {
   el(c, "hue_value").innerHTML = `${el(c, "hue").value}&#176;`;
   el(c, "saturation_value").innerHTML = `${el(c, "saturation").value}%`;
   el(c, "brightness_value").innerHTML = `${el(c, "brightness").value}%`;
-  el(c, "colortemperature_value").innerHTML =
-      `${el(c, "colortemperature").value}mired`;
+  el(c, "color_temperature_value").innerHTML =
+      `${el(c, "color_temperature").value}mired`;
 }
 
 function clamprgb(val) {

@@ -15,29 +15,29 @@
  * limitations under the License.
  */
 
-#include "shelly_light_controller.hpp"
+#include "shelly_white_controller.hpp"
 
 namespace shelly {
 
-LightController::LightController(struct mgos_config_lb *cfg, Output *out_w)
+WhiteController::WhiteController(struct mgos_config_lb *cfg, Output *out_w)
     : LightBulbController<StateW>(cfg), out_w_(out_w) {
 }
 
-LightController::~LightController() {
+WhiteController::~WhiteController() {
 }
 
-StateW LightController::ConfigToState() {
+StateW WhiteController::ConfigToState() {
   StateW state;
   float v = cfg_->brightness / 100.0f;
   state.w = v;
   return state;
 }
 
-void LightController::ReportTransition(const StateW &next, const StateW &prev) {
+void WhiteController::ReportTransition(const StateW &next, const StateW &prev) {
   LOG(LL_INFO, ("Output 1: %.2f => %.2f", prev.w, next.w));
 }
 
-void LightController::UpdatePWM(const StateW &state) {
+void WhiteController::UpdatePWM(const StateW &state) {
   out_w_->SetStatePWM(state.w, "transition");
 }
 
