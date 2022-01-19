@@ -17,7 +17,9 @@
 
 #pragma once
 
-#include "mgos.hpp"
+#include <functional>
+#include "mgos_sys_config.h"
+#include "mgos_timers.hpp"
 
 namespace shelly {
 
@@ -67,39 +69,7 @@ class LightBulbController : public LightBulbControllerBase {
   virtual void ReportTransition(const T &next, const T &prev) = 0;
   virtual void UpdatePWM(const T &state) = 0;
 
-  void TransitionTimerCB() {
-    int64_t elapsed = mgos_uptime_micros() - transition_start_;
-    int64_t duration = cfg_->transition_time * 1000;
-
-    if (elapsed > duration) {
-      transition_timer_.Clear();
-      state_now_ = state_end_;
-      LOG(LL_INFO, ("Transition ready"));
-    } else {
-      float alpha = static_cast<float>(elapsed) / static_cast<float>(duration);
-      state_now_ = state_end_ * alpha + state_start_ * (1 - alpha);
-    }
-
-    UpdatePWM(state_now_);
-  }
-
-  void UpdateOutputSpecialized() {
-    state_start_ = state_now_;
-    if (IsOn()) {
-      state_end_ = ConfigToState();
-    } else {
-      // turn off
-      T statezero{};
-      state_end_ = statezero;
-    }
-
-    LOG(LL_INFO, ("Transition started... %d [ms]", cfg_->transition_time));
-
-    ReportTransition(state_end_, state_start_);
-
-    // restarting transition timer to fade
-    transition_start_ = mgos_uptime_micros();
-    transition_timer_.Reset(10, MGOS_TIMER_REPEAT);
-  }
+  void TransitionTimerCB();
+  void UpdateOutputSpecialized();
 };
 }  // namespace shelly
