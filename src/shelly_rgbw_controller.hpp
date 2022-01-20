@@ -30,11 +30,20 @@ struct StateRGBW {
 
   StateRGBW operator+(const StateRGBW &other) const {
     return {
-        .r = r + other.r, .g = g + other.g, .b = b + other.b, .w = w + other.w};
+        .r = r + other.r,
+        .g = g + other.g,
+        .b = b + other.b,
+        .w = w + other.w,
+    };
   }
 
   StateRGBW operator*(float a) const {
-    return {.r = a * r, .g = a * g, .b = a * b, .w = a * w};
+    return {
+        .r = a * r,
+        .g = a * g,
+        .b = a * b,
+        .w = a * w,
+    };
   }
 };
 

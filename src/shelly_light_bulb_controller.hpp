@@ -25,7 +25,12 @@ namespace shelly {
 
 class LightBulbControllerBase {
  public:
-  enum class BulbType { kWhite = 0, kCCT = 1, kRGBW };
+  enum class BulbType {
+    kWhite = 0,
+    kCCT = 1,
+    kRGBW = 2,
+    kMax = 3,
+  };
   typedef std::function<void()> Update;
 
   LightBulbControllerBase(struct mgos_config_lb *cfg, Update ud);

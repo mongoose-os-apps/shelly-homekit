@@ -27,10 +27,7 @@ WhiteController::~WhiteController() {
 }
 
 StateW WhiteController::ConfigToState() {
-  StateW state;
-  float v = cfg_->brightness / 100.0f;
-  state.w = v;
-  return state;
+  return {.w = cfg_->brightness / 100.0f};
 }
 
 void WhiteController::ReportTransition(const StateW &next, const StateW &prev) {

@@ -30,11 +30,17 @@ struct StateCCT {
   float cw;
 
   StateCCT operator+(const StateCCT &other) const {
-    return {.ww = ww + other.ww, .cw = cw + other.cw};
+    return {
+        .ww = ww + other.ww,
+        .cw = cw + other.cw,
+    };
   }
 
   StateCCT operator*(float a) const {
-    return {.ww = a * ww, .cw = a * cw};
+    return {
+        .ww = a * ww,
+        .cw = a * cw,
+    };
   }
 };
 
