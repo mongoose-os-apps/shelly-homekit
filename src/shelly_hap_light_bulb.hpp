@@ -17,14 +17,17 @@
 
 #pragma once
 
+#include "mgos.hpp"
 #include "mgos_hap_chars.hpp"
 #include "mgos_hap_service.hpp"
 #include "mgos_sys_config.h"
+#include "mgos_system.hpp"
 #include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
 #include "shelly_input.hpp"
+#include "shelly_light_bulb_controller.hpp"
 #include "shelly_output.hpp"
 
 namespace shelly {
@@ -32,16 +35,10 @@ namespace hap {
 
 class LightBulb : public Component, public mgos::hap::Service {
  public:
-  LightBulb(int id, Input *in, Output *out_r, Output *out_g, Output *out_b,
-            Output *out_w, struct mgos_config_lb *cfg);
+  LightBulb(int id, Input *in,
+            std::unique_ptr<LightBulbControllerBase> controller,
+            struct mgos_config_lb *cfg, bool is_optional);
   virtual ~LightBulb();
-
-  struct RGBW {
-    float r;
-    float g;
-    float b;
-    float w;
-  };
 
   // Component interface impl.
   Type type() const override;
@@ -58,41 +55,33 @@ class LightBulb : public Component, public mgos::hap::Service {
   void InputEventHandler(Input::Event ev, bool state);
 
   void AutoOffTimerCB();
-  void TransitionTimerCB();
 
   void UpdateOnOff(bool on, const std::string &source, bool force = false);
   void SetHue(int hue, const std::string &source);
   void SetSaturation(int saturation, const std::string &source);
+  void SetColorTemperature(int color_temperature, const std::string &source);
   void SetBrightness(int brightness, const std::string &source);
 
-  bool IsOn() const;
-  bool IsOff() const;
   bool IsAutoOffEnabled() const;
 
-  void HSVtoRGBW(RGBW &rgbw) const;
-  void StartTransition();
   void SaveState();
   void ResetAutoOff();
   void DisableAutoOff();
 
   Input *const in_;
-  Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
+  std::unique_ptr<LightBulbControllerBase> const controller_;
   struct mgos_config_lb *cfg_;
+  bool is_optional_;
 
   Input::HandlerID handler_id_ = Input::kInvalidHandlerID;
   mgos::hap::BoolCharacteristic *on_characteristic;
   mgos::hap::UInt8Characteristic *brightness_characteristic;
-  mgos::hap::UInt32Characteristic *hue_characteristic;
-  mgos::hap::UInt32Characteristic *saturation_characteristic;
+  mgos::hap::UInt32Characteristic *hue_characteristic = nullptr;
+  mgos::hap::UInt32Characteristic *saturation_characteristic = nullptr;
+  mgos::hap::UInt32Characteristic *color_temperature_characteristic = nullptr;
 
   mgos::Timer auto_off_timer_;
   bool dirty_ = false;
-
-  mgos::Timer transition_timer_;
-  int64_t transition_start_ = 0;
-  RGBW rgbw_start_{};
-  RGBW rgbw_now_{};
-  RGBW rgbw_end_{};
 };
 
 }  // namespace hap

@@ -32,7 +32,7 @@ config_schema:
   - ["sntp.enable", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported)"}]
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - RGB+W (if supported), 6 - CCT (if supported), 7 - White Mode (if supported)"}]
   - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
@@ -94,6 +94,7 @@ config_schema:
 
   - ["lb", "o", {title: "Light bulb settings", abstract: true}]
   - ["lb.name", "s", "Light bulb", {title: "Accessory name"}]
+  - ["lb.svc_hidden", "b", false, {title: "Whether HAP service is hidden"}]
   - ["lb.enable", "b", true, {title: "Enable this light in the accessory"}]
   - ["lb.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
   - ["lb.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
@@ -101,6 +102,7 @@ config_schema:
   - ["lb.hue", "i", 0, {title: "Hue of the light"}]
   - ["lb.brightness", "i", 100, {title: "Brightness of the light"}]
   - ["lb.saturation", "i", 100, {title: "Saturation of the light"}]
+  - ["lb.color_temperature", "i", 400, {title: "Color Temperature of the light"}]
   - ["lb.initial_state", "i", 3, {title: "Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
   - ["lb.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
   - ["lb.auto_off_delay", "d", 0, {title: "Delay for automatically turning OFF, in seconds"}]
@@ -567,11 +569,17 @@ conds:
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
-        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW"
+        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW, 5 - RGB+W, 6 - CCT, 7 - White
         - ["device.id", "shellyrgbw2-??????"]
         - ["shelly.name", "shellyrgbw2-??????"]
         - ["wifi.ap.ssid", "shellyrgbw2-??????"]
-        - ["lb1", "lb", {title: "RGB 1 settings"}]
+        - ["lb1", "lb", {title: "Light 1 settings"}]
+        - ["lb2", "lb", {title: "Light 2 settings"}]
+        - ["lb2.initial_state", 2] #input only available to lb1
+        - ["lb3", "lb", {title: "Light 3 settings"}]
+        - ["lb3.initial_state", 2] #input only available to lb1
+        - ["lb4", "lb", {title: "Light 4 settings"}]
+        - ["lb4.initial_state", 2] #input only available to lb1
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
@@ -708,5 +716,36 @@ conds:
         - ["wc1.name", "Window 1"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "ShellyU25 GDO"]
+
+  - when: build_vars.MODEL == "ShellyURGBW2"
+    apply:
+      sources:
+        - src/ShellyRGBW2/shelly_init.cpp  # Same components as ShellyRGBW2
+        - src/mock/pwm
+        - src/mock/wifi_config
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+          variant: ubuntu-nossl
+      cdefs:
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '""'
+        MG_ENABLE_SSL: 0
+        SHELLY_HAVE_PM: 0
+        BTN_NOISY: 0
+      config_schema:
+        - ["device.id", "ShellyRGBW2-????"]
+        - ["shelly.name", "ShellyRGBW2-????"]
+        - ["file_logger.dir", "./"]
+        - ["shelly.mode", 3]
+        - ["lb1", "lb", {title: "Light 1 settings"}]
+        - ["lb2", "lb", {title: "Light 2 settings"}]
+        - ["lb2.initial_state", 2] #input only available to lb1
+        - ["lb3", "lb", {title: "Light 3 settings"}]
+        - ["lb3.initial_state", 2] #input only available to lb1
+        - ["lb4", "lb", {title: "Light 4 settings"}]
+        - ["lb4.initial_state", 2] #input only available to lb1
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
 
 manifest_version: 2020-01-29

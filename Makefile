@@ -77,6 +77,10 @@ ShellyU25: PLATFORM=ubuntu
 ShellyU25: build-ShellyU25
 	@true
 
+ShellyURGBW2: PLATFORM=ubuntu
+ShellyURGBW2: build-ShellyURGBW2
+	@true
+
 ShellyT32: PLATFORM=esp32
 ShellyT32: build-ShellyT32
 	@true

@@ -66,6 +66,9 @@
           <option id="sys_mode_2" value="2">Garage Door Opener</option>
           <option id="sys_mode_3" value="3">RGB</option>
           <option id="sys_mode_4" value="4">RGBW</option>
+          <option id="sys_mode_5" value="5">RGB+W</option>
+          <option id="sys_mode_6" value="6">CCT</option>
+          <option id="sys_mode_7" value="7">White Mode</option>
         </select>
       </div>
       <div class="button-container">
@@ -792,18 +795,22 @@
         <span id="power_stats"></span>
       </div>
     <div>
-      <div class="form-control">
+      <div class="form-control" id="color_container">
         <label>Color:</label>
         <span id="color_preview"></span>
         <span id="color_name"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="hue_container">
         <label>Hue:</label>
         <input type="range" id="hue" min="0" max="360"><span id="hue_value"></span>
       </div>
-      <div class="form-control">
+      <div class="form-control" id="saturation_container">
         <label>Saturation:</label>
         <input type="range" id="saturation" min="0" max="100"><span id="saturation_value"></span>
+      </div>
+      <div class="form-control" id="color_temperature_container">
+        <label>Color Temperature:</label>
+        <input type="range" id="color_temperature" min="50" max="400"><span id="color_temperature_value"></span>
       </div>
       <div class="form-control">
         <label>Brightness:</label>
@@ -816,6 +823,13 @@
       <div class="form-control">
         <label>Name:</label>
         <input type="text" id="name">
+      </div>
+      <div class="form-control" id="svc_hidden_container">
+        <label>HAP Service Hidden:</label>
+        <label class="switch">
+          <input type="checkbox" id="svc_hidden">
+          <span class="slider round"></span>
+        </label>
       </div>
       <div class="form-control" id="in_mode_container">
         <label for="in_mode">Input Mode:</label>

@@ -27,21 +27,19 @@
 namespace shelly {
 namespace hap {
 
-LightBulb::LightBulb(int id, Input *in, Output *out_r, Output *out_g,
-                     Output *out_b, Output *out_w, struct mgos_config_lb *cfg)
+LightBulb::LightBulb(int id, Input *in,
+                     std::unique_ptr<LightBulbControllerBase> controller,
+                     struct mgos_config_lb *cfg, bool is_optional)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_LIGHTING +
                (SHELLY_HAP_IID_STEP_LIGHTING * (id - 1))),
               &kHAPServiceType_LightBulb,
               kHAPServiceDebugDescription_LightBulb),
       in_(in),
-      out_r_(out_r),
-      out_g_(out_g),
-      out_b_(out_b),
-      out_w_(out_w),
+      controller_(std::move(controller)),
       cfg_(cfg),
-      auto_off_timer_(std::bind(&LightBulb::AutoOffTimerCB, this)),
-      transition_timer_(std::bind(&LightBulb::TransitionTimerCB, this)) {
+      is_optional_(is_optional),
+      auto_off_timer_(std::bind(&LightBulb::AutoOffTimerCB, this)) {
 }
 
 LightBulb::~LightBulb() {
@@ -77,7 +75,7 @@ Status LightBulb::Init() {
              const HAPBoolCharacteristicReadRequest *request UNUSED_ARG,
              bool *value) {
         LOG(LL_DEBUG, ("On read %d: %s", id(), OnOff(value)));
-        *value = IsOn();
+        *value = controller_->IsOn();
         return kHAPError_None;
       },
       true /* supports_notification */,
@@ -105,45 +103,71 @@ Status LightBulb::Init() {
       },
       kHAPCharacteristicDebugDescription_Brightness);
   AddChar(brightness_characteristic);
-  // Hue
-  hue_characteristic = new mgos::hap::UInt32Characteristic(
-      iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
-      std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, &cfg_->hue),
-      true /* supports_notification */,
-      [this](HAPAccessoryServerRef *server UNUSED_ARG,
-             const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
-             uint32_t value) {
-        LOG(LL_DEBUG, ("Hue write %d: %d", id(), static_cast<int>(value)));
-        SetHue(value, "HAP");
-        return kHAPError_None;
-      },
-      kHAPCharacteristicDebugDescription_Hue);
-  AddChar(hue_characteristic);
-  // Saturation
-  saturation_characteristic = new mgos::hap::UInt32Characteristic(
-      iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
-      std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, &cfg_->saturation),
-      true /* supports_notification */,
-      [this](HAPAccessoryServerRef *server UNUSED_ARG,
-             const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
-             uint32_t value) {
-        SetSaturation(value, "HAP");
-        return kHAPError_None;
-      },
-      kHAPCharacteristicDebugDescription_Saturation);
-  AddChar(saturation_characteristic);
+
+  // HAP forbids simultaneous presence of color temperature and hue/saturation
+  // to be able to distinguish between RGB and CCT light bulbs
+  if (controller_->Type() == LightBulbControllerBase::BulbType::kCCT) {
+    // CCT Mode
+    // Color Temperature
+    color_temperature_characteristic = new mgos::hap::UInt32Characteristic(
+        iid++, &kHAPCharacteristicType_ColorTemperature, 50, 400, 1,
+        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3,
+                  &cfg_->color_temperature),
+        true /* supports_notification */,
+        [this](HAPAccessoryServerRef *server UNUSED_ARG,
+               const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
+               uint32_t value) {
+          LOG(LL_INFO, ("Color Temperature write %d: %d", id(),
+                        static_cast<int>(value)));
+          SetColorTemperature(value, "HAP");
+          return kHAPError_None;
+        },
+        kHAPCharacteristicDebugDescription_ColorTemperature);
+    AddChar(color_temperature_characteristic);
+  } else if (controller_->Type() == LightBulbControllerBase::BulbType::kRGBW) {
+    // RGB(W) Mode
+    // Hue
+    hue_characteristic = new mgos::hap::UInt32Characteristic(
+        iid++, &kHAPCharacteristicType_Hue, 0, 360, 1,
+        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, &cfg_->hue),
+        true /* supports_notification */,
+        [this](HAPAccessoryServerRef *server UNUSED_ARG,
+               const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
+               uint32_t value) {
+          LOG(LL_DEBUG, ("Hue write %d: %d", id(), static_cast<int>(value)));
+          SetHue(value, "HAP");
+          return kHAPError_None;
+        },
+        kHAPCharacteristicDebugDescription_Hue);
+    AddChar(hue_characteristic);
+    // Saturation
+    saturation_characteristic = new mgos::hap::UInt32Characteristic(
+        iid++, &kHAPCharacteristicType_Saturation, 0, 100, 1,
+        std::bind(&mgos::hap::ReadUInt32<int>, _1, _2, _3, &cfg_->saturation),
+        true /* supports_notification */,
+        [this](HAPAccessoryServerRef *server UNUSED_ARG,
+               const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
+               uint32_t value) {
+          SetSaturation(value, "HAP");
+          return kHAPError_None;
+        },
+        kHAPCharacteristicDebugDescription_Saturation);
+    AddChar(saturation_characteristic);
+  }
 
   if (in_ != nullptr) {
     handler_id_ =
         in_->AddHandler(std::bind(&LightBulb::InputEventHandler, this, _1, _2));
     in_->SetInvert(cfg_->in_inverted);
+  } else {
+    cfg_->in_mode = -2;
   }
 
   bool should_restore = (cfg_->initial_state == (int) InitialState::kLast);
   if (IsSoftReboot()) should_restore = true;
 
   if (should_restore) {
-    UpdateOnOff(IsOn(), "init", true /* force */);
+    UpdateOnOff(controller_->IsOn(), "init", true /* force */);
   } else {
     switch (static_cast<InitialState>(cfg_->initial_state)) {
       case InitialState::kOff:
@@ -167,73 +191,6 @@ Status LightBulb::Init() {
   return Status::OK();
 }
 
-void LightBulb::HSVtoRGBW(RGBW &rgbw) const {
-  float h = cfg_->hue / 360.0f;
-  float s = cfg_->saturation / 100.0f;
-  float v = cfg_->brightness / 100.0f;
-
-  if (cfg_->saturation == 0) {
-    // if saturation is zero than all rgb channels same as brightness
-    rgbw.r = rgbw.g = rgbw.b = v;
-  } else {
-    // otherwise calc rgb from hsv (hue, saturation, brightness)
-    int i = static_cast<int>(h * 6);
-    float f = (h * 6.0f - i);
-    float p = v * (1.0f - s);
-    float q = v * (1.0f - f * s);
-    float t = v * (1.0f - (1.0f - f) * s);
-
-    switch (i % 6) {
-      case 0:  // 0° ≤ h < 60°
-        rgbw.r = v;
-        rgbw.g = t;
-        rgbw.b = p;
-        break;
-
-      case 1:  // 60° ≤ h < 120°
-        rgbw.r = q;
-        rgbw.g = v;
-        rgbw.b = p;
-        break;
-
-      case 2:  // 120° ≤ h < 180°
-        rgbw.r = p;
-        rgbw.g = v;
-        rgbw.b = t;
-        break;
-
-      case 3:  // 180° ≤ h < 240°
-        rgbw.r = p;
-        rgbw.g = q;
-        rgbw.b = v;
-        break;
-
-      case 4:  // 240° ≤ h < 300°
-        rgbw.r = t;
-        rgbw.g = p;
-        rgbw.b = v;
-        break;
-
-      case 5:  // 300° ≤ h < 360°
-        rgbw.r = v;
-        rgbw.g = p;
-        rgbw.b = q;
-        break;
-    }
-  }
-
-  if (out_w_ != nullptr) {
-    // apply white channel to rgb if available
-    rgbw.w = std::min(rgbw.r, std::min(rgbw.g, rgbw.b));
-    rgbw.r = rgbw.r - rgbw.w;
-    rgbw.g = rgbw.g - rgbw.w;
-    rgbw.b = rgbw.b - rgbw.w;
-  } else {
-    // otherwise turn white channel off
-    rgbw.w = 0.0f;
-  }
-}
-
 void LightBulb::UpdateOnOff(bool on, const std::string &source, bool force) {
   if (!force && cfg_->state == static_cast<int>(on)) return;
 
@@ -244,11 +201,12 @@ void LightBulb::UpdateOnOff(bool on, const std::string &source, bool force) {
   dirty_ = true;
   on_characteristic->RaiseEvent();
 
-  if (IsOff()) {
+  if (controller_->IsOn()) {
+    ResetAutoOff();
+  } else {
     DisableAutoOff();
   }
-
-  StartTransition();
+  controller_->UpdateOutput();
 }
 
 void LightBulb::SetHue(int hue, const std::string &source) {
@@ -260,7 +218,23 @@ void LightBulb::SetHue(int hue, const std::string &source) {
   dirty_ = true;
   hue_characteristic->RaiseEvent();
 
-  StartTransition();
+  controller_->UpdateOutput();
+}
+
+void LightBulb::SetColorTemperature(int color_temperature,
+                                    const std::string &source) {
+  if (cfg_->color_temperature == color_temperature) return;
+
+  LOG(LL_INFO, ("Color Temperature changed (%s): %d => %d", source.c_str(),
+                cfg_->color_temperature, color_temperature));
+
+  cfg_->color_temperature = color_temperature;
+  dirty_ = true;
+  if (color_temperature_characteristic != nullptr) {
+    color_temperature_characteristic->RaiseEvent();
+  }
+
+  controller_->UpdateOutput();
 }
 
 void LightBulb::SetSaturation(int saturation, const std::string &source) {
@@ -271,9 +245,11 @@ void LightBulb::SetSaturation(int saturation, const std::string &source) {
 
   cfg_->saturation = saturation;
   dirty_ = true;
-  saturation_characteristic->RaiseEvent();
+  if (saturation_characteristic != nullptr) {
+    saturation_characteristic->RaiseEvent();
+  }
 
-  StartTransition();
+  controller_->UpdateOutput();
 }
 
 void LightBulb::SetBrightness(int brightness, const std::string &source) {
@@ -284,49 +260,32 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
 
   cfg_->brightness = brightness;
   dirty_ = true;
-  brightness_characteristic->RaiseEvent();
-
-  StartTransition();
-}
-
-void LightBulb::StartTransition() {
-  rgbw_start_ = rgbw_now_;
-
-  if (IsOn()) {
-    ResetAutoOff();
-    HSVtoRGBW(rgbw_end_);
-  } else {
-    // turn off
-    rgbw_end_.r = rgbw_end_.g = rgbw_end_.b = rgbw_end_.w = 0.0f;
+  if (brightness_characteristic != nullptr) {
+    brightness_characteristic->RaiseEvent();
   }
 
-  LOG(LL_INFO, ("Transition started... %d [ms]", cfg_->transition_time));
-
-  LOG(LL_INFO, ("Output 1: %.2f => %.2f", rgbw_start_.r, rgbw_end_.r));
-  LOG(LL_INFO, ("Output 2: %.2f => %.2f", rgbw_start_.g, rgbw_end_.g));
-  LOG(LL_INFO, ("Output 3: %.2f => %.2f", rgbw_start_.b, rgbw_end_.b));
-  LOG(LL_INFO, ("Output 4: %.2f => %.2f", rgbw_start_.w, rgbw_end_.w));
-
-  // restarting transition timer to fade
-  transition_start_ = mgos_uptime_micros();
-  transition_timer_.Reset(10, MGOS_TIMER_REPEAT);
+  controller_->UpdateOutput();
 }
 
 StatusOr<std::string> LightBulb::GetInfo() const {
   const_cast<LightBulb *>(this)->SaveState();
-  return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i", OnOff(IsOn()),
-                       cfg_->brightness, cfg_->hue, cfg_->saturation);
+  return mgos::SPrintf("sta: %s, b: %i, h: %i, sa: %i, ct: %i",
+                       OnOff(controller_->IsOn()), cfg_->brightness, cfg_->hue,
+                       cfg_->saturation, cfg_->color_temperature);
 }
 
 StatusOr<std::string> LightBulb::GetInfoJSON() const {
   return mgos::JSONPrintStringf(
-      "{id: %d, type: %d, name: %Q, state: %B, "
+      "{id: %d, type: %d, name: %Q, svc_hidden: %B, state: %B, "
       " brightness: %d, hue: %d, saturation: %d, "
       " in_inverted: %B, initial: %d, in_mode: %d, "
-      "auto_off: %B, auto_off_delay: %.3f, transition_time: %d}",
-      id(), type(), cfg_->name, cfg_->state, cfg_->brightness, cfg_->hue,
-      cfg_->saturation, cfg_->in_inverted, cfg_->initial_state, cfg_->in_mode,
-      cfg_->auto_off, cfg_->auto_off_delay, cfg_->transition_time);
+      "auto_off: %B, auto_off_delay: %.3f, transition_time: %d, "
+      "color_temperature: %d, bulb_type: %d, hap_optional: %d}",
+      id(), type(), cfg_->name, cfg_->svc_hidden, cfg_->state, cfg_->brightness,
+      cfg_->hue, cfg_->saturation, cfg_->in_inverted, cfg_->initial_state,
+      cfg_->in_mode, cfg_->auto_off, cfg_->auto_off_delay,
+      cfg_->transition_time, cfg_->color_temperature, controller_->Type(),
+      is_optional_);
 }
 
 Status LightBulb::SetConfig(const std::string &config_json,
@@ -336,14 +295,18 @@ Status LightBulb::SetConfig(const std::string &config_json,
   cfg.name = nullptr;
   cfg.in_mode = -2;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, in_mode: %d, in_inverted: %B, "
+             "{name: %Q, svc_hidden: %B, in_mode: %d, in_inverted: %B, "
              "initial_state: %d, "
              "auto_off: %B, auto_off_delay: %lf, transition_time: %d}",
-             &cfg.name, &cfg.in_mode, &in_inverted, &cfg.initial_state,
-             &cfg.auto_off, &cfg.auto_off_delay, &cfg.transition_time);
+             &cfg.name, &cfg.svc_hidden, &cfg.in_mode, &in_inverted,
+             &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay,
+             &cfg.transition_time);
 
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
+  if (cfg.svc_hidden && !is_optional_) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "svc_hidden");
+  }
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
@@ -365,6 +328,10 @@ Status LightBulb::SetConfig(const std::string &config_json,
   if (cfg_->name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
     mgos_conf_set_str(&cfg_->name, cfg.name);
     *restart_required = true;
+  }
+  if (cfg_->svc_hidden != cfg.svc_hidden) {
+    *restart_required = true;
+    cfg_->svc_hidden = cfg.svc_hidden;
   }
   if (cfg.in_mode != -2 && cfg_->in_mode != cfg.in_mode) {
     if (cfg_->in_mode == (int) InMode::kDetached ||
@@ -392,11 +359,12 @@ void LightBulb::SaveState() {
 
 Status LightBulb::SetState(const std::string &state_json) {
   int8_t state = -1;
-  int brightness = -1, hue = -1, saturation = -1;
+  int brightness = -1, hue = -1, saturation = -1, color_temperature = -1;
 
   json_scanf(state_json.c_str(), state_json.size(),
-             "{state: %B, brightness: %d, hue: %d, saturation: %d}", &state,
-             &brightness, &hue, &saturation);
+             "{state: %B, brightness: %d, hue: %d, saturation: %d, "
+             "color_temperature: %d}",
+             &state, &brightness, &hue, &saturation, &color_temperature);
 
   if (hue != -1 && (hue < 0 || hue > 360)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid hue: %d (only 0-360)",
@@ -413,10 +381,18 @@ Status LightBulb::SetState(const std::string &state_json) {
                         "invalid brightness: %d (only 0-100)", brightness);
   }
 
+  if (color_temperature != -1 &&
+      (color_temperature < 50 || color_temperature > 400)) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT,
+                        "invalid color_temperature: %d (only 50-400)",
+                        color_temperature);
+  }
+
   if (state != -1) UpdateOnOff(static_cast<bool>(state), "RPC");
   if (hue != -1) SetHue(hue, "RPC");
   if (saturation != -1) SetSaturation(saturation, "RPC");
   if (brightness != -1) SetBrightness(brightness, "RPC");
+  if (color_temperature != -1) SetColorTemperature(color_temperature, "RPC");
 
   return Status::OK();
 }
@@ -429,14 +405,6 @@ void LightBulb::DisableAutoOff() {
   auto_off_timer_.Clear();
 }
 
-bool LightBulb::IsOn() const {
-  return cfg_->state != 0;
-}
-
-bool LightBulb::IsOff() const {
-  return cfg_->state == 0;
-}
-
 bool LightBulb::IsAutoOffEnabled() const {
   return cfg_->auto_off != 0;
 }
@@ -445,38 +413,13 @@ void LightBulb::AutoOffTimerCB() {
   // Don't set state if auto off has been disabled during timer run
   if (!IsAutoOffEnabled()) return;
   if (static_cast<InMode>(cfg_->in_mode) == InMode::kActivation &&
-      in_ != nullptr && in_->GetState() && IsOn()) {
+      in_ != nullptr && in_->GetState() && controller_->IsOn()) {
     // Input is active, re-arm.
     LOG(LL_INFO, ("Input is active, re-arming auto off timer"));
     ResetAutoOff();
     return;
   }
   UpdateOnOff(false, "auto_off");
-}
-
-void LightBulb::TransitionTimerCB() {
-  int64_t elapsed = mgos_uptime_micros() - transition_start_;
-  int64_t duration = cfg_->transition_time * 1000;
-
-  if (elapsed > duration) {
-    transition_timer_.Clear();
-    rgbw_now_ = rgbw_end_;
-    LOG(LL_INFO, ("Transition ready"));
-  } else {
-    float alpha = static_cast<float>(elapsed) / static_cast<float>(duration);
-    rgbw_now_.r = alpha * rgbw_end_.r + (1 - alpha) * rgbw_start_.r;
-    rgbw_now_.g = alpha * rgbw_end_.g + (1 - alpha) * rgbw_start_.g;
-    rgbw_now_.b = alpha * rgbw_end_.b + (1 - alpha) * rgbw_start_.b;
-    rgbw_now_.w = alpha * rgbw_end_.w + (1 - alpha) * rgbw_start_.w;
-  }
-
-  out_r_->SetStatePWM(rgbw_now_.r, "transition");
-  out_g_->SetStatePWM(rgbw_now_.g, "transition");
-  out_b_->SetStatePWM(rgbw_now_.b, "transition");
-
-  if (out_w_ != nullptr) {
-    out_w_->SetStatePWM(rgbw_now_.w, "transition");
-  }
 }
 
 void LightBulb::InputEventHandler(Input::Event ev, bool state) {
@@ -490,7 +433,7 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
       switch (static_cast<InMode>(cfg_->in_mode)) {
         case InMode::kMomentary:
           if (state) {  // Only on 0 -> 1 transitions.
-            UpdateOnOff(IsOff(), "ext_mom");
+            UpdateOnOff(controller_->IsOff(), "ext_mom");
           }
           break;
         case InMode::kToggle:
@@ -500,7 +443,7 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
 #if SHELLY_HAVE_DUAL_INPUT_MODES
         case InMode::kEdgeBoth:
 #endif
-          UpdateOnOff(IsOff(), "ext_edge");
+          UpdateOnOff(controller_->IsOff(), "ext_edge");
           break;
         case InMode::kActivation:
 #if SHELLY_HAVE_DUAL_INPUT_MODES
@@ -508,7 +451,7 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
 #endif
           if (state) {
             UpdateOnOff(true, "ext_act");
-          } else if (IsOn() && IsAutoOffEnabled()) {
+          } else if (controller_->IsOn() && IsAutoOffEnabled()) {
             // On 1 -> 0 transitions do not turn on output
             // but re-arm auto off timer if running.
             ResetAutoOff();

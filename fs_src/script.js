@@ -58,7 +58,15 @@ class Component_Type {
   static kDoorbell = 10;
   static kLightBulb = 11;
   static kTemperatureSensor = 12;
-  static kMax = 12;
+  static kMax = 13;
+};
+
+// Keep in sync with shelly::LightBulbController::BulbType.
+class LightBulbController_BulbType {
+  static kWhite = 0;
+  static kCCT = 1;
+  static kRGBW = 2;
+  static kMax = 3;
 };
 
 function el(container, id) {
@@ -312,6 +320,7 @@ function nDigitString(num, digits) {
 function rgbSetConfig(c) {
   let name = el(c, "name").value;
   let initialState = el(c, "initial").value;
+  let svcHidden = el(c, "svc_hidden").checked;
   let autoOff = el(c, "auto_off").checked;
   let autoOffDelay = el(c, "auto_off_delay").value;
   let spinner = el(c, "save_spinner");
@@ -329,6 +338,7 @@ function rgbSetConfig(c) {
 
   let cfg = {
     name: name,
+    svc_hidden: svcHidden,
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
     in_inverted: el(c, "in_inverted").checked,
@@ -583,6 +593,18 @@ function findOrAddContainer(cd) {
     case Component_Type.kLightBulb:
       c = el("rgb_template").cloneNode(true);
       c.id = elId;
+
+      let value = cd.bulb_type;
+      let showct = (value == LightBulbController_BulbType.kCCT)
+      let showcolor = (value == LightBulbController_BulbType.kRGBW)
+      el(c, "hue_container").style.display = showcolor ? "block" : "none";
+      el(c, "saturation_container").style.display =
+          showcolor ? "block" : "none";
+      el(c, "color_temperature_container").style.display =
+          showct ? "block" : "none";
+      el(c, "color_container").style.display =
+          showct || showcolor ? "block" : "none";
+
       el(c, "state").onchange = function(ev) {
         setComponentState(c, rgbState(c, !c.data.state), el(c, "set_spinner"));
         markInputChanged(ev);
@@ -591,12 +613,13 @@ function findOrAddContainer(cd) {
         rgbSetConfig(c);
       };
       el(c, "hue").onchange = el(c, "saturation").onchange =
-          el(c, "brightness").onchange = function(ev) {
-            setComponentState(
-                c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
-            setPreviewColor(c);
-            markInputChanged(ev);
-          };
+          el(c, "color_temperature").onchange =
+              el(c, "brightness").onchange = function(ev) {
+                setComponentState(
+                    c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
+                setPreviewColor(c, cd.bulb_type);
+                markInputChanged(ev);
+              };
       el(c, "auto_off").onchange = function(ev) {
         el(c, "auto_off_delay_container").style.display =
             this.checked ? "block" : "none";
@@ -624,7 +647,8 @@ function rgbState(c, newState) {
   return {
     state: newState, hue: el(c, "hue").value,
         saturation: el(c, "saturation").value,
-        brightness: el(c, "brightness").value
+        brightness: el(c, "brightness").value,
+        color_temperature: el(c, "color_temperature").value
   }
 }
 
@@ -645,6 +669,12 @@ function updateComponent(cd) {
         updateInnerText(
             el(c, "power_stats"), `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
         el(c, "power_stats_container").style.display = "block";
+      }
+      if (cd.type == Component_Type.kLightBulb) {
+        checkIfNotModified(el(c, "svc_hidden"), cd.svc_hidden);
+        if (cd.hap_optional !== undefined && cd.hap_optional == 0) {
+          el(c, "svc_hidden_container").style.display = "none";
+        }
       }
       if (cd.svc_type !== undefined) {
         selectIfNotModified(el(c, "svc_type"), cd.svc_type);
@@ -689,8 +719,14 @@ function updateComponent(cd) {
         }
       }
 
-      if (cd.type == 11) {  // kLightBulb
-        headText = "RGB";
+      if (cd.type == Component_Type.kLightBulb) {
+        if (cd.bulb_type == LightBulbController_BulbType.kCCT) {
+          headText = "CCT";
+        } else if (cd.bulb_type == LightBulbController_BulbType.kRGBW) {
+          headText = "RGB";
+        } else {
+          headText = "Light";
+        }
         if (cd.name) headText += ` (${cd.name})`;
         updateInnerText(el(c, "head"), headText);
         setValueIfNotModified(el(c, "name"), cd.name);
@@ -701,11 +737,12 @@ function updateComponent(cd) {
               `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
           el(c, "power_stats_container").style.display = "block";
         }
+        slideIfNotModified(el(c, "color_temperature"), cd.color_temperature);
         slideIfNotModified(el(c, "hue"), cd.hue);
         slideIfNotModified(el(c, "saturation"), cd.saturation);
         slideIfNotModified(el(c, "brightness"), cd.brightness);
         setValueIfNotModified(el(c, "transition_time"), cd.transition_time);
-        setPreviewColor(c);
+        setPreviewColor(c, cd.bulb_type);
       }
       break;
     }
@@ -859,12 +896,15 @@ function updateElement(key, value, info) {
       updateInnerText(el("uptime"), durationStr(value));
       break;
     case "model":
-      if (value == "ShellyRGBW2") {
+      if (value.endsWith("RGBW2")) {
         el("sys_mode_container").style.display = "block";
         if (el("sys_mode_0")) el("sys_mode_0").remove();
       } else {
         if (el("sys_mode_3")) el("sys_mode_3").remove();
         if (el("sys_mode_4")) el("sys_mode_4").remove();
+        if (el("sys_mode_5")) el("sys_mode_5").remove();
+        if (el("sys_mode_6")) el("sys_mode_6").remove();
+        if (el("sys_mode_7")) el("sys_mode_7").remove();
       }
       updateInnerText(el(key), value);
       break;
@@ -1729,13 +1769,19 @@ el("revert_btn").onclick = function() {
   downloadUpdate(stockURL, el("fw_spinner"), el("revert_status"));
 };
 
-function setPreviewColor(c) {
+function setPreviewColor(c, bulb_type) {
   let h = el(c, "hue").value / 360;
   let s = el(c, "saturation").value / 100;
+  let t = el(c, "color_temperature").value;
+  let r, g, b;
 
   // use fixed 100% for v, because we want to control brightness over pwm
-  // frequence
-  let [r, g, b] = hsv2rgb(h, s, 100);
+  // frequency
+  if (bulb_type == LightBulbController_BulbType.kCCT) {
+    [r, g, b] = colortemp2rgb(t, 100);
+  } else {
+    [r, g, b] = hsv2rgb(h, s, 100);
+  }
 
   r = Math.round(r * 2.55);
   g = Math.round(g * 2.55);
@@ -1751,6 +1797,42 @@ function setPreviewColor(c) {
   el(c, "hue_value").innerHTML = `${el(c, "hue").value}&#176;`;
   el(c, "saturation_value").innerHTML = `${el(c, "saturation").value}%`;
   el(c, "brightness_value").innerHTML = `${el(c, "brightness").value}%`;
+  el(c, "color_temperature_value").innerHTML =
+      `${el(c, "color_temperature").value}mired`;
+}
+
+function clamprgb(val) {
+  let min = 0;
+  let max = 255;
+  return Math.max(min, Math.min(val, max))
+}
+
+function colortemp2rgb(t, v) {
+  // Formula by Tanner Helland
+  var temperature = 1000000.0 / t / 100.0;
+  var scale = 1 / 2.55;
+
+  return [
+    (temperature <= 66 ?
+         255 :
+         clamprgb(
+             329.698727446 * Math.pow(temperature - 60.0, -0.1332047592))) *
+        scale,
+    (temperature <= 66 ?
+         clamprgb(99.4708025861 * Math.log(temperature) - 161.1195681661) :
+         clamprgb(
+             288.1221695283 * Math.pow(temperature - 60.0, -0.0755148492))) *
+        scale,
+    (temperature >= 66 ?
+         255 :
+         (temperature <= 19 ?
+              0 :
+              clamprgb(
+                  138.5177312231 * Math.log(temperature - 10.0) -
+                  305.0447927307))) *
+        scale
+
+  ];
 }
 
 function hsv2rgb(h, s, v) {
