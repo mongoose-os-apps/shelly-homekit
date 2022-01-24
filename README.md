@@ -9,25 +9,27 @@ Firmware is compatible with stock and can be uploaded via OTA (Watch a 2 minute 
 
 Reverting to stock firmware is also possible [see here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#reverting-to-stock-firmware).
 
-Summary of supported devices and features
+## Supported devices and features
 
-||[1]|[1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[RGBW2]|
-|-|-|-|-|-|-|-|-|-|-|
-|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✗|✗|
-|Temperature measurement|✓<sup>2</sup>|✓<sup>2</sup>|✗|✗|✗|✗|✗|✗|✗|
-|Stateless Input|✓|✓|✓|✗|✗|✓|✓|✓|✓|
-|Sensors<sup>3</sup>|✓|✓|✓|✗|✗|✓|✓|✓|✓|
-|Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✗|
-|Roller shutter mode|✗|✗|✗|✗|✗|✗|✓|✗|✗|
-|Power measurement|✗|✓|-|✓|✓|✗|✓|✗|-|
-|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✓|
+||[1]|[1PM]|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
+|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✗|✗|✗|
+|Temperature measurement|✓<sup>2</sup>|✓<sup>2</sup>|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|
+|Stateless Input|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✗|✗|✗|
+|Sensors<sup>3</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✗|✗|✗|
+|Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✗|✗|✗|✗|
+|Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|
+|Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|-|-|-|-|
+|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✓|✗|✗|
+|CCT|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✓|✗|
+|Brightness control|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✓|✓|✓|
 
 _Notes:_  
 _✓: supported_  
 _-: possible but not supported yet_  
 _✗: not possible_  
 _1: includes lock, outlet and valve_  
-_2: with [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor
+_2: with [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor  
 _3: includes motion, occupancy, contact_
 
 Features that are not yet supported:
@@ -70,7 +72,7 @@ Features that are not yet supported:
 
 ## Documentation
 
-See [Wiki](https://github.com/mongoose-os-apps/shelly-homekit/wiki).
+See our [Wiki](https://github.com/mongoose-os-apps/shelly-homekit/wiki).
 
 ## Getting Support
 
@@ -98,9 +100,14 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 
 [1]: https://shelly.cloud/products/shelly-1-smart-home-automation-relay/
 [1PM]: https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/
+[+1]: https://shelly.cloud/shelly-plus-1/
+[+1PM]: https://shelly.cloud/shelly-plus-1pm/
 [1L]: https://shelly.cloud/products/shelly-1l-single-wire-smart-home-automation-relay/
 [Plug]: https://shelly.cloud/products/shelly-plug-smart-home-automation-device/
 [PlugS]: https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/
 [2.5]: https://shelly.cloud/products/shelly-25-smart-home-automation-relay/
 [i3]: https://shelly.cloud/products/shelly-i3-smart-home-automation-device/
 [RGBW2]: https://shelly.cloud/products/shelly-rgbw2-smart-home-automation-led-controller/
+[Bulb]: https://shelly.cloud/products/shelly-bulb-smart-home-automation-device/
+[Duo]: https://shelly.cloud/products/shelly-duo-smart-home-automation-bulb/
+[Vintage]: https://shelly.cloud/products/shelly-vintage-smart-home-automation-bulb/
