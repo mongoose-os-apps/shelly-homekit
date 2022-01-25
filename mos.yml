@@ -756,6 +756,7 @@ conds:
       sources:
         - src/Shelly25/shelly_init_components.cpp  # Same components as Shelly25
         - src/mock/pwm
+        - src/mock/wifi_config
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
