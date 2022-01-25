@@ -137,6 +137,7 @@ cdefs:
   BTN_NOISY: 1
   RST_GPIO_INIT: -1
   SHELLY_HAVE_DUAL_INPUT_MODES: 0
+  MAX_NUM_HAP_SESSIONS: 12
 
 libs:
   - location: ./libreset
@@ -536,7 +537,7 @@ conds:
         BTN_DOWN: 0
         PRODUCT_HW_REV: '"0.1.6"'
         STOCK_FW_MODEL: '"Plus1"'
-        xMGOS_CONFIG_DEV_1: '"aux"'
+        MAX_NUM_HAP_SESSIONS: 16
       config_schema:
         - ["device.id", "ShellyPlus1-??????"]
         - ["shelly.name", "ShellyPlus1-??????"]
@@ -571,6 +572,7 @@ conds:
         BTN_DOWN: 0
         PRODUCT_HW_REV: '"0.1.6"'
         STOCK_FW_MODEL: '"Plus1PM"'
+        MAX_NUM_HAP_SESSIONS: 16
       config_schema:
         - ["device.id", "ShellyPlus1PM-??????"]
         - ["shelly.name", "ShellyPlus1PM-??????"]

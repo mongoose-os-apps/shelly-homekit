@@ -60,12 +60,11 @@
 #include "shelly_temp_sensor.hpp"
 #include "shelly_wifi_config.hpp"
 
-#define NUM_SESSIONS 12
 #define SCRATCH_BUF_SIZE 1536
 
 namespace shelly {
 
-static HAPIPSession sessions[NUM_SESSIONS];
+static HAPIPSession sessions[MAX_NUM_HAP_SESSIONS];
 static uint8_t scratch_buf[SCRATCH_BUF_SIZE];
 static HAPIPAccessoryServerStorage s_ip_storage = {
     .sessions = sessions,
@@ -864,7 +863,7 @@ void InitApp() {
   // TCP Stream Manager.
   static const HAPPlatformTCPStreamManagerOptions tcpm_opts = {
       .port = kHAPNetworkPort_Any,
-      .maxConcurrentTCPStreams = NUM_SESSIONS,
+      .maxConcurrentTCPStreams = MAX_NUM_HAP_SESSIONS,
   };
   HAPPlatformTCPStreamManagerCreate(&s_tcpm, &tcpm_opts);
 
