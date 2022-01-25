@@ -558,7 +558,7 @@ static void StatusTimerCB(void *arg) {
                   (unsigned) tcpm_stats.numActiveTCPStreams,
                   (unsigned) tcpm_stats.maxNumTCPStreams, num_sessions,
                   (unsigned long) mgos_get_free_heap_size(),
-                  (unsigned long) mgos_get_heap_size(),
+                  (unsigned long) mgos_get_min_free_heap_size(),
                   (sys_temp.ok() ? sys_temp.ValueOrDie() : 0), status.c_str()));
   }
 #ifdef MGOS_SYS_CONFIG_HAVE_SHELLY_WIFI_CONNECT_REBOOT_TIMEOUT
