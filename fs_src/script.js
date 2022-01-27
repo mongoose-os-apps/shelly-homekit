@@ -540,6 +540,7 @@ function findOrAddContainer(cd) {
       };
       break;
     case Component_Type.kStatelessSwitch:  // aka input in detached mode
+    case Component_Type.kDoorbell:
       c = el("ssw_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
@@ -583,7 +584,6 @@ function findOrAddContainer(cd) {
     case Component_Type.kMotionSensor:
     case Component_Type.kOccupancySensor:
     case Component_Type.kContactSensor:
-    case Component_Type.kDoorbell:
       c = el("sensor_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
@@ -764,7 +764,8 @@ function updateComponent(cd) {
       setValueIfNotModified(el(c, "update_interval"), cd.update_interval);
       break;
     }
-    case Component_Type.kStatelessSwitch: {
+    case Component_Type.kStatelessSwitch:
+    case Component_Type.kDoorbell: {
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -854,8 +855,7 @@ function updateComponent(cd) {
     }
     case Component_Type.kMotionSensor:
     case Component_Type.kOccupancySensor:
-    case Component_Type.kContactSensor:
-    case Component_Type.kDoorbell: {
+    case Component_Type.kContactSensor: {
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
