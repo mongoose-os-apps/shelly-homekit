@@ -393,7 +393,7 @@ conds:
         - ["shelly.name", "shellycolorbulb-??????"]
         - ["wifi.ap.ssid", "shellycolorbulb-??????"]
         - ["lb1", "lb", {title: "RGBW "}]
-        - ["lb1.initial_state", 2] # no input available
+        - ["lb1.initial_state", 2] # last
 
   - when: build_vars.MODEL == "ShellyDuo"
     apply:
@@ -415,6 +415,7 @@ conds:
         - ["shelly.name", "ShellyBulbDuo-??????"]
         - ["wifi.ap.ssid", "ShellyBulbDuo-??????"]
         - ["lb1", "lb", {title: "Light bulb settings"}]
+        - ["lb1.initial_state", 2] # last
 
   - when: build_vars.MODEL == "ShellyI3"
     apply:
@@ -652,6 +653,7 @@ conds:
         - ["shelly.name", "ShellyVintage-??????"]
         - ["wifi.ap.ssid", "ShellyVintage-??????"]
         - ["lb1", "lb", {title: "Light bulb settings"}]
+        - ["lb1.initial_state", 2] # last
 
   # Test device for BLE development.
   - when: build_vars.MODEL == "ShellyT32"
