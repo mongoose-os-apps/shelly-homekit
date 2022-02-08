@@ -156,6 +156,44 @@ libs:
   # - location: https://github.com/mongoose-os-libs/rpc-service-ota
 
 conds:
+  - when: mos.platform != "ubuntu"
+    apply:
+      sources:
+        - src/noisy_input_pin
+        - src/wifi_config
+      config_schema:
+        - ["wifi.ap.pass", ""]
+        - ["wifi.ap.ip", "192.168.33.1"]
+        - ["wifi.ap.gw", ""]
+        - ["wifi.ap.dhcp_start", "192.168.33.2"]
+        - ["wifi.ap.dhcp_end", "192.168.33.100"]
+        - ["wifi.sta_connect_timeout", 15]
+        - ["wifi.sta_roam_rssi_thr", -80]
+        - ["wifi.sta_roam_interval", 600]
+        - ["wifi.ap.keep_enabled", "b", false, {title: "Keep WiFi AP enabled even when STA is connected"}]
+        # This is a mitigation for devices dropping of wifi and never coming back.
+        # This is believed to be fixed, default has been flipped back to 0 in 2.11.0.
+        # Consider removing in later releases.
+        - ["shelly.wifi_connect_reboot_timeout", "i", 0, {title: "If not connected for this long when supposed to be, reboot"}]
+      libs:
+        - location: https://github.com/mongoose-os-libs/adc
+        - location: https://github.com/mongoose-os-libs/pwm
+        - location: https://github.com/mongoose-os-libs/wifi
+      cdefs:
+        # Size fine-tuning, saves substantial amount of RAM vs defaults.
+        HAP_SESSION_SIZE: 392
+        HAP_IP_SESSION_SIZE: 600
+        # XXX: fix size calculation with and without BLE
+        XHAP_ACCESSORY_SERVER_SIZE: 1680
+        HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
+        HAP_DISABLE_ASSERTS: 1       # 32K
+        HAP_DISABLE_PRECONDITIONS: 1 # 40K
+
+  - when: mos.platform == "esp32"
+    apply:
+      config_schema:
+        - ["wifi.sta_ps_mode", 1]
+
   - when: build_vars.MODEL == "Shelly1"
     apply:
       name: switch1 # To allow OTA from stock fw.
@@ -693,39 +731,6 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "SSWT32"]
         - ["in1.sensor.name", "ST32"]
-
-  - when: mos.platform != "ubuntu"
-    apply:
-      sources:
-        - src/noisy_input_pin
-        - src/wifi_config
-      config_schema:
-        - ["wifi.ap.pass", ""]
-        - ["wifi.ap.ip", "192.168.33.1"]
-        - ["wifi.ap.gw", ""]
-        - ["wifi.ap.dhcp_start", "192.168.33.2"]
-        - ["wifi.ap.dhcp_end", "192.168.33.100"]
-        - ["wifi.sta_connect_timeout", 15]
-        - ["wifi.sta_roam_rssi_thr", -80]
-        - ["wifi.sta_roam_interval", 600]
-        - ["wifi.ap.keep_enabled", "b", false, {title: "Keep WiFi AP enabled even when STA is connected"}]
-        # This is a mitigation for devices dropping of wifi and never coming back.
-        # This is believed to be fixed, default has been flipped back to 0 in 2.11.0.
-        # Consider removing in later releases.
-        - ["shelly.wifi_connect_reboot_timeout", "i", 0, {title: "If not connected for this long when supposed to be, reboot"}]
-      libs:
-        - location: https://github.com/mongoose-os-libs/adc
-        - location: https://github.com/mongoose-os-libs/pwm
-        - location: https://github.com/mongoose-os-libs/wifi
-      cdefs:
-        # Size fine-tuning, saves substantial amount of RAM vs defaults.
-        HAP_SESSION_SIZE: 392
-        HAP_IP_SESSION_SIZE: 600
-        # XXX: fix size calculation with and without BLE
-        XHAP_ACCESSORY_SERVER_SIZE: 1680
-        HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
-        HAP_DISABLE_ASSERTS: 1       # 32K
-        HAP_DISABLE_PRECONDITIONS: 1 # 40K
 
   - when: build_vars.MODEL == "ShellyU"
     apply:
