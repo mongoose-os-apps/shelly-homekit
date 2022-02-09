@@ -38,6 +38,7 @@ class Component {
     kDoorbell = 10,
     kLightBulb = 11,
     kTemperatureSensor = 12,
+    kLeakSensor = 13,
     kMax,
   };
 
