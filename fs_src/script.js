@@ -58,7 +58,8 @@ class Component_Type {
   static kDoorbell = 10;
   static kLightBulb = 11;
   static kTemperatureSensor = 12;
-  static kMax = 13;
+  static kSmokeSensor = 14;
+  static kMax = 15;
 };
 
 // Keep in sync with shelly::LightBulbController::BulbType.
@@ -584,6 +585,7 @@ function findOrAddContainer(cd) {
     case Component_Type.kMotionSensor:
     case Component_Type.kOccupancySensor:
     case Component_Type.kContactSensor:
+    case Component_Type.kSmokeSensor:
       c = el("sensor_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
@@ -848,14 +850,15 @@ function updateComponent(cd) {
       }
       break;
     }
-    case 6: {  // Disabled Input
+    case Component_Type.kDisabledInput: {
       updateInnerText(el(c, "head"), `Input ${cd.id}`);
       selectIfNotModified(el(c, "type"), cd.type);
       break;
     }
     case Component_Type.kMotionSensor:
     case Component_Type.kOccupancySensor:
-    case Component_Type.kContactSensor: {
+    case Component_Type.kContactSensor:
+    case Component_Type.kSmokeSensor: {
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
