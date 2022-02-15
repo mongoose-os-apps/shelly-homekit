@@ -671,6 +671,43 @@ conds:
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
 
+  - when: build_vars.MODEL == "ShellyUNI"
+    apply:
+      name: uni
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+          variant: esp8266-nossl
+        - location: https://github.com/mongoose-os-libs/ade7953
+      build_vars:
+        FLASH_SIZE: 2097152
+        FS_SIZE: 262144
+        BOOT_CONFIG_ADDR: 0x1000
+        MGOS_ROOT_FS_TYPE: SPIFFS
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 2
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHUNI-1"'
+        MG_ENABLE_SSL: 0
+      config_schema:
+        - ["device.id", "shellyuni-????????????"]
+        - ["shelly.name", "shellyuni-????????????"]
+        - ["wifi.ap.ssid", "shellyuni-????????????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["sw2", "sw", {title: "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+
   - when: build_vars.MODEL == "ShellyVintage"
     apply:
       name: bulb6w # To allow OTA from stock fw.
