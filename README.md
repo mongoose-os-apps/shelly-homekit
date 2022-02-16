@@ -66,6 +66,12 @@ Features that are not yet supported:
 
     * Shelly Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip`
 
+    * Shelly Plus 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1.zip`
+      _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
+
+    * Shelly Plus 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PM.zip`
+      _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
+
     * Shelly RGBW2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyRGBW2.zip`  
       _Note: The Shelly must be in color mode to flash, flashing in white mode is not supported!_
 
