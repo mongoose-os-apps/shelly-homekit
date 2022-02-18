@@ -11,18 +11,18 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
-||[1]|[1PM]|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
-|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✗|✗|✗|
-|Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✗|✗|✗|
-|Sensors<sup>3</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✗|✗|✗|
-|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|
-|Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✗|✗|✗|✗|
-|Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|
-|Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|-|-|-|-|
-|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✓|✗|✗|
-|CCT|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✓|✗|
-|Brightness control|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✓|✓|✓|
+||[1]|[1PM]|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
+|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✓|✗|✗|✗|✗|
+|Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✗|✗|✗|
+|Sensors<sup>3</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✗|✗|✗|
+|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✗|✗|-|✗|✗|✗|
+|Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✓|✗|✗|✗|✗|
+|Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|✗|
+|Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|✗|-|-|-|-|
+|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✓|✗|✗|
+|CCT|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✓|✗|✓|✗|
+|Brightness control|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✓|✓|✓|✓|
 
 _Notes:_  
 _✓: supported_  
@@ -30,8 +30,8 @@ _-: possible but not supported yet_
 _✗: not possible_  
 _1: includes lock, outlet and valve_  
 _2: includes doorbell_  
-_4: includes motion, occupancy, contact_
-_3: with [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor  
+_3: includes motion, occupancy, contact_  
+_4: with [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor  
 
 Features that are not yet supported:
  * Cloud connections: no Shelly Cloud, no MQTT
@@ -120,6 +120,7 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [PlugS]: https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/
 [2.5]: https://shelly.cloud/products/shelly-25-smart-home-automation-relay/
 [i3]: https://shelly.cloud/products/shelly-i3-smart-home-automation-device/
+[UNI]: https://shelly.cloud/products/shelly-uni-smart-home-automation-device/
 [RGBW2]: https://shelly.cloud/products/shelly-rgbw2-smart-home-automation-led-controller/
 [Bulb]: https://shelly.cloud/products/shelly-bulb-smart-home-automation-device/
 [Duo]: https://shelly.cloud/products/shelly-duo-smart-home-automation-bulb/
