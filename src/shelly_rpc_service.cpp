@@ -165,7 +165,7 @@ static void AppendWifiInfoExt(std::string *res) {
       "wifi_ap_en: %B, wifi_ap_ssid: %Q, wifi_ap_pass: %Q, "
       "wifi_connecting: %B, wifi_connected: %B, wifi_conn_ssid: %Q, "
       "wifi_conn_rssi: %d, wifi_conn_ip: %Q, "
-      "wifi_status: %Q, ",
+      "wifi_status: %Q, mac_address: %Q, ",
       wc.sta.enable, wc.sta.ssid.c_str(), wifi_pass.c_str(),
       (unsigned int) digest[0], (unsigned int) digest[2],
       (unsigned int) digest[4], (unsigned int) digest[6], wc.sta.ip.c_str(),
@@ -174,7 +174,7 @@ static void AppendWifiInfoExt(std::string *res) {
       wc.sta1.netmask.c_str(), wc.sta1.gw.c_str(), wc.ap.enable,
       wc.ap.ssid.c_str(), wifi_ap_pass.c_str(), wi.sta_connecting,
       wi.sta_connected, wi.sta_ssid.c_str(), wi.sta_rssi, wi.sta_ip.c_str(),
-      wi.status.c_str());
+      wi.status.c_str(), mgos_sys_ro_vars_get_mac_address());
 }
 
 static void AppendOTAInfoExt(std::string *res) {

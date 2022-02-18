@@ -948,6 +948,7 @@ function updateElement(key, value, info) {
     case "wifi_conn_rssi":
     case "wifi_conn_ssid":
     case "wifi_status":
+    case "mac_address":
       updateInnerText(el(key), value);
       el(`${key}_container`).style.display = (value ? "block" : "none");
       if (key == "wifi_conn_rssi" && value != 0) {
