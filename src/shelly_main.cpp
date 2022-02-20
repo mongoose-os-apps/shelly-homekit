@@ -835,7 +835,24 @@ static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
   (void) user_data;
 }
 
+void ResetRebootCounter(void *arg UNUSED_ARG) {
+  LOG(LL_INFO, ("=== ResetRebootCounter"));
+  mgos_sys_config_set_shelly_reboot_counter(0);
+  mgos_sys_config_save(&mgos_sys_config, false /* try_once */, nullptr);
+}
+
 void InitApp() {
+  int reboot_counter = mgos_sys_config_get_shelly_reboot_counter() + 1;
+  LOG(LL_INFO, ("=== reboot_counter %d", reboot_counter));
+  if (reboot_counter >= 3) {
+    LOG(LL_INFO, ("=== DoRebootReset"));
+    ResetRebootCounter(nullptr);
+    DoReset(nullptr);
+  }
+  mgos_sys_config_set_shelly_reboot_counter(reboot_counter);
+  mgos_sys_config_save(&mgos_sys_config, false /* try_once */, nullptr);
+  mgos_set_timer(10000, 0, ResetRebootCounter, nullptr);
+
   struct mg_http_endpoint_opts opts = {};
   mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
   // Support /ota?url=... updates a-la stock.
