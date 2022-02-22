@@ -844,7 +844,7 @@ void ResetRebootCounter(void *arg UNUSED_ARG) {
 void InitApp() {
   int reboot_counter = mgos_sys_config_get_shelly_reboot_counter() + 1;
   LOG(LL_INFO, ("=== reboot_counter %d", reboot_counter));
-  if (reboot_counter >= 3) {
+  if (reboot_counter >= 5) {
     LOG(LL_INFO, ("=== DoRebootReset"));
     ResetRebootCounter(nullptr);
     DoReset(nullptr);
