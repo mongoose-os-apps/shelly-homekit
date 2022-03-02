@@ -37,6 +37,7 @@ config_schema:
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
   - ["shelly.overheat_off", "i", 90, {title: "Overheat protection mode turns off when the temperature is back below this threshold"}]
+  - ["shelly.reboot_counter", "i", 0, {title: "Counter of boot tries with a uptime of less then 10 sec."}]
 
   - ["ts", "o", {title: "Temperature Sensor settings", abstract: true}]
   - ["ts.name", "s", "", {title: "Name of the sensor"}]
