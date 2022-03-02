@@ -228,7 +228,7 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
       logger.debug(f"[Device Scan] found device: {host}, IP address: {wifi_ip}")
       logger.trace(f"[Device Scan] info: {info}")
       logger.trace(f"[Device Scan] properties: {properties}")
-      if properties.get('arch') == 'esp8266' or properties.get('arch') == 'esp32':  # this detects if esp device.
+      if properties.get('arch') in ('esp8266', 'esp32'):  # this detects if esp device.
         if properties.get('auth_en') and properties.get('fw_type') == 'homekit':  # this detects if homekit device (requires fw >= 2.9.1).
           auth = bool(int(properties.get('auth_en')))
           fw_type = properties.get('fw_type')
