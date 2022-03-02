@@ -85,6 +85,7 @@ optional arguments:
 import argparse
 import atexit
 import datetime
+from distutils.log import debug
 import functools
 import http.server
 import ipaddress
@@ -227,7 +228,7 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
       logger.debug(f"[Device Scan] found device: {host}, IP address: {wifi_ip}")
       logger.trace(f"[Device Scan] info: {info}")
       logger.trace(f"[Device Scan] properties: {properties}")
-      if properties.get('arch') == 'esp8266':  # this detects if esp device.
+      if properties.get('arch') == 'esp8266' or properties.get('arch') == 'esp32':  # this detects if esp device.
         if properties.get('auth_en') and properties.get('fw_type') == 'homekit':  # this detects if homekit device (requires fw >= 2.9.1).
           auth = bool(int(properties.get('auth_en')))
           fw_type = properties.get('fw_type')
@@ -481,7 +482,9 @@ class Device(Detection):
                'SHBDUO-1': ['ShellyDuo', 'bulbduo'],
                'SHBTN-1': ['ShellyButton1', 'wifi-button'],
                'SHBTN-2': ['ShellyButton2', 'wifi-button2'],
-               'SHIX3-1': ['ShellyI3', 'ix3']
+               'SHIX3-1': ['ShellyI3', 'ix3'],
+               'Plus1': ['ShellyPlus1', 'Plus1'],
+               'Plus1PM': ['ShellyPlus1PM', 'Plus1PM']
                }
     return options.get(stock_fw_model, [stock_fw_model, stock_fw_model])
 
