@@ -30,7 +30,7 @@ _-: possible but not supported yet_
 _✗: not possible_  
 _1: includes lock, outlet and valve_  
 _2: includes doorbell_  
-_3: includes motion, occupancy, contact_  
+_3: includes motion, occupancy, contact, smoke, leak_  
 _4: with [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor  
 
 Features that are not yet supported:
