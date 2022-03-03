@@ -58,6 +58,7 @@ class Component_Type {
   static kDoorbell = 10;
   static kLightBulb = 11;
   static kTemperatureSensor = 12;
+  static kLeakSensor = 13;
   static kSmokeSensor = 14;
   static kMax = 15;
 };
@@ -585,6 +586,7 @@ function findOrAddContainer(cd) {
     case Component_Type.kMotionSensor:
     case Component_Type.kOccupancySensor:
     case Component_Type.kContactSensor:
+    case Component_Type.kLeakSensor:
     case Component_Type.kSmokeSensor:
       c = el("sensor_template").cloneNode(true);
       c.id = elId;
@@ -858,6 +860,7 @@ function updateComponent(cd) {
     case Component_Type.kMotionSensor:
     case Component_Type.kOccupancySensor:
     case Component_Type.kContactSensor:
+    case Component_Type.kLeakSensor:
     case Component_Type.kSmokeSensor: {
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
@@ -951,6 +954,7 @@ function updateElement(key, value, info) {
     case "wifi_conn_rssi":
     case "wifi_conn_ssid":
     case "wifi_status":
+    case "mac_address":
       updateInnerText(el(key), value);
       el(`${key}_container`).style.display = (value ? "block" : "none");
       if (key == "wifi_conn_rssi" && value != 0) {
