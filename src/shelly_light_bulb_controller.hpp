@@ -41,8 +41,8 @@ class LightBulbControllerBase {
 
   virtual BulbType Type() = 0;
 
-  bool IsOn() const;
-  bool IsOff() const;
+  bool IsOn();
+  bool IsOff();
 
  protected:
   struct mgos_config_lb *cfg_;

@@ -20,6 +20,7 @@
 #include "shelly_cct_controller.hpp"
 #include "shelly_rgbw_controller.hpp"
 #include "shelly_white_controller.hpp"
+#include "shelly_multi_switch_controller.hpp"
 
 namespace shelly {
 
@@ -31,7 +32,8 @@ LightBulbControllerBase::LightBulbControllerBase(struct mgos_config_lb *cfg,
 LightBulbControllerBase::~LightBulbControllerBase() {
 }
 
-bool LightBulbControllerBase::IsOn() const {
+bool LightBulbControllerBase::IsOn() {
+  LOG(LL_INFO, ("Org is on"));
   return cfg_->state != 0;
 }
 
@@ -41,8 +43,8 @@ void LightBulbControllerBase::UpdateOutput() {
   }
 }
 
-bool LightBulbControllerBase::IsOff() const {
-  return cfg_->state == 0;
+bool LightBulbControllerBase::IsOff() {
+  return !IsOn();
 }
 
 template <class T>
@@ -84,5 +86,6 @@ void LightBulbController<T>::UpdateOutputSpecialized() {
 template class LightBulbController<StateW>;
 template class LightBulbController<StateCCT>;
 template class LightBulbController<StateRGBW>;
+template class LightBulbController<StateOn>;
 
 }  // namespace shelly

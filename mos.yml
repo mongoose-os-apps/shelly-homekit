@@ -32,7 +32,7 @@ config_schema:
   - ["sntp.enable", true]
 
   - ["shelly.name", "s", "", {title: "User-facing device name"}]  # Note: will be overridden by cfg 2 -> 3 migration.
-  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - RGB+W (if supported), 6 - CCT (if supported), 7 - White Mode (if supported)"}]
+  - ["shelly.mode", "i", 0, {title: "System mode: 0 - default, 1 - roller shutter (if supported), 2 - garage door opener (if supported), 3 - RGB (if supported), 4 - RGBW (if supported), 5 - RGB+W (if supported), 6 - CCT (if supported), 7 - White Mode (if supported), 8 - Multiway Switching"}]
   - ["shelly.cfg_version", "i", 0, {title: "Configuration version"}]
   - ["shelly.legacy_hap_layout", "b", false, {title: "Use legacy accessory layout instead of a bridged accessory"}]
   - ["shelly.overheat_on", "i", 100, {title: "Overheat protection mode kicks in at or above this temperature"}]
@@ -403,6 +403,9 @@ conds:
         - ["wc1.name", "Window 1"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
+        - ["lb1", "lb", {title: "Light bulb settings"}]
+        - ["lb1.name", "Light Bulb"]
+        - ["lb1.in_mode", 2]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]

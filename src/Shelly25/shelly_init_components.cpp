@@ -19,8 +19,11 @@
 
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_input.hpp"
+#include "shelly_hap_light_bulb.hpp"
 #include "shelly_hap_window_covering.hpp"
+#include "shelly_multi_switch_controller.hpp"
 #include "shelly_main.hpp"
+#include "shelly_white_controller.hpp"
 
 namespace shelly {
 
@@ -85,6 +88,29 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
     pri_acc->AddService(gdo.get());
     comps->emplace_back(std::move(gdo));
+    return;
+  }
+  // Multi switch mode.
+  if (true || mgos_sys_config_get_shelly_mode() == 8) {
+    std::unique_ptr<LightBulbControllerBase> lightbulb_controller;
+    std::unique_ptr<hap::LightBulb> hap_light;
+    auto *lb_cfg = (struct mgos_config_lb *) mgos_sys_config_get_lb1();
+
+    lightbulb_controller.reset(new MultiSwitchController(lb_cfg, FindOutput(1), FindOutput(2), FindPM(1), FindPM(2)));
+
+    hap_light.reset(new hap::LightBulb(
+        1, FindInput(1), std::move(lightbulb_controller), lb_cfg, false));
+
+    if (hap_light == nullptr || !hap_light->Init().ok()) {
+      return;
+    }
+
+    mgos::hap::Accessory *pri_acc = accs->front().get();
+    hap_light->set_primary(true);
+    pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
+    pri_acc->AddService(hap_light.get());
+
+    comps->push_back(std::move(hap_light));    
     return;
   }
   // Use legacy layout if upgraded from an older version (pre-2.1).
