@@ -483,8 +483,9 @@ class Device(Detection):
                'SHBTN-1': ['ShellyButton1', 'wifi-button'],
                'SHBTN-2': ['ShellyButton2', 'wifi-button2'],
                'SHIX3-1': ['ShellyI3', 'ix3'],
-               'Plus1': ['ShellyPlus1', 'Plus1'],
-               'Plus1PM': ['ShellyPlus1PM', 'Plus1PM']
+               'SNSW-001X16EU': ['ShellyPlus1', 'Plus1'],
+               'SNSW-001P16EU': ['ShellyPlus1PM', 'Plus1PM'],
+               'SNSN-0024X': ['ShellyPlusI4', 'PlusI4']
                }
     return options.get(stock_fw_model, [stock_fw_model, stock_fw_model])
 
