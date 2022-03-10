@@ -11,18 +11,18 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
-||[1]|[1PM]|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
-|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✓|✗|✗|✗|✗|
+||[1]|[1PM]|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[+i4]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
+|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✗|✗|✗|
 |Sensors<sup>3</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✗|✗|✗|
-|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✗|✗|-|✗|✗|✗|
-|Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✓|✗|✗|✗|✗|
-|Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|✗|
-|Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|✗|-|-|-|-|
-|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✓|✗|✗|
-|CCT|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✓|✗|✓|✗|
-|Brightness control|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✓|✓|✓|✓|
+|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✗|✗|-|✗|✗|✗|✗|
+|Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✗|✓|✗|✗|✗|✗|
+|Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|✗|✗|
+|Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|✗|✗|-|-|-|-|
+|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✓|✗|✗|
+|CCT|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✓|✗|✓|✗|
+|Brightness control|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✓|✓|✓|✓|
 
 _Notes:_  
 _✓: supported_  
@@ -70,6 +70,9 @@ Features that are not yet supported:
       _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
 
     * Shelly Plus 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PM.zip`
+      _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
+
+    * Shelly Plus I4: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusI4.zip`
       _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
 
     * Shelly RGBW2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyRGBW2.zip`  
