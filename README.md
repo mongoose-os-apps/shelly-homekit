@@ -16,7 +16,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✗|✗|✗|
 |Sensors<sup>3</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✗|✗|✗|
-|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✗|✗|-|✗|✗|✗|✗|
+|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✗|✗|✗|✗|
 |Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|✗|✗|
 |Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|✗|✗|-|-|-|-|
@@ -123,6 +123,7 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [PlugS]: https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/
 [2.5]: https://shelly.cloud/products/shelly-25-smart-home-automation-relay/
 [i3]: https://shelly.cloud/products/shelly-i3-smart-home-automation-device/
+[+i4]: https://shelly.cloud/shelly-plus-i4/
 [UNI]: https://shelly.cloud/products/shelly-uni-smart-home-automation-device/
 [RGBW2]: https://shelly.cloud/products/shelly-rgbw2-smart-home-automation-led-controller/
 [Bulb]: https://shelly.cloud/products/shelly-bulb-smart-home-automation-device/
