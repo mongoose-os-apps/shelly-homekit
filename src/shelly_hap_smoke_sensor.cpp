@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_leak_sensor.hpp"
+#include "shelly_hap_smoke_sensor.hpp"
 
 namespace shelly {
 namespace hap {
 
-LeakSensor::LeakSensor(int id, Input *in, struct mgos_config_in_sensor *cfg)
-    : SensorBase(id, in, cfg, SHELLY_HAP_IID_BASE_LEAK_SENSOR,
-                 &kHAPServiceType_LeakSensor,
-                 kHAPServiceDebugDescription_LeakSensor) {
+SmokeSensor::SmokeSensor(int id, Input *in, struct mgos_config_in_sensor *cfg)
+    : SensorBase(id, in, cfg, SHELLY_HAP_IID_BASE_SMOKE_SENSOR,
+                 &kHAPServiceType_SmokeSensor,
+                 kHAPServiceDebugDescription_SmokeSensor) {
 }
 
-LeakSensor::~LeakSensor() {
+SmokeSensor::~SmokeSensor() {
 }
 
-Component::Type LeakSensor::type() const {
-  return Type::kLeakSensor;
+Component::Type SmokeSensor::type() const {
+  return Type::kSmokeSensor;
 }
 
-Status LeakSensor::Init() {
+Status SmokeSensor::Init() {
   const Status &st = SensorBase::Init();
   if (!st.ok()) return st;
   AddChar(new mgos::hap::UInt8Characteristic(
-      svc_.iid + 2, &kHAPCharacteristicType_LeakDetected, 0, 1, 1,
+      svc_.iid + 2, &kHAPCharacteristicType_SmokeDetected, 0, 1, 1,
       std::bind(&mgos::hap::ReadUInt8<bool>, _1, _2, _3, &state_),
       true /* supports_notification */, nullptr /* write_handler */,
-      kHAPCharacteristicDebugDescription_LeakDetected));
+      kHAPCharacteristicDebugDescription_SmokeDetected));
   return Status::OK();
 }
 
