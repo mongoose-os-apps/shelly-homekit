@@ -38,11 +38,7 @@ Status LeakSensor::Init() {
   if (!st.ok()) return st;
   AddChar(new mgos::hap::UInt8Characteristic(
       svc_.iid + 2, &kHAPCharacteristicType_LeakDetected, 0, 1, 1,
-      [this](HAPAccessoryServerRef *, const HAPUInt8CharacteristicReadRequest *,
-             uint8_t *value) {
-        *value = !state_;
-        return kHAPError_None;
-      },
+      std::bind(&mgos::hap::ReadUInt8<bool>, _1, _2, _3, &state_),
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_LeakDetected));
   return Status::OK();
