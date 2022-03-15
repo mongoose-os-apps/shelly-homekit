@@ -1369,8 +1369,8 @@ class Main:
     no_variant = device.no_variant
     revert_to_stock = self.revert_to_stock
     device_name = device.info.get('device_name')
-    wifi_ssid = device.info.get('wifi_ssid')
-    wifi_rssi = device.info.get('wifi_rssi')
+    wifi_ssid = device.info.get('wifi_conn_ssid')
+    wifi_rssi = device.info.get('wifi_conn_rssi')
     sys_temp = device.info.get('sys_temp')
     sys_mode = device.info.get('sys_mode_str')
     uptime = datetime.timedelta(seconds=device.info.get('uptime', 0))
