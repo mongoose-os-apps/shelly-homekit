@@ -19,6 +19,7 @@
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_pm_bl0937.hpp"
+#include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 #include "shelly_temp_sensor_ow.hpp"
 
@@ -49,6 +50,14 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
+
+  s_onewire.reset(new Onewire(3, 0));
+  if (s_onewire->DiscoverAll().empty()) {
+    // Sys LED shares the same pin.
+    s_onewire.reset();
+    InitSysLED(LED_GPIO, LED_ON);
+  }
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
@@ -75,11 +84,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   // Sensor Discovery
-  std::unique_ptr<Onewire> ow(std::move(s_onewire));
-  if (ow == nullptr) {
-    ow.reset(new Onewire(3, 0));
+  std::vector<std::unique_ptr<TempSensor>> sensors;
+  if (s_onewire != nullptr) {
+    sensors = s_onewire->DiscoverAll();
   }
-  auto sensors = ow->DiscoverAll();
 
   // Single switch with non-detached input and no sensors = only one accessory.
   bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
@@ -99,11 +107,6 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
                                  accs, svr);
     }
-    s_onewire = std::move(ow);
-    // LED shares the same pin, we need to disable it for OW to work.
-    SetSysLEDEnable(false);
-  } else {
-    SetSysLEDEnable(true);
   }
 }
 

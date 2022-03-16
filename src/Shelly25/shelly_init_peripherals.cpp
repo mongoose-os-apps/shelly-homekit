@@ -21,6 +21,7 @@
 #include "shelly_main.hpp"
 #include "shelly_pm.hpp"
 #include "shelly_pm_ade7953.hpp"
+#include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
@@ -65,6 +66,9 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   // GPIO16 defaults to output on reset so we reconfigure it as input
   // to avoid the conflict.
   mgos_gpio_setup_input(16, MGOS_GPIO_PULL_NONE);
+
+  InitSysLED(LED_GPIO, LED_ON);
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 
   return Status::OK();
 }

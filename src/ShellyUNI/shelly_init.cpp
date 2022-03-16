@@ -22,6 +22,7 @@
 #include "shelly_hap_window_covering.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_sys_led_btn.hpp"
 
 namespace shelly {
 
@@ -38,6 +39,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   auto *in2 = new InputPin(2, 13, 1, MGOS_GPIO_PULL_NONE, false);
   in2->Init();
   inputs->emplace_back(in2);
+  InitSysLED(LED_GPIO, LED_ON);
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

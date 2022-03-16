@@ -51,12 +51,11 @@
 #include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_hap_valve.hpp"
 #include "shelly_input.hpp"
-#include "shelly_input_pin.hpp"
-#include "shelly_noisy_input_pin.hpp"
 #include "shelly_ota.hpp"
 #include "shelly_output.hpp"
 #include "shelly_rpc_service.hpp"
 #include "shelly_switch.hpp"
+#include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor.hpp"
 #include "shelly_wifi_config.hpp"
 
@@ -108,21 +107,9 @@ static HAPAccessoryServerCallbacks s_callbacks;
 static HAPPlatformTCPStreamManager s_tcpm;
 static HAPPlatformServiceDiscovery s_service_discovery;
 static HAPAccessoryServerRef s_server;
+static mgos::hap::Accessory::IdentifyCB s_identify_cb;
 
-static Input *s_btn = nullptr;
 static uint8_t s_service_flags = 0;
-static uint8_t s_identify_count = 0;
-static int8_t s_led_gpio = LED_GPIO;
-
-static void CheckLED(int pin, bool led_act);
-
-HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request) {
-  LOG(LL_INFO, ("=== IDENTIFY ==="));
-  s_identify_count = 3;
-  CheckLED(s_led_gpio, LED_ON);
-  (void) request;
-  return kHAPError_None;
-}
 
 static std::vector<std::unique_ptr<Input>> s_inputs;
 static std::vector<std::unique_ptr<Output>> s_outputs;
@@ -154,7 +141,9 @@ static void DoReset(void *arg) {
   if (out_gpio >= 0) {
     mgos_gpio_blink(out_gpio, 0, 0);
   }
-  s_identify_count = 2;
+  if (GetIdentifyCB()) {
+    GetIdentifyCB()(nullptr);
+  }
   LOG(LL_INFO, ("Performing reset"));
   ResetWifiConfig();
   mgos_sys_config_set_rpc_acl(nullptr);
@@ -164,7 +153,7 @@ static void DoReset(void *arg) {
   if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
     remove(AUTH_FILE_NAME);
   }
-  CheckLED(s_led_gpio, LED_ON);
+  CheckSysLED();
 }
 
 void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
@@ -246,7 +235,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
   if (!sw_hidden) {
     std::unique_ptr<mgos::hap::Accessory> acc(
         new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
-                                 sw_cfg->name, &AccessoryIdentifyCB, svr));
+                                 sw_cfg->name, GetIdentifyCB(), svr));
     acc->AddHAPService(&mgos_hap_accessory_information_service);
     acc->AddService(sw2);
     accs->push_back(std::move(acc));
@@ -272,7 +261,7 @@ void CreateHAPTemperatureSensor(
   std::unique_ptr<mgos::hap::Accessory> acc(
       new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + id,
                                kHAPAccessoryCategory_BridgedAccessory,
-                               ts_cfg->name, &AccessoryIdentifyCB, svr));
+                               ts_cfg->name, GetIdentifyCB(), svr));
   acc->AddHAPService(&mgos_hap_accessory_information_service);
   acc->AddService(ts.get());
   accs->push_back(std::move(acc));
@@ -297,7 +286,7 @@ static bool StartService(bool quiet) {
     LOG(LL_INFO, ("=== Creating accessories"));
     std::unique_ptr<mgos::hap::Accessory> pri_acc(new mgos::hap::Accessory(
         SHELLY_HAP_AID_PRIMARY, kHAPAccessoryCategory_Bridges,
-        mgos_sys_config_get_shelly_name(), &AccessoryIdentifyCB, &s_server));
+        mgos_sys_config_get_shelly_name(), GetIdentifyCB(), &s_server));
     pri_acc->AddHAPService(&mgos_hap_accessory_information_service);
     pri_acc->AddHAPService(&mgos_hap_protocol_information_service);
     pri_acc->AddHAPService(&mgos_hap_pairing_service);
@@ -369,87 +358,21 @@ void StopService() {
   HAPAccessoryServerStop(&s_server);
 }
 
+bool IsServiceRunning() {
+  return (HAPAccessoryServerGetState(&s_server) ==
+          kHAPAccessoryServerState_Running);
+}
+
+bool IsPaired() {
+  return HAPAccessoryServerIsPaired(&s_server);
+}
+
 static void HAPServerStateUpdateCB(HAPAccessoryServerRef *server, void *) {
   HAPAccessoryServerState st = HAPAccessoryServerGetState(server);
   LOG(LL_INFO, ("HAP server state: %d", st));
   if (st == kHAPAccessoryServerState_Idle) {
     // Safe to destroy components now.
     DestroyComponents();
-  }
-}
-
-static void CheckLED(int pin, bool led_act) {
-  if (pin < 0) return;
-  int on_ms = 0, off_ms = 0;
-  static int s_on_ms = 0, s_off_ms = 0;
-  const WifiInfo &wi = GetWifiInfo();
-  const WifiConfig &wc = GetWifiConfig();
-  // Identify sequence requested by controller.
-  if (s_identify_count > 0) {
-    LOG(LL_DEBUG, ("LED: identify (%d)", s_identify_count));
-    on_ms = 100;
-    off_ms = 100;
-    s_identify_count--;
-    goto out;
-  }
-  // If user is currently holding the button, acknowledge it.
-  if (s_btn != nullptr && s_btn->GetState()) {
-    LOG(LL_DEBUG, ("LED: btn"));
-    on_ms = 1;
-    off_ms = 0;
-    goto out;
-  }
-  // Are we connecting to wifi right now?
-  if (wi.sta_connecting) {
-    LOG(LL_DEBUG, ("LED: WiFi"));
-    on_ms = 200;
-    off_ms = 200;
-    goto out;
-  }
-  if (mgos_ota_is_in_progress()) {
-    LOG(LL_DEBUG, ("LED: OTA"));
-    on_ms = 250;
-    off_ms = 250;
-    goto out;
-  }
-  // Indicate WiFi provisioning status.
-  if (wi.ap_running && !(wc.sta.enable || wc.sta1.enable)) {
-    LOG(LL_DEBUG, ("LED: WiFi provisioning"));
-    off_ms = 25;
-    on_ms = 875;
-    goto out;
-  }
-  // HAP server status (if WiFi is provisioned).
-  if (HAPAccessoryServerGetState(&s_server) !=
-      kHAPAccessoryServerState_Running) {
-    off_ms = 875;
-    on_ms = 25;
-    LOG(LL_DEBUG, ("LED: HAP provisioning"));
-  } else if (!HAPAccessoryServerIsPaired(&s_server)) {
-    LOG(LL_DEBUG, ("LED: Pairing"));
-    off_ms = 500;
-    on_ms = 500;
-  }
-out:
-  if (on_ms > 0) {
-    if (on_ms > 1) {
-      mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
-      if (on_ms != s_on_ms || off_ms != s_off_ms) {
-        if (led_act) {
-          mgos_gpio_blink(pin, on_ms, off_ms);
-        } else {
-          mgos_gpio_blink(pin, off_ms, on_ms);
-        }
-        s_on_ms = on_ms;
-        s_off_ms = off_ms;
-      }
-    } else {
-      s_on_ms = s_off_ms = 0;
-      mgos_gpio_blink(pin, 0, 0);
-      mgos_gpio_setup_output(pin, led_act);
-    }
-  } else {
-    mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_INPUT);
   }
 }
 
@@ -469,10 +392,6 @@ static void CheckOverheat(int sys_temp) {
       s_service_flags &= ~SHELLY_SERVICE_FLAG_OVERHEAT;
     }
   }
-}
-
-void SetSysLEDEnable(bool enable) {
-  s_led_gpio = (enable ? LED_GPIO : -1);
 }
 
 StatusOr<int> GetSystemTemperature() {
@@ -512,7 +431,7 @@ static void StatusTimerCB(void *arg) {
   }
   /* If provisioning information has been provided, start the server. */
   StartService(true /* quiet */);
-  CheckLED(s_led_gpio, LED_ON);
+  CheckSysLED();
   if (sys_temp.ok()) {
     CheckOverheat(sys_temp.ValueOrDie());
   }
@@ -708,63 +627,6 @@ void RestartService() {
   // Server will be restarted by status timer (unless inhibited).
 }
 
-static void ButtonHandler(Input::Event ev, bool cur_state) {
-  switch (ev) {
-    case Input::Event::kChange: {
-      CheckLED(s_led_gpio, LED_ON);
-      break;
-    }
-    // Single press will toggle the switch, or cycle if there are two.
-    case Input::Event::kSingle: {
-      uint32_t n = 0, i = 0, state = 0;
-      for (auto &c : g_comps) {
-        if (c->type() != Component::Type::kSwitch) continue;
-        const ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
-        if (sw->GetOutputState()) state |= (1 << n);
-        n++;
-      }
-      if (n == 0) break;
-      state++;
-      for (auto &c : g_comps) {
-        if (c->type() != Component::Type::kSwitch) continue;
-        ShellySwitch *sw = static_cast<ShellySwitch *>(c.get());
-        bool new_state = (state & (1 << i));
-        sw->SetOutputState(new_state, "btn");
-        i++;
-      }
-      break;
-    }
-    case Input::Event::kLong: {
-      HandleInputResetSequence(s_btn, s_led_gpio, Input::Event::kReset,
-                               cur_state);
-      break;
-    }
-    default:
-      break;
-  }
-}
-
-static void SetupButton(int pin, bool on_value) {
-  if (pin < 0) return;
-  s_btn =
-#if BTN_NOISY
-      new NoisyInputPin(
-#else
-      new InputPin(
-#endif
-          0,
-          InputPin::Config{
-              .pin = pin,
-              .on_value = on_value,
-              .pull = (on_value ? MGOS_GPIO_PULL_DOWN : MGOS_GPIO_PULL_UP),
-              .enable_reset = false,
-              .short_press_duration_ms = InputPin::kDefaultShortPressDurationMs,
-              .long_press_duration_ms = 10000,
-          });
-  s_btn->Init();
-  s_btn->AddHandler(ButtonHandler);
-}
-
 extern "C" bool mgos_ota_merge_fs_should_copy_file(const char *old_fs_path,
                                                    const char *new_fs_path,
                                                    const char *file_name) {
@@ -835,6 +697,14 @@ static void HTTPHandler(struct mg_connection *nc, int ev, void *ev_data,
   (void) user_data;
 }
 
+mgos::hap::Accessory::IdentifyCB GetIdentifyCB() {
+  return s_identify_cb;
+}
+
+void SetIdentifyCB(mgos::hap::Accessory::IdentifyCB cb) {
+  s_identify_cb = cb;
+}
+
 void ResetRebootCounter(void *arg UNUSED_ARG) {
   LOG(LL_INFO, ("=== ResetRebootCounter"));
   mgos_sys_config_set_shelly_reboot_counter(0);
@@ -842,6 +712,20 @@ void ResetRebootCounter(void *arg UNUSED_ARG) {
 }
 
 void InitApp() {
+  struct mg_http_endpoint_opts opts = {};
+  mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
+  // Support /ota?url=... updates a-la stock.
+  mgos_register_http_endpoint_opt("/ota", HTTPHandler, opts);
+
+  if (IsFailsafeMode()) {
+    LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
+    RPCServiceInit(nullptr, nullptr, nullptr);
+    //    if (LED_GPIO >= 0) {
+    //      mgos_gpio_setup_output(LED_GPIO, LED_ON);
+    //    }
+    return;
+  }
+
   int reboot_counter = mgos_sys_config_get_shelly_reboot_counter() + 1;
   LOG(LL_INFO, ("=== reboot_counter %d", reboot_counter));
   if (reboot_counter >= 5) {
@@ -852,20 +736,6 @@ void InitApp() {
   mgos_sys_config_set_shelly_reboot_counter(reboot_counter);
   mgos_sys_config_save(&mgos_sys_config, false /* try_once */, nullptr);
   mgos_set_timer(10000, 0, ResetRebootCounter, nullptr);
-
-  struct mg_http_endpoint_opts opts = {};
-  mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
-  // Support /ota?url=... updates a-la stock.
-  mgos_register_http_endpoint_opt("/ota", HTTPHandler, opts);
-
-  if (IsFailsafeMode()) {
-    LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
-    RPCServiceInit(nullptr, nullptr, nullptr);
-    if (s_led_gpio >= 0) {
-      mgos_gpio_setup_output(LED_GPIO, LED_ON);
-    }
-    return;
-  }
 
   // Key-value store.
   static const HAPPlatformKeyValueStoreOptions kvs_opts = {
@@ -992,8 +862,6 @@ void InitApp() {
 
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
-
-  SetupButton(BTN_GPIO, BTN_DOWN);
 
   InitWifiConfigManager();
 

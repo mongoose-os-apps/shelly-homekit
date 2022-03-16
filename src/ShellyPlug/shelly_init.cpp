@@ -19,13 +19,14 @@
 
 #include "shelly_main.hpp"
 #include "shelly_pm_bl0937.hpp"
+#include "shelly_sys_led_btn.hpp"
 
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
-                       std::vector<std::unique_ptr<PowerMeter>> *pms,
-                       std::unique_ptr<TempSensor> *sys_temp) {
+                       std::vector<std::unique_ptr<PowerMeter>> *pms UNUSED_ARG,
+                       std::unique_ptr<TempSensor> *sys_temp UNUSED_ARG) {
   outputs->emplace_back(new OutputPin(1, 4, 1));
   mgos_gpio_setup_output(14, 0);  // Red
   mgos_gpio_setup_output(16, 0);  // Blue
@@ -39,8 +40,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     const std::string &s = st.ToString();
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
-  (void) sys_temp;
-  (void) inputs;
+
+  InitSysLED(LED_GPIO, LED_ON);
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

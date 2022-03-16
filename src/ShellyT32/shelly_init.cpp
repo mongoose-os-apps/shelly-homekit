@@ -21,19 +21,22 @@
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_pm.hpp"
+#include "shelly_sys_led_btn.hpp"
 
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
-                       std::unique_ptr<TempSensor> *sys_temp) {
+                       std::unique_ptr<TempSensor> *sys_temp UNUSED_ARG) {
   outputs->emplace_back(new OutputPin(1, 32, 1));
   auto *in = new InputPin(1, 34, 0, MGOS_GPIO_PULL_UP, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 32, _1, _2));
   in->Init();
   inputs->emplace_back(in);
-  (void) sys_temp;
+
+  InitSysLED(LED_GPIO, LED_ON);
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

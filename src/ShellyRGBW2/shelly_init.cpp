@@ -21,14 +21,15 @@
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_rgbw_controller.hpp"
+#include "shelly_sys_led_btn.hpp"
 #include "shelly_white_controller.hpp"
 
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
-                       std::vector<std::unique_ptr<PowerMeter>> *pms,
-                       std::unique_ptr<TempSensor> *sys_temp) {
+                       std::vector<std::unique_ptr<PowerMeter>> *pms UNUSED_ARG,
+                       std::unique_ptr<TempSensor> *sys_temp UNUSED_ARG) {
   outputs->emplace_back(new OutputPin(1, 12, 1));  // R / CW0
   outputs->emplace_back(new OutputPin(2, 15, 1));  // G / WW0
   outputs->emplace_back(new OutputPin(3, 14, 1));  // B / CW1
@@ -37,8 +38,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 0, _1, _2));
   in->Init();
   inputs->emplace_back(in);
-  (void) sys_temp;
-  (void) pms;
+
+  InitSysLED(LED_GPIO, LED_ON);
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
@@ -139,4 +141,5 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     }
   }
 }
+
 }  // namespace shelly

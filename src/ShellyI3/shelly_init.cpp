@@ -19,6 +19,7 @@
 #include "shelly_hap_stateless_switch.hpp"
 #include "shelly_main.hpp"
 #include "shelly_noisy_input_pin.hpp"
+#include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
@@ -27,7 +28,7 @@ namespace shelly {
 // Instead we run a frequent hardware timer that smoothes things out.
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
-                       std::vector<std::unique_ptr<PowerMeter>> *pms,
+                       std::vector<std::unique_ptr<PowerMeter>> *pms UNUSED_ARG,
                        std::unique_ptr<TempSensor> *sys_temp) {
   auto *in1 = new NoisyInputPin(1, 14, 1, MGOS_GPIO_PULL_NONE, true);
   in1->AddHandler(std::bind(&HandleInputResetSequence, in1, -1, _1, _2));
@@ -44,7 +45,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
 
-  (void) pms;
+  InitSysLED(LED_GPIO, LED_ON);
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

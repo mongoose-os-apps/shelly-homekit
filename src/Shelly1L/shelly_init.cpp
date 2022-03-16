@@ -21,6 +21,7 @@
 #include "shelly_noisy_input_pin.hpp"
 #include "shelly_pm_bl0937.hpp"
 #include "shelly_switch.hpp"
+#include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
 namespace shelly {
@@ -46,6 +47,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   (void) pms;
 #endif
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
+
+  InitSysLED(LED_GPIO, LED_ON);
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

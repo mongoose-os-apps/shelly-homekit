@@ -63,6 +63,8 @@ void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
 
 void StopService();
 void RestartService();
+bool IsServiceRunning();
+bool IsPaired();
 
 bool AllComponentsIdle();
 
@@ -76,9 +78,8 @@ uint8_t GetServiceFlags();
 void SetServiceFlags(uint8_t flags);
 void ClearServiceFlags(uint8_t flags);
 
-HAPError AccessoryIdentifyCB(const HAPAccessoryIdentifyRequest *request);
-
-void SetSysLEDEnable(bool enable);
+mgos::hap::Accessory::IdentifyCB GetIdentifyCB();
+void SetIdentifyCB(mgos::hap::Accessory::IdentifyCB cb);
 
 // Implemented for each model.
 

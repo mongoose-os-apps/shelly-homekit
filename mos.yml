@@ -634,6 +634,42 @@ conds:
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
 
+  - when: build_vars.MODEL == "ShellyPlusI4"
+    apply:
+      name: PlusI4
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 25
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"PlusI4"'
+        MAX_NUM_HAP_SESSIONS: 16
+      config_schema:
+        - ["device.id", "ShellyPlus1-??????"]
+        - ["shelly.name", "ShellyPlus1-??????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
+        - ["in3", "in", {title: "Input 3 settings"}]
+        - ["in3.ssw.name", "Shelly SSW3"]
+        - ["in3.sensor.name", "Shelly S3"]
+        - ["in4", "in", {title: "Input 4 settings"}]
+        - ["in4.ssw.name", "Shelly SSW4"]
+        - ["in4.sensor.name", "Shelly S4"]
+
   - when: build_vars.MODEL == "ShellyRGBW2"
     apply:
       name: rgbw2-color # To allow OTA from stock fw.
@@ -671,42 +707,6 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
-
-  - when: build_vars.MODEL == "ShellyPlusI4"
-    apply:
-      name: PlusI4
-      build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
-        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
-        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
-        ESP_IDF_SDKCONFIG_OPTS: >
-          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
-            CONFIG_FREERTOS_UNICORE=y
-      cdefs:
-        LED_GPIO: 0
-        LED_ON: 0
-        BTN_GPIO: 25
-        BTN_DOWN: 0
-        PRODUCT_HW_REV: '"0.1.6"'
-        STOCK_FW_MODEL: '"PlusI4"'
-        MAX_NUM_HAP_SESSIONS: 16
-      config_schema:
-        - ["device.id", "ShellyPlus1-??????"]
-        - ["shelly.name", "ShellyPlus1-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
-        - ["in1", "in", {title: "Input 1 settings"}]
-        - ["in1.ssw.name", "Shelly SSW1"]
-        - ["in1.sensor.name", "Shelly S1"]
-        - ["in2", "in", {title: "Input 2 settings"}]
-        - ["in2.ssw.name", "Shelly SSW2"]
-        - ["in2.sensor.name", "Shelly S2"]
-        - ["in3", "in", {title: "Input 3 settings"}]
-        - ["in3.ssw.name", "Shelly SSW3"]
-        - ["in3.sensor.name", "Shelly S3"]
-        - ["in4", "in", {title: "Input 4 settings"}]
-        - ["in4.ssw.name", "Shelly SSW4"]
-        - ["in4.sensor.name", "Shelly S4"]
 
   - when: build_vars.MODEL == "ShellyUNI"
     apply:

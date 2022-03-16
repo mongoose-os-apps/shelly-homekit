@@ -267,7 +267,7 @@ void CreateHAPInput(int id, const struct mgos_config_in *cfg,
   if (sin->GetService() != nullptr) {
     std::unique_ptr<mgos::hap::Accessory> acc(new mgos::hap::Accessory(
         sin->GetAIDBase() + id, kHAPAccessoryCategory_BridgedAccessory,
-        sin->name(), &AccessoryIdentifyCB, svr));
+        sin->name(), GetIdentifyCB(), svr));
     acc->AddHAPService(&mgos_hap_accessory_information_service);
     acc->AddService(sin->GetService());
     accs->push_back(std::move(acc));

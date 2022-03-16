@@ -38,6 +38,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 4, _1, _2));
   in->Init();
   inputs->emplace_back(in);
+
+  s_onewire.reset(new Onewire(3, 0));
+  if (s_onewire->DiscoverAll().empty()) {
+    s_onewire.reset();
+  }
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
@@ -64,11 +69,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   // Sensor Discovery
-  std::unique_ptr<Onewire> ow(std::move(s_onewire));
-  if (ow == nullptr) {
-    ow.reset(new Onewire(3, 0));
+  std::vector<std::unique_ptr<TempSensor>> sensors;
+  if (s_onewire != nullptr) {
+    sensors = s_onewire->DiscoverAll();
   }
-  auto sensors = ow->DiscoverAll();
 
   // Single switch with non-detached input and no sensors = only one accessory.
   bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
@@ -88,7 +92,6 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
                                  accs, svr);
     }
-    s_onewire = std::move(ow);
   }
 }
 

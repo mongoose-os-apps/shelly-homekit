@@ -54,7 +54,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
         std::unique_ptr<mgos::hap::Accessory> acc(
             new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
                                      kHAPAccessoryCategory_BridgedAccessory,
-                                     wc_cfg->name, &AccessoryIdentifyCB, svr));
+                                     wc_cfg->name, GetIdentifyCB(), svr));
         acc->AddHAPService(&mgos_hap_accessory_information_service);
         acc->AddService(wc.get());
         accs->push_back(std::move(acc));
