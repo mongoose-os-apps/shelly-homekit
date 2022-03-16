@@ -50,4 +50,7 @@ void ReportClientRequest(const std::string &client_addr) {
 void InitWifiConfigManager() {
 }
 
+void StartWifiConfigManager() {
+}
+
 }  // namespace shelly

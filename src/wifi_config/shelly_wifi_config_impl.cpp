@@ -32,6 +32,7 @@ class WifiConfigManager {
   WifiConfigManager();
   WifiConfigManager(const WifiConfigManager &other) = delete;
   ~WifiConfigManager();
+  void Start();
 
   Status SetConfig(const WifiConfig &cfg);
   WifiConfig GetConfig();
@@ -99,11 +100,14 @@ WifiConfigManager::WifiConfigManager()
         static_cast<WifiConfigManager *>(arg)->WifiEvent(ev, ev_data);
       },
       this);
-  process_timer_.Reset(1000, MGOS_TIMER_REPEAT);
   act_ = &cur_;
 }
 
 WifiConfigManager::~WifiConfigManager() {
+}
+
+void WifiConfigManager::Start() {
+  process_timer_.Reset(1000, MGOS_TIMER_REPEAT | MGOS_TIMER_RUN_NOW);
 }
 
 Status WifiConfigManager::SetConfig(const WifiConfig &cfg) {
@@ -476,6 +480,10 @@ void ReportClientRequest(const std::string &client_addr) {
 
 void InitWifiConfigManager() {
   s_mgr.reset(new WifiConfigManager());
+}
+
+void StartWifiConfigManager() {
+  s_mgr->Start();
 }
 
 }  // namespace shelly

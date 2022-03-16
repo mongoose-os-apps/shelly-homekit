@@ -136,37 +136,6 @@ PowerMeter *FindPM(int id) {
   return FindById(s_pms, id);
 }
 
-static void DoReset(void *arg) {
-  intptr_t out_gpio = (intptr_t) arg;
-  if (out_gpio >= 0) {
-    mgos_gpio_blink(out_gpio, 0, 0);
-  }
-  if (GetIdentifyCB()) {
-    GetIdentifyCB()(nullptr);
-  }
-  LOG(LL_INFO, ("Performing reset"));
-  ResetWifiConfig();
-  mgos_sys_config_set_rpc_acl(nullptr);
-  mgos_sys_config_set_rpc_acl_file(nullptr);
-  mgos_sys_config_set_rpc_auth_file(nullptr);
-  mgos_sys_config_set_http_auth_file(nullptr);
-  if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
-    remove(AUTH_FILE_NAME);
-  }
-  CheckSysLED();
-}
-
-void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
-                              bool cur_state) {
-  if (ev != Input::Event::kReset) return;
-  LOG(LL_INFO, ("%d: Reset sequence detected", in->id()));
-  if (out_gpio >= 0) {
-    mgos_gpio_blink(out_gpio, 100, 100);
-  }
-  mgos_set_timer(600, 0, DoReset, (void *) (intptr_t) out_gpio);
-  (void) cur_state;
-}
-
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_in *in_cfg,
                      std::vector<std::unique_ptr<Component>> *comps,
@@ -705,12 +674,6 @@ void SetIdentifyCB(mgos::hap::Accessory::IdentifyCB cb) {
   s_identify_cb = cb;
 }
 
-void ResetRebootCounter(void *arg UNUSED_ARG) {
-  LOG(LL_INFO, ("=== ResetRebootCounter"));
-  mgos_sys_config_set_shelly_reboot_counter(0);
-  mgos_sys_config_save(&mgos_sys_config, false /* try_once */, nullptr);
-}
-
 void InitApp() {
   struct mg_http_endpoint_opts opts = {};
   mgos_register_http_endpoint_opt("/", HTTPHandler, opts);
@@ -720,22 +683,15 @@ void InitApp() {
   if (IsFailsafeMode()) {
     LOG(LL_INFO, ("== Failsafe mode, not initializing the app"));
     RPCServiceInit(nullptr, nullptr, nullptr);
-    //    if (LED_GPIO >= 0) {
-    //      mgos_gpio_setup_output(LED_GPIO, LED_ON);
-    //    }
+    if (LED_GPIO >= 0) {
+      mgos_gpio_setup_output(LED_GPIO, LED_ON);
+    }
     return;
   }
 
-  int reboot_counter = mgos_sys_config_get_shelly_reboot_counter() + 1;
-  LOG(LL_INFO, ("=== reboot_counter %d", reboot_counter));
-  if (reboot_counter >= 5) {
-    LOG(LL_INFO, ("=== DoRebootReset"));
-    ResetRebootCounter(nullptr);
-    DoReset(nullptr);
-  }
-  mgos_sys_config_set_shelly_reboot_counter(reboot_counter);
-  mgos_sys_config_save(&mgos_sys_config, false /* try_once */, nullptr);
-  mgos_set_timer(10000, 0, ResetRebootCounter, nullptr);
+  InitWifiConfigManager();
+
+  CheckRebootCounter();
 
   // Key-value store.
   static const HAPPlatformKeyValueStoreOptions kvs_opts = {
@@ -863,7 +819,7 @@ void InitApp() {
   mgos_event_add_handler(MGOS_EVENT_REBOOT, RebootCB, nullptr);
   mgos_event_add_handler(MGOS_EVENT_REBOOT_AFTER, RebootCB, nullptr);
 
-  InitWifiConfigManager();
+  StartWifiConfigManager();
 
   OTAInit(&s_server);
 

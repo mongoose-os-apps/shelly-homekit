@@ -75,4 +75,6 @@ std::string ScreenPassword(const std::string &pw);
 
 void InitWifiConfigManager();
 
+void StartWifiConfigManager();
+
 }  // namespace shelly

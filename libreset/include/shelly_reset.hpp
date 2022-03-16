@@ -17,7 +17,12 @@
 
 #pragma once
 
+#include "shelly_input.hpp"
+
 namespace shelly {
+
+// Reset device WiFi and auth settings.
+void ResetDevice(int out_gpio);
 
 // Wipe all device configuration, including WiFi.
 bool WipeDevice();
@@ -26,10 +31,17 @@ bool WipeDevice();
 // Preserves WiFi STA config.
 void WipeDeviceRevertToStock();
 
+// Handler for input reset sequence.
+void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
+                              bool cur_state);
+
 bool IsSoftReboot();
 
 bool IsFailsafeMode();
 
 void SanitizeSysConfig();
+
+// Check if device is in a reboot loop (deliberate or not) and perform reset.
+void CheckRebootCounter();
 
 }  // namespace shelly

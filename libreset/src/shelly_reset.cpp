@@ -21,6 +21,9 @@
 #include "mgos_file_logger.h"
 #include "mgos_vfs.h"
 
+#include "shelly_sys_led_btn.hpp"
+#include "shelly_wifi_config.hpp"
+
 #if CS_PLATFORM == CS_P_ESP8266
 extern "C" {
 #include "user_interface.h"
@@ -169,6 +172,62 @@ bool IsSoftReboot() {
 #else
   return false;
 #endif
+}
+
+void ResetDevice(int out_gpio) {
+  if (out_gpio >= 0) {
+    mgos_gpio_blink(out_gpio, 0, 0);
+  }
+  LOG(LL_INFO, ("Performing reset"));
+  ResetWifiConfig();
+  mgos_sys_config_set_rpc_acl(nullptr);
+  mgos_sys_config_set_rpc_acl_file(nullptr);
+  mgos_sys_config_set_rpc_auth_file(nullptr);
+  mgos_sys_config_set_http_auth_file(nullptr);
+  if (mgos_sys_config_save(&mgos_sys_config, false, nullptr)) {
+    remove(AUTH_FILE_NAME);
+  }
+  CheckSysLED();
+  mgos_system_restart_after(2000);
+  // Execute on the next loop because components may not have been created yet.
+  mgos::InvokeCB([]() {
+    auto icb = GetIdentifyCB();
+    if (icb) icb(nullptr);
+  });
+}  // namespace shelly
+
+void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
+                              bool cur_state) {
+  if (ev != Input::Event::kReset) return;
+  LOG(LL_INFO, ("%d: Reset sequence detected", in->id()));
+  if (out_gpio >= 0) {
+    mgos_gpio_blink(out_gpio, 100, 100);
+  }
+  mgos_set_timer(
+      600, 0, [](void *arg) { ResetDevice((intptr_t) arg); },
+      (void *) (intptr_t) out_gpio);
+  (void) cur_state;
+}
+
+static void SetRebootCounter(void *arg) {
+  int value = (intptr_t) arg;
+  LOG(LL_DEBUG, ("SetRebootCounter %d", value));
+  mgos_sys_config_set_shelly_reboot_counter(value);
+  mgos_sys_config_save(&mgos_sys_config, false /* try_once */, nullptr);
+}
+
+void CheckRebootCounter() {
+  int reboot_counter = mgos_sys_config_get_shelly_reboot_counter();
+  if (reboot_counter > 0) {
+    LOG(LL_INFO, ("Reboot counter %d", reboot_counter));
+  }
+  if (reboot_counter >= 5) {
+    SetRebootCounter((void *) 0);
+    ResetDevice(-1);
+    return;
+  }
+  SetRebootCounter((void *) (intptr_t) (reboot_counter + 1));
+  mgos_set_timer(10000, 0, SetRebootCounter, (void *) 0);
 }
 
 extern "C" bool mgos_libreset_init(void) {
