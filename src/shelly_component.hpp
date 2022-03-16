@@ -62,6 +62,9 @@ class Component {
                            bool *restart_required) = 0;
   // Set state from UI.
   virtual Status SetState(const std::string &state_json) = 0;
+  // Do something to identify this component to the user.
+  // Default is to print a log message, which is to say - not much.
+  virtual void Identify();
 
   // Is there any activity going on?
   // If true is returned, it means it's ok to destroy the component.

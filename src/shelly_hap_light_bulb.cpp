@@ -397,6 +397,11 @@ Status LightBulb::SetState(const std::string &state_json) {
   return Status::OK();
 }
 
+void LightBulb::Identify() {
+  LOG(LL_INFO, ("=== IDENTIFY ==="));
+  // TODO: Set brightness to max and blink 5 times at 100 ms.
+}
+
 void LightBulb::ResetAutoOff() {
   auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
 }

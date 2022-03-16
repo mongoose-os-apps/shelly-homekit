@@ -29,6 +29,10 @@ int Component::id() const {
   return id_;
 }
 
+void Component::Identify() {
+  LOG(LL_INFO, ("== Identify %d %d %s", id(), (int) type(), name().c_str()));
+}
+
 bool Component::IsIdle() {
   return true;
 }

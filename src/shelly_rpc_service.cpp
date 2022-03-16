@@ -332,6 +332,29 @@ static void SetStateHandler(struct mg_rpc_request_info *ri, void *cb_arg,
   (void) fi;
 }
 
+static void IdentifyHandler(struct mg_rpc_request_info *ri,
+                            void *cb_arg UNUSED_ARG,
+                            struct mg_rpc_frame_info *fi UNUSED_ARG,
+                            struct mg_str args) {
+  int id = -1;
+  int type = -1;
+
+  json_scanf(args.p, args.len, ri->args_fmt, &id, &type);
+
+  Status st = Status::OK();
+  bool found = false;
+  for (auto &c : g_comps) {
+    if (c->id() != id || (int) c->type() != type) continue;
+    c->Identify();
+    found = true;
+    break;
+  }
+  if (!found) {
+    st = mgos::Errorf(STATUS_INVALID_ARGUMENT, "component not found");
+  }
+  SendStatusResp(ri, st);
+}
+
 static void InjectInputEventHandler(struct mg_rpc_request_info *ri,
                                     void *cb_arg, struct mg_rpc_frame_info *fi,
                                     struct mg_str args) {
@@ -556,6 +579,8 @@ bool RPCServiceInit(HAPAccessoryServerRef *server,
                        SetConfigHandler, nullptr);
     mg_rpc_add_handler(c, "Shelly.SetState", "{id: %d, type: %d, state: %T}",
                        SetStateHandler, nullptr);
+    mg_rpc_add_handler(c, "Shelly.Identify", "{id: %d, type: %d}",
+                       IdentifyHandler, nullptr);
     mg_rpc_add_handler(c, "Shelly.InjectInputEvent", "{id: %d, event: %d}",
                        InjectInputEventHandler, nullptr);
     mg_rpc_add_handler(c, "Shelly.Abort", "", AbortHandler, nullptr);

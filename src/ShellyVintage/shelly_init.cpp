@@ -53,5 +53,13 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   pri_acc->AddService(hap_light.get());
 
   comps->push_back(std::move(hap_light));
+
+  SetIdentifyCB([](const HAPAccessoryIdentifyRequest *request UNUSED_ARG) {
+    if (!g_comps.empty()) {
+      g_comps[0]->Identify();
+    }
+    return kHAPError_None;
+  });
 }
+
 }  // namespace shelly

@@ -41,15 +41,16 @@ class LightBulb : public Component, public mgos::hap::Service {
   virtual ~LightBulb();
 
   // Component interface impl.
-  Type type() const override;
-  std::string name() const override;
-  Status Init() override;
+  Type type() const final;
+  std::string name() const final;
+  Status Init() final;
 
-  StatusOr<std::string> GetInfo() const override;
-  StatusOr<std::string> GetInfoJSON() const override;
+  StatusOr<std::string> GetInfo() const final;
+  StatusOr<std::string> GetInfoJSON() const final;
   Status SetConfig(const std::string &config_json,
-                   bool *restart_required) override;
-  Status SetState(const std::string &state_json) override;
+                   bool *restart_required) final;
+  Status SetState(const std::string &state_json) final;
+  void Identify() final;
 
  protected:
   void InputEventHandler(Input::Event ev, bool state);
