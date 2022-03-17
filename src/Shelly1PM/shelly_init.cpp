@@ -17,6 +17,7 @@
 
 #include "shelly_dht_sensor.hpp"
 #include "shelly_hap_garage_door_opener.hpp"
+#include "shelly_hap_input.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_pm_bl0937.hpp"
@@ -53,10 +54,19 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   }
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
 
-  s_onewire.reset(new Onewire(3, 0));
-  if (s_onewire->DiscoverAll().empty()) {
+  bool addon_detected = DetectAddon(3, 0);
+
+  if (addon_detected) {
+    s_onewire.reset(new Onewire(3, 0));
+    if (s_onewire->DiscoverAll().empty()) {
+      s_onewire.reset();
+
+      auto *in2 = new InputPin(2, 3, 0, MGOS_GPIO_PULL_NONE, false);
+      in2->Init();
+      inputs->emplace_back(in2);
+    }
+  } else {
     // Sys LED shares the same pin.
-    s_onewire.reset();
     InitSysLED(LED_GPIO, LED_ON);
   }
   InitSysBtn(BTN_GPIO, BTN_DOWN);
@@ -68,9 +78,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   if (mgos_sys_config_get_shelly_mode() == 2) {
     // Garage door opener mode.
     auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
-    std::unique_ptr<hap::GarageDoorOpener> gdo(
-        new hap::GarageDoorOpener(1, FindInput(1), nullptr /* in_open */,
-                                  FindOutput(1), FindOutput(1), gdo_cfg));
+    std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
+        1, FindInput(1), FindInput(2), FindOutput(1), FindOutput(1), gdo_cfg));
     if (gdo == nullptr) return;
     auto st = gdo->Init();
     if (!st.ok()) {
@@ -100,9 +109,13 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       dht_found = true;
     }
   }
+
+  bool ext_sensor_switch = (FindInput(2) != nullptr);
+
   // Single switch with non-detached input and no sensors = only one accessory.
   bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
-                                         (int) InMode::kDetached));
+                                         (int) InMode::kDetached)) &&
+                    !ext_sensor_switch;
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
 
@@ -123,6 +136,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
         CreateHAPHumiditySensor(i + 2, hum, ts_cfg, comps, accs, svr);
       }
     }
+  } else if (ext_sensor_switch) {
+    hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
   }
 }
 
