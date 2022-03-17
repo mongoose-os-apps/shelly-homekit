@@ -85,7 +85,6 @@ optional arguments:
 import argparse
 import atexit
 import datetime
-from distutils.log import debug
 import functools
 import http.server
 import ipaddress
