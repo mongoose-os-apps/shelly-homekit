@@ -231,9 +231,12 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
-        - ["gdo1.open_sensor_mode", -1]
+        - ["gdo1.open_sensor_mode", 2]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
@@ -315,9 +318,12 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
-        - ["gdo1.open_sensor_mode", -1]
+        - ["gdo1.open_sensor_mode", 2]
         - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.79942025]  # (16 + 1010 + 1935) / (8.53 + 561 + 1076)
         # Only for backward compatibility (config <= v3).
@@ -592,7 +598,7 @@ conds:
         - ["in1.sensor.name", "Shelly S1"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
-        - ["gdo1.open_sensor_mode", -1]
+        - ["gdo1.open_sensor_mode", 2]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
@@ -839,6 +845,9 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "ShellyU SSW1"]
         - ["in1.sensor.name", "ShellyU S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "ShellyU SSW2"]
+        - ["in2.sensor.name", "ShellyU S2"]
 
   - when: build_vars.MODEL == "ShellyUDuo"
     apply:

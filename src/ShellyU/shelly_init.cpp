@@ -21,6 +21,7 @@
 #include "mgos_rpc.h"
 #include "mgos_sys_config.h"
 
+#include "shelly_hap_input.hpp"
 #include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
@@ -33,9 +34,13 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  Input *in = new InputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true);
-  in->Init();
-  inputs->emplace_back(in);
+  auto *in1 = new InputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true);
+  in1->Init();
+  inputs->emplace_back(in1);
+
+  auto *in2 = new InputPin(2, 3, 0, MGOS_GPIO_PULL_NONE, false);
+  in2->Init();
+  inputs->emplace_back(in2);
 
   outputs->emplace_back(new OutputPin(1, 34, 1));
 
@@ -53,15 +58,20 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                   comps, accs, svr, false /* to_pri_acc */,
                   nullptr /* led_out */);
 
-  // Sensors
-  for (int i = 0; i < 2; i++) {
-    std::unique_ptr<TempSensor> temp(new MockTempSensor(25.125 + i));
-    auto *ts_cfg = (i == 0)
-                       ? (struct mgos_config_ts *) mgos_sys_config_get_ts1()
-                       : (struct mgos_config_ts *) mgos_sys_config_get_ts2();
+  bool ext_switch_detected = false;  // can be set for testing purposes
 
-    CreateHAPTemperatureSensor(i + 1, std::move(temp), ts_cfg, comps, accs,
-                               svr);
+  if (ext_switch_detected) {
+    hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
+  } else {
+    for (int i = 0; i < 2; i++) {
+      std::unique_ptr<TempSensor> temp(new MockTempSensor(25.125 + i));
+      auto *ts_cfg = (i == 0)
+                         ? (struct mgos_config_ts *) mgos_sys_config_get_ts1()
+                         : (struct mgos_config_ts *) mgos_sys_config_get_ts2();
+
+      CreateHAPTemperatureSensor(i + 1, std::move(temp), ts_cfg, comps, accs,
+                                 svr);
+    }
   }
 }
 

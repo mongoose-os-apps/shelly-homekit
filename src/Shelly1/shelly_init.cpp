@@ -18,6 +18,7 @@
 #include "mgos_hap.h"
 
 #include "shelly_hap_garage_door_opener.hpp"
+#include "shelly_hap_input.hpp"
 #include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
@@ -34,26 +35,34 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms UNUSED_ARG,
                        std::unique_ptr<TempSensor> *sys_temp UNUSED_ARG) {
   outputs->emplace_back(new OutputPin(1, 4, 1));
-  auto *in = new InputPin(1, 5, 1, MGOS_GPIO_PULL_NONE, true);
-  in->AddHandler(std::bind(&HandleInputResetSequence, in, 4, _1, _2));
-  in->Init();
-  inputs->emplace_back(in);
+  auto *in1 = new InputPin(1, 5, 1, MGOS_GPIO_PULL_NONE, true);
+  in1->AddHandler(std::bind(&HandleInputResetSequence, in1, 4, _1, _2));
+  in1->Init();
+  inputs->emplace_back(in1);
 
-  s_onewire.reset(new Onewire(3, 0));
-  if (s_onewire->DiscoverAll().empty()) {
-    s_onewire.reset();
+  bool addon_detected = DetectAddon(3, 0);
+
+  if (addon_detected) {
+    s_onewire.reset(new Onewire(3, 0));
+    if (s_onewire->DiscoverAll().empty()) {
+      s_onewire.reset();
+
+      // No sensor detected, we assume we have a switch attached
+      auto *in2 = new InputPin(2, 3, 0, MGOS_GPIO_PULL_NONE, false);
+      in2->Init();
+      inputs->emplace_back(in2);
+    }
   }
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  // Garage door opener mode.
-  if (mgos_sys_config_get_shelly_mode() == 2) {
+  if (mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor) {
     auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
-    std::unique_ptr<hap::GarageDoorOpener> gdo(
-        new hap::GarageDoorOpener(1, FindInput(1), nullptr /* in_open */,
-                                  FindOutput(1), FindOutput(1), gdo_cfg));
+
+    std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
+        1, FindInput(1), FindInput(2), FindOutput(1), FindOutput(1), gdo_cfg));
     if (gdo == nullptr) return;
     auto st = gdo->Init();
     if (!st.ok()) {
@@ -74,9 +83,12 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     sensors = s_onewire->DiscoverAll();
   }
 
+  bool ext_sensor_switch = (FindInput(2) != nullptr);
+
   // Single switch with non-detached input and no sensors = only one accessory.
   bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
-                                         (int) InMode::kDetached));
+                                         (int) InMode::kDetached)) &&
+                    !ext_sensor_switch;
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
 
@@ -92,6 +104,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
                                  accs, svr);
     }
+  } else if (ext_sensor_switch) {
+    hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
   }
 }
 
