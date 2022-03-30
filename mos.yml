@@ -654,9 +654,9 @@ conds:
         STOCK_FW_MODEL: '"PlusI4"'
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
-        - ["device.id", "ShellyPlus1-??????"]
-        - ["shelly.name", "ShellyPlus1-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
+        - ["device.id", "ShellyPlusI4-??????"]
+        - ["shelly.name", "ShellyPlusI4-??????"]
+        - ["wifi.ap.ssid", "ShellyPlusI4-????????????"]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
