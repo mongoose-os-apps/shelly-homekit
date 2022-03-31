@@ -283,11 +283,20 @@ input:checked + .slider:before {
 }
 
 #qrcode_container {
-  width: 160px;
-  height: 160px;
+  color: #000000;
+  width: 240px;
+  height: 240px;
   margin-top: 15px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.qrcode_text {
+  fill: #000000;
+  font-family: Arial, sans-serif; 
+  font-size: 54px;
+  font-weight: bold;
+  text-anchor: end;
 }
 
 #hap_setup_code {
@@ -299,16 +308,16 @@ input:checked + .slider:before {
   flex-direction: column;
   align-items: left;
 }
+
 .tab {
   cursor: pointer;
-  #margin: 0px 2px;
   padding: 10px 20px;
   display: inline-block;
   border-width: 1px;
   border-radius: 10px 10px 0 0;
   border-color: #0071e3;
-  #box-shadow: 0 0.5rem 0.8rem #00000080;
 }
+
 .panels{
   padding-left: 1em;
   padding-right: 1em;
@@ -318,26 +327,32 @@ input:checked + .slider:before {
   border-bottom: 1px solid #0071e3;
   border-top: 1px solid #0071e3;
 }
+
 .panel{
   display: none;
   animation: fadein .5s;
 }
+
 @keyframes fadein {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
 .tab_radio {
   display: none;
 }
+
 #one:checked ~ .panels #panel1,
 #two:checked ~ .panels #panel2,
 #three:checked ~ .panels #panel3 {
   display: block;
 }
+
 #two:checked ~ .panels,
 #three:checked ~ .panels {
   border-top-left-radius: 10px;
 }
+
 #one:checked ~ .tabs #tab1,
 #two:checked ~ .tabs #tab2,
 #three:checked ~ .tabs #tab3{

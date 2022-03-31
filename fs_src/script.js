@@ -83,11 +83,11 @@ function checkName(name) {
   return !!name.match(/^[a-z0-9\-]{1,63}$/i)
 }
 
-el("sys_save_btn").onclick = function() {
+el("sys_save_btn").onclick = function () {
   if (!checkName(el("sys_name").value)) {
     alert(
-        "Name must be between 1 and 63 characters " +
-        "and consist of letters, numbers or dashes ('-')");
+      "Name must be between 1 and 63 characters " +
+      "and consist of letters, numbers or dashes ('-')");
     return;
   }
   let data = {
@@ -99,29 +99,29 @@ el("sys_save_btn").onclick = function() {
   el("sys_save_spinner").className = "spin";
   pauseAutoRefresh = true;
   callDevice("Shelly.SetConfig", data)
-      .then(function() {
-        setTimeout(() => {
-          el("sys_save_spinner").className = "";
-          pauseAutoRefresh = false;
-          resetLastSetValue();
-          refreshUI();
-        }, 1300);
-      })
-      .catch(function(err) {
+    .then(function () {
+      setTimeout(() => {
         el("sys_save_spinner").className = "";
-        if (err.message) err = err.message;
         pauseAutoRefresh = false;
-        alert(err);
-      });
+        resetLastSetValue();
+        refreshUI();
+      }, 1300);
+    })
+    .catch(function (err) {
+      el("sys_save_spinner").className = "";
+      if (err.message) err = err.message;
+      pauseAutoRefresh = false;
+      alert(err);
+    });
 };
 
-el("hap_setup_btn").onclick = function() {
+el("hap_setup_btn").onclick = function () {
   el("hap_setup_spinner").className = "spin";
   // Generate a code from device ID, wifi network name and password.
   // This way it remains stable but cannot be easily guessed from device ID
   // alone.
   let input = lastInfo.device_id + (lastInfo.wifi_ssid || "") +
-      (lastInfo.wifi_pass_h || "");
+    (lastInfo.wifi_pass_h || "");
   let seed = sha256(input).toLowerCase();
   let code = "", id = "";
   for (let i = 0; i < 8; i++) {
@@ -133,55 +133,57 @@ el("hap_setup_btn").onclick = function() {
     id += "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(si);
   }
   console.log(input, seed, code, id);
-  callDevice("HAP.Setup", {"code": code, "id": id})
-      .then(function(info) {
-        console.log(info);
-        if (!info) return;
-        el("hap_setup_code").innerText = info.code;
-        el("qrcode").innerText = "";
-        new QRCode(el("qrcode"), {
-          text: info.url,
-          width: 160,
-          height: 160,
-          colorDark: "black",
-          colorLight: "white",
-          correctLevel: QRCode.CorrectLevel.Q,
-        });
-        el("hap_setup_info").style.display = "block";
-        resetLastSetValue();
-        refreshUI();
-      })
-      .catch(function(err) {
-        if (err.message) err = err.message;
-        alert(err);
-      })
-      .finally(function() {
-        el("hap_setup_spinner").className = "";
+  callDevice("HAP.Setup", { "code": code, "id": id })
+    .then(function (info) {
+      console.log(info);
+      if (!info) return;
+      el("hap_setup_code").innerText = info.code;
+      el("qrcode_text_1").textContent = info.code.replace(/-/g, "").substring(0, 4);
+      el("qrcode_text_2").textContent = info.code.replace(/-/g, "").substring(4);
+      el("qrcode").innerText = "";
+      new QRCode(el("qrcode"), {
+        text: info.url,
+        width: 160,
+        height: 160,
+        colorDark: "black",
+        colorLight: "white",
+        correctLevel: QRCode.CorrectLevel.Q,
       });
+      el("hap_setup_info").style.display = "block";
+      resetLastSetValue();
+      refreshUI();
+    })
+    .catch(function (err) {
+      if (err.message) err = err.message;
+      alert(err);
+    })
+    .finally(function () {
+      el("hap_setup_spinner").className = "";
+    });
 };
 
-el("hap_reset_btn").onclick = function() {
+el("hap_reset_btn").onclick = function () {
   if (!confirm(
-          "This will erase all pairings and clear setup code. " +
-          "Are you sure?")) {
+    "This will erase all pairings and clear setup code. " +
+    "Are you sure?")) {
     return;
   }
 
   el("hap_reset_spinner").className = "spin";
   el("hap_setup_info").style.display = "none";
-  callDevice("HAP.Reset", {"reset_server": true, "reset_code": true})
-      .then(function() {
-        el("hap_reset_spinner").className = "";
-        resetLastSetValue();
-        refreshUI();
-      })
-      .catch(function(err) {
-        if (err.message) err = err.message;
-        alert(err);
-      });
+  callDevice("HAP.Reset", { "reset_server": true, "reset_code": true })
+    .then(function () {
+      el("hap_reset_spinner").className = "";
+      resetLastSetValue();
+      refreshUI();
+    })
+    .catch(function (err) {
+      if (err.message) err = err.message;
+      alert(err);
+    });
 };
 
-el("fw_upload_btn").onclick = function() {
+el("fw_upload_btn").onclick = function () {
   let ff = el("fw_select_file").files;
   if (ff.length == 0) {
     alert("No files selected");
@@ -191,7 +193,7 @@ el("fw_upload_btn").onclick = function() {
   return false;
 };
 
-el("wifi_save_btn").onclick = function() {
+el("wifi_save_btn").onclick = function () {
   el("wifi_spinner").className = "spin";
   let sta_static = el("wifi_ip_en").checked;
   let sta1_static = el("wifi1_ip_en").checked;
@@ -225,18 +227,18 @@ el("wifi_save_btn").onclick = function() {
     data.ap.pass = el("wifi_ap_pass").value;
   }
   callDevice("Shelly.SetWifiConfig", data)
-      .then(function(q) {
-        el("wifi_conn_rssi_container").style.display = "none";
-        el("wifi_conn_ip_container").style.display = "none";
-        resetLastSetValue();
-        refreshUI();
-      })
-      .catch(function(err) {
-        el("wifi_spinner").className = "";
-        if (err.message) err = err.message;
-        alert(err);
-        console.log(err);
-      });
+    .then(function (q) {
+      el("wifi_conn_rssi_container").style.display = "none";
+      el("wifi_conn_ip_container").style.display = "none";
+      resetLastSetValue();
+      refreshUI();
+    })
+    .catch(function (err) {
+      el("wifi_spinner").className = "";
+      if (err.message) err = err.message;
+      alert(err);
+      console.log(err);
+    });
 };
 
 function setComponentConfig(c, cfg, spinner) {
@@ -248,20 +250,20 @@ function setComponentConfig(c, cfg, spinner) {
   };
   pauseAutoRefresh = true;
   callDevice("Shelly.SetConfig", data)
-      .then(function() {
-        setTimeout(() => {
-          if (spinner) spinner.className = "";
-          pauseAutoRefresh = false;
-          resetLastSetValue();
-          refreshUI();
-        }, 1300);
-      })
-      .catch(function(err) {
+    .then(function () {
+      setTimeout(() => {
         if (spinner) spinner.className = "";
-        if (err.message) err = err.message;
-        alert(err);
         pauseAutoRefresh = false;
-      });
+        resetLastSetValue();
+        refreshUI();
+      }, 1300);
+    })
+    .catch(function (err) {
+      if (spinner) spinner.className = "";
+      if (err.message) err = err.message;
+      alert(err);
+      pauseAutoRefresh = false;
+    });
 }
 
 function setComponentState(c, state, spinner) {
@@ -272,16 +274,16 @@ function setComponentState(c, state, spinner) {
     state: state,
   };
   callDevice("Shelly.SetState", data)
-      .then(function() {
-        if (spinner) spinner.className = "";
-        resetLastSetValue();
-        refreshUI();
-      })
-      .catch(function(err) {
-        if (spinner) spinner.className = "";
-        if (err.message) err = err.message;
-        alert(err);
-      });
+    .then(function () {
+      if (spinner) spinner.className = "";
+      resetLastSetValue();
+      refreshUI();
+    })
+    .catch(function (err) {
+      if (spinner) spinner.className = "";
+      if (err.message) err = err.message;
+      alert(err);
+    });
 }
 
 function autoOffDelayValid(value) {
@@ -292,15 +294,15 @@ function autoOffDelayValid(value) {
 function dateStringToSeconds(dateString) {
   if (dateString == "") return 0;
 
-  let {days, hours, minutes, seconds, milliseconds} =
-      dateString
-          .match(
-              /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\.(?<milliseconds>\d{3})/)
-          .groups;
+  let { days, hours, minutes, seconds, milliseconds } =
+    dateString
+      .match(
+        /^(?<days>\d+)\:(?<hours>\d{2})\:(?<minutes>\d{2})\:(?<seconds>\d{2})\.(?<milliseconds>\d{3})/)
+      .groups;
 
   return parseInt(days) * 24 * 3600 + parseInt(hours) * 3600 +
-      parseInt(minutes) * 60 + parseInt(seconds) +
-      parseFloat(milliseconds / 1000);
+    parseInt(minutes) * 60 + parseInt(seconds) +
+    parseFloat(milliseconds / 1000);
 }
 
 function secondsToDateString(seconds) {
@@ -308,10 +310,10 @@ function secondsToDateString(seconds) {
   let date = new Date(1970, 0, 1);
   date.setMilliseconds(seconds * 1000);
   let dateString = Math.floor(seconds / 3600 / 24) + ":" +
-      nDigitString(date.getHours(), 2) + ":" +
-      nDigitString(date.getMinutes(), 2) + ":" +
-      nDigitString(date.getSeconds(), 2) + "." +
-      nDigitString(date.getMilliseconds(), 3);
+    nDigitString(date.getHours(), 2) + ":" +
+    nDigitString(date.getMinutes(), 2) + ":" +
+    nDigitString(date.getSeconds(), 2) + "." +
+    nDigitString(date.getMilliseconds(), 3);
   return dateString;
 }
 
@@ -334,7 +336,7 @@ function rgbSetConfig(c) {
 
   if (autoOff && autoOffDelay && !autoOffDelayValid(autoOffDelay)) {
     alert(
-        "Auto off delay must follow 24 hour format D:HH:MM:SS.sss with a value between 10ms and 24 days.");
+      "Auto off delay must follow 24 hour format D:HH:MM:SS.sss with a value between 10ms and 24 days.");
     return;
   }
 
@@ -371,7 +373,7 @@ function swSetConfig(c) {
 
   if (autoOff && autoOffDelay && !autoOffDelayValid(autoOffDelay)) {
     alert(
-        "Auto off delay must follow 24 hour format D:HH:MM:SS.sss with a value between 10ms and 24 days.");
+      "Auto off delay must follow 24 hour format D:HH:MM:SS.sss with a value between 10ms and 24 days.");
     return;
   }
 
@@ -498,22 +500,22 @@ function gdoSetConfig(c, cfg, spinner) {
   setComponentConfig(c, cfg, spinner);
 }
 
-el("reboot_btn").onclick = function() {
+el("reboot_btn").onclick = function () {
   if (!confirm("Reboot the device?")) return;
 
-  callDevice("Sys.Reboot", {delay_ms: 500}).then(function() {
+  callDevice("Sys.Reboot", { delay_ms: 500 }).then(function () {
     alert("System is rebooting and will reconnect when ready.");
   });
 };
 
-el("reset_btn").onclick = function() {
+el("reset_btn").onclick = function () {
   if (!confirm(
-          "Device configuration will be wiped and return to AP mode. " +
-          "Are you sure?")) {
+    "Device configuration will be wiped and return to AP mode. " +
+    "Are you sure?")) {
     return;
   }
 
-  callDevice("Shelly.WipeDevice", {}).then(function() {
+  callDevice("Shelly.WipeDevice", {}).then(function () {
     alert("Device configuration has been reset, it will reboot in AP mode.");
   });
 };
@@ -528,16 +530,16 @@ function findOrAddContainer(cd) {
     case Component_Type.kLock:
       c = el("sw_template").cloneNode(true);
       c.id = elId;
-      el(c, "state").onchange = function(ev) {
-        setComponentState(c, {state: !c.data.state}, el(c, "set_spinner"));
+      el(c, "state").onchange = function (ev) {
+        setComponentState(c, { state: !c.data.state }, el(c, "set_spinner"));
         markInputChanged(ev);
       };
-      el(c, "save_btn").onclick = function() {
+      el(c, "save_btn").onclick = function () {
         swSetConfig(c);
       };
-      el(c, "auto_off").onchange = function(ev) {
+      el(c, "auto_off").onchange = function (ev) {
         el(c, "auto_off_delay_container").style.display =
-            this.checked ? "block" : "none";
+          this.checked ? "block" : "none";
         markInputChanged(ev);
       };
       break;
@@ -545,41 +547,41 @@ function findOrAddContainer(cd) {
     case Component_Type.kDoorbell:
       c = el("ssw_template").cloneNode(true);
       c.id = elId;
-      el(c, "save_btn").onclick = function() {
+      el(c, "save_btn").onclick = function () {
         sswSetConfig(c);
       };
       break;
     case Component_Type.kWindowCovering:
       c = el("wc_template").cloneNode(true);
       c.id = elId;
-      el(c, "open_btn").onclick = function() {
-        setComponentState(c, {tgt_pos: 100}, el(c, "open_spinner"));
+      el(c, "open_btn").onclick = function () {
+        setComponentState(c, { tgt_pos: 100 }, el(c, "open_spinner"));
       };
-      el(c, "close_btn").onclick = function() {
-        setComponentState(c, {tgt_pos: 0}, el(c, "close_spinner"));
+      el(c, "close_btn").onclick = function () {
+        setComponentState(c, { tgt_pos: 0 }, el(c, "close_spinner"));
       };
-      el(c, "save_btn").onclick = function() {
+      el(c, "save_btn").onclick = function () {
         wcSetConfig(c, null, el(c, "save_spinner"))
       };
-      el(c, "cal_btn").onclick = function() {
-        setComponentState(c, {state: 10}, null);
+      el(c, "cal_btn").onclick = function () {
+        setComponentState(c, { state: 10 }, null);
         el(c, "cal_spinner").className = "spin";
       };
       break;
     case Component_Type.kGarageDoorOpener:
       c = el("gdo_template").cloneNode(true);
       c.id = elId;
-      el(c, "save_btn").onclick = function() {
+      el(c, "save_btn").onclick = function () {
         gdoSetConfig(c, null, el(c, "save_spinner"));
       };
-      el(c, "toggle_btn").onclick = function() {
-        setComponentState(c, {toggle: true}, el(c, "toggle_spinner"));
+      el(c, "toggle_btn").onclick = function () {
+        setComponentState(c, { toggle: true }, el(c, "toggle_spinner"));
       };
       break;
     case Component_Type.kDisabledInput:
       c = el("di_template").cloneNode(true);
       c.id = elId;
-      el(c, "save_btn").onclick = function() {
+      el(c, "save_btn").onclick = function () {
         diSetConfig(c);
       };
       break;
@@ -590,7 +592,7 @@ function findOrAddContainer(cd) {
     case Component_Type.kSmokeSensor:
       c = el("sensor_template").cloneNode(true);
       c.id = elId;
-      el(c, "save_btn").onclick = function() {
+      el(c, "save_btn").onclick = function () {
         mosSetConfig(c);
       };
       break;
@@ -603,37 +605,37 @@ function findOrAddContainer(cd) {
       let showcolor = (value == LightBulbController_BulbType.kRGBW)
       el(c, "hue_container").style.display = showcolor ? "block" : "none";
       el(c, "saturation_container").style.display =
-          showcolor ? "block" : "none";
+        showcolor ? "block" : "none";
       el(c, "color_temperature_container").style.display =
-          showct ? "block" : "none";
+        showct ? "block" : "none";
       el(c, "color_container").style.display =
-          showct || showcolor ? "block" : "none";
+        showct || showcolor ? "block" : "none";
 
-      el(c, "state").onchange = function(ev) {
+      el(c, "state").onchange = function (ev) {
         setComponentState(c, rgbState(c, !c.data.state), el(c, "set_spinner"));
         markInputChanged(ev);
       };
-      el(c, "save_btn").onclick = function() {
+      el(c, "save_btn").onclick = function () {
         rgbSetConfig(c);
       };
       el(c, "hue").onchange = el(c, "saturation").onchange =
-          el(c, "color_temperature").onchange =
-              el(c, "brightness").onchange = function(ev) {
-                setComponentState(
-                    c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
-                setPreviewColor(c, cd.bulb_type);
-                markInputChanged(ev);
-              };
-      el(c, "auto_off").onchange = function(ev) {
+        el(c, "color_temperature").onchange =
+        el(c, "brightness").onchange = function (ev) {
+          setComponentState(
+            c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
+          setPreviewColor(c, cd.bulb_type);
+          markInputChanged(ev);
+        };
+      el(c, "auto_off").onchange = function (ev) {
         el(c, "auto_off_delay_container").style.display =
-            this.checked ? "block" : "none";
+          this.checked ? "block" : "none";
         markInputChanged(ev);
       };
       break;
     case Component_Type.kTemperatureSensor:
       c = el("ts_template").cloneNode(true);
       c.id = elId;
-      el(c, "save_btn").onclick = function() {
+      el(c, "save_btn").onclick = function () {
         tsSetConfig(c);
       };
       break;
@@ -650,9 +652,9 @@ function findOrAddContainer(cd) {
 function rgbState(c, newState) {
   return {
     state: newState, hue: el(c, "hue").value,
-        saturation: el(c, "saturation").value,
-        brightness: el(c, "brightness").value,
-        color_temperature: el(c, "color_temperature").value
+    saturation: el(c, "saturation").value,
+    brightness: el(c, "brightness").value,
+    color_temperature: el(c, "color_temperature").value
   }
 }
 
@@ -671,7 +673,7 @@ function updateComponent(cd) {
       el(c, "state").checked = cd.state;
       if (cd.apower !== undefined) {
         updateInnerText(
-            el(c, "power_stats"), `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
+          el(c, "power_stats"), `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
         el(c, "power_stats_container").style.display = "block";
       }
       if (cd.type == Component_Type.kLightBulb) {
@@ -711,9 +713,9 @@ function updateComponent(cd) {
       }
       checkIfNotModified(el(c, "auto_off"), cd.auto_off);
       el(c, "auto_off_delay_container").style.display =
-          el(c, "auto_off").checked ? "block" : "none";
+        el(c, "auto_off").checked ? "block" : "none";
       setValueIfNotModified(
-          el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
+        el(c, "auto_off_delay"), secondsToDateString(cd.auto_off_delay));
       if (cd.state_led_en !== undefined) {
         if (cd.state_led_en == -1) {
           el(c, "state_led_en_container").style.display = "none";
@@ -737,8 +739,8 @@ function updateComponent(cd) {
         el(c, "state").checked = cd.state;
         if (cd.apower !== undefined) {
           updateInnerText(
-              el(c, "power_stats"),
-              `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
+            el(c, "power_stats"),
+            `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
           el(c, "power_stats_container").style.display = "block";
         }
         slideIfNotModified(el(c, "color_temperature"), cd.color_temperature);
@@ -871,7 +873,7 @@ function updateComponent(cd) {
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       setValueIfNotModified(el(c, "idle_time"), cd.idle_time);
       el(c, "idle_time_container").style.display =
-          (cd.in_mode == 0 ? "none" : "block");
+        (cd.in_mode == 0 ? "none" : "block");
       let what = (cd.type == 7 ? "motion" : "occupancy");
       let statusText = (cd.state ? `${what} detected` : `no ${what} detected`);
       if (cd.last_ev_age > 0) {
@@ -890,9 +892,9 @@ function updateComponent(cd) {
 
 function updateStaticIPVisibility() {
   el("wifi_ip_container").style.display =
-      (el("wifi_ip_en").checked ? "block" : "none");
+    (el("wifi_ip_en").checked ? "block" : "none");
   el("wifi1_ip_container").style.display =
-      (el("wifi1_ip_en").checked ? "block" : "none");
+    (el("wifi1_ip_en").checked ? "block" : "none");
 }
 
 function updateElement(key, value, info) {
@@ -917,7 +919,7 @@ function updateElement(key, value, info) {
     case "version":
     case "fw_build":
       if (value !== undefined && (value >= 0 && value < 100)) break;
-      // fallthrough;
+    // fallthrough;
     case "device_id":
       updateInnerText(el(key), value);
       break;
@@ -961,17 +963,17 @@ function updateElement(key, value, info) {
         // These only make sense if we are connected to WiFi.
         el("update_container").style.display = "block";
         el("revert_to_stock_container").style.display =
-            (!updateInProgress ? "block" : "none");
+          (!updateInProgress ? "block" : "none");
         // We set external image URL to prevent loading it when not on
         // WiFi, as it slows things down.
         if (el("donate_form_submit").src == "") {
           el("donate_form_submit").src =
-              "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
+            "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif";
         }
         el("donate_form_submit").style.display = "inline";
         updateInnerText(el("wifi_ip"), value);
         el("wifi_container").style.display =
-            (!updateInProgress ? "block" : "none");
+          (!updateInProgress ? "block" : "none");
       }
       break;
     case "wifi_connecting":
@@ -1053,7 +1055,7 @@ function updateElement(key, value, info) {
     case "ota_progress":
       if (value !== undefined && (value >= 0 && value < 100)) {
         updateInnerText(
-            el("version"), `${info.version} -> ${info.ota_version}`);
+          el("version"), `${info.version} -> ${info.ota_version}`);
         updateInnerText(el("fw_build"), info.ota_build);
         updateInnerText(el("update_status"), `${value}%`);
         setTimeout(() => setUpdateInProgress(true), 0);
@@ -1063,7 +1065,7 @@ function updateElement(key, value, info) {
 }
 
 function getInfo() {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     if (pendingGetInfo) {
       reject(new Error("already connecting"));
       return;
@@ -1071,59 +1073,59 @@ function getInfo() {
     pendingGetInfo = true;
     let method = (infoLevel == 1 ? "Shelly.GetInfoExt" : "Shelly.GetInfo");
     callDevice(method)
-        .then(function(info) {
-          pendingGetInfo = false;
+      .then(function (info) {
+        pendingGetInfo = false;
 
-          if (!info) {
-            reject();
-            return;
-          }
+        if (!info) {
+          reject();
+          return;
+        }
 
-          // Update the essentials.
-          ["name", "model", "device_id", "version", "fw_build"].forEach(
-              (key) => {
-                updateElement(key, info[key], info);
-              });
-          if (info.failsafe_mode) {
-            el("sys_container").style.display = "block";
-            el("firmware_container").style.display = "block";
-            el("notify_failsafe").style.display = "inline";
-            pauseAutoRefresh = true;
-            reject();
-            return;
-          }
-
-          if (infoLevel == 0) {
-            infoLevel = 1;
-            // Get extended info.
-            getInfo();
-            return;
-          }
-
-          lastInfo = info;
-
-          el("sec_old_pass_container").style.display =
-              (info.auth_en ? "block" : "none");
+        // Update the essentials.
+        ["name", "model", "device_id", "version", "fw_build"].forEach(
+          (key) => {
+            updateElement(key, info[key], info);
+          });
+        if (info.failsafe_mode) {
+          el("sys_container").style.display = "block";
           el("firmware_container").style.display = "block";
-          updateCommonVisibility(!updateInProgress);
+          el("notify_failsafe").style.display = "inline";
+          pauseAutoRefresh = true;
+          reject();
+          return;
+        }
 
-          // the system mode changed, clear out old UI components
-          if (lastInfo !== null && lastInfo.sys_mode !== info.sys_mode) {
-            el("components").innerHTML = "";
-          }
+        if (infoLevel == 0) {
+          infoLevel = 1;
+          // Get extended info.
+          getInfo();
+          return;
+        }
 
-          for (let element in info) {
-            updateElement(element, info[element], info);
-          }
+        lastInfo = info;
 
-          resolve(info);
-        })
-        .catch(function(err) {
-          console.log(err);
-          infoLevel = 0;
-          reject(err);
-        })
-        .finally(() => pendingGetInfo = false);
+        el("sec_old_pass_container").style.display =
+          (info.auth_en ? "block" : "none");
+        el("firmware_container").style.display = "block";
+        updateCommonVisibility(!updateInProgress);
+
+        // the system mode changed, clear out old UI components
+        if (lastInfo !== null && lastInfo.sys_mode !== info.sys_mode) {
+          el("components").innerHTML = "";
+        }
+
+        for (let element in info) {
+          updateElement(element, info[element], info);
+        }
+
+        resolve(info);
+      })
+      .catch(function (err) {
+        console.log(err);
+        infoLevel = 0;
+        reject(err);
+      })
+      .finally(() => pendingGetInfo = false);
   });
 }
 
@@ -1145,7 +1147,7 @@ function setVar(key, value, maxAge) {
     localStorage.removeItem(key);
     return;
   }
-  let v = {value: value};
+  let v = { value: value };
   if (maxAge > 0) {
     v.exp = (new Date()).getTime() + (maxAge * 1000);
   }
@@ -1181,12 +1183,12 @@ function reloadPage() {
 function connectWebSocket() {
   setupHost();
 
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     let url = `ws://${host}/rpc`;
     console.log(`Connecting to ${url}...`);
     socket = new WebSocket(url);
 
-    socket.onclose = function(event) {
+    socket.onclose = function (event) {
       let error = `[close] Connection died (code ${event.code})`;
       if (isConnected) {
         console.log(error);
@@ -1201,19 +1203,19 @@ function connectWebSocket() {
       socket = null;
     };
 
-    socket.onerror = function(error) {
+    socket.onerror = function (error) {
       console.log(`[error] Connection error`, error);
       socket.close();
     };
 
-    socket.onopen = function() {
+    socket.onopen = function () {
       console.log("[open] Connection established");
       el("notify_disconnected").style.display = "none";
       isConnected = true;
       resolve(socket);
     };
 
-    socket.onmessage = function(event) {
+    socket.onmessage = function (event) {
       let resp = JSON.parse(event.data);
       let id = resp.id;
       let ri = pendingRequests[id];
@@ -1236,9 +1238,9 @@ function connectWebSocket() {
         if (ar) {
           console.log("Retrying with auth...");
           callDeviceAuth(ri.method, ri.params, ar)
-              .then((resp) => ri.resolve(resp))
-              .catch((err) => ri.reject(err))
-              .finally(() => el("auth_log_in_spinner").className = "");
+            .then((resp) => ri.resolve(resp))
+            .catch((err) => ri.reject(err))
+            .finally(() => el("auth_log_in_spinner").className = "");
         } else {
           if (lastInfo !== null) {
             // Locked out, reload UI.
@@ -1303,9 +1305,9 @@ function getAuthResp(req) {
       response: resp,
     },
     httpAuth: (
-        `Digest realm="${req.realm}", uri="${uri}", username="${authUser}", ` +
-        `cnonce="${cnonce}", qop=${qop}, nc=${req.nc}, nonce="${req.nonce}", ` +
-        `response="${resp}", algorithm=${req.algorithm}`),
+      `Digest realm="${req.realm}", uri="${uri}", username="${authUser}", ` +
+      `cnonce="${cnonce}", qop=${qop}, nc=${req.nc}, nonce="${req.nonce}", ` +
+      `response="${resp}", algorithm=${req.algorithm}`),
     ai: {
       realm: req.realm,
       ha1: ha1,
@@ -1336,7 +1338,7 @@ function authHeaderToReq(method, uri, hdr, nc) {
 
 function callDeviceAuth(method, params, ar) {
   let id = nextRequestID++;
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     try {
       let frame = {
         "id": id,
@@ -1384,24 +1386,24 @@ function doLogin() {
   getInfo();
 }
 
-el("auth_log_in_btn").onclick = function() {
+el("auth_log_in_btn").onclick = function () {
   doLogin();
   return true;
 };
 
-el("auth_pass").onkeyup = function(e) {
+el("auth_pass").onkeyup = function (e) {
   console.log(e);
   if (e.code == "Enter") doLogin();
   return false;
 };
 
-el("sec_log_out_btn").onclick = function() {
+el("sec_log_out_btn").onclick = function () {
   setVar(authInfoKey, undefined);
   reloadPage();
   return true;
 };
 
-el("sec_save_btn").onclick = function() {
+el("sec_save_btn").onclick = function () {
   if (authRealm !== null) {
     let oldHA1 = calcHA1(authUser, authRealm, el("sec_old_pass").value);
     let goodHA1 = getVar(authInfoKey).ha1;
@@ -1423,19 +1425,19 @@ el("sec_save_btn").onclick = function() {
   }
   pauseAutoRefresh = true;
   el("sec_save_spinner").className = "spin";
-  callDevice("Shelly.SetAuth", {user: authUser, realm: realm, ha1: newHA1})
-      .then(function() {
-        setVar(authInfoKey, undefined);
-        reloadPage();
-      })
-      .catch(function(err) {
-        if (err.message) err = err.message;
-        alert(err);
-      })
-      .finally(function() {
-        el("sec_save_spinner").className = "";
-        pauseAutoRefresh = false;
-      });
+  callDevice("Shelly.SetAuth", { user: authUser, realm: realm, ha1: newHA1 })
+    .then(function () {
+      setVar(authInfoKey, undefined);
+      reloadPage();
+    })
+    .catch(function (err) {
+      if (err.message) err = err.message;
+      alert(err);
+    })
+    .finally(function () {
+      el("sec_save_spinner").className = "";
+      pauseAutoRefresh = false;
+    });
   return true;
 };
 
@@ -1445,13 +1447,13 @@ function onLoad() {
     if (location.pathname === "/ota") {
       let params = new URLSearchParams(location.search.substring(1));
       return downloadUpdate(
-          params.get("url"), el("fw_spinner"), el("update_status"));
+        params.get("url"), el("fw_spinner"), el("update_status"));
     } else if (location.pathname !== "/") {
       reloadPage();
     }
   }
   setInterval(refreshUI, uiRefreshInterval * 1000);
-  el("wifi_ip_en").onchange = el("wifi1_ip_en").onchange = function(ev) {
+  el("wifi_ip_en").onchange = el("wifi1_ip_en").onchange = function (ev) {
     updateStaticIPVisibility();
     markInputChanged(ev);
   };
@@ -1466,7 +1468,7 @@ function refreshUI() {
   if (document.hidden) return;
   if (!socket) {
     connectStarted = (new Date()).getTime();
-    connectWebSocket().then(() => refreshUI()).catch(() => {});
+    connectWebSocket().then(() => refreshUI()).catch(() => { });
     return;
   }
   if (socket.readyState !== 1) {
@@ -1481,17 +1483,17 @@ function refreshUI() {
   }
   if (pauseAutoRefresh) return;
   getInfo()
-      .then(function(info) {
-        if (lastFwBuild && info.fw_build != lastFwBuild) {
-          // Firmware changed, reload.
-          reloadPage();
-          return;
-        } else {
-          lastFwBuild = info.fw_build;
-        }
-        checkUpdateIfNeeded(info);
-      })
-      .catch((err) => {});
+    .then(function (info) {
+      if (lastFwBuild && info.fw_build != lastFwBuild) {
+        // Firmware changed, reload.
+        reloadPage();
+        return;
+      } else {
+        lastFwBuild = info.fw_build;
+      }
+      checkUpdateIfNeeded(info);
+    })
+    .catch((err) => { });
 }
 
 function setValueIfNotModified(e, newValue) {
@@ -1499,7 +1501,7 @@ function setValueIfNotModified(e, newValue) {
   // do not update the value of the input field if the field currently has
   // focus or has changed since changes have been last saved.
   if (document.activeElement === e || e.dataset.changed == "true" ||
-      e.value === newValue) {
+    e.value === newValue) {
     return;
   }
   e.value = newValue;
@@ -1581,7 +1583,7 @@ function durationStr(d) {
   let mins = parseInt(d / 60);
   let secs = d % 60;
   return days + ":" + nDigitString(hours, 2) + ":" + nDigitString(mins, 2) +
-      ":" + nDigitString(secs, 2);
+    ":" + nDigitString(secs, 2);
 }
 
 async function downloadUpdate(fwURL, spinner, status) {
@@ -1589,22 +1591,22 @@ async function downloadUpdate(fwURL, spinner, status) {
   spinner.className = "spin";
   status.innerText = "Downloading...";
   console.log("Downloading", fwURL);
-  fetch(fwURL, {mode: "cors"})
-      .then(async (resp) => {
-        console.log(resp);
-        let blob = await resp.blob();
-        if (!resp.ok || blob.type != "application/zip") {
-          status.innerText = "Failed, try manually.";
-          return;
-        }
-        return uploadFW(blob, spinner, status);
-      })
-      .catch((error) => {
-        spinner.className = "";
-        console.log(error);
-        status.innerText = `Error downloading: ${error}`;
-        // Do not reset updateInProgress to make failure more prominent.
-      });
+  fetch(fwURL, { mode: "cors" })
+    .then(async (resp) => {
+      console.log(resp);
+      let blob = await resp.blob();
+      if (!resp.ok || blob.type != "application/zip") {
+        status.innerText = "Failed, try manually.";
+        return;
+      }
+      return uploadFW(blob, spinner, status);
+    })
+    .catch((error) => {
+      spinner.className = "";
+      console.log(error);
+      status.innerText = `Error downloading: ${error}`;
+      // Do not reset updateInProgress to make failure more prominent.
+    });
 }
 
 async function uploadFW(blob, spinner, status, ar) {
@@ -1624,37 +1626,37 @@ async function uploadFW(blob, spinner, status, ar) {
     body: fd,
     cache: "no-cache",
   })
-      .then(async (resp) => {
-        let respText = await resp.text();
-        if (resp.status == 401 && !ar) {
-          let authHdr = resp.headers.get("www-authenticate");
-          if (authHdr !== null) {
-            let authReq =
-                authHeaderToReq("POST", "/update", authHdr, "00000001");
-            let authResp = getAuthResp(authReq);
-            console.log("Retrying with auth...");
-            return uploadFW(blob, spinner, status, authResp);
-          }
+    .then(async (resp) => {
+      let respText = await resp.text();
+      if (resp.status == 401 && !ar) {
+        let authHdr = resp.headers.get("www-authenticate");
+        if (authHdr !== null) {
+          let authReq =
+            authHeaderToReq("POST", "/update", authHdr, "00000001");
+          let authResp = getAuthResp(authReq);
+          console.log("Retrying with auth...");
+          return uploadFW(blob, spinner, status, authResp);
         }
-        spinner.className = "";
-        status.innerText = (respText ? respText : resp.statusText).trim();
-        setVar("update_available", false);
-      })
-      .catch((error) => {
-        console.log("Fetch erorr:", error);
-        status.innerText = `Error uploading: ${error}`;
-        spinner.className = "";
-        // Do not reset updateInProgress to make failure more prominent.
-      });
+      }
+      spinner.className = "";
+      status.innerText = (respText ? respText : resp.statusText).trim();
+      setVar("update_available", false);
+    })
+    .catch((error) => {
+      console.log("Fetch erorr:", error);
+      status.innerText = `Error uploading: ${error}`;
+      spinner.className = "";
+      // Do not reset updateInProgress to make failure more prominent.
+    });
 }
 
 // major.minor.patch-variantN
 function parseVersion(versionString) {
   version =
-      versionString
-          .match(
-              /^(?<major>\d+).(?<minor>\d+).(?<patch>\d+)-?(?<variant>[a-z]*)(?<varSeq>\d*)$/)
-          .groups
+    versionString
+      .match(
+        /^(?<major>\d+).(?<minor>\d+).(?<patch>\d+)-?(?<variant>[a-z]*)(?<varSeq>\d*)$/)
+      .groups
   version.major = parseInt(version.major);
   version.minor = parseInt(version.minor);
   version.patch = parseInt(version.patch);
@@ -1684,12 +1686,11 @@ function checkUpdateIfNeeded(info) {
     age = (now.getTime() - last_update_check) / 1000;
   }
   if (isNaN(last_update_check) || age > updateCheckInterval) {
-    console.log(`Last update check: ${last_update_check} age ${
-        age}, checking for update`);
+    console.log(`Last update check: ${last_update_check} age ${age}, checking for update`);
     checkUpdate();
   }
   el("notify_update").style.display =
-      (getVar("update_available") ? "inline" : "none");
+    (getVar("update_available") ? "inline" : "none");
 }
 
 function checkUpdate() {
@@ -1698,7 +1699,7 @@ function checkUpdate() {
   let e = el("update_status");
   let se = el("update_btn_spinner");
   let errMsg =
-      "Failed, check <a href=\"https://github.com/mongoose-os-apps/shelly-homekit/releases\">GitHub</a>.";
+    "Failed, check <a href=\"https://github.com/mongoose-os-apps/shelly-homekit/releases\">GitHub</a>.";
   e.innerText = "";
   se.className = "spin";
   console.log("Model:", model, "Version:", curVersion);
@@ -1710,69 +1711,69 @@ function checkUpdate() {
       "X-Device-ID": lastInfo.device_id,
     }
   })
-      .then(resp => resp.json())
-      .then((resp) => {
-        // save the cookie before anything else, so that if update not
-        // found we still remember that we tried to check for an update
-        setVar("last_update_check", (new Date()).getTime());
+    .then(resp => resp.json())
+    .then((resp) => {
+      // save the cookie before anything else, so that if update not
+      // found we still remember that we tried to check for an update
+      setVar("last_update_check", (new Date()).getTime());
 
-        let cfg, latestVersion, updateURL, relNotesURL;
-        for (let i in resp) {
-          let re = new RegExp(resp[i][0]);
-          if (curVersion.match(re)) {
-            cfg = resp[i][1];
-            break;
-          }
+      let cfg, latestVersion, updateURL, relNotesURL;
+      for (let i in resp) {
+        let re = new RegExp(resp[i][0]);
+        if (curVersion.match(re)) {
+          cfg = resp[i][1];
+          break;
         }
-        if (cfg) {
-          latestVersion = cfg.version;
-          relNotesURL = cfg.rel_notes;
-          if (cfg.urls) updateURL = cfg.urls[model];
-        }
-        console.log("Version:", latestVersion, "URL:", updateURL);
-        if (!latestVersion || !updateURL) {
-          console.log("Update section not found:", model, curVersion, cfg);
-          e.innerHTML = errMsg;
-          se.className = "";
-          return;
-        }
-        let updateAvailable = isNewer(latestVersion, curVersion);
-        el("notify_update").style.display =
-            (updateAvailable ? "inline" : "none");
-
-        setVar("update_available", updateAvailable);
-        if (!updateAvailable) {
-          e.innerText = "Up to date";
-          se.className = "";
-          return;
-        }
-        se.className = "";
-        e.innerHTML = `
-        Version ${latestVersion} is available.
-        See <a href="${relNotesURL}" target="_blank">release notes</a>.`
-        el("update_btn_text").innerText = "Install";
-        el("update_btn").onclick = function() {
-          return downloadUpdate(
-              updateURL, el("fw_spinner"), el("update_status"));
-        };
-      })
-      .catch((error) => {
-        console.log("Error", error);
+      }
+      if (cfg) {
+        latestVersion = cfg.version;
+        relNotesURL = cfg.rel_notes;
+        if (cfg.urls) updateURL = cfg.urls[model];
+      }
+      console.log("Version:", latestVersion, "URL:", updateURL);
+      if (!latestVersion || !updateURL) {
+        console.log("Update section not found:", model, curVersion, cfg);
         e.innerHTML = errMsg;
         se.className = "";
-      });
+        return;
+      }
+      let updateAvailable = isNewer(latestVersion, curVersion);
+      el("notify_update").style.display =
+        (updateAvailable ? "inline" : "none");
+
+      setVar("update_available", updateAvailable);
+      if (!updateAvailable) {
+        e.innerText = "Up to date";
+        se.className = "";
+        return;
+      }
+      se.className = "";
+      e.innerHTML = `
+        Version ${latestVersion} is available.
+        See <a href="${relNotesURL}" target="_blank">release notes</a>.`
+      el("update_btn_text").innerText = "Install";
+      el("update_btn").onclick = function () {
+        return downloadUpdate(
+          updateURL, el("fw_spinner"), el("update_status"));
+      };
+    })
+    .catch((error) => {
+      console.log("Error", error);
+      e.innerHTML = errMsg;
+      se.className = "";
+    });
 }
 
-el("update_btn").onclick = function() {
+el("update_btn").onclick = function () {
   checkUpdate();
 };
 
-el("revert_btn").onclick = function() {
+el("revert_btn").onclick = function () {
   if (!confirm("Revert to stock firmware?")) return;
 
   el("revert_msg").style.display = "block";
   let stockURL =
-      `https://rojer.me/files/shelly/stock/${lastInfo.stock_fw_model}.zip`;
+    `https://rojer.me/files/shelly/stock/${lastInfo.stock_fw_model}.zip`;
   downloadUpdate(stockURL, el("fw_spinner"), el("revert_status"));
 };
 
@@ -1795,9 +1796,9 @@ function setPreviewColor(c, bulb_type) {
   b = Math.round(b * 2.55);
 
   rgbHex = [r, g, b]
-               .map(x => nDigitString(x.toString(16), 2))
-               .join("")
-               .toUpperCase();
+    .map(x => nDigitString(x.toString(16), 2))
+    .join("")
+    .toUpperCase();
 
   el(c, "color_preview").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
   el(c, "color_name").innerHTML = `#${rgbHex}`;
@@ -1805,7 +1806,7 @@ function setPreviewColor(c, bulb_type) {
   el(c, "saturation_value").innerHTML = `${el(c, "saturation").value}%`;
   el(c, "brightness_value").innerHTML = `${el(c, "brightness").value}%`;
   el(c, "color_temperature_value").innerHTML =
-      `${el(c, "color_temperature").value}mired`;
+    `${el(c, "color_temperature").value}mired`;
 }
 
 function clamprgb(val) {
@@ -1821,23 +1822,23 @@ function colortemp2rgb(t, v) {
 
   return [
     (temperature <= 66 ?
-         255 :
-         clamprgb(
-             329.698727446 * Math.pow(temperature - 60.0, -0.1332047592))) *
-        scale,
+      255 :
+      clamprgb(
+        329.698727446 * Math.pow(temperature - 60.0, -0.1332047592))) *
+    scale,
     (temperature <= 66 ?
-         clamprgb(99.4708025861 * Math.log(temperature) - 161.1195681661) :
-         clamprgb(
-             288.1221695283 * Math.pow(temperature - 60.0, -0.0755148492))) *
-        scale,
+      clamprgb(99.4708025861 * Math.log(temperature) - 161.1195681661) :
+      clamprgb(
+        288.1221695283 * Math.pow(temperature - 60.0, -0.0755148492))) *
+    scale,
     (temperature >= 66 ?
-         255 :
-         (temperature <= 19 ?
-              0 :
-              clamprgb(
-                  138.5177312231 * Math.log(temperature - 10.0) -
-                  305.0447927307))) *
-        scale
+      255 :
+      (temperature <= 19 ?
+        0 :
+        clamprgb(
+          138.5177312231 * Math.log(temperature - 10.0) -
+          305.0447927307))) *
+    scale
 
   ];
 }
