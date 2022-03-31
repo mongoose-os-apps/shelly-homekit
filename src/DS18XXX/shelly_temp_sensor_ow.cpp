@@ -163,7 +163,7 @@ void TempSensorDS18XXX::ReadTemperatureCB() {
   }
   const Scratchpad &sp = spr.ValueOrDie();
   if (rom_.family == DS18S20MODEL) {
-    result_ = ((int16_t) (sp.temperature & 0xFFFE) / 2.0) - 0.25 +
+    result_ = ((int16_t)(sp.temperature & 0xFFFE) / 2.0) - 0.25 +
               ((float) (sp.count_per_c - sp.count_remain) / sp.count_per_c);
   } else {
     result_ = sp.temperature * 0.0625f;
