@@ -102,9 +102,6 @@ h1 {
   display: inline-block;
 }
 
-.form {
-}
-
 .helpbadge {
   background-color: #fefefe;
   border: 1px solid #999999;
@@ -119,9 +116,6 @@ h1 {
   min-width: 8px;
   position: relative;
   float: right;
-}
-
-#header_container {
 }
 
 #logo_container {
@@ -297,10 +291,6 @@ input:checked + .slider:before {
   font-size: 54px;
   font-weight: bold;
   text-anchor: end;
-}
-
-#hap_setup_code {
-  font-weight: bold;
 }
 
 .tab_wrapper {

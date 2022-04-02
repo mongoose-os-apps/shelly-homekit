@@ -137,7 +137,6 @@ el("hap_setup_btn").onclick = function() {
       .then(function(info) {
         console.log(info);
         if (!info) return;
-        el("hap_setup_code").innerText = info.code;
         el("qrcode_text_1").textContent =
             info.code.replace(/-/g, "").substring(0, 4);
         el("qrcode_text_2").textContent =
