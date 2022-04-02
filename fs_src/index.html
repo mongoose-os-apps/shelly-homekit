@@ -9,889 +9,906 @@
   <style>
   </style>
 </head>
+
 <body onLoad="onLoad()">
 
-<div class="container" id="header_container">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/" target="_blank">?</a>
-  <div id="logo_container">
-    <!-- logo.svg inserted below during build -->
-    <img id="logo" src="./logo.svg">
-    <h1 class="title">Shelly-<b>HomeKit</b></h1>
-    <div id="badges_container">
-      <a class="badge" id="notify_disconnected" style="display: none">Disconnected</a>
-      <a class="badge" id="notify_update" style="display: none" href="#update_container">Update</a>
-      <a class="badge" id="notify_overheat" style="display: none">Overheating</a>
-      <a class="badge" id="notify_failsafe" style="display: none">Failsafe mode</a>
+  <div class="container" id="header_container">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/" target="_blank">?</a>
+    <div id="logo_container">
+      <!-- logo.svg inserted below during build -->
+      <img id="logo" src="./logo.svg">
+      <h1 class="title">Shelly-<b>HomeKit</b></h1>
+      <div id="badges_container">
+        <a class="badge" id="notify_disconnected" style="display: none">Disconnected</a>
+        <a class="badge" id="notify_update" style="display: none" href="#update_container">Update</a>
+        <a class="badge" id="notify_overheat" style="display: none">Overheating</a>
+        <a class="badge" id="notify_failsafe" style="display: none">Failsafe mode</a>
+      </div>
     </div>
+    <h1 id="device_name">Loading...</h1>
   </div>
-  <h1 id="device_name">Loading...</h1>
-</div>
 
-<div class="container" id="auth_container" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Security-Settings"
-     target="_blank">?</a>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>Password:</label>
-        <input type="password" id="auth_pass">
-      </div>
-      <div class="form-control" id="forgot_password" style="display: none">
-        <a href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Security-Settings#password-recovery" target="_blank">Forgot password?</a>
-      </div>
-      <div class="button-container">
-        <button id="auth_log_in_btn">
-          <label><span id="auth_log_in_spinner"></span>Log In</label>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="container" id="gs_container" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/General-Settings"
-     target="_blank">?</a>
-  <h1>General Settings</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="sys_name">
-      </div>
-      <div class="form-control" id="sys_mode_container" style="display: none">
-        <label>Mode:</label>
-        <select id="sys_mode">
-          <option id="sys_mode_0" value="0">Switch</option>
-          <option id="sys_mode_1" value="1">Roller Shutter</option>
-          <option id="sys_mode_2" value="2">Garage Door Opener</option>
-          <option id="sys_mode_3" value="3">RGB</option>
-          <option id="sys_mode_4" value="4">RGBW</option>
-          <option id="sys_mode_5" value="5">RGB+W</option>
-          <option id="sys_mode_6" value="6">CCT</option>
-          <option id="sys_mode_7" value="7">White Mode</option>
-        </select>
-      </div>
-      <div class="button-container">
-        <button id="sys_save_btn">
-          <label><span id="sys_save_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="components"></div>
-
-<div class="container" id="homekit_container" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/HomeKit-settings"
-     target="_blank">?</a>
-  <h1>HomeKit Settings</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>Paired:</label>
-        <span id="hap_paired"></span>
-      </div>
-      <div class="form-control">
-        <label>Connections:</label>
-        <ul id="hap_conn_stats" class="comma-list">
-          <li id="hap_ip_conns_pending"></li>
-          <li id="hap_ip_conns_active"></li>
-          <li id="hap_ip_conns_max"></li>
-        </ul>
-      </div>
-      <div class="button-container">
-        <button id="hap_setup_btn">
-          <label><span id="hap_setup_spinner"></span>Setup</label>
-        </button>
-        <button id="hap_reset_btn">
-          <label><span id="hap_reset_spinner"></span>Reset</label>
-        </button>
-      </div>
-      <div id="hap_setup_info" style="display: none">
-        <svg id="qrcode_container" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-          <g id="qrcode"/>
-        </svg>
-        <div>Code: <span id="hap_setup_code"></span></div>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="container" id="wifi_container" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/WiFi-Settings"
-     target="_blank">?</a>
-  <h1>WiFi Settings</h1>
-
-  <div class="tab_wrapper" id="wifi_container">
-    <input class="tab_radio" id="one" name="group" type="radio" checked>
-    <input class="tab_radio" id="two" name="group" type="radio">
-    <input class="tab_radio" id="three" name="group" type="radio">
-    <div class="tabs">
-      <label class="tab" id="tab1" for="one">WiFi 1</label>
-      <label class="tab" id="tab2" for="two">WiFi 2</label>
-      <label class="tab" id="tab3" for="three">AP</label>
-    </div>
-    <div class="panels">
-      <div class="panel" id="panel1">
-        <div class="form">
-          <div class="form-control">
-            <label>Enable:</label>
-            <label class="switch">
-              <input type="checkbox" id="wifi_en">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div class="form-control">
-            <label>Network:</label>
-            <input type="text" id="wifi_ssid">
-          </div>
-          <div class="form-control">
-            <label>Password:</label>
-            <input type="password" id="wifi_pass" placeholder="(empty)">
-          </div>
-          <div class="form-control">
-            <label>Static IP:</label>
-            <label class="switch">
-              <input type="checkbox" id="wifi_ip_en">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div id="wifi_ip_container">
-            <div class="form-control">
-              <label>IP:</label>
-              <input type="text" id="wifi_ip">
-            </div>
-            <div class="form-control">
-              <label>Netmask:</label>
-              <input type="text" id="wifi_netmask">
-            </div>
-            <div class="form-control">
-              <label>Gateway:</label>
-              <input type="text" id="wifi_gw">
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="panel" id="panel2">
-        <div class="form">
-          <div class="form-control">
-            <label>Enable:</label>
-            <label class="switch">
-              <input type="checkbox" id="wifi1_en">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div class="form-control">
-            <label>Network:</label>
-            <input type="text" id="wifi1_ssid">
-          </div>
-          <div class="form-control">
-            <label>Password:</label>
-            <input type="password" id="wifi1_pass" placeholder="(empty)">
-          </div>
-          <div class="form-control">
-            <label>Static IP:</label>
-            <label class="switch">
-              <input type="checkbox" id="wifi1_ip_en">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div id="wifi1_ip_container">
-            <div class="form-control">
-              <label>IP:</label>
-              <input type="text" id="wifi1_ip">
-            </div>
-            <div class="form-control">
-              <label>Netmask:</label>
-              <input type="text" id="wifi1_netmask">
-            </div>
-            <div class="form-control">
-              <label>Gateway:</label>
-              <input type="text" id="wifi1_gw">
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="panel" id="panel3">
-        <div class="form">
-          <div class="form-control">
-            <label>Enable permanently:</label>
-            <label class="switch">
-              <input type="checkbox" id="wifi_ap_en">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div class="form-control">
-            <label>Network:</label>
-            <input type="text" id="wifi_ap_ssid">
-          </div>
-          <div class="form-control">
-            <label>Password:</label>
-            <input type="password" id="wifi_ap_pass" placeholder="(empty)">
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="form">
-    <div>
-      <div class="form-control" id="wifi_status_container">
-        <label>Status:</label>
-        <span id="wifi_status"></span>
-      </div>
-      <div class="form-control" id="wifi_conn_ssid_container">
-        <label>Network:</label>
-        <span id="wifi_conn_ssid"></span>
-      </div>
-      <div class="form-control" id="wifi_conn_ip_container">
-        <label>IP:</label>
-        <span id="wifi_conn_ip"></span>
-      </div>
-      <div class="form-control" id="wifi_conn_rssi_container">
-        <label>RSSI:</label>
-        <span id="wifi_conn_rssi"></span>
-      </div>
-      <div class="form-control" id="mac_address_container">
-        <label>MAC:</label>
-        <span id="mac_address"></span>
-      </div>
-      <div class="button-container">
-        <button id="wifi_save_btn">
-          <label><span id="wifi_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="container" id="sec_container" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Security-Settings"
-     target="_blank">?</a>
-  <h1>Security Settings</h1>
-  <div class="form">
-    <div>
-      <div class="form-control" id="sec_old_pass_container">
-        <label>Old Password:</label>
-        <input type="password" id="sec_old_pass">
-      </div>
-      <div class="form-control">
-        <label>New Password:</label>
-        <input type="password" id="sec_new_pass">
-      </div>
-      <div class="button-container">
-        <button id="sec_save_btn">
-          <label><span id="sec_save_spinner"></span>Save</label>
-        </button>
-        <button id="sec_log_out_btn">
-          <label><span id="sec_log_out_spinner"></span>Log Out</label>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<div class="container" id="sys_container" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/System-Settings"
-     target="_blank">?</a>
-  <h1>System</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>Model:</label>
-        <span id="model"></span>
-      </div>
-      <div class="form-control">
-        <label>Device ID:</label>
-        <span id="device_id"></span>
-      </div>
-      <div class="form-control" id="host_container">
-        <label>Host:</label>
-        <span id="host"></span>
-      </div>
-      <div class="form-control" id="uptime_container" style="display: none">
-        <label>Uptime:</label>
-        <span id="uptime"></span>
-      </div>
-      <div class="form-control" id="sys_temp_container" style="display: none">
-        <label>Temperature:</label>
-        <span id="sys_temp"></span>&deg;C
-      </div>
-      <div class="form-control">
-        <label>Debug Log:</label>
-        <a target="_blank" id="debug_link">Log</a>
-      </div>
-      <div class="button-container">
-        <button class="btn" id="reboot_btn">
-          <label>Reboot</label>
-        </button>
-        <button class="btn" id="reset_btn">
-          <label>Reset</label>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="container" id="firmware_container" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Firmware"
-     target="_blank">?</a>
-  <h1>Firmware</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>Version:</label><span id="version"></span>
-      </div>
-      <div class="form-wrap-control">
-        <label>Build:</label><span id="fw_build"></span>
-      </div>
-      <div class="form-control" id="update_container" style="display: none">
-        <label>Update: </label>
-        <button id="update_btn">
-          <label>
-            <span id="update_btn_spinner"></span>
-            <span id="update_btn_text">Check</span>
-          </label>
-        </button>
-        <span id="update_status"></span>
-      </div>
-      <div class="form-control" id="revert_to_stock_container" style="display: none">
-        <label>Revert to Stock:</label>
-        <button id="revert_btn">
-          <label><span id="revert_btn_spinner"></span>Revert</label>
-        </button>
-        <div class="form-control" id="revert_status">
-          <span id="revert_status"></span>
-        </div>
-        <div id="revert_msg" style="text-align: center; display: none">Please consider reporting missing features
-          <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">on GitHub</a>.
-        </div>
-      </div>
-      <form style="display: inline">
+  <div class="container" id="auth_container" style="display: none">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Security-Settings"
+      target="_blank">?</a>
+    <div class="form">
+      <div>
         <div class="form-control">
-          <label>Update from file:</label>
-          <input type="file" id="fw_select_file" name="file" accept=".zip" style="width: 200px;">
+          <label>Password:</label>
+          <input type="password" id="auth_pass">
+        </div>
+        <div class="form-control" id="forgot_password" style="display: none">
+          <a href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Security-Settings#password-recovery"
+            target="_blank">Forgot password?</a>
         </div>
         <div class="button-container">
-          <button id="fw_upload_btn">
-            <label><span id="fw_spinner"></span>Upload</label>
+          <button id="auth_log_in_btn">
+            <label><span id="auth_log_in_spinner"></span>Log In</label>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="gs_container" style="display: none">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/General-Settings"
+      target="_blank">?</a>
+    <h1>General Settings</h1>
+    <div class="form">
+      <div>
+        <div class="form-control">
+          <label>Name:</label>
+          <input type="text" id="sys_name">
+        </div>
+        <div class="form-control" id="sys_mode_container" style="display: none">
+          <label>Mode:</label>
+          <select id="sys_mode">
+            <option id="sys_mode_0" value="0">Switch</option>
+            <option id="sys_mode_1" value="1">Roller Shutter</option>
+            <option id="sys_mode_2" value="2">Garage Door Opener</option>
+            <option id="sys_mode_3" value="3">RGB</option>
+            <option id="sys_mode_4" value="4">RGBW</option>
+            <option id="sys_mode_5" value="5">RGB+W</option>
+            <option id="sys_mode_6" value="6">CCT</option>
+            <option id="sys_mode_7" value="7">White Mode</option>
+          </select>
+        </div>
+        <div class="button-container">
+          <button id="sys_save_btn">
+            <label><span id="sys_save_spinner"></span>Save</label>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="components"></div>
+
+  <div class="container" id="homekit_container" style="display: none">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/HomeKit-settings"
+      target="_blank">?</a>
+    <h1>HomeKit Settings</h1>
+    <div class="form">
+      <div>
+        <div class="form-control">
+          <label>Paired:</label>
+          <span id="hap_paired"></span>
+        </div>
+        <div class="form-control">
+          <label>Connections:</label>
+          <ul id="hap_conn_stats" class="comma-list">
+            <li id="hap_ip_conns_pending"></li>
+            <li id="hap_ip_conns_active"></li>
+            <li id="hap_ip_conns_max"></li>
+          </ul>
+        </div>
+        <div class="button-container">
+          <button id="hap_setup_btn">
+            <label><span id="hap_setup_spinner"></span>Setup</label>
+          </button>
+          <button id="hap_reset_btn">
+            <label><span id="hap_reset_spinner"></span>Reset</label>
+          </button>
+        </div>
+        <div id="hap_setup_info" style="display: none">
+          <svg id="qrcode_container" width="200" viewBox="0 0 370 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3.5" y="3.5" width="363" height="493" rx="31.5" stroke="currentColor" stroke-width="7" />
+            <path
+              d="M82.5 31L84.6508 28.2388C83.3861 27.2537 81.6139 27.2537 80.3492 28.2388L82.5 31ZM35 68L32.8492 65.2388L24.8112 71.5H35V68ZM125 68V64.5H121.5V68H125ZM130 68V71.5H140.189L132.151 65.2388L130 68ZM40 68H43.5V64.5H40V68ZM118 58.6526L115.849 61.4138L121.5 65.8155V58.6526H118ZM124 63.3263H120.5V65.0365L121.849 66.0875L124 63.3263ZM80.3492 28.2388L32.8492 65.2388L37.1508 70.7612L84.6508 33.7612L80.3492 28.2388ZM45 134.5H120V127.5H45V134.5ZM128.5 126V68H121.5V126H128.5ZM125 71.5H130V64.5H125V71.5ZM35 71.5H40V64.5H35V71.5ZM36.5 68V126H43.5V68H36.5ZM80.3492 33.7612L115.849 61.4138L120.151 55.8915L84.6508 28.2388L80.3492 33.7612ZM121.5 58.6526V46H114.5V58.6526H121.5ZM119 48.5H123V41.5H119V48.5ZM121.849 66.0875L127.849 70.7612L132.151 65.2388L126.151 60.5651L121.849 66.0875ZM120.5 46V63.3263H127.5V46H120.5ZM123 48.5C121.619 48.5 120.5 47.3807 120.5 46H127.5C127.5 43.5147 125.485 41.5 123 41.5V48.5ZM121.5 46C121.5 47.3807 120.381 48.5 119 48.5V41.5C116.515 41.5 114.5 43.5147 114.5 46H121.5ZM120 134.5C124.694 134.5 128.5 130.694 128.5 126H121.5C121.5 126.828 120.828 127.5 120 127.5V134.5ZM45 127.5C44.1716 127.5 43.5 126.828 43.5 126H36.5C36.5 130.694 40.3056 134.5 45 134.5V127.5Z"
+              fill="currentColor" />
+            <path d="M59 74.0044L82.5 55L106 74.0044V111H59V74.0044Z" stroke="currentColor" stroke-width="7"
+              stroke-linejoin="round" />
+            <path d="M76 83.4298L82.5 78L89 83.4298V94H76V83.4298Z" fill="currentColor" stroke="currentColor"
+              stroke-width="7" stroke-linejoin="round" />
+            <text class="qrcode_text" id="qrcode_text_1" x="335" y="70" textLength="175">
+              1234
+            </text>
+            <text class="qrcode_text" id="qrcode_text_2" x="335" y="130" textLength="175">
+              5678
+            </text>
+            <svg id="qrcode" x="35" y="60" width="300"></svg>
+          </svg>
+
+          <div>Code: <span id="hap_setup_code"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container" id="wifi_container" style="display: none">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/WiFi-Settings"
+      target="_blank">?</a>
+    <h1>WiFi Settings</h1>
+
+    <div class="tab_wrapper" id="wifi_container">
+      <input class="tab_radio" id="one" name="group" type="radio" checked>
+      <input class="tab_radio" id="two" name="group" type="radio">
+      <input class="tab_radio" id="three" name="group" type="radio">
+      <div class="tabs">
+        <label class="tab" id="tab1" for="one">WiFi 1</label>
+        <label class="tab" id="tab2" for="two">WiFi 2</label>
+        <label class="tab" id="tab3" for="three">AP</label>
+      </div>
+      <div class="panels">
+        <div class="panel" id="panel1">
+          <div class="form">
+            <div class="form-control">
+              <label>Enable:</label>
+              <label class="switch">
+                <input type="checkbox" id="wifi_en">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="form-control">
+              <label>Network:</label>
+              <input type="text" id="wifi_ssid">
+            </div>
+            <div class="form-control">
+              <label>Password:</label>
+              <input type="password" id="wifi_pass" placeholder="(empty)">
+            </div>
+            <div class="form-control">
+              <label>Static IP:</label>
+              <label class="switch">
+                <input type="checkbox" id="wifi_ip_en">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div id="wifi_ip_container">
+              <div class="form-control">
+                <label>IP:</label>
+                <input type="text" id="wifi_ip">
+              </div>
+              <div class="form-control">
+                <label>Netmask:</label>
+                <input type="text" id="wifi_netmask">
+              </div>
+              <div class="form-control">
+                <label>Gateway:</label>
+                <input type="text" id="wifi_gw">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" id="panel2">
+          <div class="form">
+            <div class="form-control">
+              <label>Enable:</label>
+              <label class="switch">
+                <input type="checkbox" id="wifi1_en">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="form-control">
+              <label>Network:</label>
+              <input type="text" id="wifi1_ssid">
+            </div>
+            <div class="form-control">
+              <label>Password:</label>
+              <input type="password" id="wifi1_pass" placeholder="(empty)">
+            </div>
+            <div class="form-control">
+              <label>Static IP:</label>
+              <label class="switch">
+                <input type="checkbox" id="wifi1_ip_en">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div id="wifi1_ip_container">
+              <div class="form-control">
+                <label>IP:</label>
+                <input type="text" id="wifi1_ip">
+              </div>
+              <div class="form-control">
+                <label>Netmask:</label>
+                <input type="text" id="wifi1_netmask">
+              </div>
+              <div class="form-control">
+                <label>Gateway:</label>
+                <input type="text" id="wifi1_gw">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" id="panel3">
+          <div class="form">
+            <div class="form-control">
+              <label>Enable permanently:</label>
+              <label class="switch">
+                <input type="checkbox" id="wifi_ap_en">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="form-control">
+              <label>Network:</label>
+              <input type="text" id="wifi_ap_ssid">
+            </div>
+            <div class="form-control">
+              <label>Password:</label>
+              <input type="password" id="wifi_ap_pass" placeholder="(empty)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form">
+      <div>
+        <div class="form-control" id="wifi_status_container">
+          <label>Status:</label>
+          <span id="wifi_status"></span>
+        </div>
+        <div class="form-control" id="wifi_conn_ssid_container">
+          <label>Network:</label>
+          <span id="wifi_conn_ssid"></span>
+        </div>
+        <div class="form-control" id="wifi_conn_ip_container">
+          <label>IP:</label>
+          <span id="wifi_conn_ip"></span>
+        </div>
+        <div class="form-control" id="wifi_conn_rssi_container">
+          <label>RSSI:</label>
+          <span id="wifi_conn_rssi"></span>
+        </div>
+        <div class="form-control" id="mac_address_container">
+          <label>MAC:</label>
+          <span id="mac_address"></span>
+        </div>
+        <div class="button-container">
+          <button id="wifi_save_btn">
+            <label><span id="wifi_spinner"></span>Save</label>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="sec_container" style="display: none">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Security-Settings"
+      target="_blank">?</a>
+    <h1>Security Settings</h1>
+    <div class="form">
+      <div>
+        <div class="form-control" id="sec_old_pass_container">
+          <label>Old Password:</label>
+          <input type="password" id="sec_old_pass">
+        </div>
+        <div class="form-control">
+          <label>New Password:</label>
+          <input type="password" id="sec_new_pass">
+        </div>
+        <div class="button-container">
+          <button id="sec_save_btn">
+            <label><span id="sec_save_spinner"></span>Save</label>
+          </button>
+          <button id="sec_log_out_btn">
+            <label><span id="sec_log_out_spinner"></span>Log Out</label>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="container" id="sys_container" style="display: none">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/System-Settings"
+      target="_blank">?</a>
+    <h1>System</h1>
+    <div class="form">
+      <div>
+        <div class="form-control">
+          <label>Model:</label>
+          <span id="model"></span>
+        </div>
+        <div class="form-control">
+          <label>Device ID:</label>
+          <span id="device_id"></span>
+        </div>
+        <div class="form-control" id="host_container">
+          <label>Host:</label>
+          <span id="host"></span>
+        </div>
+        <div class="form-control" id="uptime_container" style="display: none">
+          <label>Uptime:</label>
+          <span id="uptime"></span>
+        </div>
+        <div class="form-control" id="sys_temp_container" style="display: none">
+          <label>Temperature:</label>
+          <span id="sys_temp"></span>&deg;C
+        </div>
+        <div class="form-control">
+          <label>Debug Log:</label>
+          <a target="_blank" id="debug_link">Log</a>
+        </div>
+        <div class="button-container">
+          <button class="btn" id="reboot_btn">
+            <label>Reboot</label>
+          </button>
+          <button class="btn" id="reset_btn">
+            <label>Reset</label>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="firmware_container" style="display: none">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Firmware" target="_blank">?</a>
+    <h1>Firmware</h1>
+    <div class="form">
+      <div>
+        <div class="form-control">
+          <label>Version:</label><span id="version"></span>
+        </div>
+        <div class="form-wrap-control">
+          <label>Build:</label><span id="fw_build"></span>
+        </div>
+        <div class="form-control" id="update_container" style="display: none">
+          <label>Update: </label>
+          <button id="update_btn">
+            <label>
+              <span id="update_btn_spinner"></span>
+              <span id="update_btn_text">Check</span>
+            </label>
+          </button>
+          <span id="update_status"></span>
+        </div>
+        <div class="form-control" id="revert_to_stock_container" style="display: none">
+          <label>Revert to Stock:</label>
+          <button id="revert_btn">
+            <label><span id="revert_btn_spinner"></span>Revert</label>
+          </button>
+          <div class="form-control" id="revert_status">
+            <span id="revert_status"></span>
+          </div>
+          <div id="revert_msg" style="text-align: center; display: none">Please consider reporting missing features
+            <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">on GitHub</a>.
+          </div>
+        </div>
+        <form style="display: inline">
+          <div class="form-control">
+            <label>Update from file:</label>
+            <input type="file" id="fw_select_file" name="file" accept=".zip" style="width: 200px;">
+          </div>
+          <div class="button-container">
+            <button id="fw_upload_btn">
+              <label><span id="fw_spinner"></span>Upload</label>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="form" style="text-align: center">
+      &copy; Copyright <a
+        href="https://github.com/mongoose-os-apps/shelly-homekit/blob/master/AUTHORS.md">Shelly-HomeKit
+        contributors</a>.
+      <br>Use <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">GitHub</a> to report bugs and
+      request features.
+      <br>
+      <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+        <input type="hidden" name="cmd" value="_s-xclick" />
+        <input type="hidden" name="hosted_button_id" value="6KPSKWJDHVLB4" />
+        <input type="image" id="donate_form_submit" border="0" name="submit" title="Donate via PayPal"
+          alt="Donate via PayPal" style="display: none" />
       </form>
     </div>
   </div>
-</div>
 
-<div class="container">
-  <div class="form" style="text-align: center">
-    &copy; Copyright <a href="https://github.com/mongoose-os-apps/shelly-homekit/blob/master/AUTHORS.md">Shelly-HomeKit
-    contributors</a>.
-    <br>Use <a href="https://github.com/mongoose-os-apps/shelly-homekit/issues">GitHub</a> to report bugs and
-    request features.
-    <br>
-    <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-      <input type="hidden" name="cmd" value="_s-xclick"/>
-      <input type="hidden" name="hosted_button_id" value="6KPSKWJDHVLB4"/>
-      <input type="image" id="donate_form_submit" border="0" name="submit" title="Donate via PayPal"
-             alt="Donate via PayPal" style="display: none"/>
-    </form>
-  </div>
-</div>
+  <!-- Component section templates -->
 
-<!-- Component section templates -->
-
-<div class="container" id="sw_template" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Switch-Settings"
-     target="_blank">?</a>
-  <h1 id="head">Switch</h1>
-  <div class="form">
-    <div>
-      <div class="form-control" id="state_container">
-        <label for="state">Status:</label>
-        <label class="switch">
-          <input type="checkbox" id="state">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control" id="power_stats_container" style="display: none;">
-        <label for="power_stats">Power:</label>
-        <span id="power_stats"></span>
-      </div>
-    <div>
-      <div class="form-control">
-        <label for="name">Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>HAP Service Type:</label>
-        <select id="svc_type">
-          <option id="svc_type_-1" value="-1">Disabled</option>
-          <option id="svc_type_0" value="0">Switch</option>
-          <option id="svc_type_1" value="1">Outlet</option>
-          <option id="svc_type_2" value="2">Lock</option>
-          <option id="svc_type_3" value="3">Valve</option>
-        </select>
-      </div>
-      <div class="form-control" id="valve_type_container" style="display: none">
-        <label id="valve_type_label"></label>
-        <select id="valve_type">
-          <option id="valve_type_0" value="0">Generic Valve</option>
-          <option id="valve_type_1" value="1">Irrigation</option>
-        </select>
-      </div>
-      <div class="form-control" id="in_mode_container">
-        <label for="in_mode">Input Mode:</label>
-        <select id="in_mode">
-          <option id="in_mode_0" value="0">Momentary</option>
-          <option id="in_mode_1" value="1">Toggle</option>
-          <option id="in_mode_2" value="2">Edge</option>
-          <option id="in_mode_3" value="3">Detached</option>
-          <option id="in_mode_4" value="4">Activation</option>
-          <option id="in_mode_5" value="5">Edge (both inputs)</option>
-          <option id="in_mode_6" value="6">Activation (both inputs)</option>
-        </select>
-      </div>
-      <div class="form-control" id="in_inverted_container" style="display: none">
-        <label for="in_inverted">Inverted Input:</label>
-        <label class="switch">
-          <input type="checkbox" id="in_inverted">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label for="initial">Initial state:</label>
-        <select id="initial">
-          <option id="initial_0" value="0">Off</option>
-          <option id="initial_1" value="1">On</option>
-          <option id="initial_2" value="2">Last</option>
-          <option id="initial_3" value="3">Input</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label for="out_inverted">Inverted Output:</label>
-        <label class="switch">
-          <input type="checkbox" id="out_inverted">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label for="auto_off">Auto Off:</label>
-        <label class="switch">
-          <input type="checkbox" id="auto_off">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control" id="auto_off_delay_container">
-        <label for="auto_off_delay">Auto Off Delay:</label>
-        <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
-               pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
-      </div>
-      <div class="form-control" id="state_led_en_container">
-        <label for="state_led_en">State LED:</label>
-        <label class="switch">
-          <input type="checkbox" id="state_led_en">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="button-container">
-        <button id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
+  <div class="container" id="sw_template" style="display: none">
+    <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Switch-Settings"
+      target="_blank">?</a>
+    <h1 id="head">Switch</h1>
+    <div class="form">
+      <div>
+        <div class="form-control" id="state_container">
+          <label for="state">Status:</label>
+          <label class="switch">
+            <input type="checkbox" id="state">
+            <span class="slider round"></span>
+          </label>
+        </div>
+        <div class="form-control" id="power_stats_container" style="display: none;">
+          <label for="power_stats">Power:</label>
+          <span id="power_stats"></span>
+        </div>
+        <div>
+          <div class="form-control">
+            <label for="name">Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>HAP Service Type:</label>
+            <select id="svc_type">
+              <option id="svc_type_-1" value="-1">Disabled</option>
+              <option id="svc_type_0" value="0">Switch</option>
+              <option id="svc_type_1" value="1">Outlet</option>
+              <option id="svc_type_2" value="2">Lock</option>
+              <option id="svc_type_3" value="3">Valve</option>
+            </select>
+          </div>
+          <div class="form-control" id="valve_type_container" style="display: none">
+            <label id="valve_type_label"></label>
+            <select id="valve_type">
+              <option id="valve_type_0" value="0">Generic Valve</option>
+              <option id="valve_type_1" value="1">Irrigation</option>
+            </select>
+          </div>
+          <div class="form-control" id="in_mode_container">
+            <label for="in_mode">Input Mode:</label>
+            <select id="in_mode">
+              <option id="in_mode_0" value="0">Momentary</option>
+              <option id="in_mode_1" value="1">Toggle</option>
+              <option id="in_mode_2" value="2">Edge</option>
+              <option id="in_mode_3" value="3">Detached</option>
+              <option id="in_mode_4" value="4">Activation</option>
+              <option id="in_mode_5" value="5">Edge (both inputs)</option>
+              <option id="in_mode_6" value="6">Activation (both inputs)</option>
+            </select>
+          </div>
+          <div class="form-control" id="in_inverted_container" style="display: none">
+            <label for="in_inverted">Inverted Input:</label>
+            <label class="switch">
+              <input type="checkbox" id="in_inverted">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label for="initial">Initial state:</label>
+            <select id="initial">
+              <option id="initial_0" value="0">Off</option>
+              <option id="initial_1" value="1">On</option>
+              <option id="initial_2" value="2">Last</option>
+              <option id="initial_3" value="3">Input</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label for="out_inverted">Inverted Output:</label>
+            <label class="switch">
+              <input type="checkbox" id="out_inverted">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label for="auto_off">Auto Off:</label>
+            <label class="switch">
+              <input type="checkbox" id="auto_off">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control" id="auto_off_delay_container">
+            <label for="auto_off_delay">Auto Off Delay:</label>
+            <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
+              pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
+          </div>
+          <div class="form-control" id="state_led_en_container">
+            <label for="state_led_en">State LED:</label>
+            <label class="switch">
+              <input type="checkbox" id="state_led_en">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="button-container">
+            <button id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="container" id="ssw_template" style="display: none">
-  <a class="helpbadge"
-     href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Input-Switch-Settings#stateless-switch"
-     target="_blank">?</a>
-  <h1 id="head">Input</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>HAP Type:</label>
-        <select id="type">
-          <option id="type_6" value="6">Disabled</option>
-          <option id="type_3" value="3">Stateless Switch</option>
-          <option id="type_7" value="7">Motion Sensor</option>
-          <option id="type_8" value="8">Occupancy Sensor</option>
-          <option id="type_9" value="9">Contact Sensor</option>
-          <option id="type_10" value="10">Doorbell</option>
-          <option id="type_13" value="13">Leak Sensor</option>
-          <option id="type_14" value="14">Smoke Sensor</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>Input Mode:</label>
-        <select id="in_mode">
-          <option id="in_mode_0" value="0">Momentary</option>
-          <option id="in_mode_1" value="1">Toggle, on = off = single press</option>
-          <option id="in_mode_2" value="2">Toggle, on = single, off = double</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label for="inverted">Inverted Input:</label>
-        <label class="switch">
-          <input type="checkbox" id="inverted">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label>Last Event:</label>
-        <span id="last_event"></span>
-      </div>
-      <div class="button-container">
-        <button id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
+    <div class="container" id="ssw_template" style="display: none">
+      <a class="helpbadge"
+        href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Input-Switch-Settings#stateless-switch"
+        target="_blank">?</a>
+      <h1 id="head">Input</h1>
+      <div class="form">
+        <div>
+          <div class="form-control">
+            <label>HAP Type:</label>
+            <select id="type">
+              <option id="type_6" value="6">Disabled</option>
+              <option id="type_3" value="3">Stateless Switch</option>
+              <option id="type_7" value="7">Motion Sensor</option>
+              <option id="type_8" value="8">Occupancy Sensor</option>
+              <option id="type_9" value="9">Contact Sensor</option>
+              <option id="type_10" value="10">Doorbell</option>
+              <option id="type_13" value="13">Leak Sensor</option>
+              <option id="type_14" value="14">Smoke Sensor</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>Input Mode:</label>
+            <select id="in_mode">
+              <option id="in_mode_0" value="0">Momentary</option>
+              <option id="in_mode_1" value="1">Toggle, on = off = single press</option>
+              <option id="in_mode_2" value="2">Toggle, on = single, off = double</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label for="inverted">Inverted Input:</label>
+            <label class="switch">
+              <input type="checkbox" id="inverted">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Last Event:</label>
+            <span id="last_event"></span>
+          </div>
+          <div class="button-container">
+            <button id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="container" id="di_template" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Input-Switch-Settings"
-     target="_blank">?</a>
-  <h1 id="head">Disabled Input</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>HAP Type:</label>
-        <select id="type">
-          <option id="type_6" value="6">Disabled</option>
-          <option id="type_3" value="3">Stateless Switch</option>
-          <option id="type_7" value="7">Motion Sensor</option>
-          <option id="type_8" value="8">Occupancy Sensor</option>
-          <option id="type_9" value="9">Contact Sensor</option>
-          <option id="type_10" value="10">Doorbell</option>
-          <option id="type_13" value="13">Leak Sensor</option>
-          <option id="type_14" value="14">Smoke Sensor</option>
-        </select>
-      </div>
-      <div class="button-container">
-        <button id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
+    <div class="container" id="di_template" style="display: none">
+      <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Input-Switch-Settings"
+        target="_blank">?</a>
+      <h1 id="head">Disabled Input</h1>
+      <div class="form">
+        <div>
+          <div class="form-control">
+            <label>HAP Type:</label>
+            <select id="type">
+              <option id="type_6" value="6">Disabled</option>
+              <option id="type_3" value="3">Stateless Switch</option>
+              <option id="type_7" value="7">Motion Sensor</option>
+              <option id="type_8" value="8">Occupancy Sensor</option>
+              <option id="type_9" value="9">Contact Sensor</option>
+              <option id="type_10" value="10">Doorbell</option>
+              <option id="type_13" value="13">Leak Sensor</option>
+              <option id="type_14" value="14">Smoke Sensor</option>
+            </select>
+          </div>
+          <div class="button-container">
+            <button id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="container" id="sensor_template" style="display: none">
-  <a class="helpbadge"
-     href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Input-Switch-Settings#motion-sensor--occupancy-sensor--contact-sensor"
-     target="_blank">?</a>
-  <h1 id="head">Sensor</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>HAP Type:</label>
-        <select id="type">
-          <option id="type_6" value="6">Disabled</option>
-          <option id="type_3" value="3">Stateless Switch</option>
-          <option id="type_7" value="7">Motion Sensor</option>
-          <option id="type_8" value="8">Occupancy Sensor</option>
-          <option id="type_9" value="9">Contact Sensor</option>
-          <option id="type_10" value="10">Doorbell</option>
-          <option id="type_13" value="13">Leak Sensor</option>
-          <option id="type_14" value="14">Smoke Sensor</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label for="inverted">Inverted Input:</label>
-        <label class="switch">
-          <input type="checkbox" id="inverted">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label>Input Mode:</label>
-        <select id="in_mode">
-          <option id="in_mode_0" value="0">Level</option>
-          <option id="in_mode_1" value="1">Pulse</option>
-        </select>
-      </div>
-      <div class="form-control" id="idle_time_container">
-        <label>Idle Time:</label>
-        <input type="text" id="idle_time" style="width: 2em; min-width: 2em"> s
-      </div>
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="status"></span>
-      </div>
-      <div class="button-container">
-        <button id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
+    <div class="container" id="sensor_template" style="display: none">
+      <a class="helpbadge"
+        href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Input-Switch-Settings#motion-sensor--occupancy-sensor--contact-sensor"
+        target="_blank">?</a>
+      <h1 id="head">Sensor</h1>
+      <div class="form">
+        <div>
+          <div class="form-control">
+            <label>HAP Type:</label>
+            <select id="type">
+              <option id="type_6" value="6">Disabled</option>
+              <option id="type_3" value="3">Stateless Switch</option>
+              <option id="type_7" value="7">Motion Sensor</option>
+              <option id="type_8" value="8">Occupancy Sensor</option>
+              <option id="type_9" value="9">Contact Sensor</option>
+              <option id="type_10" value="10">Doorbell</option>
+              <option id="type_13" value="13">Leak Sensor</option>
+              <option id="type_14" value="14">Smoke Sensor</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label for="inverted">Inverted Input:</label>
+            <label class="switch">
+              <input type="checkbox" id="inverted">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Input Mode:</label>
+            <select id="in_mode">
+              <option id="in_mode_0" value="0">Level</option>
+              <option id="in_mode_1" value="1">Pulse</option>
+            </select>
+          </div>
+          <div class="form-control" id="idle_time_container">
+            <label>Idle Time:</label>
+            <input type="text" id="idle_time" style="width: 2em; min-width: 2em"> s
+          </div>
+          <div class="form-control">
+            <label>Status:</label>
+            <span id="status"></span>
+          </div>
+          <div class="button-container">
+            <button id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="container" id="wc_template" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Roller-Shutter-Settings"
-     target="_blank">?</a>
-  <h1 id="head">Window</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="state"></span> pos
-        <span id="pos"></span>
-      </div>
-      <div class="button-container" id="pos_ctl">
-        <button id="open_btn">
-          <label><span id="open_spinner"></span>Open</label>
-        </button>
-        <button id="close_btn">
-          <label><span id="close_spinner"></span>Close</label>
-        </button>
-      </div>
-      <div class="form-control">
-        <label>Calibration:</label>
-        <span id="cal"></span>
-      </div>
-      <div class="form-control">
-        <label>Input Mode:</label>
-        <select id="in_mode">
-          <option id="in_mode_0" value="0">Separate - momentary</option>
-          <option id="in_mode_1" value="1">Separate - toggle</option>
-          <option id="in_mode_2" value="2">Single</option>
-          <option id="in_mode_3" value="3">Detached</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label>Swap Inputs:</label>
-        <label class="switch">
-          <input type="checkbox" id="swap_inputs">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label>Swap Outputs:</label>
-        <label class="switch">
-          <input type="checkbox" id="swap_outputs">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="button-container" id="btns">
-        <button id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-        <button id="cal_btn">
-          <label><span id="cal_spinner"></span>Calibrate</label>
-        </button>
+    <div class="container" id="wc_template" style="display: none">
+      <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Roller-Shutter-Settings"
+        target="_blank">?</a>
+      <h1 id="head">Window</h1>
+      <div class="form">
+        <div>
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>Status:</label>
+            <span id="state"></span> pos
+            <span id="pos"></span>
+          </div>
+          <div class="button-container" id="pos_ctl">
+            <button id="open_btn">
+              <label><span id="open_spinner"></span>Open</label>
+            </button>
+            <button id="close_btn">
+              <label><span id="close_spinner"></span>Close</label>
+            </button>
+          </div>
+          <div class="form-control">
+            <label>Calibration:</label>
+            <span id="cal"></span>
+          </div>
+          <div class="form-control">
+            <label>Input Mode:</label>
+            <select id="in_mode">
+              <option id="in_mode_0" value="0">Separate - momentary</option>
+              <option id="in_mode_1" value="1">Separate - toggle</option>
+              <option id="in_mode_2" value="2">Single</option>
+              <option id="in_mode_3" value="3">Detached</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label>Swap Inputs:</label>
+            <label class="switch">
+              <input type="checkbox" id="swap_inputs">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label>Swap Outputs:</label>
+            <label class="switch">
+              <input type="checkbox" id="swap_outputs">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="button-container" id="btns">
+            <button id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+            <button id="cal_btn">
+              <label><span id="cal_spinner"></span>Calibrate</label>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="container" id="ts_template" style="display: none">
-  <a class="helpbadge"
-     href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Sensor-Settings"
-     target="_blank">?</a>
-  <h1 id="head">Sensor</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>Value:</label>
-        <span id="value" style="min-width: 40px; display: inline-block;"></span>
-        <select id="unit" class="short">
-          <option id="unit_0" value="0">&deg;C</option>
-          <option id="unit_1" value="1">&deg;F</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label for="update_interval">Update Interval:</label>
-        <input type="number" id="update_interval" min="1" max="1000" class="short"><span>&nbsp; s</span>
-      </div>
-      <div class="button-container">
-        <button id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
+    <div class="container" id="ts_template" style="display: none">
+      <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Sensor-Settings"
+        target="_blank">?</a>
+      <h1 id="head">Sensor</h1>
+      <div class="form">
+        <div>
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>Value:</label>
+            <span id="value" style="min-width: 40px; display: inline-block;"></span>
+            <select id="unit" class="short">
+              <option id="unit_0" value="0">&deg;C</option>
+              <option id="unit_1" value="1">&deg;F</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label for="update_interval">Update Interval:</label>
+            <input type="number" id="update_interval" min="1" max="1000" class="short"><span>&nbsp; s</span>
+          </div>
+          <div class="button-container">
+            <button id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="container" id="gdo_template" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Garage-Door-Opener-Settings"
-     target="_blank">?</a>
-  <h1 id="head">Garage Door</h1>
-  <div class="form">
-    <div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control">
-        <label>Status:</label>
-        <span id="state"></span>
-      </div>
-      <div class="form-control">
-        <label>Close Sensor:</label>
-        <select id="close_sensor_mode">
-          <option id="close_sensor_mode_0" value="0">Normally Closed</option>
-          <option id="close_sensor_mode_1" value="1">Normally Open</option>
-        </select>
-      </div>
-      <div class="form-control" id="open_sensor_mode_container">
-        <label>Open Sensor:</label>
-        <select id="open_sensor_mode">
-          <option id="open_sensor_mode_0" value="0">Normally Closed</option>
-          <option id="open_sensor_mode_1" value="1">Normally Open</option>
-          <option id="open_sensor_mode_2" value="2">Disabled</option>
-        </select>
-      </div>
-      <div class="form-control" id="out_mode_container">
-        <label>Output Mode:</label>
-        <select id="out_mode">
-          <option id="out_mode_0" value="0">Single</option>
-          <option id="out_mode_1" value="1">Dual</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label>Movement Time:</label>
-        <input type="text" id="move_time" style="width: 2em; min-width: 2em;"> seconds
-      </div>
-      <div class="form-control">
-        <label>Pulse Time:</label>
-        <input type="text" id="pulse_time_ms" style="width: 2em; min-width: 2em;"> ms
-      </div>
-      <div class="button-container" id="btns">
-        <button id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-        <button id="toggle_btn">
-          <label><span id="toggle_spinner"></span>Toggle</label>
-        </button>
+    <div class="container" id="gdo_template" style="display: none">
+      <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Garage-Door-Opener-Settings"
+        target="_blank">?</a>
+      <h1 id="head">Garage Door</h1>
+      <div class="form">
+        <div>
+          <div class="form-control">
+            <label>Name:</label>
+            <input type="text" id="name">
+          </div>
+          <div class="form-control">
+            <label>Status:</label>
+            <span id="state"></span>
+          </div>
+          <div class="form-control">
+            <label>Close Sensor:</label>
+            <select id="close_sensor_mode">
+              <option id="close_sensor_mode_0" value="0">Normally Closed</option>
+              <option id="close_sensor_mode_1" value="1">Normally Open</option>
+            </select>
+          </div>
+          <div class="form-control" id="open_sensor_mode_container">
+            <label>Open Sensor:</label>
+            <select id="open_sensor_mode">
+              <option id="open_sensor_mode_0" value="0">Normally Closed</option>
+              <option id="open_sensor_mode_1" value="1">Normally Open</option>
+              <option id="open_sensor_mode_2" value="2">Disabled</option>
+            </select>
+          </div>
+          <div class="form-control" id="out_mode_container">
+            <label>Output Mode:</label>
+            <select id="out_mode">
+              <option id="out_mode_0" value="0">Single</option>
+              <option id="out_mode_1" value="1">Dual</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label>Movement Time:</label>
+            <input type="text" id="move_time" style="width: 2em; min-width: 2em;"> seconds
+          </div>
+          <div class="form-control">
+            <label>Pulse Time:</label>
+            <input type="text" id="pulse_time_ms" style="width: 2em; min-width: 2em;"> ms
+          </div>
+          <div class="button-container" id="btns">
+            <button id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+            <button id="toggle_btn">
+              <label><span id="toggle_spinner"></span>Toggle</label>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="container" id="rgb_template" style="display: none">
-  <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/RGB-Settings"
-     target="_blank">?</a>
-  <h1 id="head">RGB</h1>
-  <div class="form">
-    <div>
-      <div class="form-control" id="state_container">
-        <label for="state">Status:</label>
-        <label class="switch">
-          <input type="checkbox" id="state">
-          <span class="slider round"></span>
-        </label>
+    <div class="container" id="rgb_template" style="display: none">
+      <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/RGB-Settings"
+        target="_blank">?</a>
+      <h1 id="head">RGB</h1>
+      <div class="form">
+        <div>
+          <div class="form-control" id="state_container">
+            <label for="state">Status:</label>
+            <label class="switch">
+              <input type="checkbox" id="state">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control" id="power_stats_container" style="display: none;">
+            <label for="power_stats">Power:</label>
+            <span id="power_stats"></span>
+          </div>
+          <div>
+            <div class="form-control" id="color_container">
+              <label>Color:</label>
+              <span id="color_preview"></span>
+              <span id="color_name"></span>
+            </div>
+            <div class="form-control" id="hue_container">
+              <label>Hue:</label>
+              <input type="range" id="hue" min="0" max="360"><span id="hue_value"></span>
+            </div>
+            <div class="form-control" id="saturation_container">
+              <label>Saturation:</label>
+              <input type="range" id="saturation" min="0" max="100"><span id="saturation_value"></span>
+            </div>
+            <div class="form-control" id="color_temperature_container">
+              <label>Color Temperature:</label>
+              <input type="range" id="color_temperature" min="50" max="400"><span id="color_temperature_value"></span>
+            </div>
+            <div class="form-control">
+              <label>Brightness:</label>
+              <input type="range" id="brightness" min="0" max="100"><span id="brightness_value"></span>
+            </div>
+            <div class="form-control">
+              <label for="transition_time">Transition Time:</label>
+              <input type="number" id="transition_time" min="0" max="10000"><span>ms</span>
+            </div>
+            <div class="form-control">
+              <label>Name:</label>
+              <input type="text" id="name">
+            </div>
+            <div class="form-control" id="svc_hidden_container">
+              <label>HAP Service Hidden:</label>
+              <label class="switch">
+                <input type="checkbox" id="svc_hidden">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="form-control" id="in_mode_container">
+              <label for="in_mode">Input Mode:</label>
+              <select id="in_mode">
+                <option id="in_mode_0" value="0">Momentary</option>
+                <option id="in_mode_1" value="1">Toggle</option>
+                <option id="in_mode_2" value="2">Edge</option>
+                <option id="in_mode_3" value="3">Detached</option>
+                <option id="in_mode_4" value="4">Activation</option>
+              </select>
+            </div>
+            <div class="form-control" id="in_inverted_container" style="display: none">
+              <label for="in_inverted">Inverted Input:</label>
+              <label class="switch">
+                <input type="checkbox" id="in_inverted">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="form-control">
+              <label for="initial">Initial state:</label>
+              <select id="initial">
+                <option id="initial_0" value="0">Off</option>
+                <option id="initial_1" value="1">On</option>
+                <option id="initial_2" value="2">Last</option>
+                <option id="initial_3" value="3">Input</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label for="auto_off">Auto off:</label>
+              <label class="switch">
+                <input type="checkbox" id="auto_off">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="form-control" id="auto_off_delay_container">
+              <label for="auto_off_delay">Auto off delay:</label>
+              <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
+                pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
+            </div>
+            <div class="button-container">
+              <button id="save_btn">
+                <label><span id="save_spinner"></span>Save</label>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="form-control" id="power_stats_container" style="display: none;">
-        <label for="power_stats">Power:</label>
-        <span id="power_stats"></span>
-      </div>
-    <div>
-      <div class="form-control" id="color_container">
-        <label>Color:</label>
-        <span id="color_preview"></span>
-        <span id="color_name"></span>
-      </div>
-      <div class="form-control" id="hue_container">
-        <label>Hue:</label>
-        <input type="range" id="hue" min="0" max="360"><span id="hue_value"></span>
-      </div>
-      <div class="form-control" id="saturation_container">
-        <label>Saturation:</label>
-        <input type="range" id="saturation" min="0" max="100"><span id="saturation_value"></span>
-      </div>
-      <div class="form-control" id="color_temperature_container">
-        <label>Color Temperature:</label>
-        <input type="range" id="color_temperature" min="50" max="400"><span id="color_temperature_value"></span>
-      </div>
-      <div class="form-control">
-        <label>Brightness:</label>
-        <input type="range" id="brightness" min="0" max="100"><span id="brightness_value"></span>
-      </div>
-      <div class="form-control">
-        <label for="transition_time">Transition Time:</label>
-        <input type="number" id="transition_time" min="0" max="10000"><span>ms</span>
-      </div>
-      <div class="form-control">
-        <label>Name:</label>
-        <input type="text" id="name">
-      </div>
-      <div class="form-control" id="svc_hidden_container">
-        <label>HAP Service Hidden:</label>
-        <label class="switch">
-          <input type="checkbox" id="svc_hidden">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control" id="in_mode_container">
-        <label for="in_mode">Input Mode:</label>
-        <select id="in_mode">
-          <option id="in_mode_0" value="0">Momentary</option>
-          <option id="in_mode_1" value="1">Toggle</option>
-          <option id="in_mode_2" value="2">Edge</option>
-          <option id="in_mode_3" value="3">Detached</option>
-          <option id="in_mode_4" value="4">Activation</option>
-        </select>
-      </div>
-      <div class="form-control" id="in_inverted_container" style="display: none">
-        <label for="in_inverted">Inverted Input:</label>
-        <label class="switch">
-          <input type="checkbox" id="in_inverted">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control">
-        <label for="initial">Initial state:</label>
-        <select id="initial">
-          <option id="initial_0" value="0">Off</option>
-          <option id="initial_1" value="1">On</option>
-          <option id="initial_2" value="2">Last</option>
-          <option id="initial_3" value="3">Input</option>
-        </select>
-      </div>
-      <div class="form-control">
-        <label for="auto_off">Auto off:</label>
-        <label class="switch">
-          <input type="checkbox" id="auto_off">
-          <span class="slider round"></span>
-        </label>
-      </div>
-      <div class="form-control" id="auto_off_delay_container">
-        <label for="auto_off_delay">Auto off delay:</label>
-        <input type="text" id="auto_off_delay" placeholder="D:HH:MM:SS.sss" required
-               pattern="[0-9]+:(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}">
-      </div>
-      <div class="button-container">
-        <button id="save_btn">
-          <label><span id="save_spinner"></span>Save</label>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-<script src="sha256.js">
-</script>
-<script src="qrcode.js">
-</script>
-<script src="script.js">
-</script>
+      <script src="sha256.js">
+      </script>
+      <script src="qrcode.js">
+      </script>
+      <script src="script.js">
+      </script>
 </body>
+
 </html>

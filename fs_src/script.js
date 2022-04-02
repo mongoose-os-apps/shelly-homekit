@@ -138,6 +138,10 @@ el("hap_setup_btn").onclick = function() {
         console.log(info);
         if (!info) return;
         el("hap_setup_code").innerText = info.code;
+        el("qrcode_text_1").textContent =
+            info.code.replace(/-/g, "").substring(0, 4);
+        el("qrcode_text_2").textContent =
+            info.code.replace(/-/g, "").substring(4);
         el("qrcode").innerText = "";
         new QRCode(el("qrcode"), {
           text: info.url,
@@ -917,7 +921,7 @@ function updateElement(key, value, info) {
     case "version":
     case "fw_build":
       if (value !== undefined && (value >= 0 && value < 100)) break;
-      // fallthrough;
+    // fallthrough;
     case "device_id":
       updateInnerText(el(key), value);
       break;
