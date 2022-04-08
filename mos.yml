@@ -187,9 +187,9 @@ conds:
         # XXX: fix size calculation with and without BLE
         XHAP_ACCESSORY_SERVER_SIZE: 1680
         HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
+        HAP_TLV_NO_LOG: 1            # Saves us stack
         HAP_DISABLE_ASSERTS: 1       # 32K
         HAP_DISABLE_PRECONDITIONS: 1 # 40K
-
   - when: mos.platform == "esp32"
     apply:
       config_schema:

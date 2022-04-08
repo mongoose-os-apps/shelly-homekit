@@ -49,6 +49,14 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     return;
   }
 
+  // Use adaptive lightning when possible (CCT)
+  std::unique_ptr<hap::AdaptiveLighting> adaptive_light;
+  adaptive_light.reset(new hap::AdaptiveLighting(hap_light.get(), lb_cfg));
+  auto st = adaptive_light->Init();
+  if (st.ok()) {
+    hap_light->SetAdaptiveLight(std::move(adaptive_light));
+  }
+
   mgos::hap::Accessory *pri_acc = accs->front().get();
   shelly::hap::LightBulb *light_ref = hap_light.get();
   hap_light->set_primary(true);
