@@ -206,7 +206,7 @@ void LightBulb::UpdateOnOff(bool on, const std::string &source, bool force) {
   } else {
     DisableAutoOff();
   }
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_);
 }
 
 void LightBulb::SetHue(int hue, const std::string &source) {
@@ -218,7 +218,7 @@ void LightBulb::SetHue(int hue, const std::string &source) {
   dirty_ = true;
   hue_characteristic->RaiseEvent();
 
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_);
 }
 
 void LightBulb::SetColorTemperature(int color_temperature,
@@ -234,7 +234,7 @@ void LightBulb::SetColorTemperature(int color_temperature,
     color_temperature_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_);
 }
 
 void LightBulb::SetSaturation(int saturation, const std::string &source) {
@@ -249,7 +249,7 @@ void LightBulb::SetSaturation(int saturation, const std::string &source) {
     saturation_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_);
 }
 
 void LightBulb::SetBrightness(int brightness, const std::string &source) {
@@ -264,7 +264,7 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
     brightness_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_);
 }
 
 StatusOr<std::string> LightBulb::GetInfo() const {
@@ -399,7 +399,9 @@ Status LightBulb::SetState(const std::string &state_json) {
 
 void LightBulb::Identify() {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
-  // TODO: Set brightness to max and blink 5 times at 100 ms.
+
+  effect_.reset(new shelly::LightEffectBlink(controller_.get(), 1000, 3));
+  effect_->Start();
 }
 
 void LightBulb::ResetAutoOff() {

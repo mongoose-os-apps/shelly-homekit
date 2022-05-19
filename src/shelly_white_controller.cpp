@@ -26,8 +26,8 @@ WhiteController::WhiteController(struct mgos_config_lb *cfg, Output *out_w)
 WhiteController::~WhiteController() {
 }
 
-StateW WhiteController::ConfigToState() {
-  return {.w = cfg_->brightness / 100.0f};
+StateW WhiteController::ConfigToState(struct mgos_config_lb *cfg) {
+  return {.w = cfg->brightness / 100.0f};
 }
 
 void WhiteController::ReportTransition(const StateW &next, const StateW &prev) {

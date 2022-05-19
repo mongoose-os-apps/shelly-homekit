@@ -31,13 +31,13 @@ class LightBulbControllerBase {
     kRGBW = 2,
     kMax = 3,
   };
-  typedef std::function<void()> Update;
+  typedef std::function<void(struct mgos_config_lb *cfg_)> Update;
 
   LightBulbControllerBase(struct mgos_config_lb *cfg, Update ud);
   LightBulbControllerBase(const LightBulbControllerBase &other) = delete;
   virtual ~LightBulbControllerBase();
 
-  void UpdateOutput();
+  void UpdateOutput(struct mgos_config_lb *cfg_) const;
 
   virtual BulbType Type() = 0;
 
@@ -55,8 +55,8 @@ class LightBulbController : public LightBulbControllerBase {
  public:
   LightBulbController(struct mgos_config_lb *cfg)
       : LightBulbControllerBase(
-            cfg,
-            std::bind(&LightBulbController<T>::UpdateOutputSpecialized, this)),
+            cfg, std::bind(&LightBulbController<T>::UpdateOutputSpecialized,
+                           this, std::placeholders::_1)),
         transition_timer_(
             std::bind(&LightBulbController<T>::TransitionTimerCB, this)) {
   }
@@ -65,16 +65,17 @@ class LightBulbController : public LightBulbControllerBase {
  private:
   mgos::Timer transition_timer_;
   int64_t transition_start_ = 0;
+  int transition_time_ = 0;
 
   T state_start_{};
   T state_now_{};
   T state_end_{};
 
-  virtual T ConfigToState() = 0;
+  virtual T ConfigToState(struct mgos_config_lb *cfg) = 0;
   virtual void ReportTransition(const T &next, const T &prev) = 0;
   virtual void UpdatePWM(const T &state) = 0;
 
   void TransitionTimerCB();
-  void UpdateOutputSpecialized();
+  void UpdateOutputSpecialized(struct mgos_config_lb *cfg);
 };
 }  // namespace shelly

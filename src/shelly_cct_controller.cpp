@@ -41,11 +41,11 @@ void CCTController::UpdatePWM(const StateCCT &state) {
   out_cw_->SetStatePWM(state.cw, "transition");
 }
 
-StateCCT CCTController::ConfigToState() {
+StateCCT CCTController::ConfigToState(struct mgos_config_lb *cfg) {
   StateCCT state;
 
-  float v = cfg_->brightness / 100.0f;
-  float temp = cfg_->color_temperature;
+  float v = cfg->brightness / 100.0f;
+  float temp = cfg->color_temperature;
 
   // brightness and color temperature [mired] to cw, ww values
   // uses additive mixing, so at middle temp it is 50/50

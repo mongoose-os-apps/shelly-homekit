@@ -51,13 +51,13 @@ void RGBWController::UpdatePWM(const StateRGBW &state) {
   }
 }
 
-StateRGBW RGBWController::ConfigToState() {
+StateRGBW RGBWController::ConfigToState(struct mgos_config_lb *cfg) {
   StateRGBW state;
-  float h = cfg_->hue / 360.0f;
-  float s = cfg_->saturation / 100.0f;
-  float v = cfg_->brightness / 100.0f;
+  float h = cfg->hue / 360.0f;
+  float s = cfg->saturation / 100.0f;
+  float v = cfg->brightness / 100.0f;
 
-  if (cfg_->saturation == 0) {
+  if (cfg->saturation == 0) {
     // if saturation is zero than all rgb channels same as brightness
     state.r = state.g = state.b = v;
   } else {

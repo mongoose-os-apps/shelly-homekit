@@ -60,7 +60,7 @@ class RGBWController : public LightBulbController<StateRGBW> {
 
  private:
   Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
-  StateRGBW ConfigToState() final;
+  StateRGBW ConfigToState(struct mgos_config_lb *cfg) final;
   void ReportTransition(const StateRGBW &next, const StateRGBW &prev) final;
   void UpdatePWM(const StateRGBW &state) final;
 };

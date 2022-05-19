@@ -48,7 +48,7 @@ class WhiteController : public LightBulbController<StateW> {
  private:
   Output *const out_w_;
 
-  StateW ConfigToState() final;
+  StateW ConfigToState(struct mgos_config_lb *cfg) final;
   void ReportTransition(const StateW &prev, const StateW &next) final;
   void UpdatePWM(const StateW &state) final;
 };

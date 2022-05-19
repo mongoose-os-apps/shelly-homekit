@@ -57,7 +57,7 @@ class CCTController : public LightBulbController<StateCCT> {
  private:
   Output *const out_ww_, *const out_cw_;
 
-  StateCCT ConfigToState() final;
+  StateCCT ConfigToState(struct mgos_config_lb *cfg) final;
   void ReportTransition(const StateCCT &next, const StateCCT &prev) final;
   void UpdatePWM(const StateCCT &state) final;
 };
