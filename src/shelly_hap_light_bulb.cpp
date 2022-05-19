@@ -206,7 +206,7 @@ void LightBulb::UpdateOnOff(bool on, const std::string &source, bool force) {
   } else {
     DisableAutoOff();
   }
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_, true);
 }
 
 void LightBulb::SetHue(int hue, const std::string &source) {
@@ -218,7 +218,7 @@ void LightBulb::SetHue(int hue, const std::string &source) {
   dirty_ = true;
   hue_characteristic->RaiseEvent();
 
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_, true);
 }
 
 void LightBulb::SetColorTemperature(int color_temperature,
@@ -234,7 +234,7 @@ void LightBulb::SetColorTemperature(int color_temperature,
     color_temperature_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_, true);
 }
 
 void LightBulb::SetSaturation(int saturation, const std::string &source) {
@@ -249,7 +249,7 @@ void LightBulb::SetSaturation(int saturation, const std::string &source) {
     saturation_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_, true);
 }
 
 void LightBulb::SetBrightness(int brightness, const std::string &source) {
@@ -264,7 +264,7 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
     brightness_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput();
+  controller_->UpdateOutput(cfg_, true);
 }
 
 StatusOr<std::string> LightBulb::GetInfo() const {
@@ -399,7 +399,28 @@ Status LightBulb::SetState(const std::string &state_json) {
 
 void LightBulb::Identify() {
   LOG(LL_INFO, ("=== IDENTIFY ==="));
-  // TODO: Set brightness to max and blink 5 times at 100 ms.
+
+  struct mgos_config_lb on;
+  mgos_config_lb_set_defaults(&on);
+  on.state = true;
+  on.transition_time = 500;
+  on.brightness = 100;
+
+  struct mgos_config_lb off;
+  mgos_config_lb_set_defaults(&off);
+  off.state = true;
+  off.transition_time = 500;
+  off.brightness = 0;
+
+  struct mgos_config_lb end = *cfg_;
+  end.transition_time = 500;
+
+  controller_->UpdateOutput(&on, true);
+  controller_->UpdateOutput(&off, false);
+  controller_->UpdateOutput(&on, false);
+  controller_->UpdateOutput(&off, false);
+  controller_->UpdateOutput(&on, false);
+  controller_->UpdateOutput(&end, false);
 }
 
 void LightBulb::ResetAutoOff() {

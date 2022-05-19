@@ -17,6 +17,8 @@
 
 #include "shelly_rgbw_controller.hpp"
 
+#include "mgos.hpp"
+
 namespace shelly {
 
 RGBWController::RGBWController(struct mgos_config_lb *cfg, Output *out_r,
@@ -51,13 +53,14 @@ void RGBWController::UpdatePWM(const StateRGBW &state) {
   }
 }
 
-StateRGBW RGBWController::ConfigToState() {
+StateRGBW RGBWController::ConfigToState(
+    const struct mgos_config_lb &cfg) const {
   StateRGBW state;
-  float h = cfg_->hue / 360.0f;
-  float s = cfg_->saturation / 100.0f;
-  float v = cfg_->brightness / 100.0f;
+  float h = cfg.hue / 360.0f;
+  float s = cfg.saturation / 100.0f;
+  float v = cfg.brightness / 100.0f;
 
-  if (cfg_->saturation == 0) {
+  if (cfg.saturation == 0) {
     // if saturation is zero than all rgb channels same as brightness
     state.r = state.g = state.b = v;
   } else {
@@ -119,4 +122,9 @@ StateRGBW RGBWController::ConfigToState() {
   }
   return state;
 }
+
+std::string StateRGBW::ToString() const {
+  return mgos::SPrintf("[r=%.2f g=%.2f b=%.2f w=%.2f]", r, g, b, w);
+}
+
 }  // namespace shelly

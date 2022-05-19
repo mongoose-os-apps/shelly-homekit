@@ -119,16 +119,21 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     bool sw_hidden = is_optional && lb_cfg->svc_hidden;
 
     mgos::hap::Accessory *pri_acc = accs->front().get();
+    shelly::hap::LightBulb *light_ref = hap_light.get();
     if (to_pri_acc) {
       hap_light->set_primary(true);
       pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
-      pri_acc->AddService(hap_light.get());
+      pri_acc->AddService(light_ref);
     } else if (!sw_hidden) {
       int aid = SHELLY_HAP_AID_BASE_LIGHTING + i;
 
-      std::unique_ptr<mgos::hap::Accessory> acc(
-          new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
-                                   lb_cfg->name, nullptr, svr));
+      std::unique_ptr<mgos::hap::Accessory> acc(new mgos::hap::Accessory(
+          aid, kHAPAccessoryCategory_BridgedAccessory, lb_cfg->name,
+          [light_ref](const HAPAccessoryIdentifyRequest *request UNUSED_ARG) {
+            light_ref->Identify();
+            return kHAPError_None;
+          },
+          svr));
       acc->AddHAPService(&mgos_hap_accessory_information_service);
       acc->AddService(hap_light.get());
       accs->push_back(std::move(acc));

@@ -17,9 +17,13 @@
 
 #pragma once
 
+#include <deque>
 #include <functional>
+
 #include "mgos_sys_config.h"
 #include "mgos_timers.hpp"
+
+#include "shelly_common.hpp"
 
 namespace shelly {
 
@@ -31,13 +35,15 @@ class LightBulbControllerBase {
     kRGBW = 2,
     kMax = 3,
   };
-  typedef std::function<void()> Update;
+  typedef std::function<void(const struct mgos_config_lb &cfg,
+                             bool cancel_previous)>
+      UpdateFn;
 
-  LightBulbControllerBase(struct mgos_config_lb *cfg, Update ud);
+  LightBulbControllerBase(struct mgos_config_lb *cfg, UpdateFn ud);
   LightBulbControllerBase(const LightBulbControllerBase &other) = delete;
   virtual ~LightBulbControllerBase();
 
-  void UpdateOutput();
+  void UpdateOutput(struct mgos_config_lb *cfg, bool cancel_previous) const;
 
   virtual BulbType Type() = 0;
 
@@ -46,8 +52,13 @@ class LightBulbControllerBase {
 
  protected:
   struct mgos_config_lb *cfg_;
+  const UpdateFn update_;
+};
 
-  Update update_;
+template <class T>
+struct Transition {
+  T state_end;
+  int64_t transition_time_micros = 0;
 };
 
 template <class T>
@@ -55,8 +66,8 @@ class LightBulbController : public LightBulbControllerBase {
  public:
   LightBulbController(struct mgos_config_lb *cfg)
       : LightBulbControllerBase(
-            cfg,
-            std::bind(&LightBulbController<T>::UpdateOutputSpecialized, this)),
+            cfg, std::bind(&LightBulbController<T>::UpdateOutputSpecialized,
+                           this, _1, _2)),
         transition_timer_(
             std::bind(&LightBulbController<T>::TransitionTimerCB, this)) {
   }
@@ -68,13 +79,16 @@ class LightBulbController : public LightBulbControllerBase {
 
   T state_start_{};
   T state_now_{};
-  T state_end_{};
 
-  virtual T ConfigToState() = 0;
+  std::deque<Transition<T>> transitions_;
+
+  virtual T ConfigToState(const struct mgos_config_lb &cfg) const = 0;
   virtual void ReportTransition(const T &next, const T &prev) = 0;
   virtual void UpdatePWM(const T &state) = 0;
 
+  void StartPendingTransitions();
   void TransitionTimerCB();
-  void UpdateOutputSpecialized();
+  void UpdateOutputSpecialized(const struct mgos_config_lb &cfg,
+                               bool cancel_previous);
 };
 }  // namespace shelly

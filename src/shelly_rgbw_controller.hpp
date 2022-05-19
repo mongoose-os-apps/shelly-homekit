@@ -45,6 +45,8 @@ struct StateRGBW {
         .w = a * w,
     };
   }
+
+  std::string ToString() const;
 };
 
 class RGBWController : public LightBulbController<StateRGBW> {
@@ -60,7 +62,7 @@ class RGBWController : public LightBulbController<StateRGBW> {
 
  private:
   Output *const out_r_, *const out_g_, *const out_b_, *const out_w_;
-  StateRGBW ConfigToState() final;
+  StateRGBW ConfigToState(const struct mgos_config_lb &cfg) const final;
   void ReportTransition(const StateRGBW &next, const StateRGBW &prev) final;
   void UpdatePWM(const StateRGBW &state) final;
 };

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "mgos.hpp"
 #include "mgos_hap_chars.hpp"
 #include "mgos_timers.hpp"
 #include "shelly_light_bulb_controller.hpp"
 #include "shelly_output.hpp"
-
-#pragma once
 
 namespace shelly {
 
@@ -42,6 +42,8 @@ struct StateCCT {
         .cw = a * cw,
     };
   }
+
+  std::string ToString() const;
 };
 
 class CCTController : public LightBulbController<StateCCT> {
@@ -57,7 +59,7 @@ class CCTController : public LightBulbController<StateCCT> {
  private:
   Output *const out_ww_, *const out_cw_;
 
-  StateCCT ConfigToState() final;
+  StateCCT ConfigToState(const struct mgos_config_lb &cfg) const final;
   void ReportTransition(const StateCCT &next, const StateCCT &prev) final;
   void UpdatePWM(const StateCCT &state) final;
 };

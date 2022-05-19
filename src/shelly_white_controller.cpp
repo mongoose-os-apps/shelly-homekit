@@ -17,6 +17,8 @@
 
 #include "shelly_white_controller.hpp"
 
+#include "mgos.hpp"
+
 namespace shelly {
 
 WhiteController::WhiteController(struct mgos_config_lb *cfg, Output *out_w)
@@ -26,8 +28,10 @@ WhiteController::WhiteController(struct mgos_config_lb *cfg, Output *out_w)
 WhiteController::~WhiteController() {
 }
 
-StateW WhiteController::ConfigToState() {
-  return {.w = cfg_->brightness / 100.0f};
+StateW WhiteController::ConfigToState(const struct mgos_config_lb &cfg) const {
+  StateW st;
+  st.w = (cfg.state ? cfg.brightness / 100.0f : 0.0f);
+  return st;
 }
 
 void WhiteController::ReportTransition(const StateW &next, const StateW &prev) {
@@ -36,6 +40,10 @@ void WhiteController::ReportTransition(const StateW &next, const StateW &prev) {
 
 void WhiteController::UpdatePWM(const StateW &state) {
   out_w_->SetStatePWM(state.w, "transition");
+}
+
+std::string StateW::ToString() const {
+  return mgos::SPrintf("[w=%.2f]", w);
 }
 
 }  // namespace shelly

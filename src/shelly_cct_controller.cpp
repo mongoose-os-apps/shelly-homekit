@@ -41,11 +41,11 @@ void CCTController::UpdatePWM(const StateCCT &state) {
   out_cw_->SetStatePWM(state.cw, "transition");
 }
 
-StateCCT CCTController::ConfigToState() {
+StateCCT CCTController::ConfigToState(const struct mgos_config_lb &cfg) const {
   StateCCT state;
 
-  float v = cfg_->brightness / 100.0f;
-  float temp = cfg_->color_temperature;
+  float v = cfg.brightness / 100.0f;
+  float temp = cfg.color_temperature;
 
   // brightness and color temperature [mired] to cw, ww values
   // uses additive mixing, so at middle temp it is 50/50
@@ -57,4 +57,9 @@ StateCCT CCTController::ConfigToState() {
   state.cw = (1.0f - temp) * v;
   return state;
 }
+
+std::string StateCCT::ToString() const {
+  return mgos::SPrintf("[ww=%.2f cw=%.2f]", ww, cw);
+}
+
 }  // namespace shelly

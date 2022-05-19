@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "mgos_timers.hpp"
+
 #include "shelly_light_bulb_controller.hpp"
 #include "shelly_output.hpp"
-
-#pragma once
 
 namespace shelly {
 
@@ -33,13 +34,15 @@ struct StateW {
   StateW operator*(float a) const {
     return {.w = a * w};
   }
+
+  std::string ToString() const;
 };
 
 class WhiteController : public LightBulbController<StateW> {
  public:
   WhiteController(struct mgos_config_lb *cfg, Output *out_w);
   WhiteController(const WhiteController &other) = delete;
-  ~WhiteController();
+  ~WhiteController() final;
 
   BulbType Type() final {
     return BulbType::kWhite;
@@ -48,7 +51,7 @@ class WhiteController : public LightBulbController<StateW> {
  private:
   Output *const out_w_;
 
-  StateW ConfigToState() final;
+  StateW ConfigToState(const struct mgos_config_lb &cfg) const final;
   void ReportTransition(const StateW &prev, const StateW &next) final;
   void UpdatePWM(const StateW &state) final;
 };

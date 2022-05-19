@@ -24,21 +24,22 @@
 namespace shelly {
 
 LightBulbControllerBase::LightBulbControllerBase(struct mgos_config_lb *cfg,
-                                                 Update ud)
+                                                 UpdateFn ud)
     : cfg_(cfg), update_(ud) {
 }
 
 LightBulbControllerBase::~LightBulbControllerBase() {
 }
 
-bool LightBulbControllerBase::IsOn() const {
-  return cfg_->state != 0;
+void LightBulbControllerBase::UpdateOutput(struct mgos_config_lb *cfg,
+                                           bool cancel_previous) const {
+  if (update_) {
+    update_(*cfg, cancel_previous);
+  }
 }
 
-void LightBulbControllerBase::UpdateOutput() {
-  if (update_) {
-    update_();
-  }
+bool LightBulbControllerBase::IsOn() const {
+  return cfg_->state != 0;
 }
 
 bool LightBulbControllerBase::IsOff() const {
@@ -47,38 +48,59 @@ bool LightBulbControllerBase::IsOff() const {
 
 template <class T>
 void LightBulbController<T>::TransitionTimerCB() {
+  const auto &cur = transitions_.front();
   int64_t elapsed = mgos_uptime_micros() - transition_start_;
-  int64_t duration = cfg_->transition_time * 1000;
 
-  if (elapsed > duration) {
+  if (elapsed >= cur.transition_time_micros) {
+    LOG(LL_INFO, ("Transition finished"));
+    state_now_ = cur.state_end;
+    transitions_.pop_front();
     transition_timer_.Clear();
-    state_now_ = state_end_;
-    LOG(LL_INFO, ("Transition ready"));
+    StartPendingTransitions();
   } else {
-    float alpha = static_cast<float>(elapsed) / static_cast<float>(duration);
-    state_now_ = state_end_ * alpha + state_start_ * (1 - alpha);
+    float alpha = static_cast<float>(elapsed) /
+                  static_cast<float>(cur.transition_time_micros);
+    state_now_ = cur.state_end * alpha + state_start_ * (1 - alpha);
   }
 
   UpdatePWM(state_now_);
 }
+
 template <class T>
-void LightBulbController<T>::UpdateOutputSpecialized() {
-  state_start_ = state_now_;
-  if (IsOn()) {
-    state_end_ = ConfigToState();
-  } else {
-    // turn off
-    T statezero{};
-    state_end_ = statezero;
+void LightBulbController<T>::UpdateOutputSpecialized(
+    const struct mgos_config_lb &cfg, bool cancel_previous) {
+  if (cancel_previous) {
+    transitions_.clear();
   }
 
-  LOG(LL_INFO, ("Transition started... %d [ms]", cfg_->transition_time));
+  Transition<T> t;
+  t.state_end = ConfigToState(cfg);
+  t.transition_time_micros = cfg.transition_time * 1000;
+  transitions_.emplace_back(t);
 
-  ReportTransition(state_end_, state_start_);
+  StartPendingTransitions();
+}
+
+template <class T>
+void LightBulbController<T>::StartPendingTransitions() {
+  if (transition_timer_.IsValid() || transitions_.empty()) {
+    // already running or no further transitions queued
+    return;
+  }
+
+  const auto &cur = transitions_.front();
+  state_start_ = state_now_;
 
   // restarting transition timer to fade
   transition_start_ = mgos_uptime_micros();
   transition_timer_.Reset(10, MGOS_TIMER_REPEAT);
+
+  LOG(LL_INFO,
+      ("Starting transition: %s -> %s, %lld ms",
+       state_start_.ToString().c_str(), cur.state_end.ToString().c_str(),
+       (long long) cur.transition_time_micros / 1000));
+
+  ReportTransition(cur.state_end, state_start_);
 }
 
 template class LightBulbController<StateW>;
