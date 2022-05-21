@@ -570,6 +570,7 @@ conds:
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -605,6 +606,7 @@ conds:
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -645,6 +647,7 @@ conds:
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -782,6 +785,7 @@ conds:
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
       cdefs:
         LED_GPIO: 13
         LED_ON: 1
