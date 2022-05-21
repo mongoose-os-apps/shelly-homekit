@@ -77,4 +77,8 @@ void InitWifiConfigManager();
 
 void StartWifiConfigManager();
 
+std::string GetMACAddr(bool sta = true, bool delims = true);
+
+std::string FormatMACAddr(const uint8_t *mac, bool delims);
+
 }  // namespace shelly

@@ -53,4 +53,10 @@ void InitWifiConfigManager() {
 void StartWifiConfigManager() {
 }
 
+std::string GetMACAddr(bool sta UNUSED_ARG, bool delims) {
+  uint8_t mac[6];
+  device_get_mac_address(mac);
+  return FormatMACAddr(mac, delims);
+}
+
 }  // namespace shelly

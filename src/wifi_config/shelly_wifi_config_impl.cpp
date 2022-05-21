@@ -486,4 +486,22 @@ void StartWifiConfigManager() {
   s_mgr->Start();
 }
 
+#if CS_PLATFORM == CS_P_ESP8266
+extern "C" {
+#include <user_interface.h>
+}
+std::string GetMACAddr(bool sta, bool delims) {
+  uint8_t mac[6];
+  wifi_get_macaddr((sta ? STATION_IF : SOFTAP_IF), mac);
+  return FormatMACAddr(mac, delims);
+}
+#elif CS_PLATFORM == CS_P_ESP32
+#include "esp_mac.h"
+std::string GetMACAddr(bool sta, bool delims) {
+  uint8_t mac[6];
+  esp_read_mac(mac, (sta ? ESP_MAC_WIFI_STA : ESP_MAC_WIFI_SOFTAP));
+  return FormatMACAddr(mac, delims);
+}
+#endif
+
 }  // namespace shelly

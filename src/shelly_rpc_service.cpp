@@ -174,7 +174,7 @@ static void AppendWifiInfoExt(std::string *res) {
       wc.sta1.netmask.c_str(), wc.sta1.gw.c_str(), wc.ap.enable,
       wc.ap.ssid.c_str(), wifi_ap_pass.c_str(), wi.sta_connecting,
       wi.sta_connected, wi.sta_ssid.c_str(), wi.sta_rssi, wi.sta_ip.c_str(),
-      wi.status.c_str(), mgos_sys_ro_vars_get_mac_address());
+      wi.status.c_str(), GetMACAddr(true /* sta */, true /* delims */).c_str());
 }
 
 static void AppendOTAInfoExt(std::string *res) {
