@@ -22,6 +22,7 @@
 
 #include "mgos_hap.hpp"
 #include "mgos_ota.h"
+#include "mgos_sys_config.h"
 
 #include "shelly_component.hpp"
 #include "shelly_input_pin.hpp"
@@ -106,6 +107,13 @@ void CheckSysLED() {
     on_ms = 500;
   }
 out:
+#ifdef MGOS_SYS_CONFIG_HAVE_SW1
+  // This inhibits the sys LED on PlugS when state LED is disabled.
+  // https://github.com/mongoose-os-apps/shelly-homekit/issues/995
+  if (mgos_sys_config_get_sw1_state_led_en() == 0) {
+    on_ms = 0;
+  }
+#endif
   if (on_ms > 0) {
     if (on_ms > 1) {
       mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
