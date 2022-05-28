@@ -28,7 +28,6 @@
 #include "shelly_component.hpp"
 #include "shelly_input.hpp"
 #include "shelly_light_bulb_controller.hpp"
-#include "shelly_light_effect.hpp"
 #include "shelly_output.hpp"
 
 namespace shelly {
@@ -84,8 +83,6 @@ class LightBulb : public Component, public mgos::hap::Service {
 
   mgos::Timer auto_off_timer_;
   bool dirty_ = false;
-
-  std::unique_ptr<LightEffect> effect_;
 };
 
 }  // namespace hap

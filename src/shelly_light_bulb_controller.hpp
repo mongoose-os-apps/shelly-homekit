@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <deque>
 #include <functional>
 #include "mgos_sys_config.h"
 #include "mgos_timers.hpp"
@@ -31,13 +32,14 @@ class LightBulbControllerBase {
     kRGBW = 2,
     kMax = 3,
   };
-  typedef std::function<void(struct mgos_config_lb *cfg_)> Update;
+  typedef std::function<void(struct mgos_config_lb *cfg, bool cancel_previous)>
+      Update;
 
   LightBulbControllerBase(struct mgos_config_lb *cfg, Update ud);
   LightBulbControllerBase(const LightBulbControllerBase &other) = delete;
   virtual ~LightBulbControllerBase();
 
-  void UpdateOutput(struct mgos_config_lb *cfg_) const;
+  void UpdateOutput(struct mgos_config_lb *cfg, bool cancel_previous) const;
 
   virtual BulbType Type() = 0;
 
@@ -51,12 +53,18 @@ class LightBulbControllerBase {
 };
 
 template <class T>
+struct Transition {
+  T state_end;
+  int transition_time;
+};
+
+template <class T>
 class LightBulbController : public LightBulbControllerBase {
  public:
   LightBulbController(struct mgos_config_lb *cfg)
       : LightBulbControllerBase(
             cfg, std::bind(&LightBulbController<T>::UpdateOutputSpecialized,
-                           this, std::placeholders::_1)),
+                           this, std::placeholders::_1, std::placeholders::_2)),
         transition_timer_(
             std::bind(&LightBulbController<T>::TransitionTimerCB, this)) {
   }
@@ -68,14 +76,18 @@ class LightBulbController : public LightBulbControllerBase {
   int transition_time_ = 0;
 
   T state_start_{};
-  T state_now_{};
   T state_end_{};
+  T state_now_{};
+
+  std::deque<Transition<T>> transitions_;
 
   virtual T ConfigToState(struct mgos_config_lb *cfg) = 0;
   virtual void ReportTransition(const T &next, const T &prev) = 0;
   virtual void UpdatePWM(const T &state) = 0;
 
+  void StartPendingTransitions();
   void TransitionTimerCB();
-  void UpdateOutputSpecialized(struct mgos_config_lb *cfg);
+  void UpdateOutputSpecialized(struct mgos_config_lb *cfg,
+                               bool cancel_previous);
 };
 }  // namespace shelly

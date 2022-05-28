@@ -206,7 +206,7 @@ void LightBulb::UpdateOnOff(bool on, const std::string &source, bool force) {
   } else {
     DisableAutoOff();
   }
-  controller_->UpdateOutput(cfg_);
+  controller_->UpdateOutput(cfg_, true);
 }
 
 void LightBulb::SetHue(int hue, const std::string &source) {
@@ -218,7 +218,7 @@ void LightBulb::SetHue(int hue, const std::string &source) {
   dirty_ = true;
   hue_characteristic->RaiseEvent();
 
-  controller_->UpdateOutput(cfg_);
+  controller_->UpdateOutput(cfg_, true);
 }
 
 void LightBulb::SetColorTemperature(int color_temperature,
@@ -234,7 +234,7 @@ void LightBulb::SetColorTemperature(int color_temperature,
     color_temperature_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput(cfg_);
+  controller_->UpdateOutput(cfg_, true);
 }
 
 void LightBulb::SetSaturation(int saturation, const std::string &source) {
@@ -249,7 +249,7 @@ void LightBulb::SetSaturation(int saturation, const std::string &source) {
     saturation_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput(cfg_);
+  controller_->UpdateOutput(cfg_, true);
 }
 
 void LightBulb::SetBrightness(int brightness, const std::string &source) {
@@ -264,7 +264,7 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
     brightness_characteristic->RaiseEvent();
   }
 
-  controller_->UpdateOutput(cfg_);
+  controller_->UpdateOutput(cfg_, true);
 }
 
 StatusOr<std::string> LightBulb::GetInfo() const {
@@ -398,10 +398,28 @@ Status LightBulb::SetState(const std::string &state_json) {
 }
 
 void LightBulb::Identify() {
-  LOG(LL_INFO, ("=== IDENTIFY ==="));
+  LOG(LL_INFO, ("=== IDENTIFY LB ==="));
 
-  effect_.reset(new shelly::LightEffectBlink(controller_.get(), 1000, 3));
-  effect_->Start();
+  int transition_time_ms = 500;
+
+  struct mgos_config_lb on;
+  mgos_config_lb_set_defaults(&on);
+  on.state = true;
+  on.transition_time = transition_time_ms;
+  on.brightness = 100;
+
+  struct mgos_config_lb off;
+  mgos_config_lb_set_defaults(&off);
+  off.state = true;
+  off.transition_time = transition_time_ms;
+  off.brightness = 0;
+
+  int rep = 3;
+  for (int i = 0; i < rep; i++) {
+    controller_->UpdateOutput(&on, false);
+    controller_->UpdateOutput(&off, false);
+  }
+  controller_->UpdateOutput(cfg_, false);
 }
 
 void LightBulb::ResetAutoOff() {
