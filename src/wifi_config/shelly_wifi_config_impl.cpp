@@ -86,7 +86,6 @@ static constexpr const char *ns(const char *s) {
 
 WifiConfigManager::WifiConfigManager()
     : process_timer_(std::bind(&WifiConfigManager::Process, this)) {
-  void APConfigFromSys(struct mgos_config_wifi_ap & scfg, WifiAPConfig & cfg);
   cur_.ap.enable = mgos_sys_config_get_wifi_ap_keep_enabled();
   cur_.ap.ssid = ns(mgos_sys_config_get_wifi_ap_ssid());
   mgos_expand_mac_address_placeholders((char *) cur_.ap.ssid.data());
@@ -94,6 +93,7 @@ WifiConfigManager::WifiConfigManager()
   ap_running_ = mgos_sys_config_get_wifi_ap_enable();
   STAConfigFromSys(mgos_sys_config.wifi.sta, cur_.sta);
   STAConfigFromSys(mgos_sys_config.wifi.sta1, cur_.sta1);
+  cur_.sta_ps_mode = mgos_sys_config_get_wifi_sta_ps_mode();
   mgos_event_add_group_handler(
       MGOS_WIFI_EV_BASE,
       [](int ev, void *ev_data, void *arg) {
@@ -123,7 +123,12 @@ Status WifiConfigManager::SetConfig(const WifiConfig &cfg) {
   if (!st.ok()) {
     return mgos::Annotatef(st, "Invalid %s config", "STA1");
   }
-  bool sta_config_changed = !(cfg.sta == cur_.sta) || !(cfg.sta1 == cur_.sta1);
+  if (cfg.sta_ps_mode < 0 || cfg.sta_ps_mode > 2) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid %s", "sta_ps_mode");
+  }
+  bool sta_config_changed =
+      (!(cfg.sta == cur_.sta) || !(cfg.sta1 == cur_.sta1) ||
+       (cfg.sta_ps_mode != mgos_sys_config_get_wifi_sta_ps_mode()));
   ap_config_changed_ = !(cfg.ap == cur_.ap);
   LOG(LL_INFO, ("New config: %s %d %d", cfg.ToJSON().c_str(),
                 sta_config_changed, ap_config_changed_));
@@ -131,6 +136,8 @@ Status WifiConfigManager::SetConfig(const WifiConfig &cfg) {
   new_ = cfg;
   connect_failed_ = false;
   if (sta_config_changed) {
+    mgos_sys_config_set_wifi_sta_ps_mode(new_.sta_ps_mode);
+    LOG(LL_INFO, ("Setting ps mode to %d", new_.sta_ps_mode));
     act_ = &new_;
     SetState(State::kDisconnect);
   }
@@ -405,6 +412,10 @@ void WifiConfigManager::SaveConfig() {
   changed |= APConfigToSys(cur_.ap, wcfg.ap);
   changed |= STAConfigToSys(cur_.sta, wcfg.sta);
   changed |= STAConfigToSys(cur_.sta1, wcfg.sta1);
+  if (wcfg.sta_ps_mode != cur_.sta_ps_mode) {
+    wcfg.sta_ps_mode = cur_.sta_ps_mode;
+    changed = true;
+  }
   if (changed) {
     mgos_config_wifi_copy(&wcfg, &mgos_sys_config.wifi);
     mgos_sys_config_save(&mgos_sys_config, false /* try_once */,

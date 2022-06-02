@@ -227,6 +227,7 @@ el("wifi_save_btn").onclick = function() {
   if (el("wifi_ap_pass").value != lastInfo.wifi_ap_pass) {
     data.ap.pass = el("wifi_ap_pass").value;
   }
+  data.sta_ps_mode = parseInt(el("wifi_sta_ps_mode").value);
   callDevice("Shelly.SetWifiConfig", data)
       .then(function(q) {
         el("wifi_conn_rssi_container").style.display = "none";
@@ -979,6 +980,9 @@ function updateElement(key, value, info) {
       break;
     case "wifi_connecting":
       el("wifi_spinner").className = (value ? "spin" : "");
+      break;
+    case "wifi_sta_ps_mode":
+      selectIfNotModified(el("wifi_sta_ps_mode"), value);
       break;
     case "hap_paired":
       if (value) {
