@@ -631,6 +631,9 @@ class HomeKitDevice(Device):
     if self.info.get('stock_fw_model') is None:  # TODO remove when 2.9.x is mainstream.
       self.info['stock_fw_model'] = self.info.get('stock_model')
     self.info['sys_mode_str'] = self.get_mode(self.info.get('sys_mode'))
+    if self.info.get('wifi_conn_ssid') is None:  # TODO remove when 2.11.x is mainstream.
+      self.info['wifi_conn_ssid'] = self.info.get('wifi_ssid')
+      self.info['wifi_conn_rssi'] = self.info.get('wifi_rssi')
     return True
 
   @staticmethod
@@ -703,8 +706,8 @@ class StockDevice(Device):
     self.info['app'] = self.shelly_model(stock_fw_model)[1]
     self.info['device_id'] = self.info.get('mqtt', {}).get('id', self.friendly_host)
     self.info['color_mode'] = self.info.get('mode')
-    self.info['wifi_ssid'] = self.info.get('status', {}).get('wifi_sta', {}).get('ssid')
-    self.info['wifi_rssi'] = self.info.get('status', {}).get('wifi_sta', {}).get('rssi')
+    self.info['wifi_conn_ssid'] = self.info.get('status', {}).get('wifi_sta', {}).get('ssid')
+    self.info['wifi_conn_rssi'] = self.info.get('status', {}).get('wifi_sta', {}).get('rssi')
     self.info['uptime'] = self.info.get('status', {}).get('uptime', 0)
     self.info['battery'] = self.info.get('status', {}).get('bat', {}).get('value')
     return True
