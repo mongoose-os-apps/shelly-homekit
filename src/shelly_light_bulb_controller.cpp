@@ -52,7 +52,8 @@ void LightBulbController<T>::TransitionTimerCB() {
   int64_t elapsed = mgos_uptime_micros() - transition_start_;
 
   if (elapsed >= cur.transition_time_micros) {
-    LOG(LL_INFO, ("Transition finished"));
+    LOG(LL_INFO,
+        ("Transition finished, end state: %s", state_now_.ToString().c_str()));
     state_now_ = cur.state_end;
     transitions_.pop_front();
     transition_timer_.Clear();
