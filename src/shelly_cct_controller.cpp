@@ -42,7 +42,9 @@ void CCTController::UpdatePWM(const StateCCT &state) {
 }
 
 StateCCT CCTController::ConfigToState(const struct mgos_config_lb &cfg) const {
-  StateCCT state;
+  StateCCT state{};
+
+  if (!cfg.state) return state;
 
   float v = cfg.brightness / 100.0f;
   float temp = cfg.color_temperature;

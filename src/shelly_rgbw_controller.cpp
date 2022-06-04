@@ -55,7 +55,10 @@ void RGBWController::UpdatePWM(const StateRGBW &state) {
 
 StateRGBW RGBWController::ConfigToState(
     const struct mgos_config_lb &cfg) const {
-  StateRGBW state;
+  StateRGBW state{};
+
+  if (!cfg.state) return state;
+
   float h = cfg.hue / 360.0f;
   float s = cfg.saturation / 100.0f;
   float v = cfg.brightness / 100.0f;
