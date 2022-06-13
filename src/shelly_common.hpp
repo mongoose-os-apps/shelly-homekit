@@ -102,6 +102,7 @@ enum class InMode {
   kEdgeBoth = 5,
   kActivationBoth = 6,
 #endif
+  kDetachedWithRelay = 7,
   kMax,
 };
 

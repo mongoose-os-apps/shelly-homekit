@@ -163,6 +163,8 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   if (cfg.in_mode != -2 && cfg_->in_mode != cfg.in_mode) {
     if (cfg_->in_mode == (int) InMode::kDetached ||
         cfg.in_mode == (int) InMode::kDetached ||
+        cfg_->in_mode == (int) InMode::kDetachedWithRelay ||
+        cfg.in_mode == (int) InMode::kDetachedWithRelay ||
 #if SHELLY_HAVE_DUAL_INPUT_MODES
         cfg.in_mode == (int) InMode::kEdgeBoth ||
         cfg_->in_mode == (int) InMode::kEdgeBoth ||
@@ -318,6 +320,7 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
     case Input::Event::kChange: {
       switch (static_cast<InMode>(cfg_->in_mode)) {
         case InMode::kMomentary:
+        case InMode::kDetachedWithRelay:
           if (state) {  // Only on 0 -> 1 transitions.
             SetOutputState(!out_->GetState(), "ext_mom");
           }

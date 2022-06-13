@@ -76,7 +76,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   // Single switch with non-detached input and no sensors = only one accessory.
   bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
-                                         (int) InMode::kDetached));
+                                         (int) InMode::kDetached) && (mgos_sys_config_get_sw1_in_mode() !=
+                                         (int) InMode::kDetachedWithRelay));
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
 

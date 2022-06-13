@@ -335,7 +335,9 @@ Status LightBulb::SetConfig(const std::string &config_json,
   }
   if (cfg.in_mode != -2 && cfg_->in_mode != cfg.in_mode) {
     if (cfg_->in_mode == (int) InMode::kDetached ||
-        cfg.in_mode == (int) InMode::kDetached) {
+        cfg.in_mode == (int) InMode::kDetached ||
+        cfg_->in_mode == (int) InMode::kDetachedWithRelay ||
+        cfg.in_mode == (int) InMode::kDetachedWithRelay) {
       *restart_required = true;
     }
     cfg_->in_mode = cfg.in_mode;
@@ -458,6 +460,7 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
     case Input::Event::kChange: {
       switch (static_cast<InMode>(cfg_->in_mode)) {
         case InMode::kMomentary:
+        case InMode::kDetachedWithRelay:
           if (state) {  // Only on 0 -> 1 transitions.
             UpdateOnOff(controller_->IsOff(), "ext_mom");
           }
