@@ -52,9 +52,15 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   mgos::hap::Accessory *pri_acc = accs->front().get();
+  shelly::hap::LightBulb *light_ref = hap_light.get();
   hap_light->set_primary(true);
   pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
   pri_acc->AddService(hap_light.get());
+  pri_acc->SetIdentifyCB(
+      [light_ref](const HAPAccessoryIdentifyRequest *request UNUSED_ARG) {
+        light_ref->Identify();
+        return kHAPError_None;
+      });
 
   comps->push_back(std::move(hap_light));
 }
