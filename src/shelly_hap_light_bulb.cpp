@@ -460,7 +460,6 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
     case Input::Event::kChange: {
       switch (static_cast<InMode>(cfg_->in_mode)) {
         case InMode::kMomentary:
-        case InMode::kDetachedWithRelay:
           if (state) {  // Only on 0 -> 1 transitions.
             UpdateOnOff(controller_->IsOff(), "ext_mom");
           }
@@ -488,6 +487,7 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
           break;
         case InMode::kAbsent:
         case InMode::kDetached:
+        case InMode::kDetachedWithRelay:
         case InMode::kMax:
           break;
       }
@@ -500,6 +500,10 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
       }
       break;
     case Input::Event::kSingle:
+       if (in_mode == InMode::kDetachedWithRelay) {
+        UpdateOnOff(controller_->IsOff(), "ext_mom");
+      }
+      break;
     case Input::Event::kDouble:
     case Input::Event::kReset:
     case Input::Event::kMax:
