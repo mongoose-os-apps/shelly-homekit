@@ -853,7 +853,7 @@ class Main:
     device_version = self.parse_version(device.info.get('version', '0.0.0'))
     if device.fw_type == "homekit" and float(f"{device_version[0]}.{device_version[1]}") < version:
       logger.error(f"{WHITE}Host: {NC}{device.host}")
-      logger.error(f"Version {device.info.get('version')} is to old for this script,")
+      logger.error(f"Version {device.info.get('version')} is too old for this script,")
       logger.error("please update via the device webUI.")
       logger.error("")
       return False
