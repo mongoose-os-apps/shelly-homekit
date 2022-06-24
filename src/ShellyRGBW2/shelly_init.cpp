@@ -124,6 +124,11 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       hap_light->set_primary(true);
       pri_acc->SetCategory(kHAPAccessoryCategory_Lighting);
       pri_acc->AddService(light_ref);
+      pri_acc->SetIdentifyCB(
+          [light_ref](const HAPAccessoryIdentifyRequest *request UNUSED_ARG) {
+            light_ref->Identify();
+            return kHAPError_None;
+          });
     } else if (!sw_hidden) {
       int aid = SHELLY_HAP_AID_BASE_LIGHTING + i;
 
