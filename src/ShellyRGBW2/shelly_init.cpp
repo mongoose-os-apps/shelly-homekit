@@ -145,7 +145,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     }
     comps->push_back(std::move(hap_light));
 
-    if (lb_cfg->in_mode == (int) InMode::kDetached && first_detatched_input) {
+    if ( lb_cfg->in_mode == (int) InMode::kDetached && first_detatched_input) {
       hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
       first_detatched_input = false;
     }

@@ -384,6 +384,7 @@ function swSetConfig(c) {
     svc_type: parseInt(el(c, "svc_type").value),
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
+    homekit_button: el(c, "homekit_button").checked,
     in_inverted: el(c, "in_inverted").checked,
     out_inverted: el(c, "out_inverted").checked,
   };
@@ -697,6 +698,10 @@ function updateComponent(cd) {
       selectIfNotModified(el(c, "initial"), cd.initial);
       if (cd.in_mode >= 0) {
         selectIfNotModified(el(c, "in_mode"), cd.in_mode);
+        if (cd.in_mode == 0) {
+          checkIfNotModified(el(c, "homekit_button"), cd.homekit_button);
+          el(c, "homekit_button_container").style.display = "block";
+        }
         if (cd.in_mode != 3) {
           checkIfNotModified(el(c, "in_inverted"), cd.in_inverted);
           el(c, "in_inverted_container").style.display = "block";
@@ -707,6 +712,7 @@ function updateComponent(cd) {
         }
       } else {
         el(c, "in_mode_container").style.display = "none";
+        el(c, "homekit_button_container").style.display = "none";
         el(c, "in_inverted_container").style.display = "none";
         if (el(c, "initial_3")) el(c, "initial_3").remove();
       }

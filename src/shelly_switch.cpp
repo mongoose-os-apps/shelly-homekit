@@ -73,18 +73,18 @@ StatusOr<std::string> ShellySwitch::GetInfo() const {
   int in_st = -1;
   if (!ins_.empty()) in_st = GetInputState();
   const_cast<ShellySwitch *>(this)->SaveState();
-  return mgos::SPrintf("st:%d in_st:%d inm:%d ininv:%d", out_->GetState(),
-                       in_st, cfg_->in_mode, cfg_->in_inverted);
+  return mgos::SPrintf("st:%d in_st:%d inm:%d hkbtn:%d ininv:%d", out_->GetState(),
+                       in_st, cfg_->in_mode, cfg_->homekit_button, cfg_->in_inverted);
 }
 
 StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
   const bool hdim = (SHELLY_HAVE_DUAL_INPUT_MODES ? true : false);
   std::string res = mgos::JSONPrintStringf(
-      "{id: %d, type: %d, name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, "
+      "{id: %d, type: %d, name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, homekit_button: %B, "
       "in_inverted: %B, initial: %d, state: %B, auto_off: %B, "
       "auto_off_delay: %.3f, state_led_en: %d, out_inverted: %B, hdim: %B",
       id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type,
-      cfg_->valve_type, cfg_->in_mode, cfg_->in_inverted, cfg_->initial_state,
+      cfg_->valve_type, cfg_->in_mode, cfg_->homekit_button, cfg_->in_inverted, cfg_->initial_state,
       out_->GetState(), cfg_->auto_off, cfg_->auto_off_delay,
       cfg_->state_led_en, cfg_->out_inverted, hdim);
   if (out_pm_ != nullptr) {
@@ -105,14 +105,15 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
                                bool *restart_required) {
   struct mgos_config_sw cfg = *cfg_;
   int8_t in_inverted = -1;
+  int8_t homekit_button = -1;
   cfg.name = nullptr;
   cfg.in_mode = -2;
   json_scanf(
       config_json.c_str(), config_json.size(),
-      "{name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, in_inverted: %B, "
+      "{name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, homekit_button: %B, in_inverted: %B, "
       "initial_state: %d, "
       "auto_off: %B, auto_off_delay: %lf, state_led_en: %d, out_inverted: %B}",
-      &cfg.name, &cfg.svc_type, &cfg.valve_type, &cfg.in_mode, &in_inverted,
+      &cfg.name, &cfg.svc_type, &cfg.valve_type, &cfg.in_mode, &homekit_button, &in_inverted,
       &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay, &cfg.state_led_en,
       &cfg.out_inverted);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
@@ -173,6 +174,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
       *restart_required = true;
     }
     cfg_->in_mode = cfg.in_mode;
+  }
+  if (homekit_button != -1 && cfg_->homekit_button != homekit_button) {
+    cfg_->homekit_button = homekit_button;
+    *restart_required = true;
   }
   if (in_inverted != -1 && cfg_->in_inverted != in_inverted) {
     cfg_->in_inverted = in_inverted;
@@ -318,6 +323,9 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
     case Input::Event::kChange: {
       switch (static_cast<InMode>(cfg_->in_mode)) {
         case InMode::kMomentary:
+          if (cfg_->homekit_button) {
+            break;
+          }
           if (state) {  // Only on 0 -> 1 transitions.
             SetOutputState(!out_->GetState(), "ext_mom");
           }
@@ -357,6 +365,10 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
       }
       break;
     case Input::Event::kSingle:
+          if (in_mode == InMode::kMomentary && cfg_->homekit_button) {
+            SetOutputState(!out_->GetState(), "ext_mom");
+          }
+          break;
     case Input::Event::kDouble:
     case Input::Event::kReset:
     case Input::Event::kMax:
