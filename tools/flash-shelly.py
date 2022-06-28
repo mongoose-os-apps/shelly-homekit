@@ -290,8 +290,8 @@ class Detection:
           break
       if self.fw_type is not None:
         return self.fw_type
-      logger.info(f"")
-      logger.info(f"{WHITE}Host:{NC} {self.host} {RED}is not a Shelly device.{NC}")
+      logger.debug(f"")
+      logger.debug(f"{WHITE}Host:{NC} {self.host} {RED}is not a Shelly device.{NC}")
     return False
 
   def is_host_reachable(self, host, error_message=True):  # check if host is reachable
