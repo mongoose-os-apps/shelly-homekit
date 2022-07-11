@@ -674,6 +674,7 @@
             <label>Status:</label>
             <span id="state"></span> pos
             <span id="pos"></span>
+            <span id="tilt"></span>
           </div>
           <div class="button-container" id="pos_ctl">
             <button id="open_btn">
@@ -682,6 +683,14 @@
             <button id="close_btn">
               <label><span id="close_spinner"></span>Close</label>
             </button>
+          </div>
+          <div class="form-control">
+            <label>Slat movement:</label>
+            <input type="text" id="tilt_time_ms" style="width: 3em; min-width: 3em;"> ms (0 disables feature)
+          </div>
+          <div class="form-control" id="tilt_control">
+            <label>Blind tilt</label>
+            <input id="tilt_slider" type="range" min="0" max="100">
           </div>
           <div class="form-control">
             <label>Calibration:</label>
