@@ -392,7 +392,8 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
       true /* supports_notification */, nullptr, "eve-total-power-consumption");
   AddChar(total_power_char_);
 
-  power_timer_.Reset(1000, MGOS_TIMER_REPEAT);
+  // Fuzz the interval a little bit to avoid many devices reporting at once.
+  power_timer_.Reset(mgos_rand_range(4500, 5500), MGOS_TIMER_REPEAT);
 }
 
 void ShellySwitch::PowerMeterTimerCB() {
