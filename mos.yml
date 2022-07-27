@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.11.1
+version: 2.11.1.pr707_blindtilt_alpha.01
 
 libs_version: latest
 modules_version: latest
@@ -83,6 +83,8 @@ config_schema:
   - ["wc.obstruction_duration_ms", "i", 3000, {title: "How long should the overpower persist for obstruction to be reported?"}]
   - ["wc.obstruction_time_coeff", "f", 1.5, {title: "How long is too long (compared to max)?"}]
   - ["wc.current_pos", "f", 0.0, {title: "Last position, percent: 0 - fully closed, 100 - fully open."}]
+  - ["wc.tilt_time_ms", "i", 0, {title: "Time for turn from min to max tilt angle, in milliseconds; 0 to disable slat feature"}]
+  - ["wc.current_tilt", "f", 0.0, {title: "Last tilt, percent: 0 - fully towards minimum, 100 - fully towards maximum"}]
 
   - ["gdo", "o", {title: "Garage door settings", abstract: true}]
   - ["gdo.name", "s", "Garage Door", {title: "Accessory name"}]
@@ -129,8 +131,8 @@ build_vars:
   MGOS_FW_EXTRA_ATTRS: shelly_hk_model=${build_vars.MODEL}
 
 cdefs:
-  PRODUCT_VENDOR: Allterco
-  PRODUCT_MODEL: ${build_vars.MODEL}
+  PRODUCT_VENDOR: '"Allterco"'
+  PRODUCT_MODEL: '"${build_vars.MODEL}"'
   LED_GPIO: -1
   LED_ON: 0
   BTN_GPIO: -1
@@ -210,8 +212,8 @@ conds:
         BOOT_CONFIG_ADDR: 0x1000  # To be compatible with stock firmware.
         MGOS_ROOT_FS_TYPE: SPIFFS
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHSW-1
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-1"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
@@ -252,8 +254,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 13
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHSW-L
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-L"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_DUAL_INPUT_MODES: 1
@@ -294,8 +296,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 2
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHSW-PM
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-PM"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
@@ -334,8 +336,8 @@ conds:
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHSW-21
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHSW-21"'
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyswitch21-??????"]
@@ -380,8 +382,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 2
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "2.5"
-        STOCK_FW_MODEL: SHSW-25
+        PRODUCT_HW_REV: '"2.5"'
+        STOCK_FW_MODEL: '"SHSW-25"'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
       config_schema:
@@ -422,8 +424,8 @@ conds:
         MGOS_ROOT_FS_TYPE: SPIFFS
       cdefs:
         PWM_SUPPORT: 1
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHCB-1
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHCB-1"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
@@ -445,8 +447,8 @@ conds:
         FS_SIZE: 262144
         MGOS_ROOT_FS_TYPE: SPIFFS
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHBDUO-1
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHBDUO-1"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
@@ -468,8 +470,8 @@ conds:
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHIX3-1
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHIX3-1"'
         MG_ENABLE_SSL: 0
         LED_GPIO: 5
         LED_ON: 0
@@ -512,8 +514,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 12
         BTN_DOWN: 1
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHPLG2-1
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHPLG2-1"'
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyplug-??????"]
@@ -543,8 +545,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 13
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHPLG-S
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHPLG-S"'
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyplug-s-??????"]
@@ -576,8 +578,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 25
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "0.1.6"
-        STOCK_FW_MODEL: Plus1
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"Plus1"'
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
         - ["device.id", "ShellyPlus1-??????"]
@@ -612,8 +614,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 25
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "0.1.6"
-        STOCK_FW_MODEL: Plus1PM
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"Plus1PM"'
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
         - ["device.id", "ShellyPlus1PM-??????"]
@@ -653,8 +655,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 25
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "0.1.6"
-        STOCK_FW_MODEL: PlusI4
+        PRODUCT_HW_REV: '"0.1.6"'
+        STOCK_FW_MODEL: '"PlusI4"'
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
         - ["device.id", "ShellyPlusI4-??????"]
@@ -691,8 +693,8 @@ conds:
         BTN_DOWN: 0
         BTN_NOISY: 0
         RST_GPIO_INIT: 15 # reset GPIO 15 to prevent green flash on startup
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHRGBW2-color
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHRGBW2-color"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
@@ -728,8 +730,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: 2
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHUNI-1
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHUNI-1"'
         MG_ENABLE_SSL: 0
       config_schema:
         - ["device.id", "shellyuni-????????????"]
@@ -759,8 +761,8 @@ conds:
         FS_SIZE: 262144
         MGOS_ROOT_FS_TYPE: SPIFFS
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: SHVIN-1
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"SHVIN-1"'
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
@@ -791,8 +793,8 @@ conds:
         LED_ON: 1
         BTN_GPIO: 34
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: XXX
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '"XXX"'
         SHELLY_HAVE_PM: 0
         BTN_NOISY: 0
         MGOS_CONFIG_DEV_3: '"aux"'
@@ -819,8 +821,8 @@ conds:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: XXX
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
         BTN_NOISY: 0
@@ -848,8 +850,8 @@ conds:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: XXX
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 0
         BTN_NOISY: 0
@@ -870,8 +872,8 @@ conds:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: XXX
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 1
         BTN_NOISY: 0
@@ -904,8 +906,8 @@ conds:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
       cdefs:
-        PRODUCT_HW_REV: "1.0"
-        STOCK_FW_MODEL: XXX
+        PRODUCT_HW_REV: '"1.0"'
+        STOCK_FW_MODEL: '""'
         MG_ENABLE_SSL: 0
         SHELLY_HAVE_PM: 0
         BTN_NOISY: 0

@@ -459,11 +459,23 @@ function wcSetConfig(c, cfg, spinner) {
       alert("Name must not be empty");
       return;
     }
+    let tiltTimeMs = parseInt(el(c, "tilt_time_ms").value);
+    if (isNaN(tiltTimeMs) || tiltTimeMs < 500) {
+      alert(`Invalid tilt move time ${tiltTimeMs}`);
+      return;
+    }
+    let currentTilt = parseFloat(el(c, "tilt_slider").value);
+    if (isNaN(currentTilt) || currentTilt < 0.0 || currentTilt > 100.0) {
+      alert(`Invalid tilt angle ${currentTilt}`);
+      return;
+    }
     cfg = {
       name: name,
       in_mode: parseInt(el(c, "in_mode").value),
       swap_inputs: el(c, "swap_inputs").checked,
       swap_outputs: el(c, "swap_outputs").checked,
+      tilt_time_ms: tiltTimeMs,
+      current_tilt: currentTilt,
     };
   }
   setComponentConfig(c, cfg, spinner);
@@ -809,6 +821,20 @@ function updateComponent(cd) {
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       checkIfNotModified(el(c, "swap_inputs"), cd.swap_inputs);
       checkIfNotModified(el(c, "swap_outputs"), cd.swap_outputs);
+      setValueIfNotModified(el(c, "tilt_time_ms"), cd.tilt_time_ms);
+      if(cd.tilt_time_ms == 0) {
+        el(c,"tilt_control").style.display = "none";
+      } else {
+        el(c,"tilt_control").style.display = "inline";
+        el(c,"tilt_time_ms").style.display = "inline";
+        let currentTilt = parseFloat(cd.cur_tilt);
+        if(isNaN(currentTilt) || currentTilt < 0.0 || currentTilt > 100.0) {
+          currentTilt = 50.0;
+        }
+        let tiltText = `tilt angle ${currentTilt}°`
+        updateInnerText(el(c, "tilt"), tiltText);
+        setValueIfNotModified(el(c, "tilt_slider"), currentTilt);
+      }     
       let posText, calText;
       if (cd.cal_done == 1) {
         if (cd.cur_pos != cd.tgt_pos) {
