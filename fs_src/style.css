@@ -120,6 +120,8 @@ h1 {
 
 #logo_container {
   height: 80px;
+  display: flex;
+  justify-content: center;
 }
 
 #logo {
