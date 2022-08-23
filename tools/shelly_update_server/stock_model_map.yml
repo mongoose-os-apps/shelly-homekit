@@ -1,0 +1,41 @@
+# Map of stock device id prefix -> shelly-homekit model.
+# Used by the update redirector.
+models:
+  shelly1:         Shelly1
+  shelly1l:        Shelly1L
+  shelly1pm:       Shelly1PM
+  ShellyBulbDuo:   ShellyDuo
+  shellycolorbulb: ShellyColorBulb
+  shellyix3:       ShellyI3
+  shellyplug:      ShellyPlug
+  shellyplug-s:    ShellyPlugS
+  shellyplus1:     ShellyPlus1
+  ShellyPlus1:     ShellyPlus1
+  shellyplus1pm:   ShellyPlus1PM
+  ShellyPlus1PM:   ShellyPlus1PM
+  shellyplusi4:    ShellyPlusI4
+  ShellyPlusI4:    ShellyPlusI4
+  shellyrgbw2:     ShellyRGBW2
+  shellyswitch:    Shelly2
+  shellyswitch25:  Shelly25
+  shellyuni:       ShellyUNI
+  ShellyVintage:   ShellyVintage
+
+  # Known unsupported models.
+  shellybulb:    x
+  shellybutton1: x
+  shellydimmer:  x
+  shellydimmer2: x
+  shellydw2:     x
+  shellyem:      x
+  shellyem3:     x
+  shellyflood:   x
+  shellygas:     x
+  shellyht:      x
+  shellyplugu1:  x
+  shellyplugus:  x
+  shellyplus2pm: x
+  shellypro1:    x
+  shellypro1pm:  x
+  shellypro2:    x
+  shellypro4pm:  x
