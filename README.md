@@ -46,7 +46,7 @@ Features that are not yet supported:
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
-    * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://rojer.me/shelly/update`
+    * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://shelly.rojer.cloud/update`
 
     * If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model:
 
