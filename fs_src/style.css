@@ -1,9 +1,19 @@
+:root {
+  --foreground: #454955;
+  --background: #fff;
+  --background-alt: #f2f1f6;
+  --primary: #0071e3; 
+  --danger: #ff0800;
+  --switch-enabled: #34c759;
+  --corner: 12px;
+}
+
 html, body {
   height: 100vh;
   padding: 0;
   margin: 5;
-  background-color: #f2f1f6;
-  color: #454955;
+  background-color: var(--background-alt);
+  color: var(--foreground);
   font: 14px/1.5 '-apple-system', 'HelveticaNeue', Helvetica, Segoe UI;
 }
 
@@ -12,7 +22,7 @@ html, body {
 }
 
 h1, h2, h3, h4, h5, h6, b, th, strong {
-  color: #454955;
+  color: var(--foreground);
 }
 
 input, button, div, pre, p {
@@ -25,10 +35,10 @@ button {
   border-radius: 18px;
   border: none;
   cursor: pointer;
-  background: #0071e3;
+  background: var(--primary);
 }
 
-.button-container{
+.button-container {
   padding-top: 1em;
   text-align: center;
 }
@@ -40,7 +50,7 @@ button label {
 }
 
 a, a:link, a:visited {
-  color: #0071e3;
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -50,7 +60,7 @@ input[type=number], input[type=password], input[type=text] {
   position: relative;
   border: 1px solid #cdcdcd;
   border-color: rgba(0, 0, 0, .15);
-  background-color: #ffffff;
+  background-color: var(--background);
   font-size: 14px;
 }
 
@@ -65,7 +75,7 @@ select {
   position: relative;
   border: 1px solid #cdcdcd;
   border-color: rgba(0, 0, 0, .15);
-  background-color: #ffffff;
+  background-color: var(--background);
   font-size: 14px;
 }
 
@@ -83,7 +93,7 @@ h1 {
   margin: 1em auto;
   max-width: 440px;
   background: #fefefe;
-  border-radius: 10px;
+  border-radius: var(--corner);
 }
 
 .form-control {
@@ -106,7 +116,7 @@ h1 {
   background-color: #fefefe;
   border: 1px solid #999999;
   border-radius: 12px;
-  color: #0071e3 !important;
+  color: var(--primary) !important;
   font-weight: bold;
   font: 14px;
   line-height: 10px;
@@ -133,7 +143,7 @@ h1 {
 }
 
 .title {
-  color: #454955;
+  color: var(--foreground);
   font-size: 32px;
   font-weight: lighter;
   text-align: left;
@@ -147,8 +157,8 @@ h1 {
 
 .badge {
   display: inline;
-  background-color: #ff0800;
-  border: 2px solid #ff0800;
+  background-color: var(--danger);
+  border: 2px solid var(--danger);
   border-radius: 12px;
   box-shadow: 1px 1px 1px #282828;
   color: #ffffff;
@@ -225,11 +235,11 @@ a.badge {
 }
 
 input:checked + .slider {
-  background-color: #34c759;
+  background-color: var(--switch-enabled);
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 1px #2196F3;
+  box-shadow: 0 0 1px var(--primary);
 }
 
 input:checked + .slider:before {
@@ -306,21 +316,21 @@ input:checked + .slider:before {
   padding: 10px 20px;
   display: inline-block;
   border-width: 1px;
-  border-radius: 10px 10px 0 0;
-  border-color: #0071e3;
+  border-radius: var(--corner) var(--corner) 0 0;
+  border-color: var(--primary);
 }
 
-.panels{
+.panels {
   padding-left: 1em;
   padding-right: 1em;
-  border-radius: 0 10px 10px 10px;
-  border-left: 1px solid #0071e3;
-  border-right: 1px solid #0071e3;
-  border-bottom: 1px solid #0071e3;
-  border-top: 1px solid #0071e3;
+  border-radius: 0 var(--corner) var(--corner) var(--corner);
+  border-left: 1px solid var(--primary);
+  border-right: 1px solid var(--primary);
+  border-bottom: 1px solid var(--primary);
+  border-top: 1px solid var(--primary);
 }
 
-.panel{
+.panel {
   display: none;
   animation: fadein .5s;
 }
@@ -347,11 +357,11 @@ input:checked + .slider:before {
 
 #one:checked ~ .tabs #tab1,
 #two:checked ~ .tabs #tab2,
-#three:checked ~ .tabs #tab3{
-  border-top: 3px solid #0071e3;
-  border-left: 1px solid #0071e3;
-  border-right: 1px solid #0071e3;
-  border-bottom: 1px solid #0071e3;
-  background: #0071e3;
+#three:checked ~ .tabs #tab3 {
+  border-top: 3px solid var(--primary);
+  border-left: 1px solid var(--primary);
+  border-right: 1px solid var(--primary);
+  border-bottom: 1px solid var(--primary);
+  background: var(--primary);
   color: white;
 }
