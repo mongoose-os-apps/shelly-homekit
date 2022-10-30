@@ -21,8 +21,8 @@
 
 namespace shelly {
 
-DHTSensor::DHTSensor(uint8_t pin_in, uint8_t pin_out) :
-      pin_in_(pin_in),
+DHTSensor::DHTSensor(uint8_t pin_in, uint8_t pin_out)
+    : pin_in_(pin_in),
       pin_out_(pin_out),
       meas_timer_(std::bind(&DHTSensor::UpdateTemperatureCB, this)) {
   result_ = mgos::Errorf(STATUS_UNAVAILABLE, "Not updated yet");
@@ -42,8 +42,8 @@ Status DHTSensor::Init() {
   result_ = mgos_dht_get_temp(dht);
 
   mgos_dht_stats stats;
-  if(mgos_dht_getStats(dht, &stats)) {
-    if(stats.read == 1 && stats.read_success == 1) {
+  if (mgos_dht_getStats(dht, &stats)) {
+    if (stats.read == 1 && stats.read_success == 1) {
       return Status::OK();
     }
   }
@@ -63,11 +63,14 @@ StatusOr<float> DHTSensor::GetHumidity() {
 }
 
 void DHTSensor::UpdateTemperatureCB() {
-  //std::nan
+  // std::nan
   result_ = mgos_dht_get_temp(dht);
   result_humidity_ = mgos_dht_get_humidity(dht);
   if (notifier_) {
     notifier_();
+  }
+  if (notifier_hum_) {
+    notifier_hum_();
   }
 }
 

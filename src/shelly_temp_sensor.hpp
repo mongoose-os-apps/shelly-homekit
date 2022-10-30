@@ -42,4 +42,13 @@ class TempSensor {
   Notifier notifier_;
 };
 
+class HumidityTempSensor : public TempSensor {
+ public:
+  virtual StatusOr<float> GetHumidity() = 0;
+  void SetNotifierHumidity(Notifier notifier);
+
+ protected:
+  Notifier notifier_hum_;
+};
+
 }  // namespace shelly

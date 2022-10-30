@@ -25,14 +25,14 @@
 
 namespace shelly {
 
-class DHTSensor : public TempSensor {
+class DHTSensor : public HumidityTempSensor {
  public:
   DHTSensor(uint8_t pin_in, uint8_t pin_out);
   virtual ~DHTSensor();
 
   Status Init();
   StatusOr<float> GetTemperature() override;
-  StatusOr<float> GetHumidity();
+  StatusOr<float> GetHumidity() override;
 
   virtual void StartUpdating(int interval) override;
 

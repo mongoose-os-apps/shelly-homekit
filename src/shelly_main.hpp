@@ -52,8 +52,13 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      Output *led_out = nullptr);
 
 void CreateHAPTemperatureSensor(
-    int id, TempSensor* sensor,
-    const struct mgos_config_ts *ts_cfg,
+    int id, TempSensor *sensor, const struct mgos_config_ts *ts_cfg,
+    std::vector<std::unique_ptr<Component>> *comps,
+    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr);
+
+void CreateHAPHumiditySensor(
+    int id, HumidityTempSensor *sensor, const struct mgos_config_ts *ts_cfg,
     std::vector<std::unique_ptr<Component>> *comps,
     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
     HAPAccessoryServerRef *svr);
