@@ -26,6 +26,7 @@ DHTSensor::DHTSensor(uint8_t pin_in, uint8_t pin_out) :
       pin_out_(pin_out),
       meas_timer_(std::bind(&DHTSensor::UpdateTemperatureCB, this)) {
   result_ = mgos::Errorf(STATUS_UNAVAILABLE, "Not updated yet");
+  result_humidity_ = mgos::Errorf(STATUS_UNAVAILABLE, "Not updated yet");
 }
 
 DHTSensor::~DHTSensor() {
@@ -57,8 +58,14 @@ StatusOr<float> DHTSensor::GetTemperature() {
   return result_;
 }
 
+StatusOr<float> DHTSensor::GetHumidity() {
+  return result_humidity_;
+}
+
 void DHTSensor::UpdateTemperatureCB() {
+  //std::nan
   result_ = mgos_dht_get_temp(dht);
+  result_humidity_ = mgos_dht_get_humidity(dht);
   if (notifier_) {
     notifier_();
   }

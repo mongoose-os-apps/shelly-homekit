@@ -24,14 +24,14 @@
 namespace shelly {
 namespace hap {
 
-TemperatureSensor::TemperatureSensor(int id, std::unique_ptr<TempSensor> sensor,
+TemperatureSensor::TemperatureSensor(int id, TempSensor* sensor,
                                      struct mgos_config_ts *cfg)
     : Component(id),
       Service(SHELLY_HAP_IID_BASE_TEMPERATURE_SENSOR +
                   SHELLY_HAP_IID_STEP_SENSOR * (id - 1),
               &kHAPServiceType_TemperatureSensor,
               kHAPServiceDebugDescription_TemperatureSensor),
-      temp_sensor_(std::move(sensor)),
+      temp_sensor_(sensor),
       cfg_(cfg) {
   temp_sensor_->SetNotifier(std::bind(&TemperatureSensor::ValueChanged, this));
 }

@@ -215,14 +215,14 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
 }
 
 void CreateHAPTemperatureSensor(
-    int id, std::unique_ptr<TempSensor> sensor,
+    int id, TempSensor * sensor,
     const struct mgos_config_ts *ts_cfg,
     std::vector<std::unique_ptr<Component>> *comps,
     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
     HAPAccessoryServerRef *svr) {
   struct mgos_config_ts *cfg = (struct mgos_config_ts *) ts_cfg;
   std::unique_ptr<hap::TemperatureSensor> ts(
-      new hap::TemperatureSensor(id, std::move(sensor), cfg));
+      new hap::TemperatureSensor(id, sensor, cfg));
   if (ts == nullptr || !ts->Init().ok()) {
     return;
   }
