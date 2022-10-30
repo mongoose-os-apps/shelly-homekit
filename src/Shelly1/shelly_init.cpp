@@ -22,6 +22,7 @@
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_temp_sensor_ow.hpp"
+#include "shelly_dht_sensor.hpp"
 
 #define MAX_TS_NUM 3
 
@@ -70,8 +71,18 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   // Sensor Discovery
   std::vector<std::unique_ptr<TempSensor>> sensors;
+  std::unique_ptr<DHTSensor> dht;
   if (s_onewire != nullptr) {
     sensors = s_onewire->DiscoverAll();
+  }
+  else {
+    //Try DHT
+    dht.reset(new DHTSensor(3, 0));
+    auto status = dht->Init();
+    if(status == Status::OK()) {
+
+      sensors.push_back(std::move(dht));
+    }
   }
 
   // Single switch with non-detached input and no sensors = only one accessory.
