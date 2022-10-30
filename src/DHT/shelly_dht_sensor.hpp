@@ -46,6 +46,7 @@ class DHTSensor : public TempSensor {
 
   void UpdateTemperatureCB();
   StatusOr<float> result_;
+  StatusOr<float> result_humidity_;
 };
 
 }  // namespace shelly

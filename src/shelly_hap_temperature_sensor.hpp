@@ -30,7 +30,7 @@ namespace hap {
 
 class TemperatureSensor : public Component, public mgos::hap::Service {
  public:
-  TemperatureSensor(int id, std::unique_ptr<TempSensor> sensor,
+  TemperatureSensor(int id, TempSensor* sensor,
                     struct mgos_config_ts *cfg);
   virtual ~TemperatureSensor();
 
@@ -46,7 +46,7 @@ class TemperatureSensor : public Component, public mgos::hap::Service {
   Status SetState(const std::string &state_json) override;
 
  private:
-  std::unique_ptr<TempSensor> temp_sensor_;
+  TempSensor* temp_sensor_;
   struct mgos_config_ts *cfg_;
 
   mgos::hap::FloatCharacteristic *current_temperature_characteristic_;

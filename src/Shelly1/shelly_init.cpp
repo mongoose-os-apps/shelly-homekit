@@ -29,6 +29,7 @@
 namespace shelly {
 
 static std::unique_ptr<Onewire> s_onewire;
+static std::vector<std::unique_ptr<TempSensor>> sensors;
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
@@ -70,13 +71,13 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   }
 
   // Sensor Discovery
-  std::vector<std::unique_ptr<TempSensor>> sensors;
   std::unique_ptr<DHTSensor> dht;
+  sensors.clear();
   if (s_onewire != nullptr) {
     sensors = s_onewire->DiscoverAll();
   }
   else {
-    //Try DHT
+    //Try DHT, only works on second boot
     dht.reset(new DHTSensor(3, 0));
     auto status = dht->Init();
     if(status == Status::OK()) {
@@ -100,7 +101,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
     for (size_t i = 0; i < std::min((size_t) MAX_TS_NUM, sensors.size()); i++) {
       auto *ts_cfg = ts_cfgs[i];
-      CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
+      CreateHAPTemperatureSensor(i + 1, sensors[i].get(), ts_cfg, comps,
                                  accs, svr);
     }
   }
