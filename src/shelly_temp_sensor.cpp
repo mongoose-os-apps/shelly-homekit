@@ -29,4 +29,8 @@ void TempSensor::SetNotifier(Notifier notifier) {
   notifier_ = notifier;
 }
 
+void HumidityTempSensor::SetNotifierHumidity(Notifier notifier) {
+  notifier_hum_ = notifier;
+}
+
 }  // namespace shelly

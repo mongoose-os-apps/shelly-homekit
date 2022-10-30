@@ -44,6 +44,7 @@
 #include "HAPPlatformTCPStreamManager+Init.h"
 
 #include "shelly_debug.hpp"
+#include "shelly_hap_humidity_sensor.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_lock.hpp"
 #include "shelly_hap_outlet.hpp"
@@ -215,8 +216,7 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
 }
 
 void CreateHAPTemperatureSensor(
-    int id, TempSensor * sensor,
-    const struct mgos_config_ts *ts_cfg,
+    int id, TempSensor *sensor, const struct mgos_config_ts *ts_cfg,
     std::vector<std::unique_ptr<Component>> *comps,
     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
     HAPAccessoryServerRef *svr) {
@@ -229,6 +229,28 @@ void CreateHAPTemperatureSensor(
 
   std::unique_ptr<mgos::hap::Accessory> acc(
       new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + id,
+                               kHAPAccessoryCategory_BridgedAccessory,
+                               ts_cfg->name, GetIdentifyCB(), svr));
+  acc->AddHAPService(&mgos_hap_accessory_information_service);
+  acc->AddService(ts.get());
+  accs->push_back(std::move(acc));
+  comps->push_back(std::move(ts));
+}
+
+void CreateHAPHumiditySensor(
+    int id, HumidityTempSensor *sensor, const struct mgos_config_ts *ts_cfg,
+    std::vector<std::unique_ptr<Component>> *comps,
+    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr) {
+  struct mgos_config_ts *cfg = (struct mgos_config_ts *) ts_cfg;
+  std::unique_ptr<hap::HumiditySensor> ts(
+      new hap::HumiditySensor(id, sensor, cfg));
+  if (ts == nullptr || !ts->Init().ok()) {
+    return;
+  }
+
+  std::unique_ptr<mgos::hap::Accessory> acc(
+      new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_HUMIDITY_SENSOR + id,
                                kHAPAccessoryCategory_BridgedAccessory,
                                ts_cfg->name, GetIdentifyCB(), svr));
   acc->AddHAPService(&mgos_hap_accessory_information_service);

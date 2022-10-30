@@ -17,12 +17,12 @@
 
 #include "mgos_hap.h"
 
+#include "shelly_dht_sensor.hpp"
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_temp_sensor_ow.hpp"
-#include "shelly_dht_sensor.hpp"
 
 #define MAX_TS_NUM 3
 
@@ -72,17 +72,17 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   // Sensor Discovery
   std::unique_ptr<DHTSensor> dht;
+  bool dht_found = false;
   sensors.clear();
   if (s_onewire != nullptr) {
     sensors = s_onewire->DiscoverAll();
-  }
-  else {
-    //Try DHT, only works on second boot
+  } else {
+    // Try DHT, only works on second boot
     dht.reset(new DHTSensor(3, 0));
     auto status = dht->Init();
-    if(status == Status::OK()) {
-
+    if (status == Status::OK()) {
       sensors.push_back(std::move(dht));
+      dht_found = true;
     }
   }
 
@@ -101,8 +101,13 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
     for (size_t i = 0; i < std::min((size_t) MAX_TS_NUM, sensors.size()); i++) {
       auto *ts_cfg = ts_cfgs[i];
-      CreateHAPTemperatureSensor(i + 1, sensors[i].get(), ts_cfg, comps,
-                                 accs, svr);
+      CreateHAPTemperatureSensor(i + 1, sensors[i].get(), ts_cfg, comps, accs,
+                                 svr);
+      HumidityTempSensor *hum = (HumidityTempSensor *) sensors[i].get();
+      if (dht_found) {  // can only be one shares config, as same update
+                        // interval but no unit settable
+        CreateHAPHumiditySensor(i + 2, hum, ts_cfg, comps, accs, svr);
+      }
     }
   }
 }
