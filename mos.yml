@@ -202,8 +202,10 @@ conds:
       name: switch1 # To allow OTA from stock fw.
       sources:
         - src/DS18XXX
+        - src/DHT
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -282,8 +284,10 @@ conds:
       name: switch1pm # To allow OTA from stock fw.
       sources:
         - src/DS18XXX
+        - src/DHT
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
