@@ -15,15 +15,17 @@
 
   <div class="container" id="header_container">
     <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/" target="_blank">?</a>
-    <div id="logo_container">
-      <!-- logo.svg inserted below during build -->
-      <img id="logo" src="./logo.svg">
-      <h1 class="title">Shelly-<b>HomeKit</b></h1>
-      <div id="badges_container">
-        <a class="badge" id="notify_disconnected" style="display: none">Disconnected</a>
-        <a class="badge" id="notify_update" style="display: none" href="#update_container">Update</a>
-        <a class="badge" id="notify_overheat" style="display: none">Overheating</a>
-        <a class="badge" id="notify_failsafe" style="display: none">Failsafe mode</a>
+    <div id="header_wrapper">
+      <div id="logo_container">
+        <!-- logo.svg inserted below during build -->
+        <img id="logo" src="./logo.svg">
+        <h1 class="title">Shelly-<b>HomeKit</b></h1>
+        <div id="badges_container">
+          <a class="badge" id="notify_disconnected" style="">Disconnected</a>
+          <a class="badge" id="notify_update" style="display: none" href="#update_container">Update</a>
+          <a class="badge" id="notify_overheat" style="display: none">Overheating</a>
+          <a class="badge" id="notify_failsafe" style="display: none">Failsafe mode</a>
+        </div>
       </div>
     </div>
     <h1 id="device_name">Loading...</h1>
