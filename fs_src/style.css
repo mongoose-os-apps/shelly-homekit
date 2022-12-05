@@ -6,8 +6,9 @@
   --primary: #0071e3; 
   --danger: #ff0800;
   --switch-enabled: #34c759;
-  --corner: 12px;
+  --corner: 8px;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground: #fff;
@@ -126,7 +127,7 @@ h1 {
   border-radius: 12px;
   color: var(--foreground) !important;
   font-weight: bold;
-  font: 14px;
+  font-size: 14px;
   line-height: 10px;
   height: 13px;
   padding: 6px 6px 1px 6px;
@@ -136,10 +137,13 @@ h1 {
   float: right;
 }
 
-#logo_container {
-  height: 80px;
+#header_wrapper {
   display: flex;
   justify-content: center;
+}
+
+#logo_container {
+  width: 320px;
 }
 
 #logo {
@@ -157,6 +161,18 @@ h1 {
   text-align: left;
   line-height: normal;
   padding: 19px 0 0 0;
+}
+
+@media (max-width: 378px) and (min-width: 357px) { 
+  .title {
+    font-size: 29px;
+  }
+}
+
+@media (max-width:356px) { 
+  .title {
+    font-size: 25px;
+  }
 }
 
 #badges_container {
