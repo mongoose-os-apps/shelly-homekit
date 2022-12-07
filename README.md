@@ -11,7 +11,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
-||[1]|[1PM]|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[+i4]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
+||[1]|1PM|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[+i4]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
 |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
@@ -122,7 +122,6 @@ See [here](AUTHORS.md).
 This firmware is free software and is distributed under [Apache 2.0 license](LICENSE).
 
 [1]: https://shelly.cloud/products/shelly-1-smart-home-automation-relay/
-[1PM]: https://shelly.cloud/products/shelly-1pm-smart-home-automation-relay/
 [+1]: https://shelly.cloud/shelly-plus-1/
 [+1PM]: https://shelly.cloud/shelly-plus-1pm/
 [1L]: https://shelly.cloud/products/shelly-1l-single-wire-smart-home-automation-relay/
