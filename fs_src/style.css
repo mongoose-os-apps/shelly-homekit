@@ -2,10 +2,20 @@
   --foreground: #454955;
   --background: #fff;
   --background-alt: #f2f1f6;
+  --inputs-background: #fefefe;
   --primary: #0071e3; 
   --danger: #ff0800;
   --switch-enabled: #34c759;
-  --corner: 12px;
+  --corner: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground: #fff;
+    --background: #222;
+    --background-alt: #111;
+    --inputs-background: #3f3f3f;
+  }
 }
 
 html, body {
@@ -54,14 +64,18 @@ a, a:link, a:visited {
   text-decoration: none;
 }
 
-input[type=number], input[type=password], input[type=text] {
-  min-width: 150px;
-  padding: 3px 10px;
+input[type=number], input[type=password], input[type=text], select {
   position: relative;
   border: 1px solid #cdcdcd;
   border-color: rgba(0, 0, 0, .15);
-  background-color: var(--background);
+  border-radius: var(--corner);
+  background-color: var(--inputs-background);
   font-size: 14px;
+}
+
+input[type=number], input[type=password], input[type=text] {
+  min-width: 158px;
+  padding: 3px 10px;
 }
 
 input[type=number].short, select.short {
@@ -69,14 +83,9 @@ input[type=number].short, select.short {
 }
 
 select {
-  min-width: 178px;
-  max-width: 178px;
+  min-width: 180px;
+  max-width: 180px;
   padding: 5px 6px;
-  position: relative;
-  border: 1px solid #cdcdcd;
-  border-color: rgba(0, 0, 0, .15);
-  background-color: var(--background);
-  font-size: 14px;
 }
 
 input[type=range] {
@@ -92,7 +101,7 @@ h1 {
   padding: 1em;
   margin: 1em auto;
   max-width: 440px;
-  background: #fefefe;
+  background: var(--background);
   border-radius: var(--corner);
 }
 
@@ -113,12 +122,12 @@ h1 {
 }
 
 .helpbadge {
-  background-color: #fefefe;
-  border: 1px solid #999999;
+  background-color: var(--background-alt);
+  border: 1px solid var(--foreground);
   border-radius: 12px;
-  color: var(--primary) !important;
+  color: var(--foreground) !important;
   font-weight: bold;
-  font: 14px;
+  font-size: 14px;
   line-height: 10px;
   height: 13px;
   padding: 6px 6px 1px 6px;
@@ -128,10 +137,13 @@ h1 {
   float: right;
 }
 
-#logo_container {
-  height: 80px;
+#header_wrapper {
   display: flex;
   justify-content: center;
+}
+
+#logo_container {
+  width: 320px;
 }
 
 #logo {
@@ -149,6 +161,18 @@ h1 {
   text-align: left;
   line-height: normal;
   padding: 19px 0 0 0;
+}
+
+@media (max-width: 378px) and (min-width: 357px) { 
+  .title {
+    font-size: 29px;
+  }
+}
+
+@media (max-width:356px) { 
+  .title {
+    font-size: 25px;
+  }
 }
 
 #badges_container {
@@ -289,7 +313,7 @@ input:checked + .slider:before {
 }
 
 #qrcode_container {
-  color: #000000;
+  color: var(--foreground);
   width: 240px;
   height: 240px;
   margin-top: 15px;
@@ -298,7 +322,7 @@ input:checked + .slider:before {
 }
 
 .qrcode_text {
-  fill: #000000;
+  fill: var(--foreground);
   font-family: Arial, sans-serif; 
   font-size: 54px;
   font-weight: bold;
