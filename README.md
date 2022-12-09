@@ -11,7 +11,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
-||[1]|1PM|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|[i3]|[+i4]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
+||[1]|1PM|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|i3|[+i4]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
 |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
@@ -121,17 +121,16 @@ See [here](AUTHORS.md).
 
 This firmware is free software and is distributed under [Apache 2.0 license](LICENSE).
 
-[1]: https://shelly.cloud/products/shelly-1-smart-home-automation-relay/
-[+1]: https://shelly.cloud/shelly-plus-1/
-[+1PM]: https://shelly.cloud/shelly-plus-1pm/
-[1L]: https://shelly.cloud/products/shelly-1l-single-wire-smart-home-automation-relay/
-[Plug]: https://shelly.cloud/products/shelly-plug-smart-home-automation-device/
-[PlugS]: https://shelly.cloud/products/shelly-plug-s-smart-home-automation-device/
-[2.5]: https://shelly.cloud/products/shelly-25-smart-home-automation-relay/
-[i3]: https://shelly.cloud/products/shelly-i3-smart-home-automation-device/
-[+i4]: https://shelly.cloud/shelly-plus-i4/
-[UNI]: https://shelly.cloud/products/shelly-uni-smart-home-automation-device/
-[RGBW2]: https://shelly.cloud/products/shelly-rgbw2-smart-home-automation-led-controller/
-[Bulb]: https://shelly.cloud/products/shelly-bulb-smart-home-automation-device/
-[Duo]: https://shelly.cloud/products/shelly-duo-smart-home-automation-bulb/
-[Vintage]: https://shelly.cloud/products/shelly-vintage-smart-home-automation-bulb/
+[1]: https://www.shelly.cloud/en/products/shop/1xs1
+[+1]: https://www.shelly.cloud/en/products/shop/shelly-plus-1
+[+1PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-pm-2-pack/shelly-plus-1-pm
+[1L]: https://www.shelly.cloud/en/products/shop/shelly-1l
+[Plug]: https://www.shelly.cloud/en/products/shop/1xplug
+[PlugS]: https://www.shelly.cloud/en/products/shop/shelly-plug-s
+[2.5]: https://www.shelly.cloud/en/products/shop/shelly-2-5-ce-ul-1
+[+i4]: https://www.shelly.cloud/en/products/shop/splusi4x1
+[UNI]: https://www.shelly.cloud/en/products/shop/shelly-uni-1
+[RGBW2]: https://www.shelly.cloud/en/products/shop/shelly-rgbw2-1
+[Bulb]: https://www.shelly.cloud/en/search?query=%22Shelly+Duo+-+RGBW%22
+[Duo]: https://www.shelly.cloud/en/search?query=%22Shelly+Duo%22
+[Vintage]: https://www.shelly.cloud/en/search?query=vintage
