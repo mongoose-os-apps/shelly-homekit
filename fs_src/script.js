@@ -1408,6 +1408,11 @@ el("sec_log_out_btn").onclick = function() {
   return true;
 };
 
+el("sec_new_pass").onkeyup = 
+  el("sec_conf_pass").onkeyup = function(e) {
+    el("sec_save_btn").disabled = el("sec_new_pass").value !== el("sec_conf_pass").value;
+};
+
 el("sec_save_btn").onclick = function() {
   if (authRealm !== null) {
     let oldHA1 = calcHA1(authUser, authRealm, el("sec_old_pass").value);

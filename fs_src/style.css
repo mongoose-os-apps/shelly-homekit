@@ -59,6 +59,11 @@ button label {
   min-width: 10em;
 }
 
+button[disabled], button[disabled] label {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
 a, a:link, a:visited {
   color: var(--primary);
   text-decoration: none;
