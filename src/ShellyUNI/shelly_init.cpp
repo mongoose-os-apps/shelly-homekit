@@ -20,7 +20,7 @@
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_window_covering.hpp"
-#include "shelly_input_pin.hpp"
+#include "shelly_noisy_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_sys_led_btn.hpp"
 
@@ -32,11 +32,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 15, 1));
   outputs->emplace_back(new OutputPin(2, 4, 1));
-  auto *in1 = new InputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true);
+  auto *in1 = new NoisyInputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true);
   in1->AddHandler(std::bind(&HandleInputResetSequence, in1, 4, _1, _2));
   in1->Init();
   inputs->emplace_back(in1);
-  auto *in2 = new InputPin(2, 13, 1, MGOS_GPIO_PULL_NONE, false);
+  auto *in2 = new NoisyInputPin(2, 13, 1, MGOS_GPIO_PULL_NONE, false);
   in2->Init();
   inputs->emplace_back(in2);
   InitSysLED(LED_GPIO, LED_ON);
