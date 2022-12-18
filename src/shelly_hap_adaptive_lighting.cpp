@@ -143,27 +143,28 @@ const uuidFormatType uuidFormat = {
 const HAPUInt64TLVFormat uint64Format = {
     .type = kHAPTLVFormatType_UInt64,
     .constraints = {.minimumValue = 0, .maximumValue = UINT64_MAX},
-    .callbacks = {.getDescription = NULL}};
+    .callbacks = {.getDescription = NULL, .getBitDescription = NULL}};
 
 const HAPUInt32TLVFormat uint32Format = {
     .type = kHAPTLVFormatType_UInt32,
     .constraints = {.minimumValue = 0, .maximumValue = UINT32_MAX},
-    .callbacks = {.getDescription = NULL}};
+    .callbacks = {.getDescription = NULL, .getBitDescription = NULL}};
 
 const HAPUInt8TLVFormat uint8Format = {
     .type = kHAPTLVFormatType_UInt8,
     .constraints = {.minimumValue = 0, .maximumValue = UINT8_MAX},
-    .callbacks = {.getDescription = NULL}};
+    .callbacks = {.getDescription = NULL, .getBitDescription = NULL}};
 
 const HAPUInt16TLVFormat uint16Format = {
     .type = kHAPTLVFormatType_UInt16,
     .constraints = {.minimumValue = 0, .maximumValue = UINT16_MAX},
-    .callbacks = {.getDescription = NULL}};
+    .callbacks = {.getDescription = NULL, .getBitDescription = NULL}};
 
 const HAPUInt16TLVFormat iidFormat = uint16Format;
 
 const HAPStructTLVMember transitionEntryAdjustmentFactorMember = {
     .valueOffset = HAP_OFFSETOF(transitionEntryType, adjustmentFactor),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType) TransitionEntryTypes::ADJUSTMENT_FACTOR,
     .debugDescription = "ADJUSTMENT_FACTOR",
     .format = &uint32Format,
@@ -172,6 +173,7 @@ const HAPStructTLVMember transitionEntryAdjustmentFactorMember = {
 
 const HAPStructTLVMember transitionEntryValueMember = {
     .valueOffset = HAP_OFFSETOF(transitionEntryType, value),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType) TransitionEntryTypes::VALUE,
     .debugDescription = "VALUE",
     .format = &uint32Format,
@@ -180,6 +182,7 @@ const HAPStructTLVMember transitionEntryValueMember = {
 
 const HAPStructTLVMember transitionEntryOffsetMember = {
     .valueOffset = HAP_OFFSETOF(transitionEntryType, offset),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType) TransitionEntryTypes::OFFSET,
     .debugDescription = "OFFSET",
     .format = &uint32Format,
@@ -208,7 +211,7 @@ const transitionItemFormat transitionEntryStructFormat = {
 const HAPUInt8TLVFormat sepFormat = {
     .type = kHAPTLVFormatType_None,
     .constraints = {.minimumValue = 0, .maximumValue = 0},
-    .callbacks = {.getDescription = NULL}};
+    .callbacks = {.getDescription = NULL, .getBitDescription = NULL}};
 
 HAP_SEQUENCE_TLV_SUPPORT(transitionCurveType, transitionItemFormat,
                          curveContainerFormat)
@@ -230,6 +233,7 @@ const curveContainerFormat supportCurveContainer = {
 const HAPStructTLVMember supportCurveContainerMember = {
     .valueOffset = HAP_OFFSETOF(transitionCurveConfigurationType, curve),
     .isSetOffset = HAP_OFFSETOF(transitionCurveConfigurationType, curvePresent),
+    .tlvType = (HAPTLVType) 0,  // DNC initializer
     .debugDescription = "transitionCurveConfigurationMember",
     .format = &supportCurveContainer,
     .isOptional = false,
@@ -237,6 +241,7 @@ const HAPStructTLVMember supportCurveContainerMember = {
 
 const HAPStructTLVMember adjustmentCharacteristicIIDMember = {
     .valueOffset = HAP_OFFSETOF(transitionCurveConfigurationType, iid),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType)
         TransitionCurveConfigurationTypes::ADJUSTMENT_CHARACTERISTIC_IID,
 
@@ -248,6 +253,7 @@ const HAPStructTLVMember adjustmentCharacteristicIIDMember = {
 const HAPStructTLVMember minimumAdjustmentMultiplierMember = {
     .valueOffset = HAP_OFFSETOF(adjustmentMultiplierRangeType,
                                 minimumAdjustmentMultiplier),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType)
         TransitionAdjustmentMultiplierRange::MINIMUM_ADJUSTMENT_MULTIPLIER,
 
@@ -259,6 +265,7 @@ const HAPStructTLVMember minimumAdjustmentMultiplierMember = {
 const HAPStructTLVMember maximumAdjustmentMultiplierMember = {
     .valueOffset = HAP_OFFSETOF(adjustmentMultiplierRangeType,
                                 maximumAdjustmentMultiplier),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType)
         TransitionAdjustmentMultiplierRange::MAXIMUM_ADJUSTMENT_MULTIPLIER,
 
@@ -280,6 +287,7 @@ const adjustmentMultiplierRangeSType adjustmentMultiplierRangeFormat = {
 const HAPStructTLVMember adjustmentMultiplierRangeMember = {
     .valueOffset = HAP_OFFSETOF(transitionCurveConfigurationType,
                                 adjustmentMultiplierRange),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType)
         TransitionCurveConfigurationTypes::ADJUSTMENT_MULTIPLIER_RANGE,
 
@@ -310,6 +318,7 @@ const HAPStructTLVMember transitionCurveConfigurationMember = {
 
 const HAPStructTLVMember transitionIdMember = {
     .valueOffset = HAP_OFFSETOF(parametersType, transitionId),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType) ValueTransitionParametersTypes::TRANSITION_ID,
     .debugDescription = "TRANSITION_ID",
     .format = &uuidFormat,
@@ -318,6 +327,7 @@ const HAPStructTLVMember transitionIdMember = {
 
 const HAPStructTLVMember startTimeMember = {
     .valueOffset = HAP_OFFSETOF(parametersType, startTime),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType) ValueTransitionParametersTypes::START_TIME,
     .debugDescription = "START_TIME",
     .format = &uint64Format,
@@ -326,6 +336,7 @@ const HAPStructTLVMember startTimeMember = {
 
 const HAPStructTLVMember id3Member = {
     .valueOffset = HAP_OFFSETOF(parametersType, id3),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType) ValueTransitionParametersTypes::ID_3,
     .debugDescription = "ID_3",
     .format = &uint64Format,
@@ -342,6 +353,7 @@ const transitionParametersFormatType transitionParametersFormat = {
 
 const HAPStructTLVMember characteristicIIDMember = {
     .valueOffset = HAP_OFFSETOF(transitionType, iid),
+    .isSetOffset = 0,
     .tlvType =
         (HAPTLVType) ValueTransitionConfigurationTypes::CHARACTERISTIC_IID,
     .debugDescription = "CHARACTERISTIC_IID",
@@ -434,6 +446,7 @@ const curveContainerFormat2 updateValueTransitionFormat = {
 
 const HAPStructTLVMember readValueIIDMember = {
     .valueOffset = HAP_OFFSETOF(supportedConfig, iid),
+    .isSetOffset = 0,
     .tlvType =
         (HAPTLVType) ReadValueTransitionConfiguration::CHARACTERISTIC_IID,
     .debugDescription = "CHARACTERISTIC_IID",
@@ -494,6 +507,7 @@ HAP_STRUCT_TLV_SUPPORT(supportedConfig, supportedConfigFormat)
 
 const HAPStructTLVMember supportedConfigIIDMember = {
     .valueOffset = HAP_OFFSETOF(supportedConfig, iid),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType)
         SupportedValueTransitionConfigurationTypes::CHARACTERISTIC_IID,
     .debugDescription = "CHARACTERISTIC_IID",
@@ -503,6 +517,7 @@ const HAPStructTLVMember supportedConfigIIDMember = {
 
 const HAPStructTLVMember supportedConfigTypeMember = {
     .valueOffset = HAP_OFFSETOF(supportedConfig, type),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType)
         SupportedValueTransitionConfigurationTypes::TRANSITION_TYPE,
     .debugDescription = "TRANSITION_TYPE",
@@ -536,6 +551,7 @@ const containerFormat supportedTransitionContainer = {
 
 const HAPStructTLVMember statusResponseTimeMember = {
     .valueOffset = HAP_OFFSETOF(configurationStatus, timeSinceStart),
+    .isSetOffset = 0,
     .tlvType =
         (HAPTLVType) ValueTransitionConfigurationStatusTypes::TIME_SINCE_START,
     .debugDescription = "TIME_SINCE_START",
@@ -545,6 +561,7 @@ const HAPStructTLVMember statusResponseTimeMember = {
 
 const HAPStructTLVMember statusResponseTransitionMember = {
     .valueOffset = HAP_OFFSETOF(configurationStatus, parameters),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType)
         ValueTransitionConfigurationStatusTypes::TRANSITION_PARAMETERS,
     .debugDescription = "TRANSITION_PARAMETERS",
@@ -554,6 +571,7 @@ const HAPStructTLVMember statusResponseTransitionMember = {
 
 const HAPStructTLVMember statusResponseIIDMember = {
     .valueOffset = HAP_OFFSETOF(configurationStatus, iid),
+    .isSetOffset = 0,
     .tlvType = (HAPTLVType)
         ValueTransitionConfigurationStatusTypes::CHARACTERISTIC_IID,
     .debugDescription = "CHARACTERISTIC_IID",
