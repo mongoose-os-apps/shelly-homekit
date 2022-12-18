@@ -144,7 +144,7 @@ libs:
   - location: ./libreset
   - location: https://github.com/mongoose-os-libs/core
   - location: https://github.com/mongoose-os-libs/file-logger
-  - location: https://github.com/mongoose-os-libs/homekit-adk
+  - location: https://github.com/markirb/homekit-adk
   - location: https://github.com/mongoose-os-libs/http-server
   - location: https://github.com/mongoose-os-libs/ota-http-server
   - location: https://github.com/mongoose-os-libs/rpc-service-config
@@ -190,6 +190,7 @@ conds:
         HAP_TLV_NO_LOG: 1            # Saves us stack
         HAP_DISABLE_ASSERTS: 1       # 32K
         HAP_DISABLE_PRECONDITIONS: 1 # 40K
+
   - when: mos.platform == "esp32"
     apply:
       config_schema:
