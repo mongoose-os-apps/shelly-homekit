@@ -11,7 +11,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
-||[1]|1PM|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|[2.5]|i3|[+i4]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
+||[1]|1PM|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|2.5|i3|[+i4]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
 |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
@@ -127,7 +127,6 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [1L]: https://www.shelly.cloud/en/products/shop/shelly-1l
 [Plug]: https://www.shelly.cloud/en/products/shop/1xplug
 [PlugS]: https://www.shelly.cloud/en/products/shop/shelly-plug-s
-[2.5]: https://www.shelly.cloud/en/products/shop/shelly-2-5-ce-ul-1
 [+i4]: https://www.shelly.cloud/en/products/shop/splusi4x1
 [UNI]: https://www.shelly.cloud/en/products/shop/shelly-uni-1
 [RGBW2]: https://www.shelly.cloud/en/products/shop/shelly-rgbw2-1
