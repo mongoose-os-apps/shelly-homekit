@@ -11,7 +11,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
-||[1]|1PM|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|2.5|i3|[+i4]|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
+||[1]|1PM|[+1]|[+1PM]|[1L]|[Plug]|[PlugS]|2|2.5|i3|+i4([AC]/[DC])|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
 |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
@@ -77,7 +77,7 @@ Features that are not yet supported:
       * Shelly Plus 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PM.zip`
         _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
 
-      * Shelly Plus I4: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusI4.zip`
+      * Shelly Plus I4 AC & DC: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusI4.zip`
         _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
 
       * Shelly RGBW2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyRGBW2.zip`  
@@ -127,7 +127,8 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [1L]: https://www.shelly.cloud/en/products/shop/shelly-1l
 [Plug]: https://www.shelly.cloud/en/products/shop/1xplug
 [PlugS]: https://www.shelly.cloud/en/products/shop/shelly-plug-s
-[+i4]: https://www.shelly.cloud/en/products/shop/splusi4x1
+[AC]: https://www.shelly.cloud/en-de/products/product-overview/splusi4x1
+[DC]: https://www.shelly.cloud/en-de/products/product-overview/shelly-plus-i4-dc
 [UNI]: https://www.shelly.cloud/en/products/shop/shelly-uni-1
 [RGBW2]: https://www.shelly.cloud/en/products/shop/shelly-rgbw2-1
 [Bulb]: https://www.shelly.cloud/en/search?query=%22Shelly+Duo+-+RGBW%22
