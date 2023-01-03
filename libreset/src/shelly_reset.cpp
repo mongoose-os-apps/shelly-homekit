@@ -226,7 +226,7 @@ void CheckRebootCounter() {
     ResetDevice(-1);
     return;
   }
-  SetRebootCounter((void *) (intptr_t)(reboot_counter + 1));
+  SetRebootCounter((void *) (intptr_t) (reboot_counter + 1));
   mgos_set_timer(10000, 0, SetRebootCounter, (void *) 0);
 }
 

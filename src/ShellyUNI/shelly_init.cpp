@@ -20,8 +20,8 @@
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_window_covering.hpp"
-#include "shelly_noisy_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_noisy_input_pin.hpp"
 #include "shelly_sys_led_btn.hpp"
 
 namespace shelly {
