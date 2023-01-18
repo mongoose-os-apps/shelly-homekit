@@ -1,4 +1,4 @@
-name: build-shelly-homekit
+name: build
 on:
   push:
   pull_request:
@@ -10,8 +10,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Check formatting
-        run: make check-format
       - name: Build docker image # remove if newer mos docker image is available
         run: docker build -t mgos/esp32-build:4.4.1-r7 -f .github/workflows/Dockerfile-esp32-build .
       - name: Install mos build tool
