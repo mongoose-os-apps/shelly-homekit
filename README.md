@@ -16,7 +16,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
 |Sensors<sup>3</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
-|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✗|✗|✗|✗|
+|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|-|-|✗|✗|✗|✗|✗|✗|-|-|✗|✗|✗|✗|
 |Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|✗|✗|
 |Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|✗|✗|-|-|-|-|
