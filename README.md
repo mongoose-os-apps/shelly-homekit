@@ -11,18 +11,42 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
-||[1]|1PM|[+1]|[+1PM]|[1L]|[Plug]|PlugS|2|2.5|i3|+i4([AC]/[DC])|[UNI]|[RGBW2]|[Bulb]|[Duo]|[Vintage]|
-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
-|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
-|Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
-|Sensors<sup>3</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
-|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✓<sup>4</sup>|-|✗|✗|✗|✗|
-|Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✗|✓|✗|✗|✗|✗|
-|Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|✗|✗|
-|Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|✗|✗|-|-|-|-|
-|RGB(W)|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✓|✓|✗|✗|
-|CCT|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✓|✗|✓|✗|
-|Brightness control|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|✗|-|✓|✓|✓|✓|
+### Plus devises
+
+||[+1]|[+1PM]|+i4 [AC]/[DC]|
+|-|-|-|-|
+|Switch & Co.<sup>1</sup>|✓|✓|✗|
+|Stateless Input<sup>2</sup>|✓|✓|✓|
+|Sensors<sup>3</sup>|✓|✓|✓|
+|Garage door opener|✓|✓|✗|
+|Roller shutter mode|✗|✗|✗|
+|Power measurement|✗|✓|✗|
+|Temperature/Humidity measurement<sup>4</sup>|✓|✓|✓|
+
+### Pro devices
+
+Currently not supported, will hopfuly supported soon.
+
+### Gen 1 switches
+
+||[1]|1PM|[1L]|[Plug]|[PlugS]|2|2.5|i3|[UNI]|
+|-|-|-|-|-|-|-|-|-|-|
+|Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✗|✓|
+|Stateless Input<sup>2</sup>|✓|✓|✓|✗|✗|✓|✓|✓|✓|
+|Sensors<sup>3</sup>|✓|✓|✓|✗|✗|✓|✓|✓|✓|
+|Temperature/Humidity measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|-|
+|Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✓|
+|Roller shutter mode|✗|✗|✗|✗|✗|✗|✓|✗|✗|
+|Power measurement|✗|✓|-|✓|✓|✗|✓|✗|✗|
+
+### Gen 1 light bulbs / led strips
+
+||[Duo]|[Duo RGBW]|[Vintage]|[RGBW2]|
+|-|-|-|-|-|
+|Brightness control|✓|✓|✓|✓|
+|CCT|✓|✗|✗|✓|
+|RGB(W)|✗|✓|✗|✓|
+|Power measurement|-|-|-|-|
 
 _Notes:_  
 _✓: supported_  
@@ -48,8 +72,9 @@ Features that are not yet supported:
 
     * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://shelly.rojer.cloud/update`
 
-    * If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model:
-
+    * <details>
+  <summary>If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model</summary>
+  
       * Shelly 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
 
       * Shelly 1L: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1L.zip`
@@ -86,6 +111,7 @@ Features that are not yet supported:
       * Shelly UNI: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyUNI.zip`
 
       * Shelly Vintage: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyVintage.zip`
+ </details>
 
   * See [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#updating-from-stock-firmware) for detailed instructions.
 
@@ -131,6 +157,6 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [DC]: https://www.shelly.cloud/en-de/products/product-overview/shelly-plus-i4-dc
 [UNI]: https://www.shelly.cloud/en/products/shop/shelly-uni-1
 [RGBW2]: https://www.shelly.cloud/en/products/shop/shelly-rgbw2-1
-[Bulb]: https://www.shelly.cloud/en/search?query=%22Shelly+Duo+-+RGBW%22
+[Duo RGBW]: https://www.shelly.cloud/en/search?query=%22Shelly+Duo+-+RGBW%22
 [Duo]: https://www.shelly.cloud/en/search?query=%22Shelly+Duo%22
 [Vintage]: https://www.shelly.cloud/en/search?query=vintage
