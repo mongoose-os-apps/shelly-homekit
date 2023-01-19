@@ -4,10 +4,15 @@ on:
   pull_request:
 jobs:
   build:
+    name: Build ${{ matrix.model }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [Shelly1, Shelly1L, Shelly1PM, Shelly25, Shelly2, ShellyColorBulb, ShellyDuo, ShellyI3, ShellyPlug, ShellyPlugS, ShellyPlus1, ShellyPlus1PM, ShellyPlusI4, ShellyRGBW2, ShellyVintage, ShellyUNI]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Build docker image # remove if newer mos docker image is available
@@ -16,12 +21,20 @@ jobs:
         run: |
           sudo add-apt-repository -y ppa:mongoose-os/mos
           sudo apt -q install -y mos-latest
-      - name: Build project
-        run: make release RELEASE_SUFFIX=$(.github/version.py --suffix)
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v2
+      - name: Build
+        run: make CLEAN=1 RELEASE=1 RELEASE_SUFFIX=$(.github/version.py --suffix) ${{ matrix.model }}
+      - name: test
+        run: find releases
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v3
         with:
-          name: releases
+          name: shelly-homekit-${{ matrix.model }}
+          path: releases/**/shelly-homekit-${{ matrix.model }}.zip
+          if-no-files-found: error
+      - name: Upload misc artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-${{ matrix.model }}
           path: |
             releases/*
             !releases/**/elf
