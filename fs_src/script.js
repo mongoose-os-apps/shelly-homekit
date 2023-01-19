@@ -730,8 +730,19 @@ function updateComponent(cd) {
       if (cd.type == Component_Type.kLightBulb) {
         if (cd.bulb_type == LightBulbController_BulbType.kCCT) {
           headText = "CCT";
+          if (lastInfo.model == "ShellyRGBW2") {
+            if (cd.id == 1) {
+              headText += " R/G";
+            } else {
+              headText += " B/W";
+            }
+          }
         } else if (cd.bulb_type == LightBulbController_BulbType.kRGBW) {
-          headText = "RGB";
+          if (lastInfo.sys_mode == 4) {
+            headText = "RGBW";
+          } else {
+            headText = "RGB";
+          }
         } else {
           headText = "Light";
         }
