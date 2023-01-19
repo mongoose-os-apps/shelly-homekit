@@ -382,10 +382,10 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
   if (out_pm_ == nullptr) return;
 
   // Power
-  power_char_ = new mgos::hap::UInt16Characteristic(
+  power_char_ = new mgos::hap::UFloatCharacteristic(
       (*iid)++, &kHAPCharacteristic_EveConsumption, 0, 65535, 1,
       [this](HAPAccessoryServerRef *,
-             const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
+             const HAPUFloatCharacteristicReadRequest *, float *value) {
         auto power = out_pm_->GetPowerW();
         if (!power.ok()) return kHAPError_Busy;
         *value = power.ValueOrDie();
@@ -394,10 +394,10 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
       true /* supports_notification */, nullptr, "eve-power-consumption");
   AddChar(power_char_);
   // Energy
-  total_power_char_ = new mgos::hap::UInt16Characteristic(
+  total_power_char_ = new mgos::hap::UFloatCharacteristic(
       (*iid)++, &kHAPCharacteristic_EveTotalConsumption, 0, 65535, 1,
       [this](HAPAccessoryServerRef *,
-             const HAPUInt16CharacteristicReadRequest *, uint16_t *value) {
+             const HAPUFloatCharacteristicReadRequest *, float *value) {
         auto energy = out_pm_->GetEnergyWH();
         if (!energy.ok()) return kHAPError_Busy;
         *value = energy.ValueOrDie() / 1000.0f;
