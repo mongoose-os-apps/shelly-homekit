@@ -1108,10 +1108,16 @@ function updateElement(key, value, info) {
 function updatePowerStats(c, cd) {
   if (cd.apower === undefined) return;
 
-  apower = Math.round(cd.apower * 10) / 10;
-  console.log(apower)
-  updateInnerText(el(c, "power_stats"), `${apower}W, ${cd.aenergy}Wh`);
+  updateInnerText(
+      el(c, "power_stats_current"), `${formatFloat(cd.apower, 3)} W`);
+  updateInnerText(
+      el(c, "power_stats_total"), `${formatFloat(cd.aenergy, 3)} Wh`);
   el(c, "power_stats_container").style.display = "block";
+}
+
+function formatFloat(number, digits) {
+  return new Intl.NumberFormat("en-EN", {minimumFractionDigits: digits})
+      .format(number);
 }
 
 function getInfo() {
