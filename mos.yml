@@ -144,7 +144,8 @@ libs:
   - location: ./libreset
   - location: https://github.com/mongoose-os-libs/core
   - location: https://github.com/mongoose-os-libs/file-logger
-  - location: https://github.com/markirb/homekit-adk
+  - location: https://github.com/mongoose-os-libs/homekit-adk
+    version: pull/10/head # use unmerged changes from https://github.com/mongoose-os-libs/homekit-adk/pull/10
   - location: https://github.com/mongoose-os-libs/http-server
   - location: https://github.com/mongoose-os-libs/ota-http-server
   - location: https://github.com/mongoose-os-libs/rpc-service-config
