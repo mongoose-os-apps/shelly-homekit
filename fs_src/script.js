@@ -673,11 +673,7 @@ function updateComponent(cd) {
       updateInnerText(el(c, "head"), headText);
       setValueIfNotModified(el(c, "name"), cd.name);
       el(c, "state").checked = cd.state;
-      if (cd.apower !== undefined) {
-        updateInnerText(
-            el(c, "power_stats"), `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
-        el(c, "power_stats_container").style.display = "block";
-      }
+      updatePowerStats(c, cd);
       if (cd.type == Component_Type.kLightBulb) {
         checkIfNotModified(el(c, "svc_hidden"), cd.svc_hidden);
         if (cd.hap_optional !== undefined && cd.hap_optional == 0) {
@@ -730,8 +726,19 @@ function updateComponent(cd) {
       if (cd.type == Component_Type.kLightBulb) {
         if (cd.bulb_type == LightBulbController_BulbType.kCCT) {
           headText = "CCT";
+          if (lastInfo.model == "ShellyRGBW2") {
+            if (cd.id == 1) {
+              headText += " R/G";
+            } else {
+              headText += " B/W";
+            }
+          }
         } else if (cd.bulb_type == LightBulbController_BulbType.kRGBW) {
-          headText = "RGB";
+          if (lastInfo.sys_mode == 4) {
+            headText = "RGBW";
+          } else {
+            headText = "RGB";
+          }
         } else {
           headText = "Light";
         }
@@ -739,12 +746,7 @@ function updateComponent(cd) {
         updateInnerText(el(c, "head"), headText);
         setValueIfNotModified(el(c, "name"), cd.name);
         el(c, "state").checked = cd.state;
-        if (cd.apower !== undefined) {
-          updateInnerText(
-              el(c, "power_stats"),
-              `${Math.round(cd.apower)}W, ${cd.aenergy}Wh`);
-          el(c, "power_stats_container").style.display = "block";
-        }
+        updatePowerStats(c, cd);
         slideIfNotModified(el(c, "color_temperature"), cd.color_temperature);
         slideIfNotModified(el(c, "hue"), cd.hue);
         slideIfNotModified(el(c, "saturation"), cd.saturation);
@@ -1067,6 +1069,15 @@ function updateElement(key, value, info) {
       }
       break;
   }
+}
+
+function updatePowerStats(c, cd) {
+  if (cd.apower === undefined) return;
+
+  apower = Math.round(cd.apower * 10) / 10;
+  console.log(apower)
+  updateInnerText(el(c, "power_stats"), `${apower}W, ${cd.aenergy}Wh`);
+  el(c, "power_stats_container").style.display = "block";
 }
 
 function getInfo() {
