@@ -16,6 +16,7 @@
  */
 
 #include "shelly_cct_controller.hpp"
+#include "shelly_hap_adaptive_lighting.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_light_bulb.hpp"
 #include "shelly_input_pin.hpp"
@@ -112,6 +113,14 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     if (!st.ok()) {
       LOG(LL_ERROR, ("LightBulb init failed: %s", st.ToString().c_str()));
       return;
+    }
+
+    // Use adaptive lightning when possible (CCT)
+    std::unique_ptr<hap::AdaptiveLighting> adaptive_light;
+    adaptive_light.reset(new hap::AdaptiveLighting(hap_light.get(), lb_cfg));
+    st = adaptive_light->Init();
+    if (st.ok()) {
+      hap_light->SetAdaptiveLight(std::move(adaptive_light));
     }
 
     bool to_pri_acc = (ndev == 1);  // only device will become primary accessory

@@ -83,7 +83,7 @@ Status LightBulb::Init() {
              const HAPBoolCharacteristicWriteRequest *request UNUSED_ARG,
              bool value) {
         LOG(LL_DEBUG, ("On write %d: %s", id(), OnOff(value)));
-        UpdateOnOff(value, "HAP");
+        UpdateOnOff(value, kCHangeReasonHAP);
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_On);
@@ -98,7 +98,7 @@ Status LightBulb::Init() {
              uint8_t value) {
         LOG(LL_DEBUG,
             ("Brightness write %d: %d", id(), static_cast<int>(value)));
-        SetBrightness(value, "HAP");
+        SetBrightness(value, kCHangeReasonHAP);
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_Brightness);
@@ -119,7 +119,7 @@ Status LightBulb::Init() {
                uint32_t value) {
           LOG(LL_INFO, ("Color Temperature write %d: %d", id(),
                         static_cast<int>(value)));
-          SetColorTemperature(value, "HAP");
+          SetColorTemperature(value, kCHangeReasonHAP);
           return kHAPError_None;
         },
         kHAPCharacteristicDebugDescription_ColorTemperature);
@@ -135,7 +135,7 @@ Status LightBulb::Init() {
                const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
                uint32_t value) {
           LOG(LL_DEBUG, ("Hue write %d: %d", id(), static_cast<int>(value)));
-          SetHue(value, "HAP");
+          SetHue(value, kCHangeReasonHAP);
           return kHAPError_None;
         },
         kHAPCharacteristicDebugDescription_Hue);
@@ -148,7 +148,7 @@ Status LightBulb::Init() {
         [this](HAPAccessoryServerRef *server UNUSED_ARG,
                const HAPUInt32CharacteristicWriteRequest *request UNUSED_ARG,
                uint32_t value) {
-          SetSaturation(value, "HAP");
+          SetSaturation(value, kCHangeReasonHAP);
           return kHAPError_None;
         },
         kHAPCharacteristicDebugDescription_Saturation);
@@ -230,8 +230,12 @@ void LightBulb::SetColorTemperature(int color_temperature,
 
   cfg_->color_temperature = color_temperature;
   dirty_ = true;
-  if (color_temperature_characteristic != nullptr) {
+  if (color_temperature_characteristic != nullptr &&
+      source != kChangeReasonAuto) {
     color_temperature_characteristic->RaiseEvent();
+  }
+  if (source == kCHangeReasonHAP) {
+    ad_controller_->ColorTempChangedManually();
   }
 
   controller_->UpdateOutput(cfg_, true);
@@ -262,6 +266,9 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
   dirty_ = true;
   if (brightness_characteristic != nullptr) {
     brightness_characteristic->RaiseEvent();
+  }
+  if (source == kCHangeReasonHAP) {
+    ad_controller_->BrightnessChangedManually();
   }
 
   controller_->UpdateOutput(cfg_, true);

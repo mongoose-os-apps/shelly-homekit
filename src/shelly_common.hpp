@@ -66,6 +66,11 @@
 #define SHELLY_HAP_IID_BASE_TEMPERATURE_SENSOR 0xd00
 #define SHELLY_HAP_IID_BASE_LEAK_SENSOR 0xe00
 #define SHELLY_HAP_IID_BASE_SMOKE_SENSOR 0xf00
+#define SHELLY_HAP_IID_BASE_ADAPTIVE_LIGHTING 0x1000
+
+#define kChangeReasonAuto "AUTO"
+#define kChangeReasonAutoWithNotification "AUTO_NOTIFICATION"
+#define kCHangeReasonHAP "HAP"
 
 namespace shelly {
 
