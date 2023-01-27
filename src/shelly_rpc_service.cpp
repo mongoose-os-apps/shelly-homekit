@@ -159,9 +159,9 @@ static void AppendWifiInfoExt(std::string *res) {
       res,
       "wifi_en: %B, wifi_ssid: %Q, wifi_pass: %Q, "
       "wifi_pass_h: \"%08x%08x%08x%08x\", "
-      "wifi_ip: %Q, wifi_netmask: %Q, wifi_gw: %Q, "
+      "wifi_ip: %Q, wifi_netmask: %Q, wifi_gw: %Q, wifi_nameserver: %Q, "
       "wifi1_en: %B, wifi1_ssid: %Q, wifi1_pass: %Q, "
-      "wifi1_ip: %Q, wifi1_netmask: %Q, wifi1_gw: %Q, "
+      "wifi1_ip: %Q, wifi1_netmask: %Q, wifi1_gw: %Q, wifi1_nameserver: %Q, "
       "wifi_ap_en: %B, wifi_ap_ssid: %Q, wifi_ap_pass: %Q, "
       "wifi_connecting: %B, wifi_connected: %B, wifi_conn_ssid: %Q, "
       "wifi_conn_rssi: %d, wifi_conn_ip: %Q, "
@@ -169,13 +169,13 @@ static void AppendWifiInfoExt(std::string *res) {
       wc.sta.enable, wc.sta.ssid.c_str(), wifi_pass.c_str(),
       (unsigned int) digest[0], (unsigned int) digest[2],
       (unsigned int) digest[4], (unsigned int) digest[6], wc.sta.ip.c_str(),
-      wc.sta.netmask.c_str(), wc.sta.gw.c_str(), wc.sta1.enable,
-      wc.sta1.ssid.c_str(), wifi1_pass.c_str(), wc.sta1.ip.c_str(),
-      wc.sta1.netmask.c_str(), wc.sta1.gw.c_str(), wc.ap.enable,
-      wc.ap.ssid.c_str(), wifi_ap_pass.c_str(), wi.sta_connecting,
-      wi.sta_connected, wi.sta_ssid.c_str(), wi.sta_rssi, wi.sta_ip.c_str(),
-      wi.status.c_str(), wc.sta_ps_mode,
-      GetMACAddr(true /* sta */, true /* delims */).c_str());
+      wc.sta.netmask.c_str(), wc.sta.gw.c_str(), wc.sta.nameserver.c_str(),
+      wc.sta1.enable, wc.sta1.ssid.c_str(), wifi1_pass.c_str(),
+      wc.sta1.ip.c_str(), wc.sta1.netmask.c_str(), wc.sta1.gw.c_str(),
+      wc.sta1.nameserver.c_str(), wc.ap.enable, wc.ap.ssid.c_str(),
+      wifi_ap_pass.c_str(), wi.sta_connecting, wi.sta_connected,
+      wi.sta_ssid.c_str(), wi.sta_rssi, wi.sta_ip.c_str(), wi.status.c_str(),
+      wc.sta_ps_mode, GetMACAddr(true /* sta */, true /* delims */).c_str());
 }
 
 static void AppendOTAInfoExt(std::string *res) {
@@ -530,18 +530,18 @@ static void SetWifiConfigHandler(struct mg_rpc_request_info *ri,
   int8_t ap_enable = -1, sta_enable = -1, sta1_enable = -1;
   char *ap_ssid = nullptr, *ap_pass = nullptr;
   char *sta_ssid = nullptr, *sta_pass = nullptr, *sta_ip = nullptr;
-  char *sta_netmask = nullptr, *sta_gw = nullptr;
+  char *sta_netmask = nullptr, *sta_gw = nullptr, *sta_nameserver = nullptr;
   char *sta1_ssid = nullptr, *sta1_pass = nullptr, *sta1_ip = nullptr;
-  char *sta1_netmask = nullptr, *sta1_gw = nullptr;
+  char *sta1_netmask = nullptr, *sta1_gw = nullptr, *sta1_nameserver = nullptr;
   json_scanf(args.p, args.len, ri->args_fmt, &ap_enable, &ap_ssid, &ap_pass,
              &sta_enable, &sta_ssid, &sta_pass, &sta_ip, &sta_netmask, &sta_gw,
-             &sta1_enable, &sta1_ssid, &sta1_pass, &sta1_ip, &sta1_netmask,
-             &sta1_gw, &cfg.sta_ps_mode);
+             &sta_nameserver, &sta1_enable, &sta1_ssid, &sta1_pass, &sta1_ip,
+             &sta1_netmask, &sta1_gw, &sta1_nameserver, &cfg.sta_ps_mode);
   mgos::ScopedCPtr o1(ap_ssid), o2(ap_pass);
-  mgos::ScopedCPtr o3(sta_ssid), o4(sta_pass);
-  mgos::ScopedCPtr o5(sta_ip), o6(sta_netmask), o7(sta_gw);
-  mgos::ScopedCPtr o8(sta1_ssid), o9(sta1_pass);
-  mgos::ScopedCPtr o10(sta1_ip), o11(sta1_netmask), o12(sta1_gw);
+  mgos::ScopedCPtr o3(sta_ssid), o4(sta_pass), o5(sta_ip);
+  mgos::ScopedCPtr o6(sta_netmask), o7(sta_gw), o8(sta_nameserver);
+  mgos::ScopedCPtr o9(sta1_ssid), o10(sta1_pass), o11(sta1_ip);
+  mgos::ScopedCPtr o12(sta1_netmask), o13(sta1_gw), o14(sta1_nameserver);
 
   if (ap_enable != -1) cfg.ap.enable = ap_enable;
   if (ap_ssid != nullptr) cfg.ap.ssid = ap_ssid;
@@ -553,6 +553,7 @@ static void SetWifiConfigHandler(struct mg_rpc_request_info *ri,
   if (sta_ip != nullptr) cfg.sta.ip = sta_ip;
   if (sta_netmask != nullptr) cfg.sta.netmask = sta_netmask;
   if (sta_gw != nullptr) cfg.sta.gw = sta_gw;
+  if (sta_nameserver != nullptr) cfg.sta.nameserver = sta_nameserver;
 
   if (sta1_enable != -1) cfg.sta1.enable = sta1_enable;
   if (sta1_ssid != nullptr) cfg.sta1.ssid = sta1_ssid;
@@ -560,6 +561,7 @@ static void SetWifiConfigHandler(struct mg_rpc_request_info *ri,
   if (sta1_ip != nullptr) cfg.sta1.ip = sta1_ip;
   if (sta1_netmask != nullptr) cfg.sta1.netmask = sta1_netmask;
   if (sta1_gw != nullptr) cfg.sta1.gw = sta1_gw;
+  if (sta1_nameserver != nullptr) cfg.sta1.nameserver = sta1_nameserver;
 
   Status st = SetWifiConfig(cfg);
   SendStatusResp(ri, st);
@@ -591,9 +593,9 @@ bool RPCServiceInit(HAPAccessoryServerRef *server,
     mg_rpc_add_handler(c, "Shelly.SetWifiConfig",
                        ("{ap: {enable: %B, ssid: %Q, pass: %Q}, "
                         "sta: {enable: %B, ssid: %Q, pass: %Q, "
-                        "ip: %Q, netmask: %Q, gw: %Q}, "
+                        "ip: %Q, netmask: %Q, gw: %Q, nameserver: %Q}, "
                         "sta1: {enable: %B, ssid: %Q, pass: %Q, "
-                        "ip: %Q, netmask: %Q, gw: %Q}, "
+                        "ip: %Q, netmask: %Q, gw: %Q, nameserver: %Q}, "
                         "sta_ps_mode: %d}"),
                        SetWifiConfigHandler, nullptr);
   }

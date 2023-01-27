@@ -205,6 +205,7 @@ el("wifi_save_btn").onclick = function() {
       ip: (sta_static ? el("wifi_ip").value : ""),
       netmask: (sta_static ? el("wifi_netmask").value : ""),
       gw: (sta_static ? el("wifi_gw").value : ""),
+      nameserver: el("wifi_nameserver").value,
     },
     sta1: {
       enable: el("wifi1_en").checked,
@@ -212,6 +213,7 @@ el("wifi_save_btn").onclick = function() {
       ip: (sta1_static ? el("wifi1_ip").value : ""),
       netmask: (sta1_static ? el("wifi1_netmask").value : ""),
       gw: (sta1_static ? el("wifi1_gw").value : ""),
+      nameserver: el("wifi1_nameserver").value,
     },
     ap: {
       enable: el("wifi_ap_en").checked,
@@ -947,6 +949,8 @@ function updateElement(key, value, info) {
     case "wifi1_netmask":
     case "wifi_gw":
     case "wifi1_gw":
+    case "wifi_nameserver":
+    case "wifi1_nameserver":
       setValueIfNotModified(el(key), value);
       break;
     case "wifi_ip":

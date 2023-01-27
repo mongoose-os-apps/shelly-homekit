@@ -38,6 +38,7 @@ struct WifiSTAConfig {
   std::string ip;
   std::string netmask;
   std::string gw;
+  std::string nameserver;
 
   bool operator==(const WifiSTAConfig &other) const;
 };
