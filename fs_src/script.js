@@ -60,7 +60,9 @@ class Component_Type {
   static kTemperatureSensor = 12;
   static kLeakSensor = 13;
   static kSmokeSensor = 14;
-  static kMax = 15;
+  static kCarbonMonoxideSensor = 15;
+  static kCarbonDioxideSensor = 16;
+  static kMax = 17;
 };
 
 // Keep in sync with shelly::LightBulbController::BulbType.
@@ -205,6 +207,7 @@ el("wifi_save_btn").onclick = function() {
       ip: (sta_static ? el("wifi_ip").value : ""),
       netmask: (sta_static ? el("wifi_netmask").value : ""),
       gw: (sta_static ? el("wifi_gw").value : ""),
+      nameserver: el("wifi_nameserver").value,
     },
     sta1: {
       enable: el("wifi1_en").checked,
@@ -212,6 +215,7 @@ el("wifi_save_btn").onclick = function() {
       ip: (sta1_static ? el("wifi1_ip").value : ""),
       netmask: (sta1_static ? el("wifi1_netmask").value : ""),
       gw: (sta1_static ? el("wifi1_gw").value : ""),
+      nameserver: el("wifi1_nameserver").value,
     },
     ap: {
       enable: el("wifi_ap_en").checked,
@@ -382,6 +386,7 @@ function swSetConfig(c) {
   let cfg = {
     name: name,
     svc_type: parseInt(el(c, "svc_type").value),
+    hk_state_inverted: el(c, "hk_state_inverted").checked,
     initial_state: parseInt(el(c, "initial").value),
     auto_off: autoOff,
     in_inverted: el(c, "in_inverted").checked,
@@ -522,20 +527,46 @@ el("reset_btn").onclick = function() {
   });
 };
 
+function cloneTemplate(name, id) {
+  c = el(name).cloneNode(true);
+  c.id = id;
+  configureTabs(c);
+  return c;
+}
+
+function configureTabs(c) {
+  tabWrapper = c.querySelector(`#${c.id} .tab_wrapper`);
+  if (!tabWrapper) return;
+  tabRadios = tabWrapper.getElementsByClassName("tab_radio");
+  tabGroup = c.id;
+  tabs = tabWrapper.getElementsByClassName("tab");
+  for (let i = 0; i < tabRadios.length; i++) {
+    tabRadios[i].name = tabGroup;
+    tabRadios[i].id = `${tabGroup}_${i}`;
+  }
+  for (let i = 0; i < tabs.length; i++) {
+    tabs[i].setAttribute("for", `${tabGroup}_${i}`);
+  }
+}
+
 function findOrAddContainer(cd) {
-  let elId = `c${cd.type}-${cd.id}`;
+  let elId = `c${cd.type}_${cd.id}`;
   let c = el(elId);
   if (c) return c;
+
   switch (cd.type) {
     case Component_Type.kSwitch:
     case Component_Type.kOutlet:
     case Component_Type.kLock:
-      c = el("sw_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("sw_template", elId);
       el(c, "state").onchange = function(ev) {
         setComponentState(c, {state: !c.data.state}, el(c, "set_spinner"));
         markInputChanged(ev);
       };
+      if (cd.type == Component_Type.kSwitch ||
+          cd.type == Component_Type.kOutlet) {
+        el(c, "hk_state_inverted_container").style.display = "block";
+      }
       el(c, "save_btn").onclick = function() {
         swSetConfig(c);
       };
@@ -547,15 +578,13 @@ function findOrAddContainer(cd) {
       break;
     case Component_Type.kStatelessSwitch:  // aka input in detached mode
     case Component_Type.kDoorbell:
-      c = el("ssw_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("ssw_template", elId);
       el(c, "save_btn").onclick = function() {
         sswSetConfig(c);
       };
       break;
     case Component_Type.kWindowCovering:
-      c = el("wc_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("wc_template", elId);
       el(c, "open_btn").onclick = function() {
         setComponentState(c, {tgt_pos: 100}, el(c, "open_spinner"));
       };
@@ -571,8 +600,7 @@ function findOrAddContainer(cd) {
       };
       break;
     case Component_Type.kGarageDoorOpener:
-      c = el("gdo_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("gdo_template", elId);
       el(c, "save_btn").onclick = function() {
         gdoSetConfig(c, null, el(c, "save_spinner"));
       };
@@ -581,8 +609,7 @@ function findOrAddContainer(cd) {
       };
       break;
     case Component_Type.kDisabledInput:
-      c = el("di_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("di_template", elId);
       el(c, "save_btn").onclick = function() {
         diSetConfig(c);
       };
@@ -592,15 +619,15 @@ function findOrAddContainer(cd) {
     case Component_Type.kContactSensor:
     case Component_Type.kLeakSensor:
     case Component_Type.kSmokeSensor:
-      c = el("sensor_template").cloneNode(true);
-      c.id = elId;
+    case Component_Type.kCarbonMonoxideSensor:
+    case Component_Type.kCarbonDioxideSensor:
+      c = cloneTemplate("sensor_template", elId);
       el(c, "save_btn").onclick = function() {
         mosSetConfig(c);
       };
       break;
     case Component_Type.kLightBulb:
-      c = el("rgb_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("rgb_template", elId);
 
       let value = cd.bulb_type;
       let showct = (value == LightBulbController_BulbType.kCCT)
@@ -635,8 +662,7 @@ function findOrAddContainer(cd) {
       };
       break;
     case Component_Type.kTemperatureSensor:
-      c = el("ts_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("ts_template", elId);
       el(c, "save_btn").onclick = function() {
         tsSetConfig(c);
       };
@@ -662,6 +688,7 @@ function rgbState(c, newState) {
 
 function updateComponent(cd) {
   let c = findOrAddContainer(cd);
+  let whatSensor;
   if (!c) return;
   switch (cd.type) {
     case Component_Type.kSwitch:
@@ -674,6 +701,11 @@ function updateComponent(cd) {
       setValueIfNotModified(el(c, "name"), cd.name);
       el(c, "state").checked = cd.state;
       updatePowerStats(c, cd);
+      if (cd.type == Component_Type.kSwitch ||
+          cd.type == Component_Type.kOutlet) {
+        el(c, "hk_state_inverted_container").style.display = "block";
+        checkIfNotModified(el(c, "hk_state_inverted"), cd.hk_state_inverted);
+      }
       if (cd.type == Component_Type.kLightBulb) {
         checkIfNotModified(el(c, "svc_hidden"), cd.svc_hidden);
         if (cd.hap_optional !== undefined && cd.hap_optional == 0) {
@@ -864,10 +896,19 @@ function updateComponent(cd) {
       break;
     }
     case Component_Type.kMotionSensor:
+      whatSensor = whatSensor || "motion";
     case Component_Type.kOccupancySensor:
+      whatSensor = whatSensor || "occupancy";
     case Component_Type.kContactSensor:
+      whatSensor = whatSensor || "contact";
     case Component_Type.kLeakSensor:
-    case Component_Type.kSmokeSensor: {
+      whatSensor = whatSensor || "leak";
+    case Component_Type.kSmokeSensor:
+      whatSensor = whatSensor || "smoke";
+    case Component_Type.kCarbonMonoxideSensor:
+      whatSensor = whatSensor || "carbon monoxide";
+    case Component_Type.kCarbonDioxideSensor: {
+      whatSensor = whatSensor || "carbon dioxide";
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -878,8 +919,8 @@ function updateComponent(cd) {
       setValueIfNotModified(el(c, "idle_time"), cd.idle_time);
       el(c, "idle_time_container").style.display =
           (cd.in_mode == 0 ? "none" : "block");
-      let what = (cd.type == 7 ? "motion" : "occupancy");
-      let statusText = (cd.state ? `${what} detected` : `no ${what} detected`);
+      let statusText =
+          (cd.state ? `${whatSensor} detected` : `no ${whatSensor} detected`);
       if (cd.last_ev_age > 0) {
         statusText += `; last ${secondsToDateString(cd.last_ev_age)} ago`;
       }
@@ -947,6 +988,8 @@ function updateElement(key, value, info) {
     case "wifi1_netmask":
     case "wifi_gw":
     case "wifi1_gw":
+    case "wifi_nameserver":
+    case "wifi1_nameserver":
       setValueIfNotModified(el(key), value);
       break;
     case "wifi_ip":
@@ -1125,6 +1168,9 @@ function getInfo() {
           el("firmware_container").style.display = "block";
           updateCommonVisibility(!updateInProgress);
 
+          configureTabs(el("firmware_container"));
+          configureTabs(el("wifi_container"));
+
           // the system mode changed, clear out old UI components
           if (lastInfo !== null && lastInfo.sys_mode !== info.sys_mode) {
             el("components").innerHTML = "";
@@ -1178,6 +1224,8 @@ function setupHost() {
 
   if (!host) {
     host = prompt("Please enter the host of your shelly.");
+    host = host.replace("http://", "");
+    host = host.split("/")[0];
     if (host !== null) {
       location.href = `${location.host}?host=${host}`;
     }
@@ -1189,7 +1237,7 @@ function setupHost() {
 function reloadPage() {
   // If path or query string were set (e.g. '/ota'), reset them.
   let newHREF = `http://${location.host}/`;
-  if (location.href != newHREF) {
+  if (location.href != newHREF && !location.href.startsWith("file://")) {
     location.replace(newHREF);
   } else {
     location.reload();
