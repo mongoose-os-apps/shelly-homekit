@@ -40,6 +40,8 @@ class Component {
     kTemperatureSensor = 12,
     kLeakSensor = 13,
     kSmokeSensor = 14,
+    kCarbonMonoxideSensor = 15,
+    kCarbonDioxideSensor = 16,
     kMax,
   };
 

@@ -60,7 +60,9 @@ class Component_Type {
   static kTemperatureSensor = 12;
   static kLeakSensor = 13;
   static kSmokeSensor = 14;
-  static kMax = 15;
+  static kCarbonMonoxideSensor = 15;
+  static kCarbonDioxideSensor = 16;
+  static kMax = 17;
 };
 
 // Keep in sync with shelly::LightBulbController::BulbType.
@@ -592,6 +594,8 @@ function findOrAddContainer(cd) {
     case Component_Type.kContactSensor:
     case Component_Type.kLeakSensor:
     case Component_Type.kSmokeSensor:
+    case Component_Type.kCarbonMonoxideSensor:
+    case Component_Type.kCarbonDioxideSensor:
       c = el("sensor_template").cloneNode(true);
       c.id = elId;
       el(c, "save_btn").onclick = function() {
@@ -662,6 +666,7 @@ function rgbState(c, newState) {
 
 function updateComponent(cd) {
   let c = findOrAddContainer(cd);
+  let whatSensor;
   if (!c) return;
   switch (cd.type) {
     case Component_Type.kSwitch:
@@ -864,10 +869,19 @@ function updateComponent(cd) {
       break;
     }
     case Component_Type.kMotionSensor:
+      whatSensor || = "motion";
     case Component_Type.kOccupancySensor:
+      whatSensor || = "occupancy";
     case Component_Type.kContactSensor:
+      whatSensor || = "contact";
     case Component_Type.kLeakSensor:
-    case Component_Type.kSmokeSensor: {
+      whatSensor || = "leak";
+    case Component_Type.kSmokeSensor:
+      whatSensor || = "smoke";
+    case Component_Type.kCarbonMonoxideSensor:
+      whatSensor || = "carbon monoxide";
+    case Component_Type.kCarbonDioxideSensor: {
+      whatSensor || = "carbon dioxide";
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -878,8 +892,8 @@ function updateComponent(cd) {
       setValueIfNotModified(el(c, "idle_time"), cd.idle_time);
       el(c, "idle_time_container").style.display =
           (cd.in_mode == 0 ? "none" : "block");
-      let what = (cd.type == 7 ? "motion" : "occupancy");
-      let statusText = (cd.state ? `${what} detected` : `no ${what} detected`);
+      let statusText =
+          (cd.state ? `${whatSensor} detected` : `no ${whatSensor} detected`);
       if (cd.last_ev_age > 0) {
         statusText += `; last ${secondsToDateString(cd.last_ev_age)} ago`;
       }
