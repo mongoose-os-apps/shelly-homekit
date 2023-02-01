@@ -20,6 +20,8 @@
 #include "mgos.hpp"
 #include "mgos_hap.h"
 
+#include "shelly_hap_carbon_dioxide_sensor.hpp"
+#include "shelly_hap_carbon_monoxide_sensor.hpp"
 #include "shelly_hap_contact_sensor.hpp"
 #include "shelly_hap_doorbell.hpp"
 #include "shelly_hap_leak_sensor.hpp"
@@ -156,6 +158,20 @@ Status ShellyInput::Init() {
       s_ = cs;
       break;
     }
+    case Type::kCarbonMonoxideSensor: {
+      auto *cs = new hap::CarbonMonoxideSensor(
+          id(), in_, (struct mgos_config_in_sensor *) &cfg_->sensor);
+      c_.reset(cs);
+      s_ = cs;
+      break;
+    }
+    case Type::kCarbonDioxideSensor: {
+      auto *cs = new hap::CarbonDioxideSensor(
+          id(), in_, (struct mgos_config_in_sensor *) &cfg_->sensor);
+      c_.reset(cs);
+      s_ = cs;
+      break;
+    }
     default: {
       return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Invalid type %d",
                           (int) initial_type_);
@@ -225,6 +241,10 @@ uint16_t ShellyInput::GetAIDBase() const {
       return SHELLY_HAP_AID_BASE_LEAK_SENSOR;
     case Type::kSmokeSensor:
       return SHELLY_HAP_AID_BASE_SMOKE_SENSOR;
+    case Type::kCarbonMonoxideSensor:
+      return SHELLY_HAP_AID_BASE_CARBON_MONOXIDE_SENSOR;
+    case Type::kCarbonDioxideSensor:
+      return SHELLY_HAP_AID_BASE_CARBON_DIOXIDE_SENSOR;
     default:
       return 0;
   }
@@ -245,6 +265,8 @@ bool ShellyInput::IsValidType(int type) {
     case (int) Type::kDoorbell:
     case (int) Type::kLeakSensor:
     case (int) Type::kSmokeSensor:
+    case (int) Type::kCarbonMonoxideSensor:
+    case (int) Type::kCarbonDioxideSensor:
       return true;
   }
   return false;
