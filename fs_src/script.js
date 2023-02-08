@@ -1203,7 +1203,7 @@ function setupHost() {
 function reloadPage() {
   // If path or query string were set (e.g. '/ota'), reset them.
   let newHREF = `http://${location.host}/`;
-  if (location.href != newHREF) {
+  if (location.href != newHREF && !location.href.startsWith("file://")) {
     location.replace(newHREF);
   } else {
     location.reload();
