@@ -869,19 +869,19 @@ function updateComponent(cd) {
       break;
     }
     case Component_Type.kMotionSensor:
-      whatSensor ||= "motion";
+      whatSensor = whatSensor || "motion";
     case Component_Type.kOccupancySensor:
-      whatSensor ||= "occupancy";
+      whatSensor = whatSensor || "occupancy";
     case Component_Type.kContactSensor:
-      whatSensor ||= "contact";
+      whatSensor = whatSensor || "contact";
     case Component_Type.kLeakSensor:
-      whatSensor ||= "leak";
+      whatSensor = whatSensor || "leak";
     case Component_Type.kSmokeSensor:
-      whatSensor ||= "smoke";
+      whatSensor = whatSensor || "smoke";
     case Component_Type.kCarbonMonoxideSensor:
-      whatSensor ||= "carbon monoxide";
+      whatSensor = whatSensor || "carbon monoxide";
     case Component_Type.kCarbonDioxideSensor: {
-      whatSensor ||= "carbon dioxide";
+      whatSensor = whatSensor || "carbon dioxide";
       let headText = `Input ${cd.id}`;
       if (cd.name) headText += ` (${cd.name})`;
       updateInnerText(el(c, "head"), headText);
@@ -1203,7 +1203,7 @@ function setupHost() {
 function reloadPage() {
   // If path or query string were set (e.g. '/ota'), reset them.
   let newHREF = `http://${location.host}/`;
-  if (location.href != newHREF) {
+  if (location.href != newHREF && !location.href.startsWith("file://")) {
     location.replace(newHREF);
   } else {
     location.reload();
