@@ -89,7 +89,7 @@ config_schema:
   - ["gdo.name", "s", "Garage Door", {title: "Accessory name"}]
   - ["gdo.close_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open"}]
   - ["gdo.open_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
-  - ["gdo.out_mode", "i", 0, {title: "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close)"}]
+  - ["gdo.out_mode", "i", 0, {title: "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close), 2 - single inverted (open=close=1)"}]
   - ["gdo.move_time_ms", "i", 30000, {title: "Movement time, ms"}]
   - ["gdo.begin_move_time_ms", "i", 7000, {title: "Time allowed for movement to begin, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {title: "Output active time, ms"}]

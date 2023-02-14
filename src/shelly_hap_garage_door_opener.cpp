@@ -146,7 +146,7 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "open_sensor_mode");
   }
-  if (out_mode > 1) {
+  if (out_mode > 2) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "out_mode");
   }
   // We don't impose a limit on pulse time.
@@ -246,7 +246,8 @@ void GarageDoorOpener::ToggleState(const char *source) {
   State new_state =
       (tgt_state_ == State::kClosed ? State::kOpen : State::kClosed);
   const char *out_src = (new_state == State::kOpen ? "GDO:open" : "GDO:close");
-  if (cfg_->out_mode == 0 || new_state == State::kClosed) {
+  if (cfg_->out_mode == 0 ||
+      (cfg_->out_mode == 1 && new_state == State::kClosed)) {
     out_close_->Pulse(true, cfg_->pulse_time_ms, out_src);
   } else {
     out_open_->Pulse(true, cfg_->pulse_time_ms, out_src);
