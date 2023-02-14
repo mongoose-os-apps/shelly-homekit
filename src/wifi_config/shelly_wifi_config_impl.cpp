@@ -372,6 +372,7 @@ void WifiConfigManager::STAConfigFromSys(struct mgos_config_wifi_sta &scfg,
   cfg.ip = ns(scfg.ip);
   cfg.netmask = ns(scfg.netmask);
   cfg.gw = ns(scfg.gw);
+  cfg.nameserver = ns(scfg.nameserver);
 }
 
 // static
@@ -387,6 +388,7 @@ bool WifiConfigManager::STAConfigToSys(const WifiSTAConfig &cfg,
   changed |= SetStrIfChanged(cfg.ip, &scfg.ip);
   changed |= SetStrIfChanged(cfg.netmask, &scfg.netmask);
   changed |= SetStrIfChanged(cfg.gw, &scfg.gw);
+  changed |= SetStrIfChanged(cfg.nameserver, &scfg.nameserver);
   return changed;
 }
 

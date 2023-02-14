@@ -27,7 +27,8 @@ bool WifiAPConfig::operator==(const WifiAPConfig &other) const {
 
 bool WifiSTAConfig::operator==(const WifiSTAConfig &other) const {
   return (enable == other.enable && ssid == other.ssid && pass == other.pass &&
-          ip == other.ip && netmask == other.netmask && gw == other.gw);
+          ip == other.ip && netmask == other.netmask && gw == other.gw &&
+          nameserver == other.nameserver);
 }
 
 std::string ScreenPassword(const std::string &pw) {
@@ -44,13 +45,16 @@ std::string WifiConfig::ToJSON() const {
   std::string sta1_pw = ScreenPassword(sta1.pass);
   return mgos::JSONPrintStringf(
       "{ap: {enable: %B, ssid: %Q, pass: %Q}, "
-      "sta: {enable: %B, ssid: %Q, pass: %Q, ip: %Q, netmask: %Q, gw: %Q}, "
-      "sta1: {enable: %B, ssid: %Q, pass: %Q, ip: %Q, netmask: %Q, gw: %Q}, "
+      "sta: {enable: %B, ssid: %Q, pass: %Q, ip: %Q, netmask: %Q, gw: %Q, "
+      "nameserver: %Q}, "
+      "sta1: {enable: %B, ssid: %Q, pass: %Q, ip: %Q, netmask: %Q, gw: %Q, "
+      "nameserver: %Q}, "
       "sta_ps_mode: %d}",
       ap.enable, ap.ssid.c_str(), ap_pw.c_str(), sta.enable, sta.ssid.c_str(),
       sta_pw.c_str(), sta.ip.c_str(), sta.netmask.c_str(), sta.gw.c_str(),
-      sta1.enable, sta1.ssid.c_str(), sta1_pw.c_str(), sta.ip.c_str(),
-      sta.netmask.c_str(), sta.gw.c_str(), sta_ps_mode);
+      sta.nameserver.c_str(), sta1.enable, sta1.ssid.c_str(), sta1_pw.c_str(),
+      sta1.ip.c_str(), sta1.netmask.c_str(), sta1.gw.c_str(),
+      sta1.nameserver.c_str(), sta_ps_mode);
 }
 
 std::string FormatMACAddr(const uint8_t *mac, bool delims) {
