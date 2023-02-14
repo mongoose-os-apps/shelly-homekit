@@ -124,6 +124,9 @@ el("hap_setup_btn").onclick = function() {
   // alone.
   let input = lastInfo.device_id + (lastInfo.wifi_ssid || "") +
       (lastInfo.wifi_pass_h || "");
+  // Remove non-alphanumeric chars,
+  // https://github.com/mongoose-os-apps/shelly-homekit/issues/1216
+  input = input.replace(/[^a-z0-9]/gi, "");
   let seed = sha256(input).toLowerCase();
   let code = "", id = "";
   for (let i = 0; i < 8; i++) {
