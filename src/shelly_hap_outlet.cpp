@@ -45,13 +45,13 @@ Status Outlet::Init() {
       iid++, &kHAPCharacteristicType_On,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicReadRequest *,
              bool *value) {
-        *value = out_->GetState();
+        *value = out_->GetState() ^ cfg_->hk_state_inverted;
         return kHAPError_None;
       },
       true /* supports_notification */,
       [this](HAPAccessoryServerRef *, const HAPBoolCharacteristicWriteRequest *,
              bool value) {
-        SetOutputState(value, "HAP");
+        SetOutputState(value ^ cfg_->hk_state_inverted, "HAP");
         return kHAPError_None;
       },
       kHAPCharacteristicDebugDescription_On);

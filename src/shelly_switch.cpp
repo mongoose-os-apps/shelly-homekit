@@ -80,13 +80,14 @@ StatusOr<std::string> ShellySwitch::GetInfo() const {
 StatusOr<std::string> ShellySwitch::GetInfoJSON() const {
   const bool hdim = (SHELLY_HAVE_DUAL_INPUT_MODES ? true : false);
   std::string res = mgos::JSONPrintStringf(
-      "{id: %d, type: %d, name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, "
+      "{id: %d, type: %d, name: %Q, svc_type: %d, hk_state_inverted: %B, "
+      "valve_type: %d, in_mode: %d, "
       "in_inverted: %B, initial: %d, state: %B, auto_off: %B, "
       "auto_off_delay: %.3f, state_led_en: %d, out_inverted: %B, hdim: %B",
       id(), type(), (cfg_->name ? cfg_->name : ""), cfg_->svc_type,
-      cfg_->valve_type, cfg_->in_mode, cfg_->in_inverted, cfg_->initial_state,
-      out_->GetState(), cfg_->auto_off, cfg_->auto_off_delay,
-      cfg_->state_led_en, cfg_->out_inverted, hdim);
+      cfg_->hk_state_inverted, cfg_->valve_type, cfg_->in_mode,
+      cfg_->in_inverted, cfg_->initial_state, out_->GetState(), cfg_->auto_off,
+      cfg_->auto_off_delay, cfg_->state_led_en, cfg_->out_inverted, hdim);
   if (out_pm_ != nullptr) {
     auto power = out_pm_->GetPowerW();
     if (power.ok()) {
@@ -109,12 +110,13 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   cfg.in_mode = -2;
   json_scanf(
       config_json.c_str(), config_json.size(),
-      "{name: %Q, svc_type: %d, valve_type: %d, in_mode: %d, in_inverted: %B, "
+      "{name: %Q, svc_type: %d, hk_state_inverted: %B, valve_type: %d, "
+      "in_mode: %d, in_inverted: %B, "
       "initial_state: %d, "
       "auto_off: %B, auto_off_delay: %lf, state_led_en: %d, out_inverted: %B}",
-      &cfg.name, &cfg.svc_type, &cfg.valve_type, &cfg.in_mode, &in_inverted,
-      &cfg.initial_state, &cfg.auto_off, &cfg.auto_off_delay, &cfg.state_led_en,
-      &cfg.out_inverted);
+      &cfg.name, &cfg.svc_type, &cfg.hk_state_inverted, &cfg.valve_type,
+      &cfg.in_mode, &in_inverted, &cfg.initial_state, &cfg.auto_off,
+      &cfg.auto_off_delay, &cfg.state_led_en, &cfg.out_inverted);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validation.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -155,6 +157,10 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
   if (cfg_->svc_type != cfg.svc_type) {
     cfg_->svc_type = cfg.svc_type;
     *restart_required = true;
+  }
+  if (cfg_->hk_state_inverted != cfg.hk_state_inverted) {
+    cfg_->hk_state_inverted = cfg.hk_state_inverted;
+    state_notify_chars_[0]->RaiseEvent();
   }
   if (cfg_->valve_type != cfg.valve_type) {
     cfg_->valve_type = cfg.valve_type;
