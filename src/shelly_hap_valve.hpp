@@ -30,6 +30,11 @@ class Valve : public ShellySwitch {
   virtual ~Valve();
 
   Status Init() override;
+
+ private: 
+  void InUseTimerCB();
+  mgos::Timer in_use_timer_;
+  bool in_use_;
 };
 
 }  // namespace hap
