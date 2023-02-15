@@ -26,6 +26,7 @@
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
+#include "shelly_hap_adaptive_lighting.hpp"
 #include "shelly_input.hpp"
 #include "shelly_light_bulb_controller.hpp"
 #include "shelly_output.hpp"
@@ -50,7 +51,21 @@ class LightBulb : public Component, public mgos::hap::Service {
   Status SetConfig(const std::string &config_json,
                    bool *restart_required) final;
   Status SetState(const std::string &state_json) final;
+
+  mgos::hap::UInt8Characteristic *GetBrightnessCharacteristic() {
+    return brightness_characteristic;
+  }
+  mgos::hap::UInt32Characteristic *GetColorTemperaturCharacteristic() {
+    return color_temperature_characteristic;
+  }
+
   void Identify() final;
+
+  void SetAdaptiveLight(std::unique_ptr<AdaptiveLighting> val) {
+    ad_controller_ = std::move(val);
+  }
+
+  void SetColorTemperature(int color_temperature, const std::string &source);
 
  protected:
   void InputEventHandler(Input::Event ev, bool state);
@@ -60,7 +75,7 @@ class LightBulb : public Component, public mgos::hap::Service {
   void UpdateOnOff(bool on, const std::string &source, bool force = false);
   void SetHue(int hue, const std::string &source);
   void SetSaturation(int saturation, const std::string &source);
-  void SetColorTemperature(int color_temperature, const std::string &source);
+
   void SetBrightness(int brightness, const std::string &source);
 
   bool IsAutoOffEnabled() const;
@@ -71,6 +86,7 @@ class LightBulb : public Component, public mgos::hap::Service {
 
   Input *const in_;
   std::unique_ptr<LightBulbControllerBase> const controller_;
+  std::unique_ptr<AdaptiveLighting> ad_controller_;
   struct mgos_config_lb *cfg_;
   bool is_optional_;
 

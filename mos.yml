@@ -52,6 +52,7 @@ config_schema:
   - ["sw.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
   - ["sw.state", "b", false, {title: "State of the switch"}]
   - ["sw.svc_type", "i", 0, {title: "HAP service type, -1 = disable, 0 = switch, 1 = outlet, 2 = lock, 3 = valve"}]
+  - ["sw.hk_state_inverted", "b", false, {title: "Invert switch state in HomeKit, for switch and outlet only"}]
   - ["sw.valve_type", "i", 1, {title: "HAP valve type (if svc is 3), -1 = disable, 0 = GenericValve, 1 = Irrigation"}] # see for details about non supported types https://github.com/mongoose-os-apps/shelly-homekit/issues/510
   - ["sw.initial_state", "i", 3, {title: "Initial state on power-on: 0 - off, 1 - on, 2 - restore last state, 3 - matches input if in toggle mode, otherwise off"}]
   - ["sw.auto_off", "b", false, {title: "Whether the switch should automatically turn OFF after turning ON"}]
@@ -88,7 +89,7 @@ config_schema:
   - ["gdo.name", "s", "Garage Door", {title: "Accessory name"}]
   - ["gdo.close_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open"}]
   - ["gdo.open_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
-  - ["gdo.out_mode", "i", 0, {title: "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close)"}]
+  - ["gdo.out_mode", "i", 0, {title: "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close), 2 - single inverted (open=close=1)"}]
   - ["gdo.move_time_ms", "i", 30000, {title: "Movement time, ms"}]
   - ["gdo.begin_move_time_ms", "i", 7000, {title: "Time allowed for movement to begin, ms"}]
   - ["gdo.pulse_time_ms", "i", 300, {title: "Output active time, ms"}]
@@ -187,6 +188,7 @@ conds:
         # XXX: fix size calculation with and without BLE
         XHAP_ACCESSORY_SERVER_SIZE: 1680
         HAP_LOG_LEVEL: 0             # This saves 36K on esp8266.
+        HAP_TLV_NO_LOG: 1            # Saves us stack
         HAP_DISABLE_ASSERTS: 1       # 32K
         HAP_DISABLE_PRECONDITIONS: 1 # 40K
 
