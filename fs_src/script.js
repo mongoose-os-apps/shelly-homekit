@@ -541,11 +541,10 @@ function findOrAddContainer(cd) {
         setComponentState(c, {state: !c.data.state}, el(c, "set_spinner"));
         markInputChanged(ev);
       };
-      el(c, "hk_state_inverted_container").style.display =
-          (cd.type == Component_Type.kSwitch ||
-           cd.type == Component_Type.kOutlet) ?
-          "block" :
-          "none";
+      if (cd.type == Component_Type.kSwitch ||
+          cd.type == Component_Type.kOutlet) {
+        el(c, "hk_state_inverted_container").style.display = "block";
+      }
       el(c, "save_btn").onclick = function() {
         swSetConfig(c);
       };
@@ -687,12 +686,11 @@ function updateComponent(cd) {
       setValueIfNotModified(el(c, "name"), cd.name);
       el(c, "state").checked = cd.state;
       updatePowerStats(c, cd);
-      el(c, "hk_state_inverted_container").style.display =
-          (cd.type == Component_Type.kSwitch ||
-           cd.type == Component_Type.kOutlet) ?
-          "block" :
-          "none";
-      checkIfNotModified(el(c, "hk_state_inverted"), cd.hk_state_inverted);
+      if (cd.type == Component_Type.kSwitch ||
+          cd.type == Component_Type.kOutlet) {
+        el(c, "hk_state_inverted_container").style.display = "block";
+        checkIfNotModified(el(c, "hk_state_inverted"), cd.hk_state_inverted);
+      }
       if (cd.type == Component_Type.kLightBulb) {
         checkIfNotModified(el(c, "svc_hidden"), cd.svc_hidden);
         if (cd.hap_optional !== undefined && cd.hap_optional == 0) {
