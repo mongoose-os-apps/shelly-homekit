@@ -641,6 +641,12 @@ conds:
   - when: build_vars.MODEL == "ShellyPlus2PM"
     apply:
       name: Plus2PM
+      sources:
+        - src/ADE7953
+      includes:
+        - src/ADE7953
+      libs:
+        - location: https://github.com/mongoose-os-libs/ade7953
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
@@ -653,16 +659,19 @@ conds:
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
-        BTN_GPIO: 25
+        BTN_GPIO: 4
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "0.1.6"
+        PRODUCT_HW_REV: "0.1.9"
         STOCK_FW_MODEL: Plus2PM
         MAX_NUM_HAP_SESSIONS: 16
+        SHELLY_HAVE_PM: 1
       config_schema:
         - ["device.id", "ShellyPlus2PM-??????"]
         - ["shelly.name", "ShellyPlus2PM-??????"]
         - ["wifi.ap.ssid", "ShellyPlus2PM-??????"]
         - ["i2c.enable", true]
+        - ["i2c.sda_gpio", 26]
+        - ["i2c.scl_gpio", 25]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW1"]
         - ["in1", "in", {title: "Input 1 settings"}]
