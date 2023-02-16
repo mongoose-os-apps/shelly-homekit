@@ -43,6 +43,7 @@
 #include "HAPPlatformServiceDiscovery+Init.h"
 #include "HAPPlatformTCPStreamManager+Init.h"
 
+#include "nvs_flash.h"
 #include "shelly_debug.hpp"
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_humidity_sensor.hpp"
@@ -60,7 +61,6 @@
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor.hpp"
 #include "shelly_wifi_config.hpp"
-#include "nvs_flash.h"
 
 #define SCRATCH_BUF_SIZE 1536
 
@@ -419,12 +419,13 @@ static constexpr const char *kNVSNamespace = "shelly";
 static constexpr const char *kAPowerCoeffNVSKey = "Pm0.apower";
 
 static void NVSScan() {
-  nvs_iterator_t it = nvs_entry_find(kNVSPartitionName, kNVSNamespace, NVS_TYPE_ANY);
+  nvs_iterator_t it =
+      nvs_entry_find(kNVSPartitionName, kNVSNamespace, NVS_TYPE_ANY);
   while (it != NULL) {
-          nvs_entry_info_t info;
-          nvs_entry_info(it, &info);
-          it = nvs_entry_next(it);
-          LOG(LL_INFO, ("key '%s', type '%d' \n", info.key, info.type));
+    nvs_entry_info_t info;
+    nvs_entry_info(it, &info);
+    it = nvs_entry_next(it);
+    LOG(LL_INFO, ("key '%s', type '%d' \n", info.key, info.type));
   };
 }
 
