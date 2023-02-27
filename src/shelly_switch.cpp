@@ -199,10 +199,18 @@ Status ShellySwitch::SetConfig(const std::string &config_json,
 }
 
 Status ShellySwitch::SetState(const std::string &state_json) {
-  int8_t state = -1;
+  int8_t state = -1, toggle = -1;
   json_scanf(state_json.c_str(), state_json.size(), "{state: %B}", &state);
-  if (state < 0) {
-    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "%s is required", "state");
+  json_scanf(state_json.c_str(), state_json.size(), "{toggle: %B}", &toggle);
+  if (state < 0 && toggle < 0) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "%s or %s is required",
+                        "state", "toggle");
+  } else if (state != -1 && toggle != -1) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "only %s or %s can be used",
+                        "state", "toggle");
+  }
+  if (toggle != -1) {
+    state = !out_->GetState();
   }
   SetOutputState(state, "RPC");
   return Status::OK();
