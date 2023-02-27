@@ -18,5 +18,5 @@ jobs:
         stale-issue-message: 'This issue is stale because it has been open 30 days with no activity. Comment or this will be closed in 7 days.'
         stale-issue-label: 'stale'
         close-issue-message: 'This issue has now been closed, as no update was provided after it was marked stale. Feel free to provide updates to reopen this issue.'
-        days-before-issue-stale: 30
+        days-before-issue-stale: 21
         days-before-issue-close: 7
