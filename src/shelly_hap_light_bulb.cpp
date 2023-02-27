@@ -365,13 +365,19 @@ void LightBulb::SaveState() {
 }
 
 Status LightBulb::SetState(const std::string &state_json) {
-  int8_t state = -1;
+  int8_t state = -1, toggle = -1;
   int brightness = -1, hue = -1, saturation = -1, color_temperature = -1;
 
   json_scanf(state_json.c_str(), state_json.size(),
-             "{state: %B, brightness: %d, hue: %d, saturation: %d, "
+             "{state: %B, toggle: %B, brightness: %d, hue: %d, saturation: %d, "
              "color_temperature: %d}",
-             &state, &brightness, &hue, &saturation, &color_temperature);
+             &state, &toggle, &brightness, &hue, &saturation,
+             &color_temperature);
+
+  if (state != -1 && toggle != -1) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "only %s or %s can be used",
+                        "state", "toggle");
+  }
 
   if (hue != -1 && (hue < 0 || hue > 360)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid hue: %d (only 0-360)",
@@ -395,6 +401,9 @@ Status LightBulb::SetState(const std::string &state_json) {
                         color_temperature);
   }
 
+  if (toggle != -1) {
+    state = !controller_->IsOn();
+  }
   if (state != -1) UpdateOnOff(static_cast<bool>(state), "RPC");
   if (hue != -1) SetHue(hue, "RPC");
   if (saturation != -1) SetSaturation(saturation, "RPC");
