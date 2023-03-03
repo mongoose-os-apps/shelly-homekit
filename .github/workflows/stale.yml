@@ -15,7 +15,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         exempt-all-pr-milestones: true
         exempt-issue-labels: 'enhancement, new-device-support, new-HAP-type, confirmed-bug, waiting-for-rojer'
-        stale-issue-message: 'This issue is stale because it has been open 30 days with no activity. Comment or this will be closed in 7 days.'
+        stale-issue-message: 'This issue is stale because it has been open 3 weeks with no activity. Comment or this will be closed in 1 week.'
         stale-issue-label: 'stale'
         close-issue-message: 'This issue has now been closed, as no update was provided after it was marked stale. Feel free to provide updates to reopen this issue.'
         days-before-issue-stale: 21
