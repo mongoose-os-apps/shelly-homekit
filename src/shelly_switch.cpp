@@ -400,7 +400,7 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
              const HAPFloatCharacteristicReadRequest *, float *value) {
         auto energy = out_pm_->GetEnergyWH();
         if (!energy.ok()) return kHAPError_Busy;
-        *value = energy.ValueOrDie();
+        *value = energy.ValueOrDie() / 1000.0f;
         return kHAPError_None;
       },
       true /* supports_notification */, nullptr, "eve-total-power-consumption");
@@ -414,15 +414,15 @@ void ShellySwitch::PowerMeterTimerCB() {
   auto current_power = out_pm_->GetPowerW();
   auto current_total_power = out_pm_->GetEnergyWH();
 
-  if (current_power.ok() && current_power.ValueOrDie() != last_power_) {
-    last_power_ = current_power.ValueOrDie();
+  // if (current_power.ok() && current_power.ValueOrDie() != last_power_) {
+    // last_power_ = current_power.ValueOrDie();
     power_char_->RaiseEvent();
-  }
-  if (current_total_power.ok() &&
-      current_total_power.ValueOrDie() != last_total_power_) {
-    last_total_power_ = current_total_power.ValueOrDie();
+  // }
+  // if (current_total_power.ok() &&
+  //     current_total_power.ValueOrDie() != last_total_power_) {
+    // last_total_power_ = current_total_power.ValueOrDie();
     total_power_char_->RaiseEvent();
-  }
+  // }
 }
 
 }  // namespace shelly
