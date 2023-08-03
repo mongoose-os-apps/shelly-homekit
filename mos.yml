@@ -561,6 +561,42 @@ conds:
         - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
 
+  - when: build_vars.MODEL == "ShellyPlusPlugS"
+    apply:
+      sources:
+        - src/ShellyPlugPlusS/shelly_init.cpp
+      name: PlusPlugS
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,nvs,0x3fc000,16K"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+      cdefs:
+        LED_GPIO: 25
+        LED2_GPIO: 26
+        LED_ON: 1
+        BTN_GPIO: 9
+        BTN_DOWN: 1
+        PRODUCT_HW_REV: "2.0.0"
+        STOCK_FW_MODEL: SHPPLG-S
+        MAX_NUM_HAP_SESSIONS: 16
+      config_schema:
+        - ["device.id", "shellyplusplug-s-??????"]
+        - ["shelly.name", "shellyplusplug-s-??????"]
+        - ["wifi.ap.ssid", "shellyplusplug-s-??????"]
+        - ["sw1", "sw", {title: "Plug settings"}]
+        - ["sw1.name", "Shelly Plus Plug S"]
+        - ["sw1.in_mode", -1]
+        - ["sw1.svc_type", 1]  # Outlet
+        - ["sw1.initial_state", 2]
+        - ["sw1.state_led_en", 1]
+        - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
+        - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
+
   - when: build_vars.MODEL == "ShellyPlus1"
     apply:
       name: Plus1
