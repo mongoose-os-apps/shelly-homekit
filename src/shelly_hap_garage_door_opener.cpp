@@ -95,7 +95,9 @@ Status GarageDoorOpener::Init() {
       true /* supports_notification */, nullptr /* write_handler */,
       kHAPCharacteristicDebugDescription_ObstructionDetected);
   AddChar(obst_char_);
-  cur_state_ = (in_close_->GetState() ? State::kClosed : State::kOpen);
+  bool in_close_act_state = (cfg_->close_sensor_mode == 0);
+  cur_state_ = ((in_close_->GetState() == in_close_act_state) ? State::kClosed
+                                                              : State::kOpen);
   tgt_state_ = cur_state_;
   LOG(LL_INFO, ("GDO %d: cur_state %d", id(), (int) cur_state_));
   state_timer_.Reset(100, MGOS_TIMER_REPEAT);
