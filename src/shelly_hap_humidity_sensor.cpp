@@ -63,7 +63,7 @@ Status HumiditySensor::SetConfig(const std::string &config_json,
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
   }
-  if (cfg.unit < 0 || cfg.unit > 1) {
+  if (cfg.unit != 2) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid unit");
   }
   if (cfg.update_interval < 1) {
@@ -134,7 +134,7 @@ StatusOr<std::string> HumiditySensor::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, unit: %d, "
       "update_interval: %d, ",
-      id(), type(), cfg_->name, cfg_->unit, cfg_->update_interval);
+      id(), type(), cfg_->name, 2, cfg_->update_interval);
   auto tempval = hum_sensor_->GetHumidity();
   if (tempval.ok()) {
     mgos::JSONAppendStringf(&res, "value: %.1f", tempval.ValueOrDie());

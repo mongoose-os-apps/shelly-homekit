@@ -83,6 +83,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     if (status == Status::OK()) {
       sensors.push_back(std::move(dht));
       dht_found = true;
+    } else {
+      LOG(LL_ERROR, ("dht init failed: %s", status.ToString().c_str()));
     }
   }
 
