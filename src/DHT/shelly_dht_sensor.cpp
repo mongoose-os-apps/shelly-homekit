@@ -16,8 +16,8 @@
  */
 
 #include "shelly_dht_sensor.hpp"
-
 #include <cmath>
+#include "mgos_hal.h"
 
 namespace shelly {
 
@@ -36,17 +36,24 @@ Status DHTSensor::Init() {
   dht = mgos_dht_create_separate_io(pin_in_, pin_out_, DHT21);
 
   if (dht == NULL) {
-    return mgos::Errorf(STATUS_NOT_FOUND, "No DHT Sensor found");
+    return mgos::Errorf(STATUS_NOT_FOUND, "dht sensor init unsuccesfull");
   }
 
-  result_ = mgos_dht_get_temp(dht);
-
+  size_t tries =
+      2;  // first read was observed to be not successfull, reason unknown
   mgos_dht_stats stats;
-  if (mgos_dht_getStats(dht, &stats)) {
-    if (stats.read == 1 && stats.read_success == 1) {
-      return Status::OK();
+  for (size_t i = 0; i < tries; i++) {
+    result_ = mgos_dht_get_temp(dht);
+    if (mgos_dht_getStats(dht, &stats)) {
+      if (stats.read_success >= 1) {
+        return Status::OK();
+      } else if (i != (tries - 1)) {
+        mgos_msleep(2 *
+                    1000);  // try again after wait time of MGOs_DHT_READ_DELAY
+      }
     }
   }
+
   return mgos::Errorf(STATUS_NOT_FOUND, "No DHT Sensor found");
 }
 
