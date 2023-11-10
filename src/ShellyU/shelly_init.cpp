@@ -29,6 +29,8 @@
 
 namespace shelly {
 
+static std::vector<std::unique_ptr<TempSensor>> sensors;
+
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
@@ -56,11 +58,12 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   // Sensors
   for (int i = 0; i < 2; i++) {
     std::unique_ptr<TempSensor> temp(new MockTempSensor(25.125 + i));
+    sensors.push_back(std::move(temp));
     auto *ts_cfg = (i == 0)
                        ? (struct mgos_config_ts *) mgos_sys_config_get_ts1()
                        : (struct mgos_config_ts *) mgos_sys_config_get_ts2();
 
-    CreateHAPTemperatureSensor(i + 1, std::move(temp), ts_cfg, comps, accs,
+    CreateHAPTemperatureSensor(i + 1, sensors[i].get(), ts_cfg, comps, accs,
                                svr);
   }
 }
