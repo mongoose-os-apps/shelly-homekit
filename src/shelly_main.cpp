@@ -120,6 +120,21 @@ static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
 std::vector<std::unique_ptr<Component>> g_comps;
 
+bool DetectAddon(int pin_in, int pin_out) {
+  // case 1: input with pull up
+  mgos_gpio_setup_input(pin_in, MGOS_GPIO_PULL_UP);
+  // check if pulled by something external, not check output to input yet
+  bool active = mgos_gpio_read(pin_in);
+  if (!active) {
+    // something is pulling us low, we might have an addon with switchss
+    return true;
+  }
+
+  // Try to pull low via addon
+  mgos_gpio_setup_output(pin_out, 0 /* LOW */);
+  mgos_gpio_setup_input(pin_in, MGOS_GPIO_PULL_NONE);
+  return !mgos_gpio_read(pin_in);
+}
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
   for (auto &v : vv) {
