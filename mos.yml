@@ -568,6 +568,11 @@ conds:
   - when: build_vars.MODEL == "ShellyPlus1"
     apply:
       name: Plus1
+      sources:
+        - src/DS18XXX
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
@@ -600,10 +605,21 @@ conds:
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
 
   - when: build_vars.MODEL == "ShellyPlus1PM"
     apply:
       name: Plus1PM
+      sources:
+        - src/DS18XXX
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
@@ -641,6 +657,12 @@ conds:
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
 
   - when: build_vars.MODEL == "ShellyPlusI4"
     apply:

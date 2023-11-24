@@ -21,13 +21,19 @@
 #include "nvs_handle.hpp"
 
 #include "shelly_hap_garage_door_opener.hpp"
+#include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_pm_bl0937.hpp"
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
+#include "shelly_temp_sensor_ow.hpp"
+
+#define MAX_TS_NUM 3
 
 namespace shelly {
+
+static std::unique_ptr<Onewire> s_onewire;
 
 static constexpr const char *kNVSPartitionName = "shelly";
 static constexpr const char *kNVSNamespace = "shelly";
@@ -95,7 +101,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   }
   sys_temp->reset(new TempSensorSDNT1608X103F3950(32, 3.3f, 10000.0f));
 
-  InitSysLED(LED_GPIO, LED_ON);
+  s_onewire.reset(new Onewire(19, 0));
+  if (s_onewire->DiscoverAll().empty()) {
+    s_onewire.reset();
+    InitSysLED(LED_GPIO, LED_ON);
+  }
   InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
@@ -121,10 +131,31 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     comps->emplace_back(std::move(gdo));
     return;
   }
+  // Sensor Discovery
+  std::vector<std::unique_ptr<TempSensor>> sensors;
+  if (s_onewire != nullptr) {
+    sensors = s_onewire->DiscoverAll();
+  }
+
   // Single switch with non-detached input = only one accessory.
-  bool to_pri_acc = (mgos_sys_config_get_sw1_in_mode() != 3);
+  bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
+                                         (int) InMode::kDetached));
+  // Single switch with non-detached input = only one accessory.
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                   comps, accs, svr, to_pri_acc);
+  if (!sensors.empty()) {
+    struct mgos_config_ts *ts_cfgs[MAX_TS_NUM] = {
+        (struct mgos_config_ts *) mgos_sys_config_get_ts1(),
+        (struct mgos_config_ts *) mgos_sys_config_get_ts2(),
+        (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
+    };
+
+    for (size_t i = 0; i < std::min((size_t) MAX_TS_NUM, sensors.size()); i++) {
+      auto *ts_cfg = ts_cfgs[i];
+      CreateHAPTemperatureSensor(i + 1, std::move(sensors[i]), ts_cfg, comps,
+                                 accs, svr);
+    }
+  }
 }
 
 }  // namespace shelly
