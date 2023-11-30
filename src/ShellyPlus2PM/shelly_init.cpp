@@ -59,7 +59,6 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   mgos_gpio_write(reset_pin, 1);
   mgos_gpio_set_mode(reset_pin, MGOS_GPIO_MODE_INPUT);
 
-
   s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
 
   if (s_ade7953 == nullptr) {

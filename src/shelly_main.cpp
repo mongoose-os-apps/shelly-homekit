@@ -43,7 +43,6 @@
 #include "HAPPlatformServiceDiscovery+Init.h"
 #include "HAPPlatformTCPStreamManager+Init.h"
 
-#include "nvs_flash.h"
 #include "shelly_debug.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_lock.hpp"
@@ -390,21 +389,6 @@ bool AllComponentsIdle() {
   return true;
 }
 
-static constexpr const char *kNVSPartitionName = "shelly";
-static constexpr const char *kNVSNamespace = "shelly";
-static constexpr const char *kAPowerCoeffNVSKey = "Pm0.apower";
-
-static void NVSScan() {
-  nvs_iterator_t it =
-      nvs_entry_find(kNVSPartitionName, kNVSNamespace, NVS_TYPE_ANY);
-  while (it != NULL) {
-    nvs_entry_info_t info;
-    nvs_entry_info(it, &info);
-    it = nvs_entry_next(it);
-    LOG(LL_INFO, ("key '%s', type '%d' \n", info.key, info.type));
-  };
-}
-
 static void StatusTimerCB(void *arg) {
   static uint8_t s_cnt = 0;
   auto sys_temp = GetSystemTemperature();
@@ -456,7 +440,6 @@ static void StatusTimerCB(void *arg) {
       }
     }
     if (status.empty()) status = "disabled";
-    NVSScan();
     LOG(LL_INFO, ("Up %.2lf, HAP %u/%u/%u ns %d, RAM: %lu/%lu; st %d; %s",
                   mgos_uptime(), (unsigned) tcpm_stats.numPendingTCPStreams,
                   (unsigned) tcpm_stats.numActiveTCPStreams,
