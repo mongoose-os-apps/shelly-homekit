@@ -20,6 +20,9 @@
 #include <cmath>
 
 #include "mgos.hpp"
+#include "mgos_hap.hpp"
+
+#include "shelly_main.hpp"
 
 namespace shelly {
 namespace hap {
@@ -143,6 +146,28 @@ StatusOr<std::string> HumiditySensor::GetInfoJSON() const {
   }
   res.append("}");
   return res;
+}
+
+void CreateHAPHumiditySensor(
+    int id, HumidityTempSensor *sensor, const struct mgos_config_ts *ts_cfg,
+    std::vector<std::unique_ptr<Component>> *comps,
+    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr) {
+  struct mgos_config_ts *cfg = (struct mgos_config_ts *) ts_cfg;
+  std::unique_ptr<hap::HumiditySensor> ts(
+      new hap::HumiditySensor(id, sensor, cfg));
+  if (ts == nullptr || !ts->Init().ok()) {
+    return;
+  }
+
+  std::unique_ptr<mgos::hap::Accessory> acc(
+      new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_HUMIDITY_SENSOR + id,
+                               kHAPAccessoryCategory_BridgedAccessory,
+                               ts_cfg->name, GetIdentifyCB(), svr));
+  acc->AddHAPService(&mgos_hap_accessory_information_service);
+  acc->AddService(ts.get());
+  accs->push_back(std::move(acc));
+  comps->push_back(std::move(ts));
 }
 
 }  // namespace hap

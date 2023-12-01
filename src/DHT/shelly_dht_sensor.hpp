@@ -23,7 +23,11 @@
 
 #include <mgos_dht.h>
 
+#include <vector>
+
 namespace shelly {
+
+std::vector<std::unique_ptr<TempSensor>> DiscoverDHTSensors(int in, int out);
 
 class DHTSensor : public HumidityTempSensor {
  public:

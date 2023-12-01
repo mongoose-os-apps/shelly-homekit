@@ -90,5 +90,11 @@ class GarageDoorOpener : public Component, public mgos::hap::Service {
   bool obstruction_detected_ = false;
 };
 
+void CreateHAPGDO(int id, Input *in_close, Input *in_open, Output *out_close,
+                  Output *out_open, const struct mgos_config_gdo *gdo_cfg,
+                  std::vector<std::unique_ptr<Component>> *comps,
+                  std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+                  HAPAccessoryServerRef *svr, bool to_pri_acc);
+
 }  // namespace hap
 }  // namespace shelly

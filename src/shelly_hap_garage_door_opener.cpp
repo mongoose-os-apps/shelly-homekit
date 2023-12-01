@@ -18,7 +18,10 @@
 #include "shelly_hap_garage_door_opener.hpp"
 
 #include "mgos.hpp"
+#include "mgos_hap.hpp"
 #include "mgos_system.hpp"
+
+#include "shelly_main.hpp"
 
 namespace shelly {
 namespace hap {
@@ -402,6 +405,42 @@ void GarageDoorOpener::RunOnce() {
       }
       break;
     }
+  }
+}
+
+void CreateHAPGDO(int id, Input *in_close, Input *in_open, Output *out_close,
+                  Output *out_open, const struct mgos_config_gdo *gdo_cfg,
+                  std::vector<std::unique_ptr<Component>> *comps,
+                  std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+                  HAPAccessoryServerRef *svr, bool to_pri_acc) {
+  uint64_t aid = 0;
+
+  struct mgos_config_gdo *gdo2_cfg = (struct mgos_config_gdo *) gdo_cfg;
+
+  std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
+      id, in_close, in_open, out_close, out_open, gdo2_cfg));
+  auto st = gdo->Init();
+  if (!st.ok()) {
+    LOG(LL_ERROR, ("GDO init failed: %s", st.ToString().c_str()));
+    return;
+  }
+
+  hap::GarageDoorOpener *gdo2 = gdo.get();
+
+  comps->push_back(std::move(gdo));
+  mgos::hap::Accessory *pri_acc = accs->front().get();
+
+  if (to_pri_acc) {
+    gdo2->set_primary(true);
+    pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
+    pri_acc->AddService(gdo2);
+  } else {
+    std::unique_ptr<mgos::hap::Accessory> acc(
+        new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
+                                 gdo_cfg->name, GetIdentifyCB(), svr));
+    acc->AddHAPService(&mgos_hap_accessory_information_service);
+    acc->AddService(gdo2);
+    accs->push_back(std::move(acc));
   }
 }
 

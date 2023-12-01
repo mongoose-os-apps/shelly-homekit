@@ -45,24 +45,17 @@ Input *FindInput(int id);
 Output *FindOutput(int id);
 PowerMeter *FindPM(int id);
 
+void CreateHAPSensors(std::vector<std::unique_ptr<TempSensor>> *sensors,
+                      std::vector<std::unique_ptr<Component>> *comps,
+                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+                      HAPAccessoryServerRef *svr);
+
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                      const struct mgos_config_in *in_cfg,
                      std::vector<std::unique_ptr<Component>> *comps,
                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                      HAPAccessoryServerRef *svr, bool to_pri_acc,
                      Output *led_out = nullptr);
-
-void CreateHAPTemperatureSensor(
-    int id, TempSensor *sensor, const struct mgos_config_ts *ts_cfg,
-    std::vector<std::unique_ptr<Component>> *comps,
-    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
-    HAPAccessoryServerRef *svr);
-
-void CreateHAPHumiditySensor(
-    int id, HumidityTempSensor *sensor, const struct mgos_config_ts *ts_cfg,
-    std::vector<std::unique_ptr<Component>> *comps,
-    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
-    HAPAccessoryServerRef *svr);
 
 void HandleInputResetSequence(Input *in, int out_gpio, Input::Event ev,
                               bool cur_state);

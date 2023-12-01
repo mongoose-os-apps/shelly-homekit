@@ -21,6 +21,19 @@
 
 namespace shelly {
 
+std::vector<std::unique_ptr<TempSensor>> DiscoverDHTSensors(int in, int out) {
+  std::vector<std::unique_ptr<TempSensor>> sensors;
+
+  std::unique_ptr<DHTSensor> dht(new DHTSensor(in, out));
+  auto status = dht->Init();
+  if (status == Status::OK()) {
+    sensors.push_back(std::move(dht));
+  } else {
+    LOG(LL_ERROR, ("dht init failed: %s", status.ToString().c_str()));
+  }
+  return sensors;
+}
+
 DHTSensor::DHTSensor(uint8_t pin_in, uint8_t pin_out)
     : pin_in_(pin_in),
       pin_out_(pin_out),

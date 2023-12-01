@@ -576,8 +576,10 @@ conds:
       name: Plus1
       sources:
         - src/DS18XXX
+        - src/DHT
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
@@ -605,6 +607,9 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", 2]
@@ -623,8 +628,10 @@ conds:
       name: Plus1PM
       sources:
         - src/DS18XXX
+        - src/DHT
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
@@ -652,6 +659,9 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
