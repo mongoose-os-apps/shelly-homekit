@@ -683,6 +683,12 @@ conds:
   - when: build_vars.MODEL == "ShellyPlusI4"
     apply:
       name: PlusI4
+      sources:
+        - src/DS18XXX
+        - src/DHT
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
@@ -716,6 +722,12 @@ conds:
         - ["in4", "in", {title: "Input 4 settings"}]
         - ["in4.ssw.name", "Shelly SSW4"]
         - ["in4.sensor.name", "Shelly S4"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
 
   - when: build_vars.MODEL == "ShellyRGBW2"
     apply:

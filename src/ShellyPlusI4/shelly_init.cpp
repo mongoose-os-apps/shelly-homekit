@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
+#include "shelly_dht_sensor.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_stateless_switch.hpp"
 #include "shelly_main.hpp"
 #include "shelly_noisy_input_pin.hpp"
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
+#include "shelly_temp_sensor_ow.hpp"
 
 namespace shelly {
+
+static std::unique_ptr<Onewire> s_onewire;
+static std::vector<std::unique_ptr<TempSensor>> sensors;
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs UNUSED_ARG,
@@ -47,7 +52,18 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 
   sys_temp->reset(new TempSensorSDNT1608X103F3950(32, 3.3f, 10000.0f));
 
-  InitSysLED(LED_GPIO, LED_ON);
+  int pin_in = 19;
+  int pin_out = LED_GPIO;
+  if (DetectAddon(pin_in, pin_out)) {
+    s_onewire.reset(new Onewire(pin_in, pin_out));
+    sensors = s_onewire->DiscoverAll();
+    if (sensors.empty()) {
+      s_onewire.reset();
+      sensors = DiscoverDHTSensors(pin_in, pin_out);
+    }
+  } else {
+    InitSysLED(LED_GPIO, LED_ON);
+  }
   InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
@@ -58,6 +74,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
   hap::CreateHAPInput(3, mgos_sys_config_get_in3(), comps, accs, svr);
   hap::CreateHAPInput(4, mgos_sys_config_get_in4(), comps, accs, svr);
+
+  if (!sensors.empty()) {
+    CreateHAPSensors(&sensors, comps, accs, svr);
+  }
 }
 
 }  // namespace shelly
