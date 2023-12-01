@@ -60,19 +60,18 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                   comps, accs, svr, false /* to_pri_acc */,
                   nullptr /* led_out */);
 
+  for (int i = 0; i < 2; i++) {
+    std::unique_ptr<TempSensor> temp(new MockTempSensor(25.125 + i));
+    sensors.push_back(std::move(temp));
+  }
+
   bool ext_switch_detected = false;  // can be set for testing purposes
 
   if (ext_switch_detected) {
     hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
   } else {
-    for (int i = 0; i < 2; i++) {
-      std::unique_ptr<TempSensor> temp(new MockTempSensor(25.125 + i));
-      auto *ts_cfg = (i == 0)
-                         ? (struct mgos_config_ts *) mgos_sys_config_get_ts1()
-                         : (struct mgos_config_ts *) mgos_sys_config_get_ts2();
-
-      CreateHAPTemperatureSensor(i + 1, std::move(temp), ts_cfg, comps, accs,
-                                 svr);
+    if (!sensors.empty()) {
+      CreateHAPSensors(&sensors, comps, accs, svr);
     }
   }
 }

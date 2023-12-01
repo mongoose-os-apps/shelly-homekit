@@ -52,5 +52,12 @@ class HumiditySensor : public Component, public mgos::hap::Service {
 
   void ValueChanged();
 };
+
+void CreateHAPHumiditySensor(
+    int id, HumidityTempSensor *sensor, const struct mgos_config_ts *ts_cfg,
+    std::vector<std::unique_ptr<Component>> *comps,
+    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+    HAPAccessoryServerRef *svr);
+
 }  // namespace hap
 }  // namespace shelly

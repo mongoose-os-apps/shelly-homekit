@@ -20,12 +20,9 @@
 #include "shelly_dht_sensor.hpp"
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_input.hpp"
-#include "shelly_hap_temperature_sensor.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
 #include "shelly_temp_sensor_ow.hpp"
-
-#define MAX_TS_NUM 3
 
 namespace shelly {
 
@@ -42,15 +39,20 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in1->Init();
   inputs->emplace_back(in1);
 
-  bool addon_detected = DetectAddon(3, 0);
+  int pin_in = 3;
+  int pin_out = 0;
 
-  if (addon_detected) {
-    s_onewire.reset(new Onewire(3, 0));
-    if (s_onewire->DiscoverAll().empty()) {
+  if (DetectAddon(pin_in, pin_out)) {
+    s_onewire.reset(new Onewire(pin_in, pin_out));
+    sensors = s_onewire->DiscoverAll();
+    if (sensors.empty()) {
       s_onewire.reset();
-
-      // No sensor detected, we assume we have a switch attached
-      auto *in2 = new InputPin(2, 3, 0, MGOS_GPIO_PULL_NONE, false);
+      sensors = DiscoverDHTSensors(pin_in, pin_out);
+    }
+    if (sensors.empty()) {
+      // No sensors detected, we assume to use addon as input for switch or
+      // closed/open sensor
+      auto *in2 = new InputPin(2, pin_in, 0, MGOS_GPIO_PULL_NONE, false);
       in2->Init();
       inputs->emplace_back(in2);
     }
@@ -60,70 +62,24 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  if (mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor) {
-    auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
-
-    std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
-        1, FindInput(1), FindInput(2), FindOutput(1), FindOutput(1), gdo_cfg));
-    if (gdo == nullptr) return;
-    auto st = gdo->Init();
-    if (!st.ok()) {
-      LOG(LL_ERROR, ("GDO init failed: %s", st.ToString().c_str()));
-      return;
-    }
-    gdo->set_primary(true);
-    mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-    pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
-    pri_acc->AddService(gdo.get());
-    comps->emplace_back(std::move(gdo));
-    return;
-  }
-
-  // Sensor Discovery
-  std::unique_ptr<DHTSensor> dht;
-  bool dht_found = false;
-  sensors.clear();
-  if (s_onewire != nullptr) {
-    sensors = s_onewire->DiscoverAll();
-  } else {
-    // Try DHT, only works on second boot
-    dht.reset(new DHTSensor(3, 0));
-    auto status = dht->Init();
-    if (status == Status::OK()) {
-      sensors.push_back(std::move(dht));
-      dht_found = true;
-    } else {
-      LOG(LL_ERROR, ("dht init failed: %s", status.ToString().c_str()));
-    }
-  }
-
+  bool gdo_mode = mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor;
   bool ext_sensor_switch = (FindInput(2) != nullptr);
-
-  // Single switch with non-detached input and no sensors = only one accessory.
-  bool to_pri_acc = (sensors.empty() && (mgos_sys_config_get_sw1_in_mode() !=
-                                         (int) InMode::kDetached)) &&
-                    !ext_sensor_switch;
-  CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
-                  comps, accs, svr, to_pri_acc);
+  bool detatched_sensor =
+      (mgos_sys_config_get_sw1_in_mode() != (int) InMode::kDetached) &&
+      !gdo_mode && ext_sensor_switch;
+  bool single_accessory = sensors.empty() && !detatched_sensor;
+  if (gdo_mode) {
+    hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),
+                      FindOutput(1), mgos_sys_config_get_gdo1(), comps, accs,
+                      svr, single_accessory);
+  } else {
+    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
+                    comps, accs, svr, single_accessory);
+  }
 
   if (!sensors.empty()) {
-    struct mgos_config_ts *ts_cfgs[MAX_TS_NUM] = {
-        (struct mgos_config_ts *) mgos_sys_config_get_ts1(),
-        (struct mgos_config_ts *) mgos_sys_config_get_ts2(),
-        (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
-    };
-
-    for (size_t i = 0; i < std::min((size_t) MAX_TS_NUM, sensors.size()); i++) {
-      auto *ts_cfg = ts_cfgs[i];
-      CreateHAPTemperatureSensor(i + 1, sensors[i].get(), ts_cfg, comps, accs,
-                                 svr);
-      HumidityTempSensor *hum = (HumidityTempSensor *) sensors[i].get();
-      if (dht_found) {  // can only be one shares config, as same update
-                        // interval but no unit settable
-        CreateHAPHumiditySensor(i + 2, hum, ts_cfg, comps, accs, svr);
-      }
-    }
-  } else if (ext_sensor_switch) {
+    CreateHAPSensors(&sensors, comps, accs, svr);
+  } else if (detatched_sensor) {
     hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
   }
 }
