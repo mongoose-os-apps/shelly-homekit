@@ -355,7 +355,7 @@ conds:
         - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
-        # Only for backward compatibility (config <= v3).
+        # Only for backward compatibility (config <= v3)
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
         - ["ssw2", "ssw", {title: "SSW2 settings"}]
