@@ -499,6 +499,15 @@ void LightBulb::InputEventHandler(Input::Event ev, bool state) {
             ResetAutoOff();
           }
           break;
+        case InMode::kActivationOnce:
+          // On 0 -> 1 we turn on output and arm auto off timer.
+          // on 1 -> 1 we do nothing (handled by UpdateOnOff()),
+          // on 0 -> 0 we do nothing (handled by UpdateOnOff()),
+          // on 1 -> 0 we do nothing (handled by "if" below),
+          if (state && !controller_->IsOn()) {
+            UpdateOnOff(true, "ext_act_once");
+          }
+          break;
         case InMode::kAbsent:
         case InMode::kDetached:
         case InMode::kMax:
