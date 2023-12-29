@@ -85,4 +85,5 @@ auto-off timer countdown the external timer turns on or off, this will have no e
 
 This is useful for example for a pool pump, where you have an external timer to turn it on at 15:00 every day (a setting
 of the external timer) and run for 2 hours (a setting of the internal auto-off timer), but you want to be able to
-override the external timer (start early) from the app on demand.
+override the external timer from the app on demand (manually start early at 14:00) and when the external timer kicks in,
+you don't want it to restart the auto-off timer like in "Activation" mode.
