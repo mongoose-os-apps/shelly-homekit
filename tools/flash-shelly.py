@@ -223,7 +223,7 @@ class ServiceListener:  # handle device(s) found by DNS scanner.
       fw_type = None
       wifi_ip = socket.inet_ntoa(info.addresses[0])
       properties = info.properties
-      properties = {y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys()}
+      properties = {y.decode('UTF-8'): properties.get(y).decode('UTF-8') for y in properties.keys() if properties.get(y) is not None}
       logger.debug(f"[Device Scan] found device: {host}, IP address: {wifi_ip}")
       logger.trace(f"[Device Scan] info: {info}")
       logger.trace(f"[Device Scan] properties: {properties}")
