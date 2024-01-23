@@ -530,16 +530,38 @@ el("reset_btn").onclick = function() {
   });
 };
 
+function cloneTemplate(name, id) {
+  c = el(name).cloneNode(true);
+  c.id = id;
+  configureTabs(c);
+  return c;
+}
+
+function configureTabs(c) {
+  tabWrapper = c.querySelector(`#${c.id} .tab_wrapper`);
+  if (!tabWrapper) return;
+  tabRadios = tabWrapper.getElementsByClassName("tab_radio");
+  tabGroup = c.id;
+  tabs = tabWrapper.getElementsByClassName("tab");
+  for (let i = 0; i < tabRadios.length; i++) {
+    tabRadios[i].name = tabGroup;
+    tabRadios[i].id = `${tabGroup}_${i}`;
+  }
+  for (let i = 0; i < tabs.length; i++) {
+    tabs[i].setAttribute("for", `${tabGroup}_${i}`);
+  }
+}
+
 function findOrAddContainer(cd) {
-  let elId = `c${cd.type}-${cd.id}`;
+  let elId = `c${cd.type}_${cd.id}`;
   let c = el(elId);
   if (c) return c;
+
   switch (cd.type) {
     case Component_Type.kSwitch:
     case Component_Type.kOutlet:
     case Component_Type.kLock:
-      c = el("sw_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("sw_template", elId);
       el(c, "state").onchange = function(ev) {
         setComponentState(c, {state: !c.data.state}, el(c, "set_spinner"));
         markInputChanged(ev);
@@ -559,15 +581,13 @@ function findOrAddContainer(cd) {
       break;
     case Component_Type.kStatelessSwitch:  // aka input in detached mode
     case Component_Type.kDoorbell:
-      c = el("ssw_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("ssw_template", elId);
       el(c, "save_btn").onclick = function() {
         sswSetConfig(c);
       };
       break;
     case Component_Type.kWindowCovering:
-      c = el("wc_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("wc_template", elId);
       el(c, "open_btn").onclick = function() {
         setComponentState(c, {tgt_pos: 100}, el(c, "open_spinner"));
       };
@@ -583,8 +603,7 @@ function findOrAddContainer(cd) {
       };
       break;
     case Component_Type.kGarageDoorOpener:
-      c = el("gdo_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("gdo_template", elId);
       el(c, "save_btn").onclick = function() {
         gdoSetConfig(c, null, el(c, "save_spinner"));
       };
@@ -593,8 +612,7 @@ function findOrAddContainer(cd) {
       };
       break;
     case Component_Type.kDisabledInput:
-      c = el("di_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("di_template", elId);
       el(c, "save_btn").onclick = function() {
         diSetConfig(c);
       };
@@ -606,15 +624,13 @@ function findOrAddContainer(cd) {
     case Component_Type.kSmokeSensor:
     case Component_Type.kCarbonMonoxideSensor:
     case Component_Type.kCarbonDioxideSensor:
-      c = el("sensor_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("sensor_template", elId);
       el(c, "save_btn").onclick = function() {
         mosSetConfig(c);
       };
       break;
     case Component_Type.kLightBulb:
-      c = el("rgb_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("rgb_template", elId);
 
       let value = cd.bulb_type;
       let showct = (value == LightBulbController_BulbType.kCCT)
@@ -649,8 +665,7 @@ function findOrAddContainer(cd) {
       };
       break;
     case Component_Type.kTemperatureSensor:
-      c = el("ts_template").cloneNode(true);
-      c.id = elId;
+      c = cloneTemplate("ts_template", elId);
       el(c, "save_btn").onclick = function() {
         tsSetConfig(c);
       };
@@ -1156,6 +1171,9 @@ function getInfo() {
           el("firmware_container").style.display = "block";
           updateCommonVisibility(!updateInProgress);
 
+          configureTabs(el("firmware_container"));
+          configureTabs(el("wifi_container"));
+
           // the system mode changed, clear out old UI components
           if (lastInfo !== null && lastInfo.sys_mode !== info.sys_mode) {
             el("components").innerHTML = "";
@@ -1209,6 +1227,8 @@ function setupHost() {
 
   if (!host) {
     host = prompt("Please enter the host of your shelly.");
+    host = host.replace("http://", "");
+    host = host.split("/")[0];
     if (host !== null) {
       location.href = `${location.host}?host=${host}`;
     }

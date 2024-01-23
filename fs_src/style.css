@@ -373,20 +373,21 @@ input:checked + .slider:before {
   display: none;
 }
 
-#one:checked ~ .panels #panel1,
-#two:checked ~ .panels #panel2,
-#three:checked ~ .panels #panel3 {
+.tab_radio:nth-child(1):checked ~ .panels .panel:nth-child(1),
+.tab_radio:nth-child(2):checked ~ .panels .panel:nth-child(2),
+.tab_radio:nth-child(3):checked ~ .panels .panel:nth-child(3),
+.tab_radio:nth-child(4):checked ~ .panels .panel:nth-child(4) {
   display: block;
 }
 
-#two:checked ~ .panels,
-#three:checked ~ .panels {
+.tab_radio:nth-child(n+2):checked ~ .panels {
   border-top-left-radius: 10px;
 }
 
-#one:checked ~ .tabs #tab1,
-#two:checked ~ .tabs #tab2,
-#three:checked ~ .tabs #tab3 {
+.tab_radio:nth-child(1):checked ~ .tabs .tab:nth-child(1),
+.tab_radio:nth-child(2):checked ~ .tabs .tab:nth-child(2),
+.tab_radio:nth-child(3):checked ~ .tabs .tab:nth-child(3),
+.tab_radio:nth-child(4):checked ~ .tabs .tab:nth-child(4) {
   border-top: 3px solid var(--primary);
   border-left: 1px solid var(--primary);
   border-right: 1px solid var(--primary);
