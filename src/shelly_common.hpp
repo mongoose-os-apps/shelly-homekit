@@ -111,6 +111,7 @@ enum class InMode {
   kEdgeBoth = 5,
   kActivationBoth = 6,
 #endif
+  kActivationOnce = 7,
   kMax,
 };
 
