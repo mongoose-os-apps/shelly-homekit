@@ -9,6 +9,7 @@ models:
   shellyix3:       ShellyI3
   shellyplug:      ShellyPlug
   shellyplug-s:    ShellyPlugS
+  PlusPlugS:       ShellyPlusPlugS
   shellyplus1:     ShellyPlus1
   ShellyPlus1:     ShellyPlus1
   shellyplus1pm:   ShellyPlus1PM
