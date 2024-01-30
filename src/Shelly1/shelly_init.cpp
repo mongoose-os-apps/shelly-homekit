@@ -48,6 +48,12 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  // Sensor Discovery
+  std::vector<std::unique_ptr<TempSensor>> sensors;
+  if (s_onewire != nullptr) {
+    sensors = s_onewire->DiscoverAll();
+  }
+
   // Garage door opener mode.
   if (mgos_sys_config_get_shelly_mode() == 2) {
     auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
@@ -66,12 +72,6 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     pri_acc->AddService(gdo.get());
     comps->emplace_back(std::move(gdo));
     return;
-  }
-
-  // Sensor Discovery
-  std::vector<std::unique_ptr<TempSensor>> sensors;
-  if (s_onewire != nullptr) {
-    sensors = s_onewire->DiscoverAll();
   }
 
   // Single switch with non-detached input and no sensors = only one accessory.
