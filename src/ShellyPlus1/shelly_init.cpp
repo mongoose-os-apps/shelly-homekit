@@ -40,8 +40,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   inputs->emplace_back(in);
   sys_temp->reset(new TempSensorSDNT1608X103F3950(32, 3.3f, 10000.0f));
 
-  int pin_in = 19;
   int pin_out = 0;
+  int pin_in = 1;
 
   if (DetectAddon(pin_in, pin_out)) {
     s_onewire.reset(new Onewire(pin_in, pin_out));
