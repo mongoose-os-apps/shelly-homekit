@@ -15,22 +15,42 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "shelly_temp_sensor.hpp"
+
+#include "mgos_timers.hpp"
+
+#include <mgos_dht.h>
+
+#include <vector>
 
 namespace shelly {
 
-TempSensor::TempSensor() {
-}
+std::vector<std::unique_ptr<TempSensor>> DiscoverDHTSensors(int in, int out);
 
-TempSensor::~TempSensor() {
-}
+class DHTSensor : public HumidityTempSensor {
+ public:
+  DHTSensor(uint8_t pin_in, uint8_t pin_out);
+  virtual ~DHTSensor();
 
-void TempSensor::SetNotifier(Notifier notifier) {
-  notifier_ = notifier;
-}
+  Status Init();
+  StatusOr<float> GetTemperature() override;
+  StatusOr<float> GetHumidity() override;
 
-void HumidityTempSensor::SetNotifierHumidity(Notifier notifier) {
-  notifier_hum_ = notifier;
-}
+  virtual void StartUpdating(int interval) override;
+
+ private:
+  uint8_t pin_in_;
+  uint8_t pin_out_;
+
+  mgos::Timer meas_timer_;
+
+  mgos_dht *dht;
+
+  void UpdateTemperatureCB();
+  StatusOr<float> result_;
+  StatusOr<float> result_humidity_;
+};
 
 }  // namespace shelly

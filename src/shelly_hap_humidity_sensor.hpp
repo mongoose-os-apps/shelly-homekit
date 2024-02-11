@@ -22,16 +22,16 @@
 
 #include "shelly_common.hpp"
 #include "shelly_component.hpp"
-
 #include "shelly_temp_sensor.hpp"
 
 namespace shelly {
 namespace hap {
 
-class TemperatureSensor : public Component, public mgos::hap::Service {
+class HumiditySensor : public Component, public mgos::hap::Service {
  public:
-  TemperatureSensor(int id, TempSensor *sensor, struct mgos_config_ts *cfg);
-  virtual ~TemperatureSensor();
+  HumiditySensor(int id, HumidityTempSensor *sensor,
+                 struct mgos_config_ts *cfg);
+  virtual ~HumiditySensor();
 
   // Component interface impl.
   Type type() const override;
@@ -45,16 +45,16 @@ class TemperatureSensor : public Component, public mgos::hap::Service {
   Status SetState(const std::string &state_json) override;
 
  private:
-  TempSensor *temp_sensor_;
+  HumidityTempSensor *hum_sensor_;
   struct mgos_config_ts *cfg_;
 
-  mgos::hap::FloatCharacteristic *current_temperature_characteristic_;
+  mgos::hap::FloatCharacteristic *current_humidity_characteristic_;
 
   void ValueChanged();
 };
 
-void CreateHAPTemperatureSensor(
-    int id, TempSensor *sensor, const struct mgos_config_ts *ts_cfg,
+void CreateHAPHumiditySensor(
+    int id, HumidityTempSensor *sensor, const struct mgos_config_ts *ts_cfg,
     std::vector<std::unique_ptr<Component>> *comps,
     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
     HAPAccessoryServerRef *svr);

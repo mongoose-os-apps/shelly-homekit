@@ -44,6 +44,8 @@
 #include "HAPPlatformTCPStreamManager+Init.h"
 
 #include "shelly_debug.hpp"
+#include "shelly_hap_garage_door_opener.hpp"
+#include "shelly_hap_humidity_sensor.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_lock.hpp"
 #include "shelly_hap_outlet.hpp"
@@ -119,6 +121,21 @@ static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
 std::vector<std::unique_ptr<Component>> g_comps;
 
+bool DetectAddon(int pin_in, int pin_out) {
+  // case 1: input with pull up
+  mgos_gpio_setup_input(pin_in, MGOS_GPIO_PULL_UP);
+  // check if pulled by something external, not check output to input yet
+  bool active = mgos_gpio_read(pin_in);
+  if (!active) {
+    // something is pulling us low, we might have an addon with switchss
+    return true;
+  }
+
+  // Try to pull low via addon
+  mgos_gpio_setup_output(pin_out, 0 /* LOW */);
+  mgos_gpio_setup_input(pin_in, MGOS_GPIO_PULL_NONE);
+  return !mgos_gpio_read(pin_in);
+}
 template <class T>
 T *FindById(const std::vector<std::unique_ptr<T>> &vv, int id) {
   for (auto &v : vv) {
@@ -134,6 +151,36 @@ Output *FindOutput(int id) {
 }
 PowerMeter *FindPM(int id) {
   return FindById(s_pms, id);
+}
+
+void CreateHAPSensors(std::vector<std::unique_ptr<TempSensor>> *sensors,
+                      std::vector<std::unique_ptr<Component>> *comps,
+                      std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+                      HAPAccessoryServerRef *svr) {
+  struct mgos_config_ts *ts_cfgs[] = {
+#ifdef MGOS_CONFIG_HAVE_TS1
+      (struct mgos_config_ts *) mgos_sys_config_get_ts1(),
+#endif
+#ifdef MGOS_CONFIG_HAVE_TS2
+      (struct mgos_config_ts *) mgos_sys_config_get_ts2(),
+#endif
+#ifdef MGOS_CONFIG_HAVE_TS3
+      (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
+#endif
+  };
+  size_t j = 0;
+  for (size_t i = 0; i < std::min((size_t) sizeof(ts_cfgs), sensors->size());
+       i++) {
+    auto *ts_cfg = ts_cfgs[i];
+    TempSensor *ts = ((*sensors)[i].get());
+    shelly::hap::CreateHAPTemperatureSensor(j++, ts, ts_cfg, comps, accs, svr);
+
+    if (ts->getType() == TS_HUM) {  // can only be one shares config, as same
+                                    // update interval but no unit settable
+      shelly::hap::CreateHAPHumiditySensor(j++, (HumidityTempSensor *) ts,
+                                           ts_cfg, comps, accs, svr);
+    }
+  }
 }
 
 void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
@@ -212,29 +259,6 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
   if (sw_cfg->in_mode == (int) InMode::kDetached) {
     hap::CreateHAPInput(id, in_cfg, comps, accs, svr);
   }
-}
-
-void CreateHAPTemperatureSensor(
-    int id, std::unique_ptr<TempSensor> sensor,
-    const struct mgos_config_ts *ts_cfg,
-    std::vector<std::unique_ptr<Component>> *comps,
-    std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
-    HAPAccessoryServerRef *svr) {
-  struct mgos_config_ts *cfg = (struct mgos_config_ts *) ts_cfg;
-  std::unique_ptr<hap::TemperatureSensor> ts(
-      new hap::TemperatureSensor(id, std::move(sensor), cfg));
-  if (ts == nullptr || !ts->Init().ok()) {
-    return;
-  }
-
-  std::unique_ptr<mgos::hap::Accessory> acc(
-      new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + id,
-                               kHAPAccessoryCategory_BridgedAccessory,
-                               ts_cfg->name, GetIdentifyCB(), svr));
-  acc->AddHAPService(&mgos_hap_accessory_information_service);
-  acc->AddService(ts.get());
-  accs->push_back(std::move(acc));
-  comps->push_back(std::move(ts));
 }
 
 static void DisableLegacyHAPLayout() {

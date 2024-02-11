@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "shelly_hap_temperature_sensor.hpp"
+#include "shelly_hap_humidity_sensor.hpp"
 
 #include <cmath>
 
@@ -27,32 +27,33 @@
 namespace shelly {
 namespace hap {
 
-TemperatureSensor::TemperatureSensor(int id, TempSensor *sensor,
-                                     struct mgos_config_ts *cfg)
+HumiditySensor::HumiditySensor(int id, HumidityTempSensor *sensor,
+                               struct mgos_config_ts *cfg)
     : Component(id),
-      Service(SHELLY_HAP_IID_BASE_TEMPERATURE_SENSOR +
+      Service(SHELLY_HAP_IID_BASE_HUMIDITY_SENSOR +
                   SHELLY_HAP_IID_STEP_SENSOR * (id - 1),
-              &kHAPServiceType_TemperatureSensor,
-              kHAPServiceDebugDescription_TemperatureSensor),
-      temp_sensor_(sensor),
+              &kHAPServiceType_HumiditySensor,
+              kHAPServiceDebugDescription_HumiditySensor),
+      hum_sensor_(sensor),
       cfg_(cfg) {
-  temp_sensor_->SetNotifier(std::bind(&TemperatureSensor::ValueChanged, this));
+  hum_sensor_->SetNotifierHumidity(
+      std::bind(&HumiditySensor::ValueChanged, this));
 }
 
-TemperatureSensor::~TemperatureSensor() {
-  temp_sensor_->SetNotifier(nullptr);
+HumiditySensor::~HumiditySensor() {
+  hum_sensor_->SetNotifier(nullptr);
 }
 
-Component::Type TemperatureSensor::type() const {
+Component::Type HumiditySensor::type() const {
   return Type::kTemperatureSensor;
 }
 
-std::string TemperatureSensor::name() const {
+std::string HumiditySensor::name() const {
   return cfg_->name;
 }
 
-Status TemperatureSensor::SetConfig(const std::string &config_json,
-                                    bool *restart_required) {
+Status HumiditySensor::SetConfig(const std::string &config_json,
+                                 bool *restart_required) {
   struct mgos_config_ts cfg = *cfg_;
   cfg.name = nullptr;
   json_scanf(config_json.c_str(), config_json.size(),
@@ -65,7 +66,7 @@ Status TemperatureSensor::SetConfig(const std::string &config_json,
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s",
                         "name (too long, max 64)");
   }
-  if (cfg.unit < 0 || cfg.unit > 1) {
+  if (cfg.unit != 2) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid unit");
   }
   if (cfg.update_interval < 1) {
@@ -81,33 +82,33 @@ Status TemperatureSensor::SetConfig(const std::string &config_json,
   }
   if (cfg_->update_interval != cfg.update_interval) {
     cfg_->update_interval = cfg.update_interval;
-    temp_sensor_->StartUpdating(cfg_->update_interval * 1000);
+    hum_sensor_->StartUpdating(cfg_->update_interval * 1000);
   }
   return Status::OK();
 }
 
-Status TemperatureSensor::SetState(const std::string &state_json UNUSED_ARG) {
+Status HumiditySensor::SetState(const std::string &state_json UNUSED_ARG) {
   return Status::OK();
 }
 
-void TemperatureSensor::ValueChanged() {
-  auto tr = temp_sensor_->GetTemperature();
+void HumiditySensor::ValueChanged() {
+  auto tr = hum_sensor_->GetTemperature();
   if (tr.ok()) {
     LOG(LL_DEBUG, ("TS %d: T = %.2f", id(), tr.ValueOrDie()));
   } else {
     LOG(LL_ERROR, ("TS %d: %s", id(), tr.status().ToString().c_str()));
   }
-  current_temperature_characteristic_->RaiseEvent();
+  current_humidity_characteristic_->RaiseEvent();
 }
 
-Status TemperatureSensor::Init() {
+Status HumiditySensor::Init() {
   uint16_t iid = svc_.iid + 1;
-  current_temperature_characteristic_ = new mgos::hap::FloatCharacteristic(
-      iid++, &kHAPCharacteristicType_CurrentTemperature, -55.0, 125.0, 0.1,
+  current_humidity_characteristic_ = new mgos::hap::FloatCharacteristic(
+      iid++, &kHAPCharacteristicType_CurrentRelativeHumidity, 0, 100.0, 1,
       [this](HAPAccessoryServerRef *server UNUSED_ARG,
              const HAPFloatCharacteristicReadRequest *request UNUSED_ARG,
              float *value) {
-        auto tempval = temp_sensor_->GetTemperature();
+        auto tempval = hum_sensor_->GetHumidity();
         if (!tempval.ok()) {
           return kHAPError_Busy;
         }
@@ -117,40 +118,27 @@ Status TemperatureSensor::Init() {
       },
 
       true /* supports_notification */, nullptr /* write_handler */,
-      kHAPCharacteristicDebugDescription_CurrentTemperature);
-  AddChar(current_temperature_characteristic_);
-  AddChar(new mgos::hap::UInt8Characteristic(
-      iid++, &kHAPCharacteristicType_TemperatureDisplayUnits, 0, 1, 1,
-      std::bind(&mgos::hap::ReadUInt8<int>, _1, _2, _3, &cfg_->unit),
-      true /* supports_notification */,
-      [this](HAPAccessoryServerRef *server UNUSED_ARG,
-             const HAPUInt8CharacteristicWriteRequest *request UNUSED_ARG,
-             uint8_t value) {
-        if (value <= 1) {
-          cfg_->unit = value;
-        }
-        return kHAPError_None;
-      },
-      kHAPCharacteristicDebugDescription_TemperatureDisplayUnits));
+      kHAPCharacteristicDebugDescription_CurrentRelativeHumidity);
+  AddChar(current_humidity_characteristic_);
 
-  temp_sensor_->StartUpdating(cfg_->update_interval * 1000);
+  hum_sensor_->StartUpdating(cfg_->update_interval * 1000);
   return Status::OK();
 }
 
-StatusOr<std::string> TemperatureSensor::GetInfo() const {
-  auto tempval = temp_sensor_->GetTemperature();
+StatusOr<std::string> HumiditySensor::GetInfo() const {
+  auto tempval = hum_sensor_->GetHumidity();
   if (!tempval.ok()) {
     return tempval.status();
   }
   return mgos::SPrintf("t:%.2f", tempval.ValueOrDie());
 }
 
-StatusOr<std::string> TemperatureSensor::GetInfoJSON() const {
+StatusOr<std::string> HumiditySensor::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, unit: %d, "
       "update_interval: %d, ",
-      id(), type(), cfg_->name, cfg_->unit, cfg_->update_interval);
-  auto tempval = temp_sensor_->GetTemperature();
+      id(), type(), cfg_->name, 2, cfg_->update_interval);
+  auto tempval = hum_sensor_->GetHumidity();
   if (tempval.ok()) {
     mgos::JSONAppendStringf(&res, "value: %.1f", tempval.ValueOrDie());
   } else {
@@ -160,20 +148,20 @@ StatusOr<std::string> TemperatureSensor::GetInfoJSON() const {
   return res;
 }
 
-void CreateHAPTemperatureSensor(
-    int id, TempSensor *sensor, const struct mgos_config_ts *ts_cfg,
+void CreateHAPHumiditySensor(
+    int id, HumidityTempSensor *sensor, const struct mgos_config_ts *ts_cfg,
     std::vector<std::unique_ptr<Component>> *comps,
     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
     HAPAccessoryServerRef *svr) {
   struct mgos_config_ts *cfg = (struct mgos_config_ts *) ts_cfg;
-  std::unique_ptr<hap::TemperatureSensor> ts(
-      new hap::TemperatureSensor(id, sensor, cfg));
+  std::unique_ptr<hap::HumiditySensor> ts(
+      new hap::HumiditySensor(id, sensor, cfg));
   if (ts == nullptr || !ts->Init().ok()) {
     return;
   }
 
   std::unique_ptr<mgos::hap::Accessory> acc(
-      new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_TEMPERATURE_SENSOR + id,
+      new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_HUMIDITY_SENSOR + id,
                                kHAPAccessoryCategory_BridgedAccessory,
                                ts_cfg->name, GetIdentifyCB(), svr));
   acc->AddHAPService(&mgos_hap_accessory_information_service);
