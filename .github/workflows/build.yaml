@@ -12,7 +12,7 @@ jobs:
         model: [Shelly1, Shelly1L, Shelly1PM, Shelly25, Shelly2, ShellyColorBulb, ShellyDuo, ShellyI3, ShellyPlug, ShellyPlugS, ShellyPlus1, ShellyPlus1PM, ShellyPlusI4, ShellyRGBW2, ShellyVintage, ShellyUNI]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Build docker image # remove if newer mos docker image is available
@@ -25,8 +25,8 @@ jobs:
       - name: Build
         run: make ${{ matrix.model }} RELEASE=1 RELEASE_SUFFIX=$(.github/version.py --suffix)       
       - name: Upload firmware artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: releases
+          name: releases-${{ matrix.model }}
           path: releases/**/shelly-homekit-${{ matrix.model }}.zip
           if-no-files-found: warn
