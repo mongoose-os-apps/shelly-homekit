@@ -684,6 +684,8 @@ conds:
     apply:
       name: Plus2PM
       sources:
+        - src/DS18XXX
+        - src/DHT
         - src/ADE7953
       includes:
         - src/ADE7953
