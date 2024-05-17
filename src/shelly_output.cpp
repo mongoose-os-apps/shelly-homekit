@@ -67,8 +67,10 @@ Status OutputPin::SetState(bool on, const char *source) {
 
 Status OutputPin::SetStatePWM(float duty, const char *source) {
   LOG(LL_INFO, ("Duty: %.3f", duty));
-  if (duty == 0 || duty == 1) {
-    mgos_gpio_write(pin_, duty);
+  if (duty == 0) {
+    mgos_pwm_set(pin_, 0, 0);
+  } else if (duty == 1) {
+    mgos_gpio_write(pin_, 1);
     LOG(LL_INFO,
         ("Output %d: %s (%s)", id(), (duty == 0 ? "OFF" : "ON"), source));
   } else {
