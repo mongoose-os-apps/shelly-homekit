@@ -16,7 +16,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
 |Sensors<sup>3</sup>|✓|✓|✓|✓|✓|✗|✗|✓|✓|✓|✓|✓|✓|✗|✗|✗|
-|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|-|-|✗|✗|✗|✗|✗|✗|-|-|✗|✗|✗|✗|
+|Temperature measurement|✓<sup>4</sup>|✓<sup>4</sup>|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✓<sup>4</sup>|-|✗|✗|✗|✗|
 |Garage door opener|✓|✓|✓|✓|✗|✗|✗|✓|✓|✗|✗|✓|✗|✗|✗|✗|
 |Roller shutter mode|✗|✗|✗|✗|✗|✗|✗|✗|✓|✗|✗|✗|✗|✗|✗|✗|
 |Power measurement|✗|✓|✗|✓|-|✓|✓|✗|✓|✗|✗|✗|-|-|-|-|
@@ -31,7 +31,7 @@ _✗: not possible_
 _1: includes lock, outlet and valve_  
 _2: includes doorbell_  
 _3: includes motion, occupancy, contact, smoke, leak_  
-_4: with [Sensor AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor  
+_4: with [Sensor AddOn/Shelly Plus AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor(s) or DHT sensor
 
 Features that are not yet supported:
  * Cloud connections: no Shelly Cloud, no MQTT
