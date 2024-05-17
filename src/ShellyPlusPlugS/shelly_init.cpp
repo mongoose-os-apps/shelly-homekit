@@ -22,7 +22,6 @@
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
-
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
@@ -30,8 +29,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 4, 1));
-  outputs->emplace_back(new OutputPin(98, LED_GPIO, 1));  // Red LED.
-  outputs->emplace_back(new OutputPin(99, LED2_GPIO, 1));  // Red LED.
+
+  // GPIO 25 and 26 are neopixel lights
 
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 10 /* CF */, 22 /* CF1 */, 19 /* SEL */, 2,
@@ -53,7 +52,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), nullptr, comps, accs, svr,
-                  true /* to_pri_acc */, FindOutput(99) );
+                  true /* to_pri_acc */, FindOutput(1));
 }
 
 }  // namespace shelly
