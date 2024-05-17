@@ -234,7 +234,7 @@ void LightBulb::SetColorTemperature(int color_temperature,
       source != kChangeReasonAuto) {
     color_temperature_characteristic->RaiseEvent();
   }
-  if (source == kCHangeReasonHAP) {
+  if (source == kCHangeReasonHAP && ad_controller_ != nullptr) {
     ad_controller_->ColorTempChangedManually();
   }
 
@@ -267,7 +267,7 @@ void LightBulb::SetBrightness(int brightness, const std::string &source) {
   if (brightness_characteristic != nullptr) {
     brightness_characteristic->RaiseEvent();
   }
-  if (source == kCHangeReasonHAP) {
+  if (source == kCHangeReasonHAP && ad_controller_ != nullptr) {
     ad_controller_->BrightnessChangedManually();
   }
 
