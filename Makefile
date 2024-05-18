@@ -1,8 +1,7 @@
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
 .PHONY: build check-format format release upload \
-        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlus1 ShellyPlus1PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyUDuo ShellyURGBW2 ShellyUNI
-.SUFFIXES:
+        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlugUS ShellyPlus1 ShellyPlus1PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyUDuo ShellyURGBW2 ShellyUNI
 
 MOS ?= mos
 # Build locally by default if Docker is available.
@@ -27,7 +26,7 @@ ifneq "$(VERBOSE)$(V)" "00"
   MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
-build: Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlus1 ShellyPlus1PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyURGBW2 ShellyUNI
+build: Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlugUS ShellyPlus1 ShellyPlus1PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyURGBW2 ShellyUNI
 
 release:
 	$(MAKE) build CLEAN=1 RELEASE=1
@@ -62,6 +61,9 @@ ShellyPlug: build-ShellyPlug
 	@true
 
 ShellyPlugS: build-ShellyPlugS
+	@true
+
+ShellyPlugUS: build-ShellyPlugUS
 	@true
 
 ShellyPlus1: PLATFORM=esp32
