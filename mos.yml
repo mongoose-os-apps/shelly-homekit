@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.12.0
+version: 2.12.0-beta2
 
 libs_version: latest
 modules_version: latest
@@ -202,8 +202,10 @@ conds:
       name: switch1 # To allow OTA from stock fw.
       sources:
         - src/DS18XXX
+        - src/DHT
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -231,9 +233,12 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
-        - ["gdo1.open_sensor_mode", -1]
+        - ["gdo1.open_sensor_mode", 2]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
@@ -282,8 +287,10 @@ conds:
       name: switch1pm # To allow OTA from stock fw.
       sources:
         - src/DS18XXX
+        - src/DHT
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
       build_vars:
@@ -315,9 +322,12 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
-        - ["gdo1.open_sensor_mode", -1]
+        - ["gdo1.open_sensor_mode", 2]
         - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.79942025]  # (16 + 1010 + 1935) / (8.53 + 561 + 1076)
         # Only for backward compatibility (config <= v3).
@@ -598,6 +608,13 @@ conds:
   - when: build_vars.MODEL == "ShellyPlus1"
     apply:
       name: Plus1
+      sources:
+        - src/DS18XXX
+        - src/DHT
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
+        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
@@ -624,16 +641,32 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
-        - ["gdo1.open_sensor_mode", -1]
+        - ["gdo1.open_sensor_mode", 2]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
 
   - when: build_vars.MODEL == "ShellyPlus1PM"
     apply:
       name: Plus1PM
+      sources:
+        - src/DS18XXX
+        - src/DHT
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
+        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
@@ -660,6 +693,9 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
@@ -671,10 +707,22 @@ conds:
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
 
   - when: build_vars.MODEL == "ShellyPlusI4"
     apply:
       name: PlusI4
+      sources:
+        - src/DS18XXX
+        - src/DHT
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
@@ -708,6 +756,12 @@ conds:
         - ["in4", "in", {title: "Input 4 settings"}]
         - ["in4.ssw.name", "Shelly SSW4"]
         - ["in4.sensor.name", "Shelly S4"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
 
   - when: build_vars.MODEL == "ShellyRGBW2"
     apply:
@@ -873,6 +927,9 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "ShellyU SSW1"]
         - ["in1.sensor.name", "ShellyU S1"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "ShellyU SSW2"]
+        - ["in2.sensor.name", "ShellyU S2"]
 
   - when: build_vars.MODEL == "ShellyUDuo"
     apply:

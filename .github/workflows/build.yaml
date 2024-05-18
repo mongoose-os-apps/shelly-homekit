@@ -27,6 +27,15 @@ jobs:
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: releases-${{ matrix.model }}
+          name: release-${{ matrix.model }}
           path: releases/**/shelly-homekit-${{ matrix.model }}.zip
           if-no-files-found: warn
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+           name: all-releases
+           pattern: release-*

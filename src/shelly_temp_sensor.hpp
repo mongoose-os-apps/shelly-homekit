@@ -21,6 +21,11 @@
 
 namespace shelly {
 
+typedef enum {
+  TS = 0,
+  TS_HUM,
+} TempType;
+
 class TempSensor {
  public:
   typedef std::function<void()> Notifier;
@@ -36,10 +41,26 @@ class TempSensor {
   virtual void StartUpdating(int interval UNUSED_ARG) {
   }
 
+  virtual TempType getType() {
+    return TS;
+  }
+
   void SetNotifier(Notifier notifier);
 
  protected:
   Notifier notifier_;
+};
+
+class HumidityTempSensor : public TempSensor {
+ public:
+  virtual StatusOr<float> GetHumidity() = 0;
+  void SetNotifierHumidity(Notifier notifier);
+  TempType getType() {
+    return TS_HUM;
+  }
+
+ protected:
+  Notifier notifier_hum_;
 };
 
 }  // namespace shelly
