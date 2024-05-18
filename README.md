@@ -71,9 +71,8 @@ Features that are not yet supported:
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
     * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://shelly.rojer.cloud/update`
-
-    * <details>
-  <summary>If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model</summary>
+    <details>
+      <summary>If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model</summary>
   
       * Shelly 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
 
@@ -111,7 +110,7 @@ Features that are not yet supported:
       * Shelly UNI: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyUNI.zip`
 
       * Shelly Vintage: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyVintage.zip`
- </details>
+     </details>
 
   * See [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#updating-from-stock-firmware) for detailed instructions.
 
