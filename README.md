@@ -11,7 +11,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
-### Plus devises
+### Plus devices
 
 ||[+1]|[+1PM]|+i4 [AC]/[DC]|
 |-|-|-|-|
@@ -25,7 +25,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ### Pro devices
 
-Currently not supported, will hopfuly supported soon.
+Currently not supported.
 
 ### Gen 1 switches
 
