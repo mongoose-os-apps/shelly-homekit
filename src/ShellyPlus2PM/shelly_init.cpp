@@ -130,8 +130,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       HAPAccessoryServerRef *svr) {
   bool single_accessory = sensors.empty();
 
-  // Roller-shutter mode.
-  if (mgos_sys_config_get_shelly_mode() == 1) {
+  if (mgos_sys_config_get_shelly_mode() == (int) Mode::kRollerShutter) {
     const int id = 1;
     auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
     auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
@@ -175,18 +174,17 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     comps->emplace(comps->begin(), std::move(wc));
     return;
   }
-  // Garage door opener mode.
+
   if (mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor) {
     hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),
                       FindOutput(2), mgos_sys_config_get_gdo1(), comps, accs,
                       svr, single_accessory);
-    return;
+  } else {
+    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
+                    comps, accs, svr, false /* to_pri_acc */);
+    CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_in2(),
+                    comps, accs, svr, false /* to_pri_acc */);
   }
-
-  CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
-                  comps, accs, svr, false /* to_pri_acc */);
-  CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_in2(),
-                  comps, accs, svr, false /* to_pri_acc */);
 
   if (!sensors.empty()) {
     CreateHAPSensors(&sensors, comps, accs, svr);
