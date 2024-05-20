@@ -58,11 +58,7 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   };
 
   int reset_pin = 33;
-  mgos_gpio_set_mode(reset_pin, MGOS_GPIO_MODE_OUTPUT);
-  mgos_gpio_write(reset_pin, 0);
-  mgos_msleep(100);
-  mgos_gpio_write(reset_pin, 1);
-  mgos_gpio_set_mode(reset_pin, MGOS_GPIO_MODE_INPUT);
+  mgos_gpio_setup_output(reset_pin, 1);
 
   s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
 
@@ -72,9 +68,9 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   }
 
   Status st;
-  std::unique_ptr<PowerMeter> pm1(new ADE7953PowerMeter(1, s_ade7953, 1));
+  std::unique_ptr<PowerMeter> pm1(new ADE7953PowerMeter(1, s_ade7953, 0));
   if (!(st = pm1->Init()).ok()) return st;
-  std::unique_ptr<PowerMeter> pm2(new ADE7953PowerMeter(2, s_ade7953, 0));
+  std::unique_ptr<PowerMeter> pm2(new ADE7953PowerMeter(2, s_ade7953, 1));
   if (!(st = pm2->Init()).ok()) return st;
 
   pms->emplace_back(std::move(pm1));
@@ -87,8 +83,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  outputs->emplace_back(new OutputPin(1, 12, 1));
-  outputs->emplace_back(new OutputPin(2, 13, 1));
+  outputs->emplace_back(new OutputPin(1, 13, 1));
+  outputs->emplace_back(new OutputPin(2, 12, 1));
   auto *in1 = new InputPin(1, 5, 1, MGOS_GPIO_PULL_NONE, true);
   in1->AddHandler(std::bind(&HandleInputResetSequence, in1, 4, _1, _2));
   in1->Init();
