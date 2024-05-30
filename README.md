@@ -71,7 +71,7 @@ Features that are not yet supported:
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
     * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://shelly.rojer.cloud/update`
-    * **Note:** There is an issue upgrading Plus devices on latest stock firmwares; The problem is fixed with the latest beta available here: https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.12.0-beta2 **Note that this is a beta version**
+    * **Note:** There is an issue upgrading Plus devices on latest stock firmwares; The problem is fixed with the latest beta available here: https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.12.0-beta2 The update has to be done via Webinterface and the corresponding shelly-homekit-[your device].zip File  **Note that this is a beta version**
     * 
     <details>
       <summary>If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model</summary>
