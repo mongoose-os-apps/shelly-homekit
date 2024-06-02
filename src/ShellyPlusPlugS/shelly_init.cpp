@@ -30,7 +30,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 4, 1));
 
-  // GPIO 25 and 26 are neopixel lights
+  // TODO: GPIO 25 and 26 are neopixel lights and are not yet used
 
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 10 /* CF */, 22 /* CF1 */, 19 /* SEL */, 2,

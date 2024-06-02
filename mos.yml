@@ -578,14 +578,13 @@ conds:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
-        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
       cdefs:
         LED_GPIO: 25
-        LED2_GPIO: 26
         LED_ON: 1
         BTN_GPIO: 9
         BTN_DOWN: 1

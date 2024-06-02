@@ -4,6 +4,7 @@ on:
   pull_request:
 jobs:
   build:
+    name: Build ${{ matrix.model }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -12,8 +13,8 @@ jobs:
           - Shelly1
           - Shelly1L
           - Shelly1PM
-          - Shelly25
           - Shelly2
+          - Shelly25
           - ShellyColorBulb
           - ShellyDuo
           - ShellyI3
@@ -21,29 +22,37 @@ jobs:
           - ShellyPlugS
           - ShellyPlus1
           - ShellyPlus1PM
-          - ShellyRGBW2
-          - ShellyVintage
-          - ShellyU
-          - ShellyU25
-          - ShellyURGBW2
+          - ShellyPlusI4
           - ShellyPlusPlugS
+          - ShellyRGBW2
+          - ShellyUNI
+          - ShellyVintage
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Build docker image # remove if newer mos docker image is available
+        if: ${{ contains( matrix.model , 'Plus') }}
+        run: docker build -t mgos/esp32-build:4.4.1-r7 -f .github/workflows/Dockerfile-esp32-build .
       - name: Install mos build tool
         run: |
           sudo add-apt-repository -y ppa:mongoose-os/mos
           sudo apt -q install -y mos-latest
-      - name: Build ${{ matrix.model }}
-        # run: make release RELEASE_SUFFIX=$(.github/version.py --suffix)
-        run: make ${{ matrix.model }}
-      # - name: Upload build artifacts
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: releases
-      #     path: |
-      #       releases/*
-      #       !releases/**/elf
-      #     if-no-files-found: error
+      - name: Build
+        run: make ${{ matrix.model }} RELEASE=1 RELEASE_SUFFIX=$(.github/version.py --suffix)       
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.model }}
+          path: releases/**/shelly-homekit-${{ matrix.model }}.zip
+          if-no-files-found: warn
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+           name: all-releases
+           pattern: release-*
