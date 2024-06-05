@@ -30,7 +30,10 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 4, 1));
 
-  // TODO: GPIO 25 and 26 are neopixel lights and are not yet used
+  // TODO: GPIO 25 and 26 are actually neopixel lights, and are not used as such
+  // currently
+  outputs->emplace_back(new OutputPin(2, 25, 1));
+  outputs->emplace_back(new OutputPin(3, 26, 1));
 
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 10 /* CF */, 22 /* CF1 */, 19 /* SEL */, 2,
@@ -52,7 +55,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), nullptr, comps, accs, svr,
-                  true /* to_pri_acc */, FindOutput(1));
+                  true /* to_pri_acc */, FindOutput(3));
 }
 
 }  // namespace shelly
