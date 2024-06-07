@@ -119,11 +119,15 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
     LOG(LL_INFO, ("Newer revision detected"));
     if (mgos_sys_config_get_i2c_sda_gpio() != 26) {
       mgos_sys_config_set_i2c_sda_gpio(26);
+      mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                           NULL /* msg */);
     }
     reset_pin = 33;
   } else {
     if (mgos_sys_config_get_i2c_sda_gpio() != 33) {
       mgos_sys_config_set_i2c_sda_gpio(33);
+      mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                           NULL /* msg */);
     }
     reset_pin = 0;  // unknown?
   }

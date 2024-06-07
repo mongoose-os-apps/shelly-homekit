@@ -727,7 +727,7 @@ conds:
         - ["shelly.name", "ShellyPlus2PM-??????"]
         - ["wifi.ap.ssid", "ShellyPlus2PM-??????"]
         - ["i2c.enable", true]
-        - ["i2c.sda_gpio", 26]
+        - ["i2c.sda_gpio", 33]
         - ["i2c.scl_gpio", 25]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW1"]
