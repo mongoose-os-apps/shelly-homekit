@@ -74,8 +74,7 @@ static void ReadFactoryData(mgos_config *c) {
 
   // read first partition at 0x0
   const struct mg_str str = mg_mk_str_n((const char *) out_ptr, size);
-  bool succ = mgos_conf_parse_sub(str, mgos_config_get_schema(),
-                                  c);  // TODO: merge into main cfg
+  bool succ = mgos_conf_parse_sub(str, mgos_config_get_schema(), c);
   if (!succ) {
     LOG(LL_INFO, ("Partition %s not parsed", "factory data"));
     return;
@@ -84,8 +83,7 @@ static void ReadFactoryData(mgos_config *c) {
   // read escond partition at 0x1000
   void *ptr2 = (uint8_t *) out_ptr + 0x1000;
   const struct mg_str str2 = mg_mk_str_n((const char *) ptr2, size);
-  succ = mgos_conf_parse_sub(str2, mgos_config_get_schema(),
-                             c);  // TODO: merge into main cfg
+  succ = mgos_conf_parse_sub(str2, mgos_config_get_schema(), c);
   if (!succ) {
     LOG(LL_INFO, ("Partition %s not parsed", "factory calib"));
     return;
@@ -114,30 +112,37 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   mgos_config_factory *c = &(mgos_sys_config.factory);
 
   int reset_pin = -1;
+  bool conf_changed = false;
   if (c->model != NULL && strcmp(c->model, "SNSW-102P16EU") == 0) {
-    LOG(LL_INFO, ("model %s", c->model));
-    LOG(LL_INFO, ("Newer revision detected"));
     if (mgos_sys_config_get_i2c_sda_gpio() != 26) {
       mgos_sys_config_set_i2c_sda_gpio(26);
-      mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
-                           NULL /* msg */);
+      conf_changed = true;
     }
     reset_pin = 33;
   } else {
     if (mgos_sys_config_get_i2c_sda_gpio() != 33) {
       mgos_sys_config_set_i2c_sda_gpio(33);
-      mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
-                           NULL /* msg */);
+      conf_changed = true;
     }
-    reset_pin = 0;  // unknown?
+    reset_pin = -1;  // TODO: unknown?
   }
-  // we need to reboot if we changed because i2c_global was already called; this
-  // messes up the downgrading process in original firmware
-  //
-  mgos_gpio_setup_output(reset_pin, 0);
-  mgos_usleep(10);
-  mgos_gpio_setup_output(reset_pin, 1);
-  mgos_msleep(10);
+
+  if (conf_changed) {
+    mgos_sys_config_save(&mgos_sys_config, false /* try_once */,
+                         NULL /* msg */);
+    LOG(LL_INFO, ("i2c config changed. reboot necessary to detect PM"));
+  }
+
+  if (c->model != NULL && c->batch != NULL) {
+    LOG(LL_INFO, ("factory data: model: %s batch: %s", c->model, c->batch));
+  }
+
+  if (reset_pin != -1) {
+    mgos_gpio_setup_output(reset_pin, 0);
+    mgos_usleep(10);
+    mgos_gpio_setup_output(reset_pin, 1);
+    mgos_msleep(10);
+  }
 
   s_ade7953 = mgos_ade7953_create(mgos_i2c_get_global(), &ade7953_cfg);
 
@@ -148,20 +153,15 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   }
 
   if (c->calib.done && false) {  // do not use for now
-    LOG(LL_INFO, ("gains: av %f ai %f aw %f", c->calib.gains0.avgain,
-                  c->calib.gains0.aigain, c->calib.gains0.awgain));
-    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_AVGAIN,
-                           c->calib.gains0.avgain);
-    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_AIGAIN,
-                           c->calib.gains0.aigain);
-    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_AWGAIN,
-                           c->calib.gains0.awgain);
-    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_BVGAIN,
-                           c->calib.gains0.bvgain);
-    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_BIGAIN,
-                           c->calib.gains0.bigain);
-    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_BWGAIN,
-                           c->calib.gains0.bwgain);
+
+    mgos_config_gains *g = &c->calib.gains0;
+    LOG(LL_INFO, ("gains: av %f ai %f aw %f", g->avgain, g->aigain, g->awgain));
+    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_AVGAIN, g->avgain);
+    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_AIGAIN, g->aigain);
+    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_AWGAIN, g->awgain);
+    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_BVGAIN, g->bvgain);
+    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_BIGAIN, g->bigain);
+    mgos_ade7953_write_reg(s_ade7953, MGOS_ADE7953_REG_BWGAIN, g->bwgain);
   }
 
   Status st;
@@ -210,36 +210,42 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   int adc_pin = new_rev ? 35 : 37;
   sys_temp->reset(new TempSensorSDNT1608X103F3950(adc_pin, 3.3f, 10000.0f));
 
-  // do not block uart when ESP_DBG_UART = 1
-  // this should be gpio19?
+  int pin_out = 0;
+  int pin_in = 1;
 
-  // int pin_out = 0;
-  // int pin_in = 1;
+  // TODO: this blocks UART as UART TX is GPIO1. Can we find out via
+  // ESP_UART_ENABLE (WHICH GPIO)?
+  if (DetectAddon(pin_in, pin_out)) {
+    s_onewire.reset(new Onewire(pin_in, pin_out));
+    sensors = s_onewire->DiscoverAll();
+    if (sensors.empty()) {
+      s_onewire.reset();
+      sensors = DiscoverDHTSensors(pin_in, pin_out);
+    }
+    if (sensors.empty()) {
+      // No sensors detected, we assume to use addon as input for switch or
+      // closed/open sensor
+      auto *in2 = new InputPin(2, pin_in, 0, MGOS_GPIO_PULL_NONE, false);
+      in2->Init();
+      inputs->emplace_back(in2);
+    }
+  } else {
+    InitSysLED(LED_GPIO, LED_ON);
+  }
 
-  // if (DetectAddon(pin_in, pin_out)) {
-  //   s_onewire.reset(new Onewire(pin_in, pin_out));
-  //   sensors = s_onewire->DiscoverAll();
-  //   if (sensors.empty()) {
-  //     s_onewire.reset();
-  //     sensors = DiscoverDHTSensors(pin_in, pin_out);
-  //   }
-  //   if (sensors.empty()) {
-  //     // No sensors detected, we assume to use addon as input for switch or
-  //     // closed/open sensor
-  //     auto *in2 = new InputPin(2, pin_in, 0, MGOS_GPIO_PULL_NONE, false);
-  //     in2->Init();
-  //     inputs->emplace_back(in2);
-  //   }
-  // }
-  //
-
-  // InitSysBtn(new_rev ? BTN_GPIO : 27, BTN_DOWN);
+  InitSysBtn(new_rev ? BTN_GPIO : 27, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   bool single_accessory = sensors.empty();
+
+  // do not block uart when ESP_DBG_UART = 1
+  // this should be gpio19?
+  // mgos_gpio_setup_input(19, MGOS_GPIO_PULL_NONE);  // pulldown?
+  // bool val = mgos_gpio_read(19);
+  // LOG(LL_INFO, ("gpio 19 is: %i", val ? 1 : 0));
 
   if (mgos_sys_config_get_shelly_mode() == (int) Mode::kRollerShutter) {
     const int id = 1;
