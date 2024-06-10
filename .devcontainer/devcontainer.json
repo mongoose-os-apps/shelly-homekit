@@ -28,5 +28,13 @@
 	"features": {
 		"docker-in-docker": "20.10",
 		"git": "latest"
-	}
+	},
+	"tasks": [
+		{
+			"label": "Fileserver",
+			"type": "shell",
+			"command": "make build",
+			"problemMatcher": []
+		}
+	]
 }
