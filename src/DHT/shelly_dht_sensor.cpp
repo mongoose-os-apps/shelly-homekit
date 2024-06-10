@@ -83,9 +83,20 @@ StatusOr<float> DHTSensor::GetHumidity() {
 }
 
 void DHTSensor::UpdateTemperatureCB() {
-  // std::nan
-  result_ = mgos_dht_get_temp(dht);
-  result_humidity_ = mgos_dht_get_humidity(dht);
+  float result = mgos_dht_get_temp(dht);
+  float result_humidity = mgos_dht_get_humidity(dht);
+
+  // check values for validity
+  if (((result == 0) and (result_humidity == 0)) or isnan(result) or
+      isnan(result_humidity)) {
+    // error during readout do nothing for now
+    LOG(LL_INFO, ("DHT: invalid value received"));
+    return;
+  }
+
+  result_ = result;
+  result_humidity_ = result_humidity;
+
   if (notifier_) {
     notifier_();
   }
