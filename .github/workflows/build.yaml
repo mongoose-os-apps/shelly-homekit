@@ -9,7 +9,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        model: [Shelly1, Shelly1L, Shelly1PM, Shelly25, Shelly2, ShellyColorBulb, ShellyDuo, ShellyI3, ShellyPlug, ShellyPlugS, ShellyPlus1, ShellyPlus1PM, ShellyPlus2PM, ShellyPlusI4, ShellyRGBW2, ShellyVintage, ShellyUNI]
+        model:
+          - Shelly1
+          - Shelly1L
+          - Shelly1PM
+          - Shelly2
+          - Shelly25
+          - ShellyColorBulb
+          - ShellyDuo
+          - ShellyI3
+          - ShellyPlug
+          - ShellyPlugS
+          - ShellyPlus1
+          - ShellyPlus1PM
+          - ShellyPlus2PM
+          - ShellyPlusI4
+          - ShellyPlusPlugS
+          - ShellyRGBW2
+          - ShellyUNI
+          - ShellyVintage
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
