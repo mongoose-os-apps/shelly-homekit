@@ -14,15 +14,15 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ### Plus devices
 
-||[+1]|[+1PM]|+i4 [AC]/[DC]|
-|-|-|-|-|
-|Switch & Co.<sup>1</sup>|✓|✓|✗|
-|Stateless Input<sup>2</sup>|✓|✓|✓|
-|Sensors<sup>3</sup>|✓|✓|✓|
-|Garage door opener|✓|✓|✗|
-|Roller shutter mode|✗|✗|✗|
-|Power measurement|✗|✓|✗|
-|Temperature/Humidity measurement<sup>4</sup>|✓|✓|✓|
+|                                            |[+1]|[+1PM]|[+2PM]|+i4 [AC]/[DC]|
+|-                                           |-   |-     |-     |-            |
+|Switch & Co.<sup>1</sup>                    |✓   |✓     |✓     |✗            |
+|Stateless Input<sup>2</sup>                 |✓   |✓     |✓     |✓            |
+|Sensors<sup>3</sup>                         |✓   |✓     |✓     |✓            |
+|Garage door opener                          |✓   |✓     |✓     |✗            |
+|Roller shutter mode                         |✗   |✗     |✓     |✗            |
+|Power measurement                           |✗   |✓     |✓     |✗            |
+|Temperature/Humidity measurement<sup>4</sup>|✓   |✓     |✓     |✓            |
 
 ### Pro devices
 
@@ -72,6 +72,8 @@ Features that are not yet supported:
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
     * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://shelly.rojer.cloud/update`
+    * **Note:** There is an issue upgrading Plus devices on latest stock firmwares; The problem is fixed with the latest beta available here: https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.12.0-beta2 The update has to be done via Webinterface and the corresponding shelly-homekit-[your device].zip File  **Note that this is a beta version**
+    * 
     <details>
       <summary>If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model</summary>
   
@@ -150,6 +152,7 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [1]: https://www.shelly.cloud/en/products/shop/1xs1
 [+1]: https://www.shelly.cloud/en/products/shop/shelly-plus-1
 [+1PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-pm-2-pack/shelly-plus-1-pm
+[+2PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-2-pm
 [1L]: https://www.shelly.cloud/en/products/shop/shelly-1l
 [Plug]: https://www.shelly.cloud/en/products/shop/1xplug
 [PlugS]: https://www.shelly.cloud/en/products/shop/shelly-plug-s

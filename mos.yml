@@ -122,6 +122,17 @@ config_schema:
   - ["ssw.name", "s", "", {}]
   - ["ssw.in_mode", "i", 0, {}]
 
+  #abstract for calibration type
+  - ["gains", "o", {title: "", abstract: true}]
+  - ["gains.avgain", "f", 4194304, {title: ""}] #default register values are 0x40000
+  - ["gains.aigain", "f", 4194304, {title: ""}]
+  - ["gains.awgain", "f", 4194304, {title: ""}]
+  - ["gains.phcala", "f", 0, {title: "Sign magnitude 10bit value. register is 16 bit, value coming from cal seems to have sign in 22 bit (1 << 22)"}]
+  - ["gains.bvgain", "f", 4194304, {title: ""}]
+  - ["gains.bigain", "f", 4194304, {title: ""}]
+  - ["gains.bwgain", "f", 4194304, {title: ""}]
+  - ["gains.phcalb", "f", 0, {title: ""}]
+
 build_vars:
   # BLE disabled for most models.
   MGOS_HAP_BLE: 0
@@ -618,7 +629,7 @@ conds:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
-        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
@@ -670,7 +681,7 @@ conds:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
-        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
@@ -713,6 +724,73 @@ conds:
         - ["ts3", "ts", {title: "TS3 settings"}]
         - ["ts3.name", "Shelly TS3"]
 
+  - when: build_vars.MODEL == "ShellyPlus2PM"
+    apply:
+      name: Plus2PM
+      sources:
+        - src/DS18XXX
+        - src/DHT
+        - src/ADE7953
+      includes:
+        - src/ADE7953
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
+        - location: https://github.com/mongoose-os-libs/ade7953
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 458752
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 4
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: "0.1.9"
+        STOCK_FW_MODEL: Plus2PM
+        MAX_NUM_HAP_SESSIONS: 16
+        SHELLY_HAVE_PM: 1
+      config_schema:
+        - ["device.id", "ShellyPlus2PM-??????"]
+        - ["shelly.name", "ShellyPlus2PM-??????"]
+        - ["wifi.ap.ssid", "ShellyPlus2PM-??????"]
+        - ["i2c.enable", true]
+        - ["i2c.sda_gpio", 33]
+        - ["i2c.scl_gpio", 25]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["sw2", "sw", {title: "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
+        - ["wc1", "wc", {title: "WC1 settings"}]
+        - ["wc1.name", "Window 1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        # Only for backward compatibility (config <= v3).
+        - ["ssw1", "ssw", {title: "SSW1 settings"}]
+        - ["ssw1.name", "Input 1"]
+        - ["ssw2", "ssw", {title: "SSW2 settings"}]
+        - ["ssw2.name", "Input 2"]
+
+        #factory config saved at 0x1000 in shelly partition
+        - ["factory", "o", {title: ""}]
+        - ["factory.batch", "s", "", {title: ""}]
+        - ["factory.model", "s", "", {title: ""}]
+        - ["factory.version", "i", 0, {title: ""}]
+        - ["factory.calib", "o", {title: "Factory calib settings"}]
+        - ["factory.calib.done", "b", false, {title: ""}]
+        - ["factory.calib.gains0", "gains", {title: ""}]
+
   - when: build_vars.MODEL == "ShellyPlusI4"
     apply:
       name: PlusI4
@@ -726,7 +804,7 @@ conds:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
-        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
