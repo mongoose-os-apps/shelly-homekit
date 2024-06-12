@@ -213,8 +213,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   int pin_out = 0;
   int pin_in = 1;
 
-  // TODO: this blocks UART as UART TX is GPIO1. Can we find out via
-  // ESP_UART_ENABLE (WHICH GPIO)?
+  // TODO: this blocks UART as UART TX is GPIO1. We should release if there is
+  // no
   if (DetectAddon(pin_in, pin_out)) {
     s_onewire.reset(new Onewire(pin_in, pin_out));
     sensors = s_onewire->DiscoverAll();
@@ -222,13 +222,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
       s_onewire.reset();
       sensors = DiscoverDHTSensors(pin_in, pin_out);
     }
-    if (sensors.empty()) {
-      // No sensors detected, we assume to use addon as input for switch or
-      // closed/open sensor
-      auto *in2 = new InputPin(2, pin_in, 0, MGOS_GPIO_PULL_NONE, false);
-      in2->Init();
-      inputs->emplace_back(in2);
-    }
+
+    auto *in_digital = new InputPin(3, 19, 0, MGOS_GPIO_PULL_NONE, false);
+    in_digital->Init();
+    inputs->emplace_back(in_digital);
+
   } else {
     InitSysLED(LED_GPIO, LED_ON);
   }
@@ -241,54 +239,11 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       HAPAccessoryServerRef *svr) {
   bool single_accessory = sensors.empty();
 
-  // do not block uart when ESP_DBG_UART = 1
-  // this should be gpio19?
-  // mgos_gpio_setup_input(19, MGOS_GPIO_PULL_NONE);  // pulldown?
-  // bool val = mgos_gpio_read(19);
-  // LOG(LL_INFO, ("gpio 19 is: %i", val ? 1 : 0));
-
   if (mgos_sys_config_get_shelly_mode() == (int) Mode::kRollerShutter) {
-    const int id = 1;
-    auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
-    auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
-    Input *in1 = FindInput(1), *in2 = FindInput(2);
-    std::unique_ptr<hap::WindowCovering> wc(
-        new hap::WindowCovering(id, in1, in2, FindOutput(1), FindOutput(2),
-                                FindPM(1), FindPM(2), wc_cfg));
-    if (wc == nullptr || !wc->Init().ok()) {
-      return;
-    }
-    wc->set_primary(true);
-    switch (im) {
-      case hap::WindowCovering::InMode::kSeparateMomentary:
-      case hap::WindowCovering::InMode::kSeparateToggle: {
-        // Single accessory with a single primary service.
-        mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-        pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
-        pri_acc->AddService(wc.get());
-        break;
-      }
-      case hap::WindowCovering::InMode::kSingle:
-      case hap::WindowCovering::InMode::kDetached: {
-        std::unique_ptr<mgos::hap::Accessory> acc(
-            new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
-                                     kHAPAccessoryCategory_BridgedAccessory,
-                                     wc_cfg->name, GetIdentifyCB(), svr));
-        acc->AddHAPService(&mgos_hap_accessory_information_service);
-        acc->AddService(wc.get());
-        accs->push_back(std::move(acc));
-        if (im == hap::WindowCovering::InMode::kDetached) {
-          hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
-          hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
-        } else if (wc_cfg->swap_inputs) {
-          hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
-        } else {
-          hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
-        }
-        break;
-      }
-    }
-    comps->emplace(comps->begin(), std::move(wc));
+    hap::CreateHAPWC(1, FindInput(1), FindInput(2), FindOutput(1),
+                     FindOutput(2), FindPM(1), FindPM(2),
+                     mgos_sys_config_get_wc1(), mgos_sys_config_get_in1(),
+                     mgos_sys_config_get_in2(), comps, accs, svr);
     return;
   }
 

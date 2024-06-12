@@ -144,6 +144,14 @@ class WindowCovering : public Component, public mgos::hap::Service {
   Direction moving_dir_ = Direction::kNone;
   Direction last_move_dir_ = Direction::kNone;
 };
+void CreateHAPWC(int id, Input *in1, Input *in2, Output *out1, Output *out2,
+                 PowerMeter *pm1, PowerMeter *pm2,
+                 const struct mgos_config_wc *wc_cfg,
+                 const struct mgos_config_in *in1_cfg,
+                 const struct mgos_config_in *in2_cfg,
+                 std::vector<std::unique_ptr<Component>> *comps,
+                 std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+                 HAPAccessoryServerRef *svr);
 
 }  // namespace hap
 }  // namespace shelly

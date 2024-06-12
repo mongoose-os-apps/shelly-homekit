@@ -50,13 +50,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
       s_onewire.reset();
       sensors = DiscoverDHTSensors(pin_in, pin_out);
     }
-    if (sensors.empty()) {
-      // No sensors detected, we assume to use addon as input for switch or
-      // closed/open sensor
-      auto *in2 = new InputPin(2, pin_in, 0, MGOS_GPIO_PULL_NONE, false);
-      in2->Init();
-      inputs->emplace_back(in2);
-    }
+
+    auto *in2 = new InputPin(2, 19, 0, MGOS_GPIO_PULL_NONE, false);
+    in2->Init();
+    inputs->emplace_back(in2);
+
   } else {
     InitSysLED(LED_GPIO, LED_ON);
   }
