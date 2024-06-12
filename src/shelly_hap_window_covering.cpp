@@ -22,6 +22,9 @@
 #include "mgos.hpp"
 #include "mgos_system.hpp"
 
+#include "shelly_hap_input.hpp"
+#include "shelly_main.hpp"
+
 namespace shelly {
 namespace hap {
 
@@ -728,6 +731,54 @@ void WindowCovering::HandleInputSingle(const char *src) {
       SetTgtPos(cur_pos_ - 1, src);
       break;
   }
+}
+
+void CreateHAPWC(int id, Input *in1, Input *in2, Output *out1, Output *out2,
+                 PowerMeter *pm1, PowerMeter *pm2,
+                 const struct mgos_config_wc *wc_cfg,
+                 const struct mgos_config_in *in1_cfg,
+                 const struct mgos_config_in *in2_cfg,
+                 std::vector<std::unique_ptr<Component>> *comps,
+                 std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
+                 HAPAccessoryServerRef *svr) {
+  auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
+  std::unique_ptr<hap::WindowCovering> wc(new hap::WindowCovering(
+      id, in1, in2, out1, out2, pm1, pm2, (struct mgos_config_wc *) wc_cfg));
+  if (wc == nullptr || !wc->Init().ok()) {
+    return;
+  }
+  wc->set_primary(true);
+  switch (im) {
+    case hap::WindowCovering::InMode::kSeparateMomentary:
+    case hap::WindowCovering::InMode::kSeparateToggle: {
+      // Single accessory with a single primary service.
+      mgos::hap::Accessory *pri_acc = (*accs)[0].get();
+      pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
+      pri_acc->AddService(wc.get());
+      break;
+    }
+    case hap::WindowCovering::InMode::kSingle:
+    case hap::WindowCovering::InMode::kDetached: {
+      // non primary
+      std::unique_ptr<mgos::hap::Accessory> acc(
+          new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
+                                   kHAPAccessoryCategory_BridgedAccessory,
+                                   wc_cfg->name, GetIdentifyCB(), svr));
+      acc->AddHAPService(&mgos_hap_accessory_information_service);
+      acc->AddService(wc.get());
+      accs->push_back(std::move(acc));
+      if (im == hap::WindowCovering::InMode::kDetached) {
+        hap::CreateHAPInput(1, in1_cfg, comps, accs, svr);
+        hap::CreateHAPInput(2, in2_cfg, comps, accs, svr);
+      } else if (wc_cfg->swap_inputs) {
+        hap::CreateHAPInput(1, in1_cfg, comps, accs, svr);
+      } else {
+        hap::CreateHAPInput(2, in2_cfg, comps, accs, svr);
+      }
+      break;
+    }
+  }
+  comps->emplace(comps->begin(), std::move(wc));
 }
 
 }  // namespace hap

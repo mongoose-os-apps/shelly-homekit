@@ -27,64 +27,18 @@ namespace shelly {
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  // Roller-shutter mode.
-  if (mgos_sys_config_get_shelly_mode() == 1) {
-    const int id = 1;
-    auto *wc_cfg = (struct mgos_config_wc *) mgos_sys_config_get_wc1();
-    auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
-    Input *in1 = FindInput(1), *in2 = FindInput(2);
-    std::unique_ptr<hap::WindowCovering> wc(
-        new hap::WindowCovering(id, in1, in2, FindOutput(1), FindOutput(2),
-                                FindPM(1), FindPM(2), wc_cfg));
-    if (wc == nullptr || !wc->Init().ok()) {
-      return;
-    }
-    wc->set_primary(true);
-    switch (im) {
-      case hap::WindowCovering::InMode::kSeparateMomentary:
-      case hap::WindowCovering::InMode::kSeparateToggle: {
-        // Single accessory with a single primary service.
-        mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-        pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
-        pri_acc->AddService(wc.get());
-        break;
-      }
-      case hap::WindowCovering::InMode::kSingle:
-      case hap::WindowCovering::InMode::kDetached: {
-        std::unique_ptr<mgos::hap::Accessory> acc(
-            new mgos::hap::Accessory(SHELLY_HAP_AID_BASE_WINDOW_COVERING + id,
-                                     kHAPAccessoryCategory_BridgedAccessory,
-                                     wc_cfg->name, GetIdentifyCB(), svr));
-        acc->AddHAPService(&mgos_hap_accessory_information_service);
-        acc->AddService(wc.get());
-        accs->push_back(std::move(acc));
-        if (im == hap::WindowCovering::InMode::kDetached) {
-          hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
-          hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
-        } else if (wc_cfg->swap_inputs) {
-          hap::CreateHAPInput(1, mgos_sys_config_get_in1(), comps, accs, svr);
-        } else {
-          hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
-        }
-        break;
-      }
-    }
-    comps->emplace(comps->begin(), std::move(wc));
+  if (mgos_sys_config_get_shelly_mode() == (int) Mode::kRollerShutter) {
+    hap::CreateHAPWC(1, FindInput(1), FindInput(2), FindOutput(1),
+                     FindOutput(2), FindPM(1), FindPM(2),
+                     mgos_sys_config_get_wc1(), mgos_sys_config_get_in1(),
+                     mgos_sys_config_get_in2(), comps, accs, svr);
     return;
   }
-  // Garage door opener mode.
-  if (mgos_sys_config_get_shelly_mode() == 2) {
-    auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
-    std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
-        1, FindInput(1), FindInput(2), FindOutput(1), FindOutput(2), gdo_cfg));
-    if (gdo == nullptr || !gdo->Init().ok()) {
-      return;
-    }
-    gdo->set_primary(true);
-    mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-    pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
-    pri_acc->AddService(gdo.get());
-    comps->emplace_back(std::move(gdo));
+
+  if (mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor) {
+    hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),
+                      FindOutput(2), mgos_sys_config_get_gdo1(), comps, accs,
+                      svr, true /* single accessory */);
     return;
   }
   // Use legacy layout if upgraded from an older version (pre-2.1).
