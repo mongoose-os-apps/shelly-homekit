@@ -63,6 +63,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
       sensors = DiscoverDHTSensors(pin_in, pin_out);
     }
   } else {
+    RestoreUART();
     InitSysLED(LED_GPIO, LED_ON);
   }
   InitSysBtn(BTN_GPIO, BTN_DOWN);

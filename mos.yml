@@ -564,7 +564,7 @@ conds:
       cdefs:
         LED_GPIO: 2  # Blue, 0 red.
         LED_ON: 0
-        BTN_GPIO: 13
+        BTN_GPIO: 9
         BTN_DOWN: 0
         PRODUCT_HW_REV: "1.0"
         STOCK_FW_MODEL: SHPLG-S

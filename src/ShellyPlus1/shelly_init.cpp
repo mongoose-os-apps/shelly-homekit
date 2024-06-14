@@ -56,6 +56,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     inputs->emplace_back(in2);
 
   } else {
+    RestoreUART();
     InitSysLED(LED_GPIO, LED_ON);
   }
   InitSysBtn(BTN_GPIO, BTN_DOWN);
@@ -67,7 +68,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   bool gdo_mode = mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor;
   bool ext_sensor_switch = (FindInput(2) != nullptr);
   bool detatched_sensor =
-      (mgos_sys_config_get_sw1_in_mode() != (int) InMode::kDetached) &&
+      (mgos_sys_config_get_sw1_in_mode() == (int) InMode::kDetached) &&
       !gdo_mode && ext_sensor_switch;
   bool single_accessory = sensors.empty() && !detatched_sensor;
   if (gdo_mode) {
