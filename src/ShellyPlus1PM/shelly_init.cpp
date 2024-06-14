@@ -144,7 +144,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   if (!sensors.empty()) {
     CreateHAPSensors(&sensors, comps, accs, svr);
-  } else if (detatched_sensor) {
+  }
+  if (ext_sensor_switch && !gdo_mode) {
     hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
   }
 }
