@@ -43,24 +43,13 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  // Garage door opener mode.
-  if (mgos_sys_config_get_shelly_mode() == 2) {
-    auto *gdo_cfg = (struct mgos_config_gdo *) mgos_sys_config_get_gdo1();
-    std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
-        1, FindInput(1), FindInput(2), FindOutput(1), FindOutput(2), gdo_cfg));
-    if (gdo == nullptr) return;
-    auto st = gdo->Init();
-    if (!st.ok()) {
-      LOG(LL_ERROR, ("GDO init failed: %s", st.ToString().c_str()));
-      return;
-    }
-    gdo->set_primary(true);
-    mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-    pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
-    pri_acc->AddService(gdo.get());
-    comps->emplace_back(std::move(gdo));
+  if (mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor) {
+    hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),
+                      FindOutput(2), mgos_sys_config_get_gdo1(), comps, accs,
+                      svr, true /* single accessory */);
     return;
   }
+
   // Use legacy layout if upgraded from an older version (pre-2.1).
   // However, presence of detached inputs overrides it.
   bool compat_20 = (mgos_sys_config_get_shelly_legacy_hap_layout() &&

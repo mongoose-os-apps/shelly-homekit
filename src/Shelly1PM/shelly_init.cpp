@@ -81,10 +81,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       HAPAccessoryServerRef *svr) {
   bool gdo_mode = mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor;
   bool ext_sensor_switch = (FindInput(2) != nullptr);
-  bool detatched_sensor =
-      (mgos_sys_config_get_sw1_in_mode() != (int) InMode::kDetached) &&
-      !gdo_mode && ext_sensor_switch;
-  bool single_accessory = sensors.empty() && !detatched_sensor;
+  bool addon_input = !gdo_mode && ext_sensor_switch;
+  bool single_accessory =
+      sensors.empty() && !addon_input &&
+      (mgos_sys_config_get_sw1_in_mode() != (int) InMode::kDetached);
   if (gdo_mode) {
     hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),
                       FindOutput(1), mgos_sys_config_get_gdo1(), comps, accs,
@@ -96,7 +96,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
 
   if (!sensors.empty()) {
     CreateHAPSensors(&sensors, comps, accs, svr);
-  } else if (detatched_sensor) {
+  } else if (addon_input) {
     hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
   }
 }
