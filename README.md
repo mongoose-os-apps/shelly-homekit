@@ -11,6 +11,9 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ## Supported devices and features
 
+### Gen 3 Devices
+
+Currently not supported.
 
 ### Plus devices
 
@@ -153,6 +156,7 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [+1]: https://www.shelly.cloud/en/products/shop/shelly-plus-1
 [+1PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-pm-2-pack/shelly-plus-1-pm
 [+2PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-2-pm
+[+PlugS]: https://www.shelly.cloud/en/products/shop/shelly-plus-plug-s
 [1L]: https://www.shelly.cloud/en/products/shop/shelly-1l
 [Plug]: https://www.shelly.cloud/en/products/shop/1xplug
 [PlugS]: https://www.shelly.cloud/en/products/shop/shelly-plug-s

@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.12.0-beta3
+version: 2.12.0-beta4
 
 libs_version: latest
 modules_version: latest
@@ -772,6 +772,9 @@ conds:
         - ["in2", "in", {title: "Input 2 settings"}]
         - ["in2.ssw.name", "Shelly SSW2"]
         - ["in2.sensor.name", "Shelly S2"]
+        - ["in3", "in", {title: "Input 3 settings"}]
+        - ["in3.ssw.name", "Shelly SSW3"]
+        - ["in3.sensor.name", "Shelly S3"]
         - ["wc1", "wc", {title: "WC1 settings"}]
         - ["wc1.name", "Window 1"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
