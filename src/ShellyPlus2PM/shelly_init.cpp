@@ -213,8 +213,6 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   int pin_out = 0;
   int pin_in = 1;
 
-  // TODO: this blocks UART as UART TX is GPIO1. We should release if there is
-  // no
   if (DetectAddon(pin_in, pin_out)) {
     s_onewire.reset(new Onewire(pin_in, pin_out));
     sensors = s_onewire->DiscoverAll();
@@ -228,6 +226,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     inputs->emplace_back(in_digital);
 
   } else {
+    RestoreUART();
     InitSysLED(LED_GPIO, LED_ON);
   }
 
@@ -237,8 +236,6 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  bool single_accessory = sensors.empty();
-
   if (mgos_sys_config_get_shelly_mode() == (int) Mode::kRollerShutter) {
     hap::CreateHAPWC(1, FindInput(1), FindInput(2), FindOutput(1),
                      FindOutput(2), FindPM(1), FindPM(2),
@@ -246,6 +243,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                      mgos_sys_config_get_in2(), comps, accs, svr);
     return;
   }
+
+  bool single_accessory = sensors.empty();
 
   if (mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor) {
     hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),

@@ -121,6 +121,16 @@ static std::vector<const HAPAccessory *> s_hap_accs;
 static std::unique_ptr<TempSensor> s_sys_temp_sensor;
 std::vector<std::unique_ptr<Component>> g_comps;
 
+void RestoreUART() {
+  struct mgos_uart_config ucfg;
+  int uart_no = 0;
+  mgos_uart_config_set_defaults(uart_no, &ucfg);
+
+  if (!mgos_uart_configure(uart_no, &ucfg)) {
+    LOG(LL_ERROR, ("Failed to configure UART%d", uart_no));
+  }
+}
+
 bool DetectAddon(int pin_in, int pin_out) {
   // case 1: input with pull up
   mgos_gpio_setup_input(pin_in, MGOS_GPIO_PULL_UP);

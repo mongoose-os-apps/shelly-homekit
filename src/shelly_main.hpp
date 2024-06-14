@@ -41,6 +41,7 @@ namespace shelly {
 extern std::vector<std::unique_ptr<Component>> g_comps;
 
 bool DetectAddon(int pin_in, int pin_out);
+void RestoreUART();
 Input *FindInput(int id);
 Output *FindOutput(int id);
 PowerMeter *FindPM(int id);
