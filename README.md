@@ -75,7 +75,7 @@ Features that are not yet supported:
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
     * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://shelly.rojer.cloud/update`
-    * **Note:** There is an issue upgrading Plus devices on latest stock firmwares; The problem is fixed with the latest beta available here: https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.12.0-beta2 The update has to be done via Webinterface and the corresponding shelly-homekit-[your device].zip File  **Note that this is a beta version**
+    * **Note:** There is an issue upgrading Plus devices on latest stock firmwares; The problem is fixed with the latest beta available here: https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.12.0-beta4 The update has to be done via Webinterface and the corresponding shelly-homekit-[your device].zip File  **Note that this is a beta version** On safari: save files with right click otherwise zip will be extracted on
     * 
     <details>
       <summary>If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model</summary>
@@ -156,7 +156,7 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [+1]: https://www.shelly.cloud/en/products/shop/shelly-plus-1
 [+1PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-pm-2-pack/shelly-plus-1-pm
 [+2PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-2-pm
-[+PlugS]: https://www.shelly.cloud/en/products/shop/shelly-plus-plug-s
+[+Plug S]: https://www.shelly.cloud/en/products/shop/shelly-plus-plug-s
 [1L]: https://www.shelly.cloud/en/products/shop/shelly-1l
 [Plug]: https://www.shelly.cloud/en/products/shop/1xplug
 [PlugS]: https://www.shelly.cloud/en/products/shop/shelly-plug-s
