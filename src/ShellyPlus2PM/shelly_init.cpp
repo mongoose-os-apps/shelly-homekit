@@ -241,16 +241,10 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                      FindOutput(2), FindPM(1), FindPM(2),
                      mgos_sys_config_get_wc1(), mgos_sys_config_get_in1(),
                      mgos_sys_config_get_in2(), comps, accs, svr);
-    return;
-  }
-
-  bool additional_input_digital = (FindInput(3) != nullptr);
-  bool single_accessory = sensors.empty() and !additional_input_digital;
-
-  if (mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor) {
+  } else if (mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor) {
     hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),
                       FindOutput(2), mgos_sys_config_get_gdo1(), comps, accs,
-                      svr, single_accessory);
+                      svr, true);
   } else {
     CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                     comps, accs, svr, false /* to_pri_acc */);
@@ -261,6 +255,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   if (!sensors.empty()) {
     CreateHAPSensors(&sensors, comps, accs, svr);
   }
+
+  bool additional_input_digital = (FindInput(3) != nullptr);
   if (additional_input_digital) {
     hap::CreateHAPInput(3, mgos_sys_config_get_in3(), comps, accs, svr);
   }

@@ -136,7 +136,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   if (gdo_mode) {
     hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),
                       FindOutput(1), mgos_sys_config_get_gdo1(), comps, accs,
-                      svr, single_accessory);
+                      svr, true);
   } else {
     CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                     comps, accs, svr, single_accessory);

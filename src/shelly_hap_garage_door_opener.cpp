@@ -413,8 +413,6 @@ void CreateHAPGDO(int id, Input *in_close, Input *in_open, Output *out_close,
                   std::vector<std::unique_ptr<Component>> *comps,
                   std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                   HAPAccessoryServerRef *svr, bool to_pri_acc) {
-  uint64_t aid = 0;
-
   struct mgos_config_gdo *gdo2_cfg = (struct mgos_config_gdo *) gdo_cfg;
 
   std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
@@ -430,18 +428,9 @@ void CreateHAPGDO(int id, Input *in_close, Input *in_open, Output *out_close,
   comps->push_back(std::move(gdo));
   mgos::hap::Accessory *pri_acc = accs->front().get();
 
-  if (to_pri_acc) {
-    gdo2->set_primary(true);
-    pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
-    pri_acc->AddService(gdo2);
-  } else {
-    std::unique_ptr<mgos::hap::Accessory> acc(
-        new mgos::hap::Accessory(aid, kHAPAccessoryCategory_BridgedAccessory,
-                                 gdo_cfg->name, GetIdentifyCB(), svr));
-    acc->AddHAPService(&mgos_hap_accessory_information_service);
-    acc->AddService(gdo2);
-    accs->push_back(std::move(acc));
-  }
+  gdo2->set_primary(to_pri_acc);
+  pri_acc->SetCategory(kHAPAccessoryCategory_GarageDoorOpeners);
+  pri_acc->AddService(gdo2);
 }
 
 }  // namespace hap
