@@ -113,6 +113,11 @@ void TempSensorDS18XXX::StartUpdating(int interval) {
   meas_timer_.Reset(interval, MGOS_TIMER_REPEAT | MGOS_TIMER_RUN_NOW);
 }
 
+void TempSensorDS18XXX::StopUpdating() {
+  read_timer_.Clear();  // Clear eventually pending read
+  meas_timer_.Clear();
+}
+
 StatusOr<float> TempSensorDS18XXX::GetTemperature() {
   return result_;
 }

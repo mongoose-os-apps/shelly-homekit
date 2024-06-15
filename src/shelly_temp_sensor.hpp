@@ -41,6 +41,9 @@ class TempSensor {
   virtual void StartUpdating(int interval UNUSED_ARG) {
   }
 
+  virtual void StopUpdating() {
+  }
+
   virtual TempType getType() {
     return TS;
   }

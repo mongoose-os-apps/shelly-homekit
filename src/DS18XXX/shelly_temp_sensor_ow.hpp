@@ -60,6 +60,7 @@ class TempSensorDS18XXX : public TempSensor {
 
   static bool SupportsFamily(uint8_t family);
   virtual void StartUpdating(int interval) override;
+  virtual void StopUpdating() override;
 
  private:
   struct __attribute__((__packed__)) Scratchpad {

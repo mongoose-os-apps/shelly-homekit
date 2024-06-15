@@ -74,6 +74,10 @@ void DHTSensor::StartUpdating(int interval) {
   meas_timer_.Reset(interval, MGOS_TIMER_REPEAT | MGOS_TIMER_RUN_NOW);
 }
 
+void DHTSensor::StopUpdating() {
+  meas_timer_.Clear();
+}
+
 StatusOr<float> DHTSensor::GetTemperature() {
   return result_;
 }

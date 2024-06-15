@@ -39,6 +39,7 @@ class DHTSensor : public HumidityTempSensor {
   StatusOr<float> GetHumidity() override;
 
   virtual void StartUpdating(int interval) override;
+  virtual void StopUpdating() override;
 
  private:
   uint8_t pin_in_;

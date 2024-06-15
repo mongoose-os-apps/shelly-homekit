@@ -40,6 +40,7 @@ TemperatureSensor::TemperatureSensor(int id, TempSensor *sensor,
 }
 
 TemperatureSensor::~TemperatureSensor() {
+  temp_sensor_->StopUpdating();
   temp_sensor_->SetNotifier(nullptr);
 }
 

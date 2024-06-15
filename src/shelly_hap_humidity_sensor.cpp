@@ -41,6 +41,7 @@ HumiditySensor::HumiditySensor(int id, HumidityTempSensor *sensor,
 }
 
 HumiditySensor::~HumiditySensor() {
+  hum_sensor_->StopUpdating();
   hum_sensor_->SetNotifier(nullptr);
 }
 
