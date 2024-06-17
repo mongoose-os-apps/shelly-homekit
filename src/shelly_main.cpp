@@ -124,10 +124,10 @@ std::vector<std::unique_ptr<Component>> g_comps;
 void RestoreUART() {
   struct mgos_uart_config ucfg;
   int uart_no = 0;
-  mgos_uart_config_set_defaults(uart_no, &ucfg);
-
-  if (!mgos_uart_configure(uart_no, &ucfg)) {
-    LOG(LL_ERROR, ("Failed to configure UART%d", uart_no));
+  if (mgos_uart_config_get(uart_no, &ucfg)) {
+    if (!mgos_uart_configure(uart_no, &ucfg)) {
+      LOG(LL_ERROR, ("Failed to configure UART%d", uart_no));
+    }
   }
 }
 
