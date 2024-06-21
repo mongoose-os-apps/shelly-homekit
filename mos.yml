@@ -600,7 +600,7 @@ conds:
         BTN_GPIO: 9
         BTN_DOWN: 0
         PRODUCT_HW_REV: "2.0.0"
-        STOCK_FW_MODEL: SHPPLG-S
+        STOCK_FW_MODEL: PlusPlugS
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
         - ["device.id", "shellyplusplug-s-??????"]
