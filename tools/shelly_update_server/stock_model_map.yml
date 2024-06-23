@@ -14,8 +14,11 @@ models:
   ShellyPlus1:     ShellyPlus1
   shellyplus1pm:   ShellyPlus1PM
   ShellyPlus1PM:   ShellyPlus1PM
+  shellyplus2pm:   ShellyPlus2PM
+  ShellyPlus2PM:   ShellyPlus2PM
   shellyplusi4:    ShellyPlusI4
   ShellyPlusI4:    ShellyPlusI4
+  shellyplusplug-s:ShellyPlusPlugS
   shellyrgbw2:     ShellyRGBW2
   shellyswitch:    Shelly2
   shellyswitch25:  Shelly25
@@ -35,7 +38,6 @@ models:
   shellyht:      x
   shellyplugu1:  x
   shellyplugus:  x
-  shellyplus2pm: x
   shellypro1:    x
   shellypro1pm:  x
   shellypro2:    x
