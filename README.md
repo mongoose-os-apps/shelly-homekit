@@ -75,8 +75,7 @@ Features that are not yet supported:
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
     * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://shelly.rojer.cloud/update`
-    * **Note:** There is an issue upgrading Plus devices on latest stock firmwares; The problem is fixed with the latest beta available here: https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.12.0-beta4 The update has to be done via Webinterface and the corresponding shelly-homekit-[your device].zip File  **Note that this is a beta version** On safari: save files with right click otherwise zip will be extracted on
-    * 
+    
     <details>
       <summary>If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model</summary>
   
@@ -106,6 +105,10 @@ Features that are not yet supported:
 
       * Shelly Plus 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PM.zip`
         _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
+      
+      * Shelly Plus 2PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus2PM.zip`
+   
+      * Shelly Plus Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusPlugS.zip`
 
       * Shelly Plus I4 AC & DC: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusI4.zip`
         _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
@@ -139,10 +142,6 @@ Some of us can be found in the [Gitter chat room](https://gitter.im/shelly-homek
 Code contributions are welcome! Check out [open issues](https://github.com/mongoose-os-apps/shelly-homekit/issues) and feel free to pick one up.
 
 See [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Development) for development environment setup.
-
-Alternatively, you can support the project by donating:
-
-[![Donate via PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6KPSKWJDHVLB4)
 
 ## Authors
 
