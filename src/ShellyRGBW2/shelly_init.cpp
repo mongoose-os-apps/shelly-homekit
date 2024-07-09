@@ -82,6 +82,17 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
     ndev = 4;
   } else if (mode == (int) Mode::kRGBpW) {
     ndev = 2;
+  } else if (mode == (int) Mode::kDefault) {
+    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
+                    comps, accs, svr, false /* to_pri_acc */);
+    CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_in1(),
+                    comps, accs, svr, false /* to_pri_acc */);
+    CreateHAPSwitch(3, mgos_sys_config_get_sw3(), mgos_sys_config_get_in1(),
+                    comps, accs, svr, false /* to_pri_acc */);
+    CreateHAPSwitch(4, mgos_sys_config_get_sw4(), mgos_sys_config_get_in1(),
+                    comps, accs, svr, false /* to_pri_acc */);
+
+    return;
   }
 
   int out_pin = 1;

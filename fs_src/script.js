@@ -946,7 +946,6 @@ function updateElement(key, value, info) {
     case "model":
       if (value.endsWith("RGBW2") || value.endsWith("RGBWPM")) {
         el("sys_mode_container").style.display = "block";
-        if (el("sys_mode_0")) el("sys_mode_0").remove();
       } else {
         if (el("sys_mode_3")) el("sys_mode_3").remove();
         if (el("sys_mode_4")) el("sys_mode_4").remove();
