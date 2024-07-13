@@ -26,6 +26,7 @@ jobs:
           - ShellyPlusI4
           - ShellyPlusPlugS
           - ShellyPlusRGBWPM
+          - ShellyMini1Gen3
           - ShellyRGBW2
           - ShellyUNI
           - ShellyVintage
@@ -35,7 +36,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Build docker image # remove if newer mos docker image is available
-        if: ${{ contains( matrix.model , 'Plus') }}
+        if: ${{ contains( matrix.model , 'Plus') || contains( matrix.model , 'G3') }}
         run: docker build -t mgos/esp32-build:4.4.1-r7 -f .github/workflows/Dockerfile-esp32-build .
       - name: Install mos build tool
         run: |
