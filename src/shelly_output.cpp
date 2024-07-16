@@ -19,7 +19,10 @@
 
 #include "mgos.hpp"
 #include "mgos_gpio.h"
+
+#ifdef MGOS_HAVE_PWM
 #include "mgos_pwm.h"
+#endif
 
 namespace shelly {
 
@@ -66,6 +69,7 @@ Status OutputPin::SetState(bool on, const char *source) {
 }
 
 Status OutputPin::SetStatePWM(float duty, const char *source) {
+#ifdef MGOS_HAVE_PWM
   LOG(LL_INFO, ("Duty: %.3f", duty));
   if (duty == 0) {
     mgos_pwm_set(pin_, 0, 0);
@@ -78,6 +82,9 @@ Status OutputPin::SetStatePWM(float duty, const char *source) {
     LOG(LL_INFO, ("Output %d: %f (%s)", id(), duty, source));
   }
   return Status::OK();
+#else
+  return Status::UNIMPLEMENTED();
+#endif
 }
 
 Status OutputPin::Pulse(bool on, int duration_ms, const char *source) {
