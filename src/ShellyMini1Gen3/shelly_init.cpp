@@ -33,7 +33,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->AddHandler(std::bind(&HandleInputResetSequence, in, LED_GPIO, _1, _2));
   in->Init();
   inputs->emplace_back(in);
+
+// not yet compatible
+#ifdef MGOS_HAVE_ADC
   sys_temp->reset(new TempSensorSDNT1608X103F3950(3, 3.3f, 10000.0f));
+#endif
 
   InitSysLED(LED_GPIO, LED_ON);
   InitSysBtn(BTN_GPIO, BTN_DOWN);

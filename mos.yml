@@ -169,6 +169,18 @@ libs:
   # - location: https://github.com/mongoose-os-libs/rpc-service-ota
 
 conds:
+  - when: mos.platform == "esp32"
+    apply:
+      libs:
+        - location: https://github.com/mongoose-os-libs/adc
+        - location: https://github.com/mongoose-os-libs/pwm
+
+  - when: mos.platform == "esp8266"
+    apply:
+      libs:
+        - location: https://github.com/mongoose-os-libs/adc
+        - location: https://github.com/mongoose-os-libs/pwm
+
   - when: mos.platform != "ubuntu"
     apply:
       sources:
@@ -189,8 +201,6 @@ conds:
         # Consider removing in later releases.
         - ["shelly.wifi_connect_reboot_timeout", "i", 0, {title: "If not connected for this long when supposed to be, reboot"}]
       libs:
-        - location: https://github.com/mongoose-os-libs/adc
-        - location: https://github.com/mongoose-os-libs/pwm
         - location: https://github.com/mongoose-os-libs/wifi
       cdefs:
         # Size fine-tuning, saves substantial amount of RAM vs defaults.
@@ -676,17 +686,22 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
+        OTA_DATA_ADDR: 0x10000
+        OTA_DATA_SIZE: 0x4000
+        NVS_ADDR: 0x14000
+        NVS_SIZE: 0xC000
+        APP_OFFSET: 0x20000
+        APP_SLOT_SIZE: 0x280000
         MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
-        ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x3f0000,48K"
-        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
-        #MGOS_ROOT_FS_SIZE: 10458752
-        #ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,832K"
-        #ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
+          #MGOS_ROOT_FS_SIZE: 10485762
+        MGOS_ROOT_FS_SIZE: 1048576
+        ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+            CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
