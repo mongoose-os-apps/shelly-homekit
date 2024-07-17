@@ -169,6 +169,10 @@ libs:
   # - location: https://github.com/mongoose-os-libs/rpc-service-ota
 
 conds:
+  - when: mos.platform == "esp32c3"
+    apply:
+      libs:
+        - location: https://github.com/markirb/adc
   - when: mos.platform == "esp32"
     apply:
       libs:
