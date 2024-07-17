@@ -684,9 +684,9 @@ conds:
         - ["in4.ssw.name", "Shelly SSW4"]
         - ["in4.sensor.name", "Shelly S4"]
 
-  - when: build_vars.MODEL == "ShellyMini1Gen3"
+  - when: build_vars.MODEL == "ShellyMini1PMGen3"
     apply:
-      name: Mini1G3
+      name: Mini1PMG3
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
@@ -697,7 +697,6 @@ conds:
         APP_OFFSET: 0x20000
         APP_SLOT_SIZE: 0x280000
         MGOS_ROOT_FS_TYPE: LFS
-          #MGOS_ROOT_FS_SIZE: 10485762
         MGOS_ROOT_FS_SIZE: 1048576
         ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
@@ -711,7 +710,49 @@ conds:
         LED_ON: 0
         BTN_GPIO: 1
         BTN_DOWN: 0
-        PRODUCT_HW_REV: "0.1.6"
+        PRODUCT_HW_REV: "0.1.0"
+        STOCK_FW_MODEL: Mini1PMG3
+        MAX_NUM_HAP_SESSIONS: 16
+      config_schema:
+        - ["device.id", "ShellyMini1G3-??????"]
+        - ["shelly.name", "ShellyMini1G3-??????"]
+        - ["wifi.ap.ssid", "ShellyMini1G3-??????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", 2]
+
+  - when: build_vars.MODEL == "ShellyMini1Gen3"
+    apply:
+      name: Mini1G3
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+      build_vars:
+        OTA_DATA_ADDR: 0x10000
+        OTA_DATA_SIZE: 0x4000
+        NVS_ADDR: 0x14000
+        NVS_SIZE: 0xC000
+        APP_OFFSET: 0x20000
+        APP_SLOT_SIZE: 0x280000
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 1048576
+        ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+            CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 1
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: "0.1.0"
         STOCK_FW_MODEL: Mini1G3
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:

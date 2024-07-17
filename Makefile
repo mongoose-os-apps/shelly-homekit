@@ -92,6 +92,10 @@ ShellyMini1Gen3: PLATFORM=esp32c3
 ShellyMini1Gen3: build-ShellyMini1Gen3
 	@true
 
+ShellyMini1PMGen3: PLATFORM=esp32c3
+ShellyMini1PMGen3: build-ShellyMini1PMGen3
+	@true
+
 ShellyRGBW2: build-ShellyRGBW2
 	@true
 
