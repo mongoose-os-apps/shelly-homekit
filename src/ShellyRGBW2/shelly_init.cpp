@@ -31,17 +31,19 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms UNUSED_ARG,
                        std::unique_ptr<TempSensor> *sys_temp UNUSED_ARG) {
-  outputs->emplace_back(new OutputPin(1, 12, 1));  // R / CW0
-  outputs->emplace_back(new OutputPin(2, 15, 1));  // G / WW0
-  outputs->emplace_back(new OutputPin(3, 14, 1));  // B / CW1
-  outputs->emplace_back(new OutputPin(4, 4, 1));   // W / WW1
-  auto *in = new InputPin(1, 5, 1, MGOS_GPIO_PULL_NONE, true);
+  outputs->emplace_back(new OutputPin(1, GPIO_R, 1));  // CW0
+  outputs->emplace_back(new OutputPin(2, GPIO_G, 1));  // WW0
+  outputs->emplace_back(new OutputPin(3, GPIO_B, 1));  // CW1
+  outputs->emplace_back(new OutputPin(4, GPIO_W, 1));  // WW1
+  auto *in = new InputPin(1, GPIO_I1, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 0, _1, _2));
   in->Init();
   inputs->emplace_back(in);
 
-  InitSysLED(LED_GPIO, LED_ON);
-  InitSysBtn(BTN_GPIO, BTN_DOWN);
+  // TODO: add more inputs for +RGBWPM
+
+  // InitSysLED(LED_GPIO, LED_ON);
+  // InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
