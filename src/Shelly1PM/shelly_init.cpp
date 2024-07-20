@@ -52,27 +52,28 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   }
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
 
-  int pin_in = 3;
-  int pin_out = LED_GPIO;
+  // REMOVED FOR TESTING PURPOSES
+  // int pin_in = 3;
+  // int pin_out = LED_GPIO;
 
-  if (DetectAddon(pin_in, pin_out)) {
-    s_onewire.reset(new Onewire(pin_in, pin_out));
-    sensors = s_onewire->DiscoverAll();
-    if (sensors.empty()) {
-      s_onewire.reset();
-      sensors = DiscoverDHTSensors(pin_in, pin_out);
-    }
-    if (sensors.empty()) {
-      // No sensors detected, we assume to use addon as input for switch or
-      // closed/open sensor
-      auto *in2 = new InputPin(2, pin_in, 0, MGOS_GPIO_PULL_NONE, false);
-      in2->Init();
-      inputs->emplace_back(in2);
-    }
-  } else {
-    // Sys LED shares the same pin.
-    InitSysLED(LED_GPIO, LED_ON);
-  }
+  // if (DetectAddon(pin_in, pin_out)) {
+  //   s_onewire.reset(new Onewire(pin_in, pin_out));
+  //   sensors = s_onewire->DiscoverAll();
+  //   if (sensors.empty()) {
+  //     s_onewire.reset();
+  //     sensors = DiscoverDHTSensors(pin_in, pin_out);
+  //   }
+  //   if (sensors.empty()) {
+  //     // No sensors detected, we assume to use addon as input for switch or
+  //     // closed/open sensor
+  //     auto *in2 = new InputPin(2, pin_in, 0, MGOS_GPIO_PULL_NONE, false);
+  //     in2->Init();
+  //     inputs->emplace_back(in2);
+  //   }
+  // } else {
+  //   // Sys LED shares the same pin.
+  //   InitSysLED(LED_GPIO, LED_ON);
+  // }
   InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 

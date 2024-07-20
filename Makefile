@@ -80,6 +80,10 @@ ShellyPlus2PM: PLATFORM=esp32
 ShellyPlus2PM: build-ShellyPlus2PM
 	@true
 
+ShellyPlusRGBWPM: PLATFORM=esp32
+ShellyPlusRGBWPM: build-ShellyPlusRGBWPM
+	@true
+
 ShellyPlusI4: PLATFORM=esp32
 ShellyPlusI4: build-ShellyPlusI4
 	@true
