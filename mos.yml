@@ -154,7 +154,7 @@ cdefs:
 
 libs:
   - location: ./libreset
-  - location: https://github.com/mongoose-os-libs/core
+  - location: https://github.com/markirb/core
   - location: https://github.com/mongoose-os-libs/file-logger
   - location: https://github.com/mongoose-os-libs/homekit-adk
   - location: https://github.com/mongoose-os-libs/http-server
@@ -221,6 +221,10 @@ conds:
     apply:
       config_schema:
         - ["wifi.sta_ps_mode", 1]
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 0x60000
+        APP_SLOT_SIZE: 0x190000
 
   - when: build_vars.MODEL == "Shelly1"
     apply:
@@ -600,8 +604,6 @@ conds:
     apply:
       name: PlusPlugS
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -822,8 +824,6 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -874,8 +874,6 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -934,8 +932,6 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/ade7953
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -1005,8 +1001,6 @@ conds:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
