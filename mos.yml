@@ -48,7 +48,7 @@ config_schema:
   - ["sw.name", "s", "", {title: "Name of the switch"}]
   - ["sw.enable", "b", true, {title: "Enable this switch in the accessory"}]
   - ["sw.out_inverted", "b", false, {title: "Invert output, set to true for normally open output"}]
-  - ["sw.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached"}]
+  - ["sw.in_mode", "i", 1, {title: "-1 - Absent, 0 - Momentary, 1 - Toggle, 2 - Edge, 3 - Detached, 4 - Activation, 7 - Activation Once"}]
   - ["sw.in_inverted", "b", false, {title: "Invert input, set to true for normally closed input"}]
   - ["sw.state", "b", false, {title: "State of the switch"}]
   - ["sw.svc_type", "i", 0, {title: "HAP service type, -1 = disable, 0 = switch, 1 = outlet, 2 = lock, 3 = valve"}]
