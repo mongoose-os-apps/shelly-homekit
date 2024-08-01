@@ -70,7 +70,7 @@ Features that are not yet supported:
 
 ### Updating from stock firmware
 
-  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit.
+  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit. Update from 1.4 on Plus devices is currently not supported (1.4 changes partition sizes). Please only use 1.3.x versions., 
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
