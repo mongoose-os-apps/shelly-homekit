@@ -13,7 +13,12 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ### Gen 3 Devices
 
-Currently not supported.
+|                                            |[Mini1G3]|[Mini1PMG3]
+|-                                           |-        |-          
+|Switch & Co.<sup>1</sup>                    |✓        |✓          
+|Stateless Input<sup>2</sup>                 |✓        |✓          
+|Garage door opener                          |✓        |✓          
+|Power measurement                           |✗        |-
 
 ### Plus devices
 
