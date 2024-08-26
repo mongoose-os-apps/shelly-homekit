@@ -634,14 +634,14 @@ conds:
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
       cdefs:
-        LED_GPIO: 0
+        LED_GPIO: 14
         LED_ON: 0
-        BTN_GPIO: 0
+        BTN_GPIO: 22
         BTN_DOWN: 0
         GPIO_R: 25
         GPIO_G: 26
         GPIO_B: 27
-        GPIO_W: 24
+        GPIO_W: 4
         GPIO_I1: 36
         GPIO_I2: 37
         GPIO_I3: 38
