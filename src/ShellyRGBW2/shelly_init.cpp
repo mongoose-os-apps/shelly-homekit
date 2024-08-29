@@ -40,7 +40,6 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->Init();
   inputs->emplace_back(in);
 
-// TODO: add more inputs for +RGBWPM
 #ifdef GPIO_I2
   in = new InputPin(2, GPIO_I2, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, 0, _1, _2));
@@ -118,7 +117,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       out_pin += 3;
     }
 
-    Input *in = FindInput(i);
+    Input *in = FindInput(i + 1);
 
     hap_light.reset(new hap::LightBulb(
         i + 1, in, std::move(lightbulb_controller), lb_cfg, is_optional));
