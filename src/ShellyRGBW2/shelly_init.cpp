@@ -118,10 +118,7 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       out_pin += 3;
     }
 
-    Input *in = FindInput(1);
-    if (i != 0) {
-      in = nullptr;  // support input only for first device
-    }
+    Input *in = FindInput(i);
 
     hap_light.reset(new hap::LightBulb(
         i + 1, in, std::move(lightbulb_controller), lb_cfg, is_optional));
