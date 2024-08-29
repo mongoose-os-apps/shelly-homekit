@@ -42,17 +42,14 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 
 #ifdef GPIO_I2
   in = new InputPin(2, GPIO_I2, 1, MGOS_GPIO_PULL_NONE, true);
-  in->AddHandler(std::bind(&HandleInputResetSequence, in, 0, _1, _2));
   in->Init();
   inputs->emplace_back(in);
 
   in = new InputPin(3, GPIO_I3, 1, MGOS_GPIO_PULL_NONE, true);
-  in->AddHandler(std::bind(&HandleInputResetSequence, in, 0, _1, _2));
   in->Init();
   inputs->emplace_back(in);
 
   in = new InputPin(4, GPIO_I4, 1, MGOS_GPIO_PULL_NONE, true);
-  in->AddHandler(std::bind(&HandleInputResetSequence, in, 0, _1, _2));
   in->Init();
   inputs->emplace_back(in);
 #endif
