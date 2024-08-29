@@ -27,6 +27,17 @@ Currently not supported.
 |Power measurement                           |✗   |✓     |✓     |✗            |✓     
 |Temperature/Humidity measurement<sup>4</sup>|✓   |✓     |✓     |✓            |✗     
 
+### Light Controllers
+
+|                         |[+RGBWPM]|
+|-|-|
+|Brightness control       |✓|
+|CCT                      |✓|
+|RGB(W)                   |✓|
+|Switch & Co <sup>1</sup> |-|
+|Power measurement        |-|
+
+
 ### Pro devices
 
 Currently not supported.
@@ -155,6 +166,7 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [+1]: https://www.shelly.cloud/en/products/shop/shelly-plus-1
 [+1PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-pm-2-pack/shelly-plus-1-pm
 [+2PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-2-pm
+[+RGBWPM]: https://www.shelly.cloud/en/products/shop/shelly-plus-rgbw-pm
 [+Plug S]: https://www.shelly.cloud/en/products/shop/shelly-plus-plug-s
 [1L]: https://www.shelly.cloud/en/products/shop/shelly-1l
 [Plug]: https://www.shelly.cloud/en/products/shop/1xplug

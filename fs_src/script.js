@@ -746,7 +746,8 @@ function updateComponent(cd) {
       if (cd.type == Component_Type.kLightBulb) {
         if (cd.bulb_type == LightBulbController_BulbType.kCCT) {
           headText = "CCT";
-          if (lastInfo.model == "ShellyRGBW2") {
+          if (lastInfo.model == "ShellyRGBW2" ||
+              lastInfo.model == "ShellyPlusRGBWPM") {
             if (cd.id == 1) {
               headText += " R/G";
             } else {
@@ -937,7 +938,7 @@ function updateElement(key, value, info) {
       updateInnerText(el("uptime"), durationStr(value));
       break;
     case "model":
-      if (value.endsWith("RGBW2")) {
+      if (value.endsWith("RGBW2") || value.endsWith("RGBWPM")) {
         el("sys_mode_container").style.display = "block";
         if (el("sys_mode_0")) el("sys_mode_0").remove();
       } else {

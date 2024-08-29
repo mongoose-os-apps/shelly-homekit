@@ -52,6 +52,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   }
   sys_temp->reset(new TempSensorSDNT1608X103F3950(0, 3.3f, 33000.0f));
 
+  // Note: this does not work currently, it always detects an addon. most likely
+  // pin in is always pulled somewhere?
   int pin_in = 3;
   int pin_out = LED_GPIO;
 
