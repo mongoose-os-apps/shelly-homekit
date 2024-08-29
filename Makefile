@@ -1,7 +1,7 @@
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
 .PHONY: build check-format format release upload \
-        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlusPlugS ShellyPlus1 ShellyPlus1PM ShellyPlus2PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyUDuo ShellyURGBW2 ShellyUNI ShellyPlusRGBWPM
+        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlusPlugS ShellyPlus1 ShellyPlus1PM ShellyPlus2PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyUDuo ShellyURGBW2 ShellyUNI ShellyPlus1Mini ShellyPlusRGBWPM ShellyMini1Gen3 ShellyMini1PMGen3
 .SUFFIXES:
 
 MOS ?= mos
@@ -27,7 +27,7 @@ ifneq "$(VERBOSE)$(V)" "00"
   MOS_BUILD_FLAGS_FINAL += --verbose
 endif
 
-build: Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlusPlugS ShellyPlus1 ShellyPlus1PM ShellyPlus2PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyURGBW2 ShellyUNI ShellyPlusRGBWPM
+build: Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlusPlugS ShellyPlus1 ShellyPlus1PM ShellyPlus2PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyURGBW2 ShellyUNI ShellyPlus1Mini ShellyPlusRGBWPM ShellyMini1Gen3 ShellyMini1PMGen3
 
 release:
 	$(MAKE) build CLEAN=1 RELEASE=1
@@ -86,6 +86,18 @@ ShellyPlusRGBWPM: build-ShellyPlusRGBWPM
 
 ShellyPlusI4: PLATFORM=esp32
 ShellyPlusI4: build-ShellyPlusI4
+	@true
+
+ShellyPlus1Mini: PLATFORM=esp32
+ShellyPlus1Mini: build-ShellyPlus1Mini
+	@true
+
+ShellyMini1Gen3: PLATFORM=esp32c3
+ShellyMini1Gen3: build-ShellyMini1Gen3
+	@true
+
+ShellyMini1PMGen3: PLATFORM=esp32c3
+ShellyMini1PMGen3: build-ShellyMini1PMGen3
 	@true
 
 ShellyRGBW2: build-ShellyRGBW2
