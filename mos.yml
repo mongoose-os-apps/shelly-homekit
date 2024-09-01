@@ -785,6 +785,8 @@ conds:
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+            CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"../esp32xx/partitions_mgos.csv\"
+            CONFIG_PARTITION_TABLE_FILENAME=\"../esp32xx/partitions_mgos.csv\"
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
