@@ -88,7 +88,7 @@ ShellyPlusI4: PLATFORM=esp32
 ShellyPlusI4: build-ShellyPlusI4
 	@true
 
-ShellyPlus1Mini: PLATFORM=esp32
+ShellyPlus1Mini: PLATFORM=esp32c3
 ShellyPlus1Mini: build-ShellyPlus1Mini
 	@true
 
