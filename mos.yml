@@ -777,13 +777,16 @@ conds:
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
+        MGOS_ROOT_FS_SIZE: 0x60000
+        APP_SLOT_SIZE: 0x190000
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+            CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"../esp32xx/partitions_mgos.csv\"
+            CONFIG_PARTITION_TABLE_FILENAME=\"../esp32xx/partitions_mgos.csv\"
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
