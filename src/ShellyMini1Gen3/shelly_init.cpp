@@ -52,8 +52,9 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       FindOutput(1), mgos_sys_config_get_gdo1(), comps, accs,
                       svr, true);
   } else {
-    CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
-                    comps, accs, svr, true);
+    CreateHAPSwitch(
+        1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(), comps, accs,
+        svr, mgos_sys_config_get_sw1_in_mode() != (int) InMode::kDetached);
   }
 }
 
