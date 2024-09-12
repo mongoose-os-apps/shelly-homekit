@@ -1,29 +1,33 @@
 # Map of stock device id prefix -> shelly-homekit model.
 # Used by the update redirector.
 models:
-  shelly1:         Shelly1
-  shelly1l:        Shelly1L
-  shelly1pm:       Shelly1PM
-  ShellyBulbDuo:   ShellyDuo
-  shellycolorbulb: ShellyColorBulb
-  shellyix3:       ShellyI3
-  shellyplug:      ShellyPlug
-  shellyplug-s:    ShellyPlugS
-  PlusPlugS:       ShellyPlusPlugS
-  shellyplus1:     ShellyPlus1
-  ShellyPlus1:     ShellyPlus1
-  shellyplus1pm:   ShellyPlus1PM
-  ShellyPlus1PM:   ShellyPlus1PM
-  shellyplus2pm:   ShellyPlus2PM
-  ShellyPlus2PM:   ShellyPlus2PM
-  shellyplusi4:    ShellyPlusI4
-  ShellyPlusI4:    ShellyPlusI4
-  shellyplusplug-s:ShellyPlusPlugS
-  shellyrgbw2:     ShellyRGBW2
-  shellyswitch:    Shelly2
-  shellyswitch25:  Shelly25
-  shellyuni:       ShellyUNI
-  ShellyVintage:   ShellyVintage
+  shelly1:          Shelly1
+  shelly1l:         Shelly1L
+  shelly1pm:        Shelly1PM
+  ShellyBulbDuo:    ShellyDuo
+  shellycolorbulb:  ShellyColorBulb
+  shellyix3:        ShellyI3
+  shellyplug:       ShellyPlug
+  shellyplug-s:     ShellyPlugS
+  shellyplus1:      ShellyPlus1
+  ShellyPlus1:      ShellyPlus1
+  shellyplus1pm:    ShellyPlus1PM
+  ShellyPlus1PM:    ShellyPlus1PM
+  shellyplus2pm:    ShellyPlus2PM
+  ShellyPlus2PM:    ShellyPlus2PM
+  shellyplusi4:     ShellyPlusI4
+  ShellyPlusI4:     ShellyPlusI4
+  shellyplusplug-s: ShellyPlusPlugS
+  shellyplusplugs:  ShellyPlusPlugS
+  shellyrgbw2:      ShellyRGBW2
+  shellyswitch:     Shelly2
+  shellyswitch25:   Shelly25
+  shellyuni:        ShellyUNI
+  ShellyVintage:    ShellyVintage
+  ShellyPlus1Mini:  ShellyPlus1Mini
+  ShellyMini1G3:    ShellyMini1Gen3
+  ShellyMini1PMG3:  ShellyMini1PMGen3
+  ShellyPlusRGBWPM: ShellyPlusRGBWPM
 
   # Known unsupported models.
   shellybulb:    x

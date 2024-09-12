@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.12.2-beta4
+version: 2.12.2
 
 libs_version: latest
 modules_version: latest
@@ -714,9 +714,9 @@ conds:
         STOCK_FW_MODEL: Mini1PMG3
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
-        - ["device.id", "ShellyMini1G3-??????"]
-        - ["shelly.name", "ShellyMini1G3-??????"]
-        - ["wifi.ap.ssid", "ShellyMini1G3-??????"]
+        - ["device.id", "ShellyMini1PMG3-??????"]
+        - ["shelly.name", "ShellyMini1PMG3-??????"]
+        - ["wifi.ap.ssid", "ShellyMini1PMG3-??????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]

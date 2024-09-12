@@ -165,7 +165,7 @@ See [here](AUTHORS.md).
 
 ## Support
 
-If you like the project, consider a Donation to markib via [Paypal](https://www.paypal.com/donate/?hosted_button_id=RVFA9G5VMXRX8)
+If you like to show support for the project and support further development, consider a Donation to the current maintainer markib via [Paypal](https://www.paypal.com/donate/?hosted_button_id=RVFA9G5VMXRX8)
 
 ## License
 
