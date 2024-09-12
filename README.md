@@ -93,7 +93,8 @@ Features that are not yet supported:
     * *New:* One link for all device types: `http://A.B.C.D/ota?url=http://shelly.rojer.cloud/update`
     
     <details>
-      <summary>If that doesn't work (did you remember to update the stock firmware first?), try link for a specific model</summary>
+     
+      <summary>If that doesn't work (did you remember to have the stock firmware at the correct version), try the link for a specific model</summary>
   
       * Shelly 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
 
@@ -112,6 +113,10 @@ Features that are not yet supported:
 
       * Shelly i3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyI3.zip`
 
+      * Shelly Mini 1 Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyMini1Gen3.zip`
+   
+      * Shelly Mini 1 PM Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyMini1PMGen3.zip`
+
       * Shelly Plug: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlug.zip`
 
       * Shelly Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip`
@@ -119,12 +124,16 @@ Features that are not yet supported:
       * Shelly Plus 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1.zip`
         _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
 
+      * Shelly Plus 1 Mini: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1Mini.zip`
+
       * Shelly Plus 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PM.zip`
         _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
       
       * Shelly Plus 2PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus2PM.zip`
    
       * Shelly Plus Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusPlugS.zip`
+   
+      * Shelly Plus RGBWPM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusRGBWPM.zip`
 
       * Shelly Plus I4 AC & DC: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusI4.zip`
         _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
