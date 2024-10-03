@@ -188,10 +188,11 @@ std::string WindowCovering::name() const {
 
 StatusOr<std::string> WindowCovering::GetInfo() const {
   return mgos::SPrintf(
-      "c:%d mp:%.2f ip:%.2f mt_ms:%d cp:%.2f tp:%.2f md:%d lmd:%d",
+      "c:%d mp:%.2f ip:%.2f mt_ms:%d cp:%.2f tp:%.2f "
+      "md:%d lemd:%d lhmd:%d",
       cfg_->calibrated, cfg_->move_power, cfg_->idle_power_thr,
       cfg_->move_time_ms, cur_pos_, tgt_pos_, (int) moving_dir_,
-      (int) last_move_dir_);
+      (int) last_ext_move_dir_, (int) last_hap_move_dir_);
 }
 
 StatusOr<std::string> WindowCovering::GetInfoJSON() const {
@@ -365,19 +366,23 @@ void WindowCovering::SetTgtPos(float new_tgt_pos, const char *src) {
 // intuitive behavior within short time span so short-term interactive use
 // is unaffected and allow automated changes to work properly.
 void WindowCovering::HAPSetTgtPos(float value) {
-  Direction lmd = last_move_dir_;
   // If last action was a while ago, ignore it.
   if (mgos_uptime_micros() - last_hap_set_tgt_pos_ > 60 * 1000000) {
-    lmd = Direction::kNone;
+    last_hap_move_dir_ = Direction::kNone;
   }
-
-  LOG(LL_INFO, ("WC %d: HAPSetTgtPos %.2f cur %.2f tgt %.2f lmd %d", id(),
-                value, cur_pos_, tgt_pos_, (int) lmd));
-  // If the specified position is intermediate or we have no basis for guessing,
-  // just do what we are told.
+  LOG(LL_INFO, ("WC %d: HAPSetTgtPos %.2f cur %.2f tgt %.2f lhmd %d", id(),
+                value, cur_pos_, tgt_pos_, (int) last_hap_move_dir_));
+  // If the specified position is intermediate, just do what we are told.
   if ((value != kFullyClosed && value != kFullyOpen) ||
-      lmd == Direction::kNone) {
+      last_hap_move_dir_ == Direction::kNone) {
     SetTgtPos(value, "HAP");
+    if (value == kFullyClosed) {
+      last_hap_move_dir_ = Direction::kClose;
+    } else if (value == kFullyOpen) {
+      last_hap_move_dir_ = Direction::kOpen;
+    } else {
+      last_hap_move_dir_ = Direction::kNone;
+    }
   } else if ((value == kFullyClosed &&
               (cur_pos_ == kFullyClosed || tgt_pos_ == kFullyClosed)) ||
              (value == kFullyOpen &&
@@ -385,7 +390,7 @@ void WindowCovering::HAPSetTgtPos(float value) {
     // Nothing to do.
   } else {
     // This is most likely a tap on the tile.
-    HandleInputSingle("HAPalt");
+    HandleInputSingle("HAPalt", &last_hap_move_dir_);
   }
   last_hap_set_tgt_pos_ = mgos_uptime_micros();
   // Run state machine immediately to improve reaction time,
@@ -420,9 +425,6 @@ void WindowCovering::Move(Direction dir) {
   out_close_->SetState(want_close, ss);
   if (moving_dir_ != dir) pos_state_char_->RaiseEvent();
   moving_dir_ = dir;
-  if (dir != Direction::kNone) {
-    last_move_dir_ = dir;
-  }
 }
 
 void WindowCovering::RunOnce() {
@@ -667,7 +669,7 @@ void WindowCovering::HandleInputEvent01(Direction dir, Input::Event ev,
   if (state) {
     if (moving_dir_ == Direction::kNone) {
       float pos = (dir == Direction::kOpen ? kFullyOpen : kFullyClosed);
-      last_move_dir_ = dir;
+      last_ext_move_dir_ = dir;
       SetTgtPos(pos, "ext");
     } else {
       stop = true;
@@ -680,6 +682,7 @@ void WindowCovering::HandleInputEvent01(Direction dir, Input::Event ev,
     RunOnce();
     SetTgtPos(cur_pos_, "ext");
   }
+  last_hap_move_dir_ = Direction::kNone;
   // Run the state machine immediately for quicker response.
   RunOnce();
 }
@@ -691,7 +694,8 @@ void WindowCovering::HandleInputEvent2(Input::Event ev, bool state) {
   }
   if (ev != Input::Event::kChange) return;
   if (!state) return;
-  HandleInputSingle("ext");
+  HandleInputSingle("ext", &last_ext_move_dir_);
+  last_hap_move_dir_ = Direction::kNone;
   // Run the state machine immediately for quicker response.
   RunOnce();
 }
@@ -711,15 +715,16 @@ void WindowCovering::HandleInputEventNotCalibrated() {
   out_close_->SetState(want_close, "ext");
 }
 
-void WindowCovering::HandleInputSingle(const char *src) {
+void WindowCovering::HandleInputSingle(const char *src,
+                                       Direction *last_move_dir) {
   switch (moving_dir_) {
     case Direction::kNone: {
-      if (cur_pos_ == kFullyClosed) {
+      if (cur_pos_ == kFullyClosed || *last_move_dir != Direction::kOpen) {
         SetTgtPos(kFullyOpen, src);
-      } else if (cur_pos_ == kFullyOpen || last_move_dir_ == Direction::kOpen) {
-        SetTgtPos(kFullyClosed, src);
+        *last_move_dir = Direction::kOpen;
       } else {
-        SetTgtPos(kFullyOpen, src);
+        SetTgtPos(kFullyClosed, src);
+        *last_move_dir = Direction::kClose;
       }
       break;
     }

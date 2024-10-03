@@ -111,7 +111,7 @@ class WindowCovering : public Component, public mgos::hap::Service {
   void HandleInputEvent01(Direction dir, Input::Event ev, bool state);
   void HandleInputEvent2(Input::Event ev, bool state);
   void HandleInputEventNotCalibrated();
-  void HandleInputSingle(const char *src);
+  void HandleInputSingle(const char *src, Direction *last_move_dir);
 
   Input *in_open_, *in_close_;
   Output *out_open_, *out_close_;
@@ -142,7 +142,8 @@ class WindowCovering : public Component, public mgos::hap::Service {
   int64_t obstruction_begin_ = 0;
   int64_t last_hap_set_tgt_pos_ = 0;
   Direction moving_dir_ = Direction::kNone;
-  Direction last_move_dir_ = Direction::kNone;
+  Direction last_ext_move_dir_ = Direction::kNone;
+  Direction last_hap_move_dir_ = Direction::kNone;
 };
 void CreateHAPWC(int id, Input *in1, Input *in2, Output *out1, Output *out2,
                  PowerMeter *pm1, PowerMeter *pm2,
