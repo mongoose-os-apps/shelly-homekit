@@ -485,7 +485,7 @@ class Device(Detection):
                'SNSW-001X16EU': ['ShellyPlus1', 'Plus1'],
                'SNSW-001P16EU': ['ShellyPlus1PM', 'Plus1PM'],
                'SNSW-102P16EU': ['ShellyPlus2PM', 'Plus2PM'],
-               'SNSW-001P16EU': ['ShellyPlus2PM', 'Plus2PM'],
+               'SNSW-002P16EU': ['ShellyPlus2PM', 'Plus2PM'],
                'SNPL-00112EU': ['ShellyPlusPlugS', 'PlusPlugS'],
                'SNPL-10112EU': ['ShellyPlusPlugS', 'PlusPlugS'],
                'SNDC-0D4P10WW': ['ShellyPlusRGBWPM', 'PlusRGBWPM'],
