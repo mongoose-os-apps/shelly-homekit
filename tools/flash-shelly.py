@@ -484,7 +484,15 @@ class Device(Detection):
                'SHIX3-1': ['ShellyI3', 'ix3'],
                'SNSW-001X16EU': ['ShellyPlus1', 'Plus1'],
                'SNSW-001P16EU': ['ShellyPlus1PM', 'Plus1PM'],
-               'SNSN-0024X': ['ShellyPlusI4', 'PlusI4']
+               'SNSW-102P16EU': ['ShellyPlus2PM', 'Plus2PM'],
+               'SNSW-001P16EU': ['ShellyPlus2PM', 'Plus2PM'],
+               'SNPL-00112EU': ['ShellyPlusPlugS', 'PlusPlugS'],
+               'SNPL-10112EU': ['ShellyPlusPlugS', 'PlusPlugS'],
+               'SNDC-0D4P10WW': ['ShellyPlusRGBWPM', 'PlusRGBWPM'],
+               'SNSN-0024X': ['ShellyPlusI4', 'PlusI4'],
+               'SNSW-001X8EU': ['ShellyPlus1Mini', 'Plus1Mini'],
+               'S3SW-001P8EU': ['ShellyMini1PMG3', 'Mini1PMG3'],
+               'S3SW-001X8EU': ['ShellyMini1G3', 'Mini1G3']
                }
     return options.get(stock_fw_model, [stock_fw_model, stock_fw_model])
 
