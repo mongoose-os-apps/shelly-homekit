@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.12.2
+version: 2.13.0-beta1
 
 libs_version: latest
 modules_version: latest
@@ -639,8 +639,6 @@ conds:
       sources:
         - src/ShellyRGBW2
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
