@@ -75,7 +75,7 @@ _✗: not possible_
 _1: includes lock, outlet and valve_  
 _2: includes doorbell_  
 _3: includes motion, occupancy, contact, smoke, leak_  
-_4: with [Sensor AddOn/Shelly Plus AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor(s) or DHT sensor
+_4: with [Sensor AddOn/Shelly Plus AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor(s) (maximum 5 for Shelly Plus Addon, maximum 3 for Sensor AddOn) - or 1 DHT sensor
 
 Features that are not yet supported:
  * Cloud connections: no Shelly Cloud, no MQTT

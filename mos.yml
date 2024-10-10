@@ -862,6 +862,10 @@ conds:
         - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
         - ["ts3.name", "Shelly TS3"]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
 
   - when: build_vars.MODEL == "ShellyPlus1PM"
     apply:
@@ -919,6 +923,10 @@ conds:
         - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
         - ["ts3.name", "Shelly TS3"]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
 
   - when: build_vars.MODEL == "ShellyPlus2PM"
     apply:
@@ -980,6 +988,10 @@ conds:
         - ["ts2", "ts", {title: "TS2 settings"}]
         - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
@@ -1043,6 +1055,10 @@ conds:
         - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
         - ["ts3.name", "Shelly TS3"]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
 
   - when: build_vars.MODEL == "ShellyRGBW2"
     apply:
