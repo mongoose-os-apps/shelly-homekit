@@ -1826,8 +1826,8 @@ el("revert_btn").onclick = function() {
   if (!confirm("Revert to stock firmware?")) return;
 
   el("revert_msg").style.display = "block";
-  let stockURL =
-      `https://rojer.me/files/shelly/stock/${lastInfo.stock_fw_model}.zip`;
+  let stockURL = `https://rojer.me/files/shelly/stock/latest/${
+      lastInfo.stock_fw_model}.zip`;
   downloadUpdate(stockURL, el("fw_spinner"), el("revert_status"));
 };
 
