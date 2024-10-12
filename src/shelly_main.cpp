@@ -758,28 +758,28 @@ void InitApp() {
 
   // Initialize accessory server.
   HAPAccessoryServerOptions server_options = {
-    .maxPairings = kHAPPairingStorage_MinElements,
+      .maxPairings = kHAPPairingStorage_MinElements,
 #if HAP_IP
-    .ip =
-        {
-            .transport = &kHAPAccessoryServerTransport_IP,
+      .ip =
+          {
+              .transport = &kHAPAccessoryServerTransport_IP,
 #ifndef __clang__
-            .available = 0,
+              .available = 0,
 #endif
-            .accessoryServerStorage = &s_ip_storage,
-        },
+              .accessoryServerStorage = &s_ip_storage,
+          },
 #endif
 #if HAP_BLE
-    .ble =
-        {
-            .transport = nullptr,
+      .ble =
+          {
+              .transport = nullptr,
 #ifndef __clang__
-            .available = 0,
+              .available = 0,
 #endif
-            .accessoryServerStorage = nullptr,
-            .preferredAdvertisingInterval = 0,
-            .preferredNotificationDuration = 0,
-        },
+              .accessoryServerStorage = nullptr,
+              .preferredAdvertisingInterval = 0,
+              .preferredNotificationDuration = 0,
+          },
 #endif
   };
   static struct HAPPlatformMFiTokenAuth s_mfi_auth;
