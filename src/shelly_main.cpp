@@ -177,6 +177,12 @@ void CreateHAPSensors(std::vector<std::unique_ptr<TempSensor>> *sensors,
 #ifdef MGOS_CONFIG_HAVE_TS3
       (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
 #endif
+#ifdef MGOS_CONFIG_HAVE_TS4
+      (struct mgos_config_ts *) mgos_sys_config_get_ts4(),
+#endif
+#ifdef MGOS_CONFIG_HAVE_TS5
+      (struct mgos_config_ts *) mgos_sys_config_get_ts5(),
+#endif
   };
   size_t j = 0;
   for (size_t i = 0; i < std::min((size_t) sizeof(ts_cfgs), sensors->size());
