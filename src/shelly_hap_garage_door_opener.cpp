@@ -118,10 +118,12 @@ StatusOr<std::string> GarageDoorOpener::GetInfoJSON() const {
       "cur_state: %d, cur_state_str: %Q, "
       "move_time: %d, pulse_time_ms: %d, "
       "close_sensor_mode: %d, open_sensor_mode: %d, "
-      "out_mode: %d}",
+      "out_mode: %d, "
+      "sensor_swap: %B}",
       id(), type(), cfg_->name, (int) cur_state_, StateStr(cur_state_),
       cfg_->move_time_ms / 1000, cfg_->pulse_time_ms, cfg_->close_sensor_mode,
-      cfg_->open_sensor_mode, (out_open_ != out_close_ ? cfg_->out_mode : -1));
+      cfg_->open_sensor_mode, (out_open_ != out_close_ ? cfg_->out_mode : -1),
+      cfg_->sensor_swap);
 }
 
 Status GarageDoorOpener::SetConfig(const std::string &config_json,
@@ -130,11 +132,13 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   cfg.name = nullptr;
   int move_time = -1, pulse_time_ms = -1, out_mode = -1;
   int close_sensor_mode = -1, open_sensor_mode = -1;
+  int8_t sensor_swap = -1;
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, move_time: %d, pulse_time_ms: %d, "
-             "close_sensor_mode: %d, open_sensor_mode: %d, out_mode: %d}",
+             "close_sensor_mode: %d, open_sensor_mode: %d, out_mode: %d, "
+             "sensor_swap: %B}",
              &cfg.name, &move_time, &pulse_time_ms, &close_sensor_mode,
-             &open_sensor_mode, &out_mode);
+             &open_sensor_mode, &out_mode, &sensor_swap);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -151,6 +155,10 @@ Status GarageDoorOpener::SetConfig(const std::string &config_json,
   }
   if (out_mode > 2) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "out_mode");
+  }
+  if (sensor_swap != -1 && sensor_swap != cfg_->sensor_swap) {
+    cfg_->sensor_swap = sensor_swap;
+    *restart_required = true;
   }
   // We don't impose a limit on pulse time.
   // Apply.
@@ -415,6 +423,11 @@ void CreateHAPGDO(int id, Input *in_close, Input *in_open, Output *out_close,
                   HAPAccessoryServerRef *svr, bool to_pri_acc) {
   struct mgos_config_gdo *gdo2_cfg = (struct mgos_config_gdo *) gdo_cfg;
 
+  if (gdo_cfg->sensor_swap) {
+    Input *tmp = in_close;
+    in_close = in_open;
+    in_open = tmp;
+  }
   std::unique_ptr<hap::GarageDoorOpener> gdo(new hap::GarageDoorOpener(
       id, in_close, in_open, out_close, out_open, gdo2_cfg));
   auto st = gdo->Init();

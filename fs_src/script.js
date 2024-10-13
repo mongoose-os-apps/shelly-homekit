@@ -499,6 +499,7 @@ function gdoSetConfig(c, cfg, spinner) {
       move_time: moveTime,
       pulse_time_ms: pulseTimeMs,
       close_sensor_mode: parseInt(el(c, "close_sensor_mode").value),
+      sensor_swap: el(c, "sensor_swap").checked,
     };
     if (c.data.open_sensor_mode >= 0) {
       cfg.open_sensor_mode = parseInt(el(c, "open_sensor_mode").value);
@@ -867,6 +868,7 @@ function updateComponent(cd) {
       selectIfNotModified(el(c, "close_sensor_mode"), cd.close_sensor_mode);
       setValueIfNotModified(el(c, "move_time"), cd.move_time);
       setValueIfNotModified(el(c, "pulse_time_ms"), cd.pulse_time_ms);
+      checkIfNotModified(el(c, "sensor_swap"), cd.sensor_swap);
       if (cd.open_sensor_mode >= 0) {
         selectIfNotModified(el(c, "open_sensor_mode"), cd.open_sensor_mode);
       } else {
