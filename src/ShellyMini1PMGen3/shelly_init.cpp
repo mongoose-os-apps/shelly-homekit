@@ -19,8 +19,11 @@
 #include "shelly_hap_input.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_pm_bl0942.hpp"
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
+
+#include "driver/gpio.h"
 
 namespace shelly {
 
@@ -29,17 +32,19 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms UNUSED_ARG,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 5, 1));
+
+  gpio_hold_dis(GPIO_NUM_5);
+
   auto *in = new InputPin(1, 10, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, LED_GPIO, _1, _2));
   in->Init();
   inputs->emplace_back(in);
 
-// not yet compatible
 #ifdef MGOS_HAVE_ADC
   sys_temp->reset(new TempSensorSDNT1608X103F3950(3, 3.3f, 10000.0f));
 #endif
 
-  // std::unique_ptr<PowerMeter> pm()
+  std::unique_ptr<PowerMeter> pm(new BL0942PowerMeter(1, 6, 7, 100, 1));
   // BL0942 GPIO6 TX GPIO7 RX
   // const Status &st = pm->Init();
   // if (st.ok()) {

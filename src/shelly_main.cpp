@@ -177,6 +177,12 @@ void CreateHAPSensors(std::vector<std::unique_ptr<TempSensor>> *sensors,
 #ifdef MGOS_CONFIG_HAVE_TS3
       (struct mgos_config_ts *) mgos_sys_config_get_ts3(),
 #endif
+#ifdef MGOS_CONFIG_HAVE_TS4
+      (struct mgos_config_ts *) mgos_sys_config_get_ts4(),
+#endif
+#ifdef MGOS_CONFIG_HAVE_TS5
+      (struct mgos_config_ts *) mgos_sys_config_get_ts5(),
+#endif
   };
   size_t j = 0;
   for (size_t i = 0; i < std::min((size_t) sizeof(ts_cfgs), sensors->size());
@@ -752,28 +758,28 @@ void InitApp() {
 
   // Initialize accessory server.
   HAPAccessoryServerOptions server_options = {
-    .maxPairings = kHAPPairingStorage_MinElements,
+      .maxPairings = kHAPPairingStorage_MinElements,
 #if HAP_IP
-    .ip =
-        {
-            .transport = &kHAPAccessoryServerTransport_IP,
+      .ip =
+          {
+              .transport = &kHAPAccessoryServerTransport_IP,
 #ifndef __clang__
-            .available = 0,
+              .available = 0,
 #endif
-            .accessoryServerStorage = &s_ip_storage,
-        },
+              .accessoryServerStorage = &s_ip_storage,
+          },
 #endif
 #if HAP_BLE
-    .ble =
-        {
-            .transport = nullptr,
+      .ble =
+          {
+              .transport = nullptr,
 #ifndef __clang__
-            .available = 0,
+              .available = 0,
 #endif
-            .accessoryServerStorage = nullptr,
-            .preferredAdvertisingInterval = 0,
-            .preferredNotificationDuration = 0,
-        },
+              .accessoryServerStorage = nullptr,
+              .preferredAdvertisingInterval = 0,
+              .preferredNotificationDuration = 0,
+          },
 #endif
   };
   static struct HAPPlatformMFiTokenAuth s_mfi_auth;

@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.12.2
+version: 2.13.0-beta2
 
 libs_version: latest
 modules_version: latest
@@ -87,6 +87,7 @@ config_schema:
 
   - ["gdo", "o", {title: "Garage door settings", abstract: true}]
   - ["gdo.name", "s", "Garage Door", {title: "Accessory name"}]
+  - ["gdo.sensor_swap", "b", false, {title: "Whether to swap the two input sensors"}]
   - ["gdo.close_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open"}]
   - ["gdo.open_sensor_mode", "i", 0, {title: "Close sensor mode: 0 - normally closed, 1 - normally open, 2 - disabled"}]
   - ["gdo.out_mode", "i", 0, {title: "Output mode: 0 - single (open=close=1), 1 - dual (1=open, 2=close), 2 - single inverted (open=close=1)"}]
@@ -154,7 +155,7 @@ cdefs:
 
 libs:
   - location: ./libreset
-  - location: https://github.com/mongoose-os-libs/core
+  - location: https://github.com/markirb/core
   - location: https://github.com/mongoose-os-libs/file-logger
   - location: https://github.com/mongoose-os-libs/homekit-adk
   - location: https://github.com/mongoose-os-libs/http-server
@@ -221,6 +222,10 @@ conds:
     apply:
       config_schema:
         - ["wifi.sta_ps_mode", 1]
+      build_vars:
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 0x60000
+        APP_SLOT_SIZE: 0x190000
 
   - when: build_vars.MODEL == "Shelly1"
     apply:
@@ -600,8 +605,6 @@ conds:
     apply:
       name: PlusPlugS
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -637,8 +640,6 @@ conds:
       sources:
         - src/ShellyRGBW2
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -689,6 +690,8 @@ conds:
       name: Mini1PMG3
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
+      sources:
+        - src/BL0942
       build_vars:
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
@@ -822,8 +825,6 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -862,6 +863,10 @@ conds:
         - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
         - ["ts3.name", "Shelly TS3"]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
 
   - when: build_vars.MODEL == "ShellyPlus1PM"
     apply:
@@ -874,8 +879,6 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -919,6 +922,10 @@ conds:
         - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
         - ["ts3.name", "Shelly TS3"]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
 
   - when: build_vars.MODEL == "ShellyPlus2PM"
     apply:
@@ -934,8 +941,6 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/ade7953
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -980,6 +985,10 @@ conds:
         - ["ts2", "ts", {title: "TS2 settings"}]
         - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input 1"]
@@ -1005,8 +1014,6 @@ conds:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
       build_vars:
-        MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 458752
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -1043,6 +1050,10 @@ conds:
         - ["ts2.name", "Shelly TS2"]
         - ["ts3", "ts", {title: "TS3 settings"}]
         - ["ts3.name", "Shelly TS3"]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
 
   - when: build_vars.MODEL == "ShellyRGBW2"
     apply:
