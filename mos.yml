@@ -10,7 +10,6 @@ sources:
   - src
   - src/mock
   - src/BL0937
-  - src/BL0942
   - src/${build_vars.MODEL}
 
 includes:
@@ -740,6 +739,8 @@ conds:
       name: Mini1PMG3
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
+      sources:
+        - src/BL0942
       build_vars:
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
