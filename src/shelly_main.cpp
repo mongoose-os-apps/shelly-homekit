@@ -193,8 +193,11 @@ void CreateHAPSensors(std::vector<std::unique_ptr<TempSensor>> *sensors,
 
     if (ts->getType() == TS_HUM) {  // can only be one shares config, as same
                                     // update interval but no unit settable
+      i++;
+      ts_cfg = ts_cfgs[i];
       shelly::hap::CreateHAPHumiditySensor(j++, (HumidityTempSensor *) ts,
                                            ts_cfg, comps, accs, svr);
+      break;  // max 1 DHT sensor
     }
   }
 }

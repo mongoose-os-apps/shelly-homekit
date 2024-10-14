@@ -43,6 +43,7 @@ config_schema:
   - ["ts.name", "s", "", {title: "Name of the sensor"}]
   - ["ts.unit", "i", 0, {title: "Display unit of the Sensor"}] # 0 - Celsius, 1 - Farenheit
   - ["ts.update_interval", "i", 1, {title: "Update Interval of the sensor in seconds, minimum 1s"}]
+  - ["ts.offset", "i", 0, {title: "Offset value can be used for calibration in unit*100 e.g. centigrade"}]
 
   - ["sw", "o", {title: "Switch settings", abstract: true}]
   - ["sw.name", "s", "", {title: "Name of the switch"}]
