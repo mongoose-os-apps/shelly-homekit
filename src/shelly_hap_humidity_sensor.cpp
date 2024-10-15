@@ -58,7 +58,7 @@ Status HumiditySensor::SetConfig(const std::string &config_json,
   struct mgos_config_ts cfg = *cfg_;
   cfg.name = nullptr;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, unit: %d, update_interval: %d, offset: %f}", &cfg.name,
+             "{name: %Q, unit: %d, update_interval: %d, offset: %d", &cfg.name,
              &cfg.unit, &cfg.update_interval, &cfg.offset);
 
   mgos::ScopedCPtr name_owner((void *) cfg.name);
@@ -118,7 +118,7 @@ Status HumiditySensor::Init() {
           return kHAPError_Busy;
         }
         float temp = static_cast<float>(tempval.ValueOrDie());
-        *value = truncf((temp + cfg_->offset) * 10) / 10;
+        *value = truncf((temp + cfg_->offset / 100) * 10) / 10;
         return kHAPError_None;
       },
 
@@ -141,11 +141,11 @@ StatusOr<std::string> HumiditySensor::GetInfo() const {
 StatusOr<std::string> HumiditySensor::GetInfoJSON() const {
   std::string res = mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, unit: %d, "
-      "update_interval: %d, offset: %f, ",
+      "update_interval: %d, offset: %d, ",
       id(), type(), cfg_->name, 2, cfg_->update_interval, cfg_->offset);
   auto tempval = hum_sensor_->GetHumidity();
   if (tempval.ok()) {
-    mgos::JSONAppendStringf(&res, "value: %.1f", tempval.ValueOrDie());
+    mgos::JSONAppendStringf(&res, "value: %.1f", tempval.ValueOrDie() + cfg_->offset / 100);
   } else {
     mgos::JSONAppendStringf(&res, "error: %.1f", tempval.ValueOrDie());
   }
