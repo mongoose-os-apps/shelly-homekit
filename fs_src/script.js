@@ -440,6 +440,7 @@ function tsSetConfig(c) {
     name: name,
     unit: parseInt(el(c, "unit").value),
     update_interval: parseInt(el(c, "update_interval").value),
+    offset: Math.round(parseFloat(el(c, "offset").value * 100)),
   };
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
@@ -794,6 +795,7 @@ function updateComponent(cd) {
       updateInnerText(el(c, "value"), v);
       selectIfNotModified(el(c, "unit"), cd.unit);
       setValueIfNotModified(el(c, "update_interval"), cd.update_interval);
+      setValueIfNotModified(el(c, "offset"), cd.offset / 100.0);
       break;
     }
     case Component_Type.kStatelessSwitch:
