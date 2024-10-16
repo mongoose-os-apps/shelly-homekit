@@ -145,7 +145,8 @@ StatusOr<std::string> HumiditySensor::GetInfoJSON() const {
       id(), type(), cfg_->name, 2, cfg_->update_interval, cfg_->offset);
   auto tempval = hum_sensor_->GetHumidity();
   if (tempval.ok()) {
-    mgos::JSONAppendStringf(&res, "value: %.1f", tempval.ValueOrDie() + cfg_->offset / 100);
+    mgos::JSONAppendStringf(&res, "value: %.1f",
+                            tempval.ValueOrDie() + cfg_->offset / 100);
   } else {
     mgos::JSONAppendStringf(&res, "error: %.1f", tempval.ValueOrDie());
   }
