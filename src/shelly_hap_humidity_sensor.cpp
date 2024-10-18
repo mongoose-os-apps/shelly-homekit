@@ -86,8 +86,7 @@ Status HumiditySensor::SetConfig(const std::string &config_json,
   }
   if (cfg_->update_interval != cfg.update_interval) {
     cfg_->update_interval = cfg.update_interval;
-    // update interval is set via temperature sensor
-    // hum_sensor_->StartUpdating(cfg_->update_interval * 1000);
+    // update interval is set via temperature sensor on DHT
   }
   return Status::OK();
 }
@@ -126,7 +125,6 @@ Status HumiditySensor::Init() {
       kHAPCharacteristicDebugDescription_CurrentRelativeHumidity);
   AddChar(current_humidity_characteristic_);
 
-  hum_sensor_->StartUpdating(cfg_->update_interval * 1000);
   return Status::OK();
 }
 

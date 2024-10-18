@@ -794,6 +794,8 @@ function updateComponent(cd) {
       }
       updateInnerText(el(c, "value"), v);
       selectIfNotModified(el(c, "unit"), cd.unit);
+      el("update_interval_container").style.display =
+          (cd.unit == 2) ? "none" : "block";
       setValueIfNotModified(el(c, "update_interval"), cd.update_interval);
       setValueIfNotModified(el(c, "offset"), cd.offset / 100.0);
       break;
