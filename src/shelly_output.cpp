@@ -83,6 +83,8 @@ Status OutputPin::SetStatePWM(float duty, const char *source) {
   }
   return Status::OK();
 #else
+  (void) duty;
+  (void) source;
   return Status::UNIMPLEMENTED();
 #endif
 }
