@@ -75,7 +75,7 @@ _✗: not possible_
 _1: includes lock, outlet and valve_  
 _2: includes doorbell_  
 _3: includes motion, occupancy, contact, smoke, leak_  
-_4: with [Sensor AddOn/Shelly Plus AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor(s) (maximum 5 for Shelly Plus Addon, maximum 3 for Sensor AddOn) - or 1 DHT sensor
+_4: with [Sensor AddOn/Shelly Plus AddOn](https://shop.shelly.cloud/temperature-sensor-addon-for-shelly-1-1pm-wifi-smart-home-automation#312)_ and DS18B20 sensor(s) (maximum 5 for Shelly Plus Addon, maximum 3 for Sensor AddOn) or 1 DHT sensor
 
 Features that are not yet supported:
  * Cloud connections: no Shelly Cloud, no MQTT
@@ -86,7 +86,7 @@ Features that are not yet supported:
 
 ### Updating from stock firmware
 
-  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit. Update from 1.4 on Plus devices is currently not supported (1.4 changes partition sizes). Please first go back to 1.3.3 versions for Plus devices. You can get them [here](http://rojer.me/files/shelly/stock/1.3.3/). 
+  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit (1.4 on Plus Devices).
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
@@ -122,12 +122,10 @@ Features that are not yet supported:
       * Shelly Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip`
 
       * Shelly Plus 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1.zip`
-        _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
 
       * Shelly Plus 1 Mini: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1Mini.zip`
 
       * Shelly Plus 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PM.zip`
-        _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
       
       * Shelly Plus 2PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus2PM.zip`
    
@@ -136,7 +134,6 @@ Features that are not yet supported:
       * Shelly Plus RGBWPM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusRGBWPM.zip`
 
       * Shelly Plus I4 AC & DC: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusI4.zip`
-        _Note: The Shelly must have installed 0.10.0-beta3 or above to be flushed, please update first!_
 
       * Shelly RGBW2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyRGBW2.zip`  
         _Note: The Shelly must be in color mode to flash, flashing in white mode is not supported!_
