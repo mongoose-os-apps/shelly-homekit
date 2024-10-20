@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.13.0-beta2
+version: 2.13.0
 
 libs_version: latest
 modules_version: latest
@@ -651,7 +651,7 @@ conds:
         LED_GPIO: 14
         LED_ON: 0
         BTN_GPIO: 22
-        BTN_DOWN: 0
+        BTN_DOWN: 1
         GPIO_R: 25
         GPIO_G: 26
         GPIO_B: 27
