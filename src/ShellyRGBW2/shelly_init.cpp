@@ -83,19 +83,19 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
   } else if (mode == (int) Mode::kRGBpW) {
     ndev = 2;
   } else if (mode == (int) Mode::kDefault) {
-#if defined ( MGOS_CONFIG_HAVE_SW1 ) && defined ( MGOS_CONFIG_HAVE_IN1 )
+#if defined(MGOS_CONFIG_HAVE_SW1) && defined(MGOS_CONFIG_HAVE_IN1)
     CreateHAPSwitch(1, mgos_sys_config_get_sw1(), mgos_sys_config_get_in1(),
                     comps, accs, svr, false /* to_pri_acc */);
 #endif
-#if defined ( MGOS_CONFIG_HAVE_SW2 ) && defined ( MGOS_CONFIG_HAVE_IN2 )
+#if defined(MGOS_CONFIG_HAVE_SW2) && defined(MGOS_CONFIG_HAVE_IN2)
     CreateHAPSwitch(2, mgos_sys_config_get_sw2(), mgos_sys_config_get_in2(),
                     comps, accs, svr, false /* to_pri_acc */);
 #endif
-#if defined ( MGOS_CONFIG_HAVE_SW3 ) && defined ( MGOS_CONFIG_HAVE_IN3 )
+#if defined(MGOS_CONFIG_HAVE_SW3) && defined(MGOS_CONFIG_HAVE_IN3)
     CreateHAPSwitch(3, mgos_sys_config_get_sw3(), mgos_sys_config_get_in3(),
                     comps, accs, svr, false /* to_pri_acc */);
 #endif
-#if defined ( MGOS_CONFIG_HAVE_SW4 ) && defined ( MGOS_CONFIG_HAVE_IN4 )
+#if defined(MGOS_CONFIG_HAVE_SW4) && defined(MGOS_CONFIG_HAVE_IN4)
     CreateHAPSwitch(4, mgos_sys_config_get_sw4(), mgos_sys_config_get_in4(),
                     comps, accs, svr, false /* to_pri_acc */);
 #endif
