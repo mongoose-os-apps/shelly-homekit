@@ -686,6 +686,15 @@ conds:
         - ["in4.ssw.name", "Shelly SSW4"]
         - ["in4.sensor.name", "Shelly S4"]
 
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["sw2", "sw", {title: "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["sw3", "sw", {title: "SW3 settings"}]
+        - ["sw3.name", "Shelly SW3"]
+        - ["sw4", "sw", {title: "SW4 settings"}]
+        - ["sw4.name", "Shelly SW4"]
+
   - when: build_vars.MODEL == "ShellyMini1PMGen3"
     apply:
       name: Mini1PMG3
@@ -1096,14 +1105,6 @@ conds:
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
         - ["in1.sensor.name", "Shelly S1"]
-        - ["sw1", "sw", {title: "SW1 settings"}]
-        - ["sw1.name", "Shelly SW1"]
-        - ["sw2", "sw", {title: "SW2 settings"}]
-        - ["sw2.name", "Shelly SW2"]
-        - ["sw3", "sw", {title: "SW3 settings"}]
-        - ["sw3.name", "Shelly SW3"]
-        - ["sw4", "sw", {title: "SW4 settings"}]
-        - ["sw4.name", "Shelly SW4"]
 
   - when: build_vars.MODEL == "ShellyUNI"
     apply:
