@@ -86,7 +86,7 @@ Features that are not yet supported:
 
 ### Updating from stock firmware
 
-  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit (1.4 on Plus Devices).
+  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit (1.4 or later on Plus Devices).
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
