@@ -423,7 +423,7 @@ void CreateHAPGDO(int id, Input *in_close, Input *in_open, Output *out_close,
                   HAPAccessoryServerRef *svr UNUSED_ARG, bool to_pri_acc) {
   struct mgos_config_gdo *gdo2_cfg = (struct mgos_config_gdo *) gdo_cfg;
 
-  if (gdo_cfg->sensor_swap) {
+  if (gdo_cfg->sensor_swap && in_open != nullptr) {
     Input *tmp = in_close;
     in_close = in_open;
     in_open = tmp;
