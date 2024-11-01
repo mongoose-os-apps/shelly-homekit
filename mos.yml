@@ -955,6 +955,8 @@ conds:
         STOCK_FW_MODEL: Plus2PM
         MAX_NUM_HAP_SESSIONS: 16
         SHELLY_HAVE_PM: 1
+        MGOS_CONFIG_DEV_6: "shelly"
+        MGOS_CONFIG_DEV_7: "shelly,4096"
       config_schema:
         - ["device.id", "ShellyPlus2PM-??????"]
         - ["shelly.name", "ShellyPlus2PM-??????"]

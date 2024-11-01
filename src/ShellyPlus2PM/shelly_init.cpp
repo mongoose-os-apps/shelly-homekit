@@ -26,8 +26,6 @@
 #include "shelly_temp_sensor_ntc.hpp"
 #include "shelly_temp_sensor_ow.hpp"
 
-#include "esp_partition.h"
-
 #include <algorithm>
 
 #include "shelly_hap_garage_door_opener.hpp"
@@ -48,49 +46,6 @@ static struct mgos_ade7953 *s_ade7953 = NULL;
 #define MGOS_ADE7953_REG_BVGAIN 0x38D
 #define MGOS_ADE7953_REG_BWGAIN 0x38E
 #define MGOS_ADE7953_REG_BIGAIN 0x38C
-
-static void ReadFactoryData(mgos_config *c) {
-  const char *label = "shelly";
-  esp_partition_subtype_t subtype = ESP_PARTITION_SUBTYPE_ANY;
-  esp_partition_type_t type = ESP_PARTITION_TYPE_ANY;
-
-  const esp_partition_t *part = esp_partition_find_first(type, subtype, label);
-  if (part == NULL) {
-    LOG(LL_INFO, ("Partition %s not found", label));
-    return;
-  }
-
-  size_t part_offset = 0x0;
-  size_t size = 0x2000;  // map both "partitions"
-  spi_flash_mmap_handle_t out_handle;
-  const void *out_ptr;
-
-  esp_err_t err = esp_partition_mmap(
-      part, part_offset, size, SPI_FLASH_MMAP_DATA, &out_ptr, &out_handle);
-  if (err) {
-    LOG(LL_INFO, ("Partition %s not mapped", label));
-    return;
-  }
-
-  // read first partition at 0x0
-  const struct mg_str str = mg_mk_str_n((const char *) out_ptr, size);
-  bool succ = mgos_conf_parse_sub(str, mgos_config_get_schema(), c);
-  if (!succ) {
-    LOG(LL_INFO, ("Partition %s not parsed", "factory data"));
-    return;
-  }
-
-  // read escond partition at 0x1000
-  void *ptr2 = (uint8_t *) out_ptr + 0x1000;
-  const struct mg_str str2 = mg_mk_str_n((const char *) ptr2, size);
-  succ = mgos_conf_parse_sub(str2, mgos_config_get_schema(), c);
-  if (!succ) {
-    LOG(LL_INFO, ("Partition %s not parsed", "factory calib"));
-    return;
-  }
-
-  spi_flash_munmap(out_handle);
-}
 
 static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   const struct mgos_config_ade7953 ade7953_cfg = {
@@ -180,8 +135,6 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  ReadFactoryData(&mgos_sys_config);
-
   outputs->emplace_back(new OutputPin(1, 13, 1));
   outputs->emplace_back(new OutputPin(2, 12, 1));
 
