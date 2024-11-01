@@ -382,9 +382,16 @@ void GarageDoorOpener::RunOnce() {
     }
     case State::kClosing: {
       if (is_closed) {
-        SetCurState(State::kClosed);
+        closed_cnt_++;
+        if (closed_cnt_ >
+            10) {  // need 1 second stable signal for debouncing closed signal
+          SetCurState(State::kClosed);
+        }
         break;
+      } else {
+        closed_cnt_ = 0;
       }
+
       int64_t elapsed_ms = (mgos_uptime_micros() - begin_) / 1000;
       if (elapsed_ms > cfg_->move_time_ms) {
         obstruction_detected_ = true;
