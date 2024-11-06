@@ -117,7 +117,7 @@ Status HumiditySensor::Init() {
           return kHAPError_Busy;
         }
         float temp = static_cast<float>(tempval.ValueOrDie());
-        *value = truncf((temp + cfg_->offset / 100) * 10) / 10;
+        *value = truncf((temp + cfg_->offset / 100.0) * 10) / 10;
         return kHAPError_None;
       },
 
@@ -144,7 +144,7 @@ StatusOr<std::string> HumiditySensor::GetInfoJSON() const {
   auto tempval = hum_sensor_->GetHumidity();
   if (tempval.ok()) {
     mgos::JSONAppendStringf(&res, "value: %.1f",
-                            tempval.ValueOrDie() + cfg_->offset / 100);
+                            tempval.ValueOrDie() + cfg_->offset / 100.0);
   } else {
     mgos::JSONAppendStringf(&res, "error: %.1f", tempval.ValueOrDie());
   }

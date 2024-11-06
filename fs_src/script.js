@@ -440,7 +440,7 @@ function tsSetConfig(c) {
     name: name,
     unit: parseInt(el(c, "unit").value),
     update_interval: parseInt(el(c, "update_interval").value),
-    offset: Math.round(parseFloat(el(c, "offset").value * 100)),
+    offset: Math.round(parseFloat(el(c, "offset").value) * 100),
   };
   setComponentConfig(c, cfg, el(c, "save_spinner"));
 }
