@@ -686,6 +686,45 @@ conds:
         - ["in4.ssw.name", "Shelly SSW4"]
         - ["in4.sensor.name", "Shelly S4"]
 
+  - when: build_vars.MODEL == "ShellyPlus1PMMini"
+    apply:
+      name: Plus1PMMini
+      sources:
+        - src/ShellyMini1PMGen3
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+      build_vars:
+        MGOS_ROOT_FS_SIZE: 0x60000
+        APP_SLOT_SIZE: 0x190000
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+            CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"../esp32xx/partitions_mgos.csv\"
+            CONFIG_PARTITION_TABLE_FILENAME=\"../esp32xx/partitions_mgos.csv\"
+      cdefs:
+        LED_GPIO: 0
+        LED_ON: 0
+        BTN_GPIO: 1
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: "0.1.0"
+        STOCK_FW_MODEL: Plus1PMMini
+        MAX_NUM_HAP_SESSIONS: 16
+      config_schema:
+        - ["device.id",    "ShellyPlus1PMMini-??????"]
+        - ["shelly.name",  "ShellyPlus1PMMini-??????"]
+        - ["wifi.ap.ssid", "ShellyPlus1PMMini-??????"]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["gdo1.open_sensor_mode", 2]
+
   - when: build_vars.MODEL == "ShellyMini1PMGen3"
     apply:
       name: Mini1PMG3

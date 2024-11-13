@@ -22,15 +22,15 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ### Plus devices
 
-|                                            |[+1]|[+1Mini]|[+1PM]|[+2PM]|+i4 [AC]/[DC]|[+Plug S]
-|-                                           |-   |-       |-     |-     |-            |-     
-|Switch & Co.<sup>1</sup>                    |✓   |✓       |✓     |✓     |✗            |✓     
-|Stateless Input<sup>2</sup>                 |✓   |✓       |✓     |✓     |✓            |✗    
-|Sensors<sup>3</sup>                         |✓   |✗       |✓     |✓     |✓            |✗     
-|Garage door opener                          |✓   |✓       |✓     |✓     |✗            |✗     
-|Roller shutter mode                         |✗   |✗       |✗     |✓     |✗            |✗     
-|Power measurement                           |✗   |✗       |✓     |✓     |✗            |✓     
-|Temperature/Humidity measurement<sup>4</sup>|✓   |✗       |✓     |✓     |✓            |✗     
+|                                            |[+1]|[+1Mini]|[+1PMMini]|[+1PM]|[+2PM]|+i4 [AC]/[DC]|[+Plug S]
+|-                                           |-   |-       |-         |-     |-     |-            |-     
+|Switch & Co.<sup>1</sup>                    |✓   |✓       |✓         |✓     |✓     |✗            |✓     
+|Stateless Input<sup>2</sup>                 |✓   |✓       |✓         |✓     |✓     |✓            |✗    
+|Sensors<sup>3</sup>                         |✓   |✗       |✗         |✓     |✓     |✓            |✗     
+|Garage door opener                          |✓   |✓       |✓         |✓     |✓     |✗            |✗     
+|Roller shutter mode                         |✗   |✗       |✗         |✗     |✓     |✗            |✗     
+|Power measurement                           |✗   |✗       |-         |✓     |✓     |✗            |✓     
+|Temperature/Humidity measurement<sup>4</sup>|✓   |✗       |✗         |✓     |✓     |✓            |✗     
 
 ### Light Controllers
 
@@ -180,6 +180,7 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [1]: https://www.shelly.cloud/en/products/shop/1xs1
 [+1]: https://www.shelly.cloud/en/products/shop/shelly-plus-1
 [+1Mini]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-mini
+[+1PMMini]: https://www.shelly.cloud/en/products/shop/shelly-plus-1pm-mini
 [Mini1G3]: https://www.shelly.cloud/en/products/shop/shelly-1-mini-gen-3
 [Mini1PMG3]: https://www.shelly.cloud/en/products/shop/shelly-1-pm-mini-gen3
 [+1PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-pm-2-pack/shelly-plus-1-pm
