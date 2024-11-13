@@ -27,6 +27,7 @@ jobs:
           - ShellyPlusPlugS
           - ShellyPlusRGBWPM
           - ShellyPlus1Mini
+          - ShellyPlus1PMMini
           - ShellyMini1Gen3
           - ShellyMini1PMGen3
           - ShellyRGBW2
