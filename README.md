@@ -39,7 +39,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 |Brightness control       |✓|
 |CCT                      |✓|
 |RGB(W)                   |✓|
-|Switch & Co <sup>1</sup> |-|
+|Switch & Co <sup>1</sup> |✓|
 |Power measurement        |-|
 
 

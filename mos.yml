@@ -686,6 +686,15 @@ conds:
         - ["in4.ssw.name", "Shelly SSW4"]
         - ["in4.sensor.name", "Shelly S4"]
 
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["sw2", "sw", {title: "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["sw3", "sw", {title: "SW3 settings"}]
+        - ["sw3.name", "Shelly SW3"]
+        - ["sw4", "sw", {title: "SW4 settings"}]
+        - ["sw4.name", "Shelly SW4"]
+
   - when: build_vars.MODEL == "ShellyMini1PMGen3"
     apply:
       name: Mini1PMG3
@@ -1084,7 +1093,7 @@ conds:
         # We don't use SSL, HomeKit uses its own crypto. This saves ~120K.
         MG_ENABLE_SSL: 0
       config_schema:
-        - ["shelly.mode", 3] # 3 - RGB, 4 - RGBW, 5 - RGB+W, 6 - CCT, 7 - White
+        - ["shelly.mode", 3] # 0 - Default (4 Switches), 3 - RGB, 4 - RGBW, 5 - RGB+W, 6 - CCT, 7 - White
         - ["device.id", "shellyrgbw2-??????"]
         - ["shelly.name", "shellyrgbw2-??????"]
         - ["wifi.ap.ssid", "shellyrgbw2-??????"]
