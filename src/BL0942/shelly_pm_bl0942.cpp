@@ -72,7 +72,7 @@ StatusOr<float> BL0942PowerMeter::GetEnergyWH() {
 
 bool BL0942PowerMeter::ReadReg(uint8_t reg, uint8_t *rx_buf, size_t len) {
   uint8_t tx_buf[2] = {BL_READ | BL_ADDR, reg};
-  mgos_uart_write(uart_no_, tx_buf, 1);
+  mgos_uart_write(uart_no_, tx_buf, 2);
   mgos_uart_flush(uart_no_);
 
   // Delay to allow data to be available
@@ -82,12 +82,14 @@ bool BL0942PowerMeter::ReadReg(uint8_t reg, uint8_t *rx_buf, size_t len) {
   int read_len = mgos_uart_read(uart_no_, rx_buf, len);
 
   uint8_t chksum = tx_buf[0] + tx_buf[1];
-  for (int i = 0; i < len; i++) {
+  for (int i = 0; i < len - 1; i++) {
     chksum += rx_buf[i];
+    LOG(LL_ERROR, "%08X", rx_buf[i]);
   }
   chksum ^= 0xFF;
 
   if (read_len != len || rx_buf[len - 1] != chksum) {
+    LOG(LL_ERROR, "wrong checksum");
     return false;
   }
   return true;

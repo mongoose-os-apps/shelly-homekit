@@ -700,6 +700,7 @@ conds:
       name: Plus1PMMini
       sources:
         - src/ShellyMini1PMGen3
+        - src/BL0942
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
