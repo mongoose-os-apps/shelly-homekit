@@ -84,12 +84,12 @@ bool BL0942PowerMeter::ReadReg(uint8_t reg, uint8_t *rx_buf, size_t len) {
   uint8_t chksum = tx_buf[0] + tx_buf[1];
   for (int i = 0; i < len - 1; i++) {
     chksum += rx_buf[i];
-    LOG(LL_ERROR, "%08X", rx_buf[i]);
+    LOG(LL_ERROR, ("%08X", rx_buf[i]));
   }
   chksum ^= 0xFF;
 
   if (read_len != len || rx_buf[len - 1] != chksum) {
-    LOG(LL_ERROR, "wrong checksum");
+    LOG(LL_ERROR, ("wrong checksum") );
     return false;
   }
   return true;
