@@ -20,6 +20,10 @@
 #include "mgos.hpp"
 #include "mgos_gpio.h"
 
+#if CS_PLATFORM != CS_P_ESP8266
+#include "driver/gpio.h"
+#endif
+
 #ifdef MGOS_HAVE_PWM
 #include "mgos_pwm.h"
 #endif
@@ -42,11 +46,17 @@ OutputPin::OutputPin(int id, int pin, int on_value)
       on_value_(on_value),
       pulse_timer_(std::bind(&OutputPin::PulseTimerCB, this)) {
   mgos_gpio_set_mode(pin_, MGOS_GPIO_MODE_OUTPUT);
+#if CS_PLATFORM != CS_P_ESP8266
+  gpio_hold_dis((gpio_num_t) pin);
+#endif
   LOG(LL_INFO, ("OutputPin %d: pin %d, on_value %d, state %s", id, pin,
                 on_value, OnOff(GetState())));
 }
 
 OutputPin::~OutputPin() {
+#if CS_PLATFORM != CS_P_ESP8266
+  gpio_hold_en((gpio_num_t) pin_);
+#endif
 }
 
 bool OutputPin::GetState() {

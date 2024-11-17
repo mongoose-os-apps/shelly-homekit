@@ -19,6 +19,10 @@
 
 #include "mgos.hpp"
 
+#if CS_PLATFORM != CS_P_ESP8266
+#include "driver/gpio.h"
+#endif
+
 namespace shelly {
 
 InputPin::InputPin(int id, int pin, int on_value, enum mgos_gpio_pull_type pull,
@@ -39,6 +43,9 @@ void InputPin::Init() {
   mgos_gpio_setup_input(cfg_.pin, cfg_.pull);
   mgos_gpio_set_button_handler(cfg_.pin, cfg_.pull, MGOS_GPIO_INT_EDGE_ANY, 20,
                                GPIOIntHandler, this);
+#if CS_PLATFORM != CS_P_ESP8266
+  gpio_hold_dis((gpio_num_t) cfg_.pin);
+#endif
   bool state = GetState();
   LOG(LL_INFO, ("%s %d: pin %d, on_value %d, state %s", "InputPin", id(),
                 cfg_.pin, cfg_.on_value, OnOff(state)));
@@ -51,6 +58,9 @@ void InputPin::SetInvert(bool invert) {
 
 InputPin::~InputPin() {
   mgos_gpio_remove_int_handler(cfg_.pin, nullptr, nullptr);
+#if CS_PLATFORM != CS_P_ESP8266
+  gpio_hold_en((gpio_num_t) cfg_.pin);
+#endif
 }
 
 bool InputPin::ReadPin() {
