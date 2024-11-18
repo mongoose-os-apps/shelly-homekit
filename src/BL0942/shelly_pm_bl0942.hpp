@@ -39,6 +39,7 @@ class BL0942PowerMeter : public PowerMeter {
   float aea_ = 0;  // Accumulated active energy, Wh.
                    //
   bool ReadReg(uint8_t reg, uint8_t *rx_buf, size_t len);
+  bool WriteReg(uint8_t reg, uint32_t val);
 
   mgos::Timer meas_timer_;
 };
