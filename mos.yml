@@ -755,6 +755,88 @@ conds:
         - ["factory.calib.done", "b", false, {title: ""}]
         - ["factory.calib.scales0", "scales", {title: ""}]
 
+  - when: build_vars.MODEL == "Shelly2PMGen3"
+    apply:
+      name: 2PMG3
+      sources:
+        - src/DS18XXX
+        - src/DHT
+        - src/ADE7953
+        - src/ShellyPlus2PM
+      includes:
+        - src/ADE7953
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
+        - location: https://github.com/mongoose-os-libs/ade7953
+      build_vars:
+        OTA_DATA_ADDR: 0x10000
+        OTA_DATA_SIZE: 0x4000
+        NVS_ADDR: 0x14000
+        NVS_SIZE: 0xC000
+        APP_OFFSET: 0x20000
+        APP_SLOT_SIZE: 0x280000
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 1048576
+        ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+            CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+      cdefs:
+        LED_GPIO: 2
+        LED_ON: 0
+        BTN_GPIO: 19
+        BTN_DOWN: 0
+        PRODUCT_HW_REV: "??"
+        STOCK_FW_MODEL: 2PMG3
+        MAX_NUM_HAP_SESSIONS: 16
+        RELAY1_GPIO: 5
+        RELAY2_GPIO: 3
+        SWITCH1_GPIO: 18
+        SWITCH2_GPIO: 10
+        ADC_GPIO: 1
+      cdefs:
+        PRODUCT_HW_REV: "0.1.9"
+        STOCK_FW_MODEL: Plus2PMG3
+        MAX_NUM_HAP_SESSIONS: 16
+        SHELLY_HAVE_PM: 1
+      config_schema:
+        - ["device.id",    "Shelly2PMG3-??????"]
+        - ["shelly.name",  "Shelly2PMG3-??????"]
+        - ["wifi.ap.ssid", "Shelly2PMG3-??????"]
+        - ["i2c.enable", true]
+        - ["i2c.sda_gpio", 6]
+        - ["i2c.scl_gpio", 7]
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["sw2", "sw", {title: "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
+        - ["in3", "in", {title: "Input 3 settings"}]
+        - ["in3.ssw.name", "Shelly SSW3"]
+        - ["in3.sensor.name", "Shelly S3"]
+        - ["wc1", "wc", {title: "WC1 settings"}]
+        - ["wc1.name", "Window 1"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
+
   - when: build_vars.MODEL == "ShellyMini1PMGen3"
     apply:
       name: Mini1PMG3
@@ -1038,6 +1120,12 @@ conds:
         SHELLY_HAVE_PM: 1
         MGOS_CONFIG_DEV_6: "shelly"
         MGOS_CONFIG_DEV_7: "shelly,4096"
+        RELAY1_GPIO: 13
+        RELAY2_GPIO: 12
+        SWITCH1_GPIO: 2
+        SWITCH2_GPIO: 18
+        ADC_GPIO: 37
+        SDA_GPIO: 33
       config_schema:
         - ["device.id", "ShellyPlus2PM-??????"]
         - ["shelly.name", "ShellyPlus2PM-??????"]

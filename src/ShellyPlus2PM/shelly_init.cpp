@@ -79,8 +79,8 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
     }
     reset_pin = 33;
   } else {
-    if (mgos_sys_config_get_i2c_sda_gpio() != 33) {
-      mgos_sys_config_set_i2c_sda_gpio(33);
+    if (mgos_sys_config_get_i2c_sda_gpio() != SDA_GPIO) {
+      mgos_sys_config_set_i2c_sda_gpio(SDA_GPIO);
       conf_changed = true;
     }
     reset_pin = -1;  // TODO: unknown?
@@ -141,8 +141,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  outputs->emplace_back(new OutputPin(1, 13, 1));
-  outputs->emplace_back(new OutputPin(2, 12, 1));
+  outputs->emplace_back(new OutputPin(1, RELAY1_GPIO, 1));
+  outputs->emplace_back(new OutputPin(2, RELAY2_GPIO, 1));
 
   bool new_rev = false;
   mgos_config_factory *c = &(mgos_sys_config.factory);
@@ -150,13 +150,13 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     new_rev = true;
   }
 
-  int pin1 = new_rev ? 5 : 2;
+  int pin1 = new_rev ? 5 : SWITCH1_GPIO;
 
   auto *in1 = new InputPin(1, pin1, 1, MGOS_GPIO_PULL_NONE, true);
   in1->AddHandler(std::bind(&HandleInputResetSequence, in1, 4, _1, _2));
   in1->Init();
   inputs->emplace_back(in1);
-  auto *in2 = new InputPin(2, 18, 1, MGOS_GPIO_PULL_NONE, false);
+  auto *in2 = new InputPin(2, SWITCH2_GPIO, 1, MGOS_GPIO_PULL_NONE, false);
   in2->Init();
   inputs->emplace_back(in2);
 
@@ -166,11 +166,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     LOG(LL_INFO, ("Failed to init ADE7953: %s", s.c_str()));
   }
 
-  int adc_pin = new_rev ? 35 : 37;
+  int adc_pin = new_rev ? 35 : ADC_GPIO;
   sys_temp->reset(new TempSensorSDNT1608X103F3950(adc_pin, 3.3f, 10000.0f));
 
   int pin_out = 0;
-  int pin_in = 1;
+  int pin_in = 1;  // UART Output pin on Plus
 
   if (DetectAddon(pin_in, pin_out)) {
     s_onewire.reset(new Onewire(pin_in, pin_out));
