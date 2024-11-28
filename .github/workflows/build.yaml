@@ -19,6 +19,7 @@ jobs:
           - Shelly1PM
           - Shelly2
           - Shelly25
+          - Shelly2PMGen3
           - ShellyColorBulb
           - ShellyDuo
           - ShellyI3

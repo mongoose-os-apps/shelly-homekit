@@ -757,7 +757,7 @@ conds:
 
   - when: build_vars.MODEL == "Shelly2PMGen3"
     apply:
-      name: 2PMG3
+      name: S2PMG3
       sources:
         - src/DS18XXX
         - src/DHT
@@ -769,6 +769,7 @@ conds:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/ade7953
+        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
@@ -791,18 +792,14 @@ conds:
         BTN_GPIO: 19
         BTN_DOWN: 0
         PRODUCT_HW_REV: "??"
-        STOCK_FW_MODEL: 2PMG3
+        STOCK_FW_MODEL: S2PMG3
         MAX_NUM_HAP_SESSIONS: 16
         RELAY1_GPIO: 5
         RELAY2_GPIO: 3
         SWITCH1_GPIO: 18
         SWITCH2_GPIO: 10
         ADC_GPIO: 1
-      cdefs:
-        PRODUCT_HW_REV: "0.1.9"
-        STOCK_FW_MODEL: Plus2PMG3
-        MAX_NUM_HAP_SESSIONS: 16
-        SHELLY_HAVE_PM: 1
+        SDA_GPIO: 6
       config_schema:
         - ["device.id",    "Shelly2PMG3-??????"]
         - ["shelly.name",  "Shelly2PMG3-??????"]
