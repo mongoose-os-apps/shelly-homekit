@@ -169,8 +169,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   int adc_pin = new_rev ? 35 : ADC_GPIO;
   sys_temp->reset(new TempSensorSDNT1608X103F3950(adc_pin, 3.3f, 10000.0f));
 
-  int pin_out = 0;
-  int pin_in = 1;  // UART Output pin on Plus
+  int pin_out = ADDON_OUT_GPIO;
+  int pin_in = ADDON_IN_GPIO;  // UART Output pin on Plus
 
   if (DetectAddon(pin_in, pin_out)) {
     s_onewire.reset(new Onewire(pin_in, pin_out));
@@ -180,7 +180,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
       sensors = DiscoverDHTSensors(pin_in, pin_out);
     }
 
-    auto *in_digital = new InputPin(3, 19, 0, MGOS_GPIO_PULL_NONE, false);
+    auto *in_digital =
+        new InputPin(3, ADDON_DIG_GPIO, 0, MGOS_GPIO_PULL_NONE, false);
     in_digital->Init();
     inputs->emplace_back(in_digital);
 
@@ -189,7 +190,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     InitSysLED(LED_GPIO, LED_ON);
   }
 
-  InitSysBtn(new_rev ? BTN_GPIO : 27, BTN_DOWN);
+  InitSysBtn(new_rev ? 4 : BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,

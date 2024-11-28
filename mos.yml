@@ -800,6 +800,9 @@ conds:
         SWITCH2_GPIO: 10
         ADC_GPIO: 1
         SDA_GPIO: 6
+        ADDON_OUT_GPIO: 0
+        ADDON_IN_GPIO: 7
+        ADDON_DIG_GPIO: 8
       config_schema:
         - ["device.id",    "Shelly2PMG3-??????"]
         - ["shelly.name",  "Shelly2PMG3-??????"]
@@ -1117,7 +1120,7 @@ conds:
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
-        BTN_GPIO: 4
+        BTN_GPIO: 27
         BTN_DOWN: 0
         PRODUCT_HW_REV: "0.1.9"
         STOCK_FW_MODEL: Plus2PM
@@ -1131,6 +1134,9 @@ conds:
         SWITCH2_GPIO: 18
         ADC_GPIO: 37
         SDA_GPIO: 33
+        ADDON_OUT_GPIO: 0
+        ADDON_IN_GPIO: 1
+        ADDON_DIG_GPIO: 19
       config_schema:
         - ["device.id", "ShellyPlus2PM-??????"]
         - ["shelly.name", "ShellyPlus2PM-??????"]
