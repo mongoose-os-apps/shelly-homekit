@@ -768,7 +768,7 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
-        - location: https://github.com/mongoose-os-libs/ade7953
+        - location: https://github.com/markirb/ade7953
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         OTA_DATA_ADDR: 0x10000
@@ -833,6 +833,14 @@ conds:
         - ["ts4.name", "Shelly TS4"]
         - ["ts5", "ts", {title: "TS5 settings"}]
         - ["ts5.name", "Shelly TS5"]
+
+        - ["factory", "o", {title: ""}]
+        - ["factory.batch", "s", "", {title: ""}]
+        - ["factory.model", "s", "", {title: ""}]
+        - ["factory.version", "i", 0, {title: ""}]
+        - ["factory.calib", "o", {title: "Factory calib settings"}]
+        - ["factory.calib.done", "b", false, {title: ""}]
+        - ["factory.calib.gains0", "gains", {title: ""}]
 
   - when: build_vars.MODEL == "ShellyMini1PMGen3"
     apply:
