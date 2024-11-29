@@ -801,7 +801,7 @@ conds:
         ADC_GPIO: 1
         SDA_GPIO: 6
         ADDON_OUT_GPIO: 0
-        ADDON_IN_GPIO: 7
+        ADDON_IN_GPIO: 21
         ADDON_DIG_GPIO: 8
       config_schema:
         - ["device.id",    "Shelly2PMG3-??????"]
