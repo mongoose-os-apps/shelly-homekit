@@ -22,8 +22,6 @@
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
-
-
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
