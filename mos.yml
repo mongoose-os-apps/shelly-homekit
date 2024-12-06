@@ -803,6 +803,7 @@ conds:
         ADDON_OUT_GPIO: 0
         ADDON_IN_GPIO: 21
         ADDON_DIG_GPIO: 8
+        I2C_RST_GPIO: 0
       config_schema:
         - ["device.id",    "Shelly2PMG3-??????"]
         - ["shelly.name",  "Shelly2PMG3-??????"]
@@ -1137,6 +1138,7 @@ conds:
         ADDON_OUT_GPIO: 0
         ADDON_IN_GPIO: 1
         ADDON_DIG_GPIO: 19
+        I2C_RST_GPIO: -1
       config_schema:
         - ["device.id", "ShellyPlus2PM-??????"]
         - ["shelly.name", "ShellyPlus2PM-??????"]

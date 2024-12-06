@@ -70,7 +70,7 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
     new_rev = true;
   }
 
-  int reset_pin = -1;
+  int reset_pin = I2C_RST_GPIO;
   bool conf_changed = false;
   if (new_rev) {
     if (mgos_sys_config_get_i2c_sda_gpio() != 26) {
@@ -83,7 +83,6 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
       mgos_sys_config_set_i2c_sda_gpio(SDA_GPIO);
       conf_changed = true;
     }
-    reset_pin = -1;  // TODO: unknown?
   }
 
   if (conf_changed) {
