@@ -66,7 +66,7 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
 
   mgos_config_factory *c = &(mgos_sys_config.factory);
 
-  int reset_pin = -1;
+  int reset_pin = I2C_RST_GPIO;
   bool conf_changed = false;
   if (c->model != NULL && strcmp(c->model, "SNSW-102P16EU") == 0) {
     if (mgos_sys_config_get_i2c_sda_gpio() != 26) {
@@ -79,7 +79,6 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
       mgos_sys_config_set_i2c_sda_gpio(SDA_GPIO);
       conf_changed = true;
     }
-    reset_pin = -1;  // TODO: unknown?
   }
 
   if (conf_changed) {
