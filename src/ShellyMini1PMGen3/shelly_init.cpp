@@ -40,7 +40,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   sys_temp->reset(new TempSensorSDNT1608X103F3950(3, 3.3f, 10000.0f));
 #endif
 
-  std::unique_ptr<PowerMeter> pm(new BL0942PowerMeter(1, 6, 7, 20, 1));
+  std::unique_ptr<PowerMeter> pm(new BL0942PowerMeter(1, 6, 7, 1, 1));
   // BL0942 GPIO6 TX GPIO7 RX
   const Status &st = pm->Init();
   if (st.ok()) {
@@ -50,8 +50,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
 
-  InitSysLED(LED_GPIO, LED_ON);
-  InitSysBtn(BTN_GPIO, BTN_DOWN);
+  //InitSysLED(LED_GPIO, LED_ON);
+  //InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
