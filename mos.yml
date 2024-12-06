@@ -798,7 +798,7 @@ conds:
         RELAY2_GPIO: 3
         SWITCH1_GPIO: 18
         SWITCH2_GPIO: 10
-        ADC_GPIO: 1
+        ADC_GPIO: 4
         SDA_GPIO: 6
         ADDON_OUT_GPIO: 0
         ADDON_IN_GPIO: 21
