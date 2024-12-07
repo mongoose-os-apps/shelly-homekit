@@ -15,14 +15,17 @@ jobs:
       matrix:
         model:
           - Shelly1
+          - Shelly1Gen3
           - Shelly1L
           - Shelly1PM
+          - Shelly1PMGen3
           - Shelly2
           - Shelly25
           - Shelly2PMGen3
           - ShellyColorBulb
           - ShellyDuo
           - ShellyI3
+          - ShellyI4Gen3
           - ShellyMini1Gen3
           - ShellyMini1PMGen3
           - ShellyPlug
