@@ -72,8 +72,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
   nvs_flash_init_partition(kNVSPartitionName);
-  outputs->emplace_back(new OutputPin(1, 26, 1));
-  auto *in = new InputPin(1, 4, 1, MGOS_GPIO_PULL_NONE, true);
+  outputs->emplace_back(new OutputPin(1, RELAY1_GPIO, 1));
+  auto *in = new InputPin(1, SWITCH1_GPIO, 1, MGOS_GPIO_PULL_NONE, true);
   in->AddHandler(std::bind(&HandleInputResetSequence, in, LED_GPIO, _1, _2));
   in->Init();
   inputs->emplace_back(in);
@@ -90,6 +90,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
       LOG(LL_ERROR, ("Error reading factory calibration data: %s", ss.c_str()));
     }
   }
+#ifndef UART_TX_GPIO
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 5 /* CF */, 18 /* CF1 */, 23 /* SEL */, 2,
                            mgos_sys_config_get_bl0937_0_apower_scale()));
@@ -100,10 +101,13 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     const std::string &s = st.ToString();
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
-  sys_temp->reset(new TempSensorSDNT1608X103F3950(32, 3.3f, 10000.0f));
+#else
+  //init for BL0942 on Gen3 here TODO
+#endif
+  sys_temp->reset(new TempSensorSDNT1608X103F3950(ADC_GPIO, 3.3f, 10000.0f));
 
-  int pin_out = 0;
-  int pin_in = 1;
+  int pin_out = ADDON_OUT_GPIO;
+  int pin_in = ADDON:IN_GPIO;
 
   if (DetectAddon(pin_in, pin_out)) {
     s_onewire.reset(new Onewire(pin_in, pin_out));
@@ -113,7 +117,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
       sensors = DiscoverDHTSensors(pin_in, pin_out);
     }
 
-    auto *in2 = new InputPin(2, 19, 0, MGOS_GPIO_PULL_NONE, false);
+    auto *in2 = new InputPin(2, ADDON_DIG_GPIO, 0, MGOS_GPIO_PULL_NONE, false);
     in2->Init();
     inputs->emplace_back(in2);
 
