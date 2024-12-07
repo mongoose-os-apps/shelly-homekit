@@ -793,9 +793,9 @@ conds:
         RELAY1_GPIO: 5
         SWITCH1_GPIO: 10
         ADC_GPIO: 3
-        ADDON_OUT_GPIO: 0
-        ADDON_IN_GPIO: 21
-        ADDON_DIG_GPIO: 8
+        ADDON_OUT_GPIO: -1
+        ADDON_IN_GPIO: -1
+        ADDON_DIG_GPIO: -1
       config_schema:
         - ["device.id", "Shelly1Gen3-??????"]
         - ["shelly.name", "Shelly1Gen3-??????"]
@@ -935,9 +935,9 @@ conds:
         RELAY1_GPIO: 4
         SWITCH1_GPIO: 10
         ADC_GPIO: 3
-        ADDON_OUT_GPIO: 0
-        ADDON_IN_GPIO: 21
-        ADDON_DIG_GPIO: 9
+        ADDON_OUT_GPIO: -1
+        ADDON_IN_GPIO: -1
+        ADDON_DIG_GPIO: -1
         UART_TX_GPIO: 6
         UART_RX_GPIO: 7
       config_schema:
@@ -1016,9 +1016,9 @@ conds:
         SWITCH2_GPIO: 10
         ADC_GPIO: 4
         SDA_GPIO: 6
-        ADDON_OUT_GPIO: 0
-        ADDON_IN_GPIO: 21
-        ADDON_DIG_GPIO: 8
+        ADDON_OUT_GPIO: -1
+        ADDON_IN_GPIO: -1
+        ADDON_DIG_GPIO: -1
         I2C_RST_GPIO: 0
       config_schema:
         - ["device.id",    "Shelly2PMG3-??????"]
