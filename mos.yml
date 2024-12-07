@@ -700,6 +700,7 @@ conds:
       name: Plus1PMMini
       sources:
         - src/ShellyMini1PMGen3
+        - src/BL0942
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
@@ -739,6 +740,8 @@ conds:
       name: Mini1PMG3
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
+      sources:
+        - src/BL0942
       build_vars:
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
