@@ -71,12 +71,11 @@ Status BL0942PowerMeter::Init() {
   meas_timer_.Reset(meas_time_ * 1000, MGOS_TIMER_REPEAT);
   LOG(LL_INFO, ("BL0942 @ %d/%d", rx_pin_, tx_pin_));
 
-  this->WriteReg(BL_SOFT_RESET,      0x5a5a5a);
-  this->WriteReg(BL_USR_WRPROT,      0x550000);
-  this->WriteReg(BL_MODE,            0x001000);
-  this->WriteReg(BL_TPS_CTRL,        0xFF4700);
+  this->WriteReg(BL_SOFT_RESET, 0x5a5a5a);
+  this->WriteReg(BL_USR_WRPROT, 0x550000);
+  this->WriteReg(BL_MODE, 0x001000);
+  this->WriteReg(BL_TPS_CTRL, 0xFF4700);
   this->WriteReg(BL_I_FAST_RMS_CTRL, 0x1C1800);
-
 
   return Status::OK();
 }
@@ -93,8 +92,8 @@ bool BL0942PowerMeter::WriteReg(uint8_t reg, uint32_t val) {
   uint8_t tx_buf[6] = {BL_WRITE | BL_ADDR,
                        reg,
                        (uint8_t) ((val >> 16) & 0xFF),
-                       (uint8_t) ((val >>  8) & 0xFF),
-                       (uint8_t) ((val >>  0) & 0xFF),
+                       (uint8_t) ((val >> 8) & 0xFF),
+                       (uint8_t) ((val >> 0) & 0xFF),
                        0};
 
   for (int i = 0; i < 5; i++) {

@@ -50,8 +50,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
 
-  //InitSysLED(LED_GPIO, LED_ON);
-  //InitSysBtn(BTN_GPIO, BTN_DOWN);
+  InitSysLED(LED_GPIO, LED_ON);
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
