@@ -61,6 +61,8 @@ Status BL0942PowerMeter::Init() {
 
   ucfg.dev.rx_gpio = rx_pin_;
   ucfg.dev.tx_gpio = tx_pin_;
+  ucfg.dev.cts_gpio = -1;
+  ucfg.dev.rts_gpio = -1;
 
   if (!mgos_uart_configure(uart_no_, &ucfg)) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "Failed to configure UART");
