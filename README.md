@@ -17,8 +17,8 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 |-                                           |-        |-        |-        |-        |-         |-          
 |Switch & Co.<sup>1</sup>                    |✓        |✓        |✓        |✗        |✓         |✓          
 |Stateless Input<sup>2</sup>                 |✓        |✓        |✓        |✓        |✓         |✓          
-|Garage door opener                          |✓        |✓        |✓        |✓        |✓         |✓          
 |Sensors<sup>3</sup>                         |✓        |✓        |✓        |✓        |✓         |✓
+|Garage door opener                          |✓        |✓        |✓        |✗        |✓         |✓          
 |Roller shutter mode                         |✗        |✗        |-        |✗        |✗         |✗
 |Power measurement                           |✗        |-        |-        |✗        |✗         |-
 |Temperature/Humidity measurement<sup>4</sup>|-        |-        |-        |-        |✗         |✗
@@ -29,7 +29,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 |-                                           |-   |-       |-         |-     |-     |-            |-     
 |Switch & Co.<sup>1</sup>                    |✓   |✓       |✓         |✓     |✓     |✗            |✓     
 |Stateless Input<sup>2</sup>                 |✓   |✓       |✓         |✓     |✓     |✓            |✗    
-|Sensors<sup>3</sup>                         |✓   |✗       |✗         |✓     |✓     |✓            |✗     
+|Sensors<sup>3</sup>                         |✓   |✓       |✓         |✓     |✓     |✓            |✗     
 |Garage door opener                          |✓   |✓       |✓         |✓     |✓     |✗            |✗     
 |Roller shutter mode                         |✗   |✗       |✗         |✗     |✓     |✗            |✗     
 |Power measurement                           |✗   |✗       |-         |✓     |✓     |✗            |✓     
