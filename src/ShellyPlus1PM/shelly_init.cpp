@@ -102,12 +102,12 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
 #else
-  //init for BL0942 on Gen3 here TODO
+  // init for BL0942 on Gen3 here TODO
 #endif
   sys_temp->reset(new TempSensorSDNT1608X103F3950(ADC_GPIO, 3.3f, 10000.0f));
 
   int pin_out = ADDON_OUT_GPIO;
-  int pin_in = ADDON:IN_GPIO;
+  int pin_in = ADDON_IN_GPIO;
 
   if (DetectAddon(pin_in, pin_out)) {
     s_onewire.reset(new Onewire(pin_in, pin_out));
