@@ -71,25 +71,26 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  nvs_flash_init_partition(kNVSPartitionName);
+  // nvs_flash_init_partition(kNVSPartitionName);
   outputs->emplace_back(new OutputPin(1, 26, 1));
   auto *in = new InputPin(1, 4, 1, MGOS_GPIO_PULL_NONE, true);
-  in->AddHandler(std::bind(&HandleInputResetSequence, in, LED_GPIO, _1, _2));
+  in->AddHandler(std::bind(&HandleInputResetSequence, in, 4, _1, _2));
   in->Init();
   inputs->emplace_back(in);
 
   // Read factory calibration data but only if the value is default.
   // If locally adjusted, do not override.
-  if (mgos_sys_config_get_bl0937_0_apower_scale() ==
-      mgos_sys_config_get_default_bl0937_0_apower_scale()) {
-    auto apcs = ReadPowerCoeff();
-    if (apcs.ok()) {
-      mgos_sys_config_set_bl0937_0_apower_scale(apcs.ValueOrDie());
-    } else {
-      auto ss = apcs.status().ToString();
-      LOG(LL_ERROR, ("Error reading factory calibration data: %s", ss.c_str()));
-    }
-  }
+  // if (mgos_sys_config_get_bl0937_0_apower_scale() ==
+  //    mgos_sys_config_get_default_bl0937_0_apower_scale()) {
+  //  auto apcs = ReadPowerCoeff();
+  //  if (apcs.ok()) {
+  //    mgos_sys_config_set_bl0937_0_apower_scale(apcs.ValueOrDie());
+  //  } else {
+  //    auto ss = apcs.status().ToString();
+  //    LOG(LL_ERROR, ("Error reading factory calibration data: %s",
+  //    ss.c_str()));
+  //  }
+  //}
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 5 /* CF */, 18 /* CF1 */, 23 /* SEL */, 2,
                            mgos_sys_config_get_bl0937_0_apower_scale()));
