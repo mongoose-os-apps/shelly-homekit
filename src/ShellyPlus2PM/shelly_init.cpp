@@ -152,7 +152,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   int pin1 = new_rev ? 5 : SWITCH1_GPIO;
 
   auto *in1 = new InputPin(1, pin1, 1, MGOS_GPIO_PULL_NONE, true);
-  in1->AddHandler(std::bind(&HandleInputResetSequence, in1, 4, _1, _2));
+  in1->AddHandler(std::bind(&HandleInputResetSequence, in1, LED_GPIO, _1, _2));
   in1->Init();
   inputs->emplace_back(in1);
   auto *in2 = new InputPin(2, SWITCH2_GPIO, 1, MGOS_GPIO_PULL_NONE, false);
