@@ -33,27 +33,27 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs UNUSED_ARG,
                        std::vector<std::unique_ptr<PowerMeter>> *pms UNUSED_ARG,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  auto *in1 = new InputPin(1, 12, 1, MGOS_GPIO_PULL_NONE, true);
+  auto *in1 = new InputPin(1, SWITCH1_GPIO, 1, MGOS_GPIO_PULL_NONE, true);
   in1->AddHandler(std::bind(&HandleInputResetSequence, in1, LED_GPIO, _1, _2));
   in1->Init();
   inputs->emplace_back(in1);
 
-  auto *in2 = new NoisyInputPin(2, 14, 1, MGOS_GPIO_PULL_NONE, false);
+  auto *in2 = new NoisyInputPin(2, SWITCH2_GPIO, 1, MGOS_GPIO_PULL_NONE, false);
   in2->Init();
   inputs->emplace_back(in2);
 
-  auto *in3 = new NoisyInputPin(3, 27, 1, MGOS_GPIO_PULL_NONE, false);
+  auto *in3 = new NoisyInputPin(3, SWITCH3_GPIO, 1, MGOS_GPIO_PULL_NONE, false);
   in3->Init();
   inputs->emplace_back(in3);
 
-  auto *in4 = new NoisyInputPin(4, 26, 1, MGOS_GPIO_PULL_NONE, false);
+  auto *in4 = new NoisyInputPin(4, SWITCH4_GPIO, 1, MGOS_GPIO_PULL_NONE, false);
   in4->Init();
   inputs->emplace_back(in4);
 
-  sys_temp->reset(new TempSensorSDNT1608X103F3950(32, 3.3f, 10000.0f));
+  sys_temp->reset(new TempSensorSDNT1608X103F3950(ADC_GPIO, 3.3f, 10000.0f));
 
-  int pin_out = 0;
-  int pin_in = 1;
+  int pin_out = ADDON_OUT_GPIO;
+  int pin_in = ADDON_IN_GPIO;
 
   if (DetectAddon(pin_in, pin_out)) {
     s_onewire.reset(new Onewire(pin_in, pin_out));

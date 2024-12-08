@@ -132,6 +132,9 @@ void RestoreUART() {
 }
 
 bool DetectAddon(int pin_in, int pin_out) {
+  if (pin_in == -1 || pin_out == -1) {
+    return false;
+  }
   // case 1: input with pull up
   mgos_gpio_setup_input(pin_in, MGOS_GPIO_PULL_UP);
   // check if pulled by something external, not check output to input yet

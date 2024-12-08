@@ -10,29 +10,33 @@ jobs:
       fail-fast: false
       matrix:
         model:
-          - Shelly1
-          - Shelly1L
-          - Shelly1PM
-          - Shelly2
-          - Shelly25
-          - ShellyColorBulb
-          - ShellyDuo
-          - ShellyI3
-          - ShellyPlug
-          - ShellyPlugS
-          - ShellyPlus1
-          - ShellyPlus1PM
-          - ShellyPlus2PM
-          - ShellyPlusI4
-          - ShellyPlusPlugS
-          - ShellyPlusRGBWPM
-          - ShellyPlus1Mini
-          - ShellyPlus1PMMini
-          - ShellyMini1Gen3
-          - ShellyMini1PMGen3
-          - ShellyRGBW2
-          - ShellyUNI
-          - ShellyVintage
+          # - Shelly1
+          # - Shelly1L
+          # - Shelly1PM
+          # - Shelly2
+          - Shelly2PMGen3
+          - Shelly1PMGen3
+          - Shelly1Gen3
+          - ShellyI4Gen3
+          # - Shelly25
+          # - ShellyColorBulb
+          # - ShellyDuo
+          # - ShellyI3
+          # - ShellyPlug
+          # - ShellyPlugS
+          # - ShellyPlus1
+          # - ShellyPlus1PM
+          # - ShellyPlus2PM
+          # - ShellyPlusI4
+          # - ShellyPlusPlugS
+          # - ShellyPlusRGBWPM
+          # - ShellyPlus1Mini
+          # - ShellyPlus1PMMini
+          # - ShellyMini1Gen3
+          # - ShellyMini1PMGen3
+          # - ShellyRGBW2
+          # - ShellyUNI
+          # - ShellyVintage
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
