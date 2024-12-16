@@ -21,6 +21,21 @@
 
 #include "mgos.hpp"
 
+struct packet {
+  uint8_t frame_header;
+  uint8_t i_rms[2];
+  uint8_t rms[3];
+  uint8_t i_fast_rms[3];
+  uint8_t watt[3];
+  uint8_t cf_cnt[3];
+  uint8_t frequency[2];
+  uint8_t reserved1;
+  uint8_t status;
+  uint8_t reserved2;
+  uint8_t reserved3;
+  uint8_t checksum;
+} __attribute__((packed));
+
 namespace shelly {
 
 BL0942PowerMeter::BL0942PowerMeter(int id, int tx_pin, int rx_pin,
@@ -118,12 +133,10 @@ bool BL0942PowerMeter::ReadReg(uint8_t reg, uint8_t *rx_buf, size_t len) {
   mgos_msleep(roundf(len * 8 / baud) * 1e3);
 
   int read_len = mgos_uart_read(uart_no_, rx_buf, len);
-  LOG(LL_ERROR, ("rx %i", read_len));
 
   uint8_t chksum = tx_buf[0] + tx_buf[1];
   for (int i = 0; i < len; i++) {
     chksum += rx_buf[i];
-    LOG(LL_ERROR, ("%08X", rx_buf[i]));
   }
   chksum ^= 0xFF;
 
@@ -135,17 +148,11 @@ bool BL0942PowerMeter::ReadReg(uint8_t reg, uint8_t *rx_buf, size_t len) {
 }
 
 void BL0942PowerMeter::MeasureTimerCB() {
-  LOG(LL_ERROR, ("timer"));
-  int len = 20;  // including 1 checksum byte
-  uint8_t rx_buf[len] = {};
-  // if (this->ReadReg(0xAA, rx_buf, len)) {
-  // }
-  if (this->ReadReg(0xAA, rx_buf, 4)) {
-    uint32_t d = rx_buf[2] << 16 | rx_buf[1] << 8 | rx_buf[0];
-    if (d & (1 << 23)) {
-      d |= 0xFF000000;
+  packet rx_buf;
+  if (this->ReadReg(0xAA, (uint8_t *) rx_buf, sizeof(rx_buf))) {
+    if (rx_buf.frame_header == 0x55) {
+      // TODO preocess
     }
-    apa_ = d;
   }
 }
 
