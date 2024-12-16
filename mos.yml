@@ -700,6 +700,7 @@ conds:
       name: Plus1PMMini
       sources:
         - src/ShellyMini1PMGen3
+        - src/BL0942
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
@@ -739,6 +740,8 @@ conds:
       name: Mini1PMG3
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
+      sources:
+        - src/BL0942
       build_vars:
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
@@ -764,9 +767,9 @@ conds:
         STOCK_FW_MODEL: Mini1PMG3
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
-        - ["device.id", "ShellyMini1PMG3-??????"]
-        - ["shelly.name", "ShellyMini1PMG3-??????"]
-        - ["wifi.ap.ssid", "ShellyMini1PMG3-??????"]
+        - ["device.id", "Shelly1PMMiniG3-????????????"]
+        - ["shelly.name", "Shelly1PMMiniG3-????????????"]
+        - ["wifi.ap.ssid", "Shelly1PMMiniG3-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
