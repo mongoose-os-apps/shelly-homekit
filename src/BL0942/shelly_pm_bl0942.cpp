@@ -89,10 +89,10 @@ Status BL0942PowerMeter::Init() {
   LOG(LL_INFO, ("BL0942 @ %d/%d", rx_pin_, tx_pin_));
 
   this->WriteReg(BL_SOFT_RESET, 0x5a5a5a);
-  //this->WriteReg(BL_USR_WRPROT, 0x550000);
-  //this->WriteReg(BL_MODE, 0x001000);
-  //this->WriteReg(BL_TPS_CTRL, 0xFF4700);
-  //this->WriteReg(BL_I_FAST_RMS_CTRL, 0x1C1800);
+  // this->WriteReg(BL_USR_WRPROT, 0x550000);
+  // this->WriteReg(BL_MODE, 0x001000);
+  // this->WriteReg(BL_TPS_CTRL, 0xFF4700);
+  // this->WriteReg(BL_I_FAST_RMS_CTRL, 0x1C1800);
 
   return Status::OK();
 }
@@ -176,18 +176,20 @@ void BL0942PowerMeter::MeasureTimerCB() {
       float vref = (73989 / (1.218 * 4));
       float iref = (305978 / (1.218));
 
-      float vo = convert_le24(rx_buf.v_rms) /  vref;
-      float vi = convert_le24(rx_buf.i_rms) /  iref;
-      int32_t wa_tmp  = convert_le24(rx_buf.watt);
-      if(wa_tmp & 0x800000) {
-        wa_tmp |= 0xFF000000;}      
-      float wa = wa_tmp  / wref;
-      float fr = 1000000.0 / (float)convert_le16(rx_buf.frequency);
+      float vo = convert_le24(rx_buf.v_rms) / vref;
+      float vi = convert_le24(rx_buf.i_rms) / iref;
+      int32_t wa_tmp = convert_le24(rx_buf.watt);
+      if (wa_tmp & 0x800000) {
+        wa_tmp |= 0xFF000000;
+      }
+      float wa = wa_tmp / wref;
+      float fr = 1000000.0 / (float) convert_le16(rx_buf.frequency);
 
       apa_ = wa;
       aea_ = cf / (wref * 3600 / (1638.4 * 256));
 
-      LOG(LL_INFO, ("vo: %.1f wa: %.2f i: %.2f fr: %.2f ae: %.2f", vo, wa, vi, fr, aea_));
+      LOG(LL_INFO, ("vo: %.1f wa: %.2f i: %.2f fr: %.2f ae: %.2f", vo, wa, vi,
+                    fr, aea_));
     }
   }
 }
