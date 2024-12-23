@@ -6,7 +6,7 @@
 		"dockerfile": "Dockerfile",
 		// Update 'VARIANT' to pick an Ubuntu version: hirsute, focal, bionic
 		// Use hirsute or bionic on local arm64/Apple Silicon.
-		"args": { "VARIANT": "focal" }
+		"args": { "VARIANT": "jammy" }
 	},
 
 	// Set *default* container specific settings.json values on container create.
@@ -26,7 +26,7 @@
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode",
 	"features": {
-		"docker-in-docker": "20.10",
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
 		"git": "latest"
 	}
 }
