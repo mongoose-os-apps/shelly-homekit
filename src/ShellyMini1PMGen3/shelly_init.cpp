@@ -19,6 +19,7 @@
 #include "shelly_hap_input.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_pm_bl0942.hpp"
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
@@ -35,28 +36,37 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->Init();
   inputs->emplace_back(in);
 
-// not yet compatible
 #ifdef MGOS_HAVE_ADC
   sys_temp->reset(new TempSensorSDNT1608X103F3950(3, 3.3f, 10000.0f));
 #endif
 
-  // std::unique_ptr<PowerMeter> pm()
+  std::unique_ptr<PowerMeter> pm(new BL0942PowerMeter(1, 6, 7, 1, 1));
   // BL0942 GPIO6 TX GPIO7 RX
-  // const Status &st = pm->Init();
-  // if (st.ok()) {
-  //   pms->emplace_back(std::move(pm));
-  // } else {
-  //   const std::string &s = st.ToString();
-  //   LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
-  // }
+  const Status &st = pm->Init();
+  if (st.ok()) {
+    pms->emplace_back(std::move(pm));
+  } else {
+    const std::string &s = st.ToString();
+    LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
+  }
 
   InitSysLED(LED_GPIO, LED_ON);
   InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
+void PrintCalibrationData() {
+  mgos_config_factory *c = &(mgos_sys_config.factory);
+  LOG(LL_INFO, ("calibration.done %Q", c->calib.done));
+  mgos_config_scales *s = &c->calib.scales0;
+  LOG(LL_INFO, ("gains vs: %f cs: %f ps: %f es: %f", s->voltage_scale,
+                s->current_scale, s->apower_scale, s->aenergy_scale));
+}
+
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
+  void PrintCalibrationData();
+
   bool gdo_mode = mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor;
   if (gdo_mode) {
     hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),
