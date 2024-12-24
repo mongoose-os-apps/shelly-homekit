@@ -1,0 +1,8 @@
+
+image=ghcr.io/markirb/esp32-build:4.4.1-r7
+docker build -t $image -f Dockerfile-esp32-build .
+docker push $image
+
+image=ghcr.io/markirb/mos:latest
+docker build -t $image -f Dockerfile-mos .
+docker push $image
