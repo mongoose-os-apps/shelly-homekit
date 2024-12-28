@@ -936,7 +936,7 @@ conds:
         UART_TX_GPIO: 6
         UART_RX_GPIO: 7
         PRODUCT_HW_REV: "?"
-        STOCK_FW_MODEL: PlusPlugS
+        STOCK_FW_MODEL: PlugSG3
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
         - ["device.id", "ShellyPlugSG3-??????"]
