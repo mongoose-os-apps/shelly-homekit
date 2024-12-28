@@ -625,6 +625,10 @@ conds:
         LED_ON: 1
         BTN_GPIO: 9
         BTN_DOWN: 0
+        RELAY_GPIO: 4
+        NEOPX_GPIO: 25
+        NEOPX1_GPIO: 26
+        ADC_GPIO: 33
         PRODUCT_HW_REV: "2.0.0"
         STOCK_FW_MODEL: PlusPlugS
         MAX_NUM_HAP_SESSIONS: 16
@@ -896,6 +900,54 @@ conds:
         - ["ts4.name", "Shelly TS4"]
         - ["ts5", "ts", {title: "TS5 settings"}]
         - ["ts5.name", "Shelly TS5"]
+
+  - when: build_vars.MODEL == "ShellyPlugSGen3"
+    apply:
+      name: PlugSG3
+      sources:
+        - src/ShellyPlusPlugS
+        - src/BL0942
+      libs:
+        - location: https://github.com/mongoose-os-libs/mongoose
+      build_vars:
+        OTA_DATA_ADDR: 0x10000
+        OTA_DATA_SIZE: 0x4000
+        NVS_ADDR: 0x14000
+        NVS_SIZE: 0xC000
+        APP_OFFSET: 0x20000
+        APP_SLOT_SIZE: 0x280000
+        MGOS_ROOT_FS_TYPE: LFS
+        MGOS_ROOT_FS_SIZE: 1048576
+        ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+            CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+      cdefs:
+        LED_GPIO: -1
+        LED_ON: 1
+        BTN_GPIO: 18
+        BTN_DOWN: 0
+        RELAY_GPIO: 5
+        NEOPX_GPIO: 4
+        ADC_GPIO: 3
+        UART_TX_GPIO: 6
+        UART_RX_GPIO: 7
+        PRODUCT_HW_REV: "?"
+        STOCK_FW_MODEL: PlusPlugS
+        MAX_NUM_HAP_SESSIONS: 16
+      config_schema:
+        - ["device.id", "ShellyPlugSG3-??????"]
+        - ["shelly.name", "ShellyPlugSG3-??????"]
+        - ["wifi.ap.ssid", "ShellyPlugSG3-??????"]
+        - ["sw1", "sw", {title: "Plug settings"}]
+        - ["sw1.name", "Shelly Plus Plug S"]
+        - ["sw1.in_mode", -1]
+        - ["sw1.svc_type", 1]  # Outlet
+        - ["sw1.initial_state", 2]
+        - ["sw1.state_led_en", 1]
 
   - when: build_vars.MODEL == "Shelly1PMGen3"
     apply:

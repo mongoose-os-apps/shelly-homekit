@@ -1,7 +1,7 @@
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
 .PHONY: build check-format format release upload \
-        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlusPlugS ShellyPlus1 ShellyPlus1PM ShellyPlus2PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyUDuo ShellyURGBW2 ShellyUNI ShellyPlus1Mini ShellyPlusRGBWPM ShellyMini1Gen3 ShellyMini1PMGen3 Shelly2PMGen3 Shelly1PMGen3 Shelly1Gen3 ShellyI4Gen3 ShellyPlusUni
+        Shelly1 Shelly1L Shelly1PM Shelly25 Shelly2 ShellyColorBulb ShellyDuo ShellyI3 ShellyPlug ShellyPlugS ShellyPlusPlugS ShellyPlus1 ShellyPlus1PM ShellyPlus2PM ShellyPlusI4 ShellyRGBW2 ShellyVintage ShellyU ShellyU25 ShellyUDuo ShellyURGBW2 ShellyUNI ShellyPlus1Mini ShellyPlusRGBWPM ShellyMini1Gen3 ShellyMini1PMGen3 Shelly2PMGen3 Shelly1PMGen3 Shelly1Gen3 ShellyI4Gen3 ShellyPlugSGen3 ShellyPlusUni
 .SUFFIXES:
 
 MOS ?= mos
@@ -110,6 +110,10 @@ ShellyI4Gen3: build-ShellyI4Gen3
 
 Shelly2PMGen3: PLATFORM=esp32c3
 Shelly2PMGen3: build-Shelly2PMGen3
+	@true
+
+ShellyPlugSGen3: PLATFORM=esp32c3
+ShellyPlugSGen3: build-ShellyPlugSGen3
 	@true
 
 ShellyMini1Gen3: PLATFORM=esp32c3

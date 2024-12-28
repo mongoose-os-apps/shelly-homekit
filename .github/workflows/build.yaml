@@ -30,6 +30,7 @@ jobs:
           - ShellyMini1PMGen3
           - ShellyPlug
           - ShellyPlugS
+          - ShellyPlugSGen3
           - ShellyPlus1
           - ShellyPlus1Mini
           - ShellyPlus1PM
