@@ -31,6 +31,10 @@
 #include "shelly_temp_sensor_ntc.hpp"
 #include "shelly_temp_sensor_ow.hpp"
 
+#ifdef UART_TX_GPIO
+#include "shelly_pm_bl0942.hpp"
+#endif
+
 namespace shelly {
 
 static std::unique_ptr<Onewire> s_onewire;
@@ -94,6 +98,10 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 5 /* CF */, 18 /* CF1 */, 23 /* SEL */, 2,
                            mgos_sys_config_get_bl0937_0_apower_scale()));
+#else
+  std::unique_ptr<PowerMeter> pm(
+      new BL0942PowerMeter(1, UART_TX_GPIO, UART_RX_GPIO, 1, 1));
+#endif
   const Status &st = pm->Init();
   if (st.ok()) {
     pms->emplace_back(std::move(pm));
@@ -101,9 +109,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     const std::string &s = st.ToString();
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
-#else
-  // init for BL0942 on Gen3 here TODO
-#endif
+
   sys_temp->reset(new TempSensorSDNT1608X103F3950(ADC_GPIO, 3.3f, 10000.0f));
 
   int pin_out = ADDON_OUT_GPIO;
