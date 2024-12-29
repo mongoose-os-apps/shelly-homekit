@@ -19,22 +19,27 @@
 
 #include "shelly_output.hpp"
 
+#include "mgos_config.h"
 #include "mgos_neopixel.h"
 
 namespace shelly {
 
 class StatusLED : public Output {
  public:
-  StatusLED(int id, int pin, int num_pixel,
-            enum mgos_neopixel_order pixel_type, Output *chained_led);
+  StatusLED(int id, int pin, int num_pixel, enum mgos_neopixel_order pixel_type,
+            Output *chained_led, const struct mgos_config_led *cfg);
   virtual ~StatusLED();
 
   // Output interface impl.
   bool GetState() override;
   Status SetState(bool on, const char *source) override;
-  Status SetStatePWM(float duty, const char *source) override { return Status::UNIMPLEMENTED(); };
-  Status Pulse(bool on, int duration_ms, const char *source) override { return Status::UNIMPLEMENTED(); };
-  void SetInvert(bool out_invert) override {};
+  Status SetStatePWM(float duty, const char *source) override {
+    return Status::UNIMPLEMENTED();
+  };
+  Status Pulse(bool on, int duration_ms, const char *source) override {
+    return Status::UNIMPLEMENTED();
+  };
+  void SetInvert(bool out_invert) override{};
   int pin() const;
 
  protected:
@@ -47,6 +52,8 @@ class StatusLED : public Output {
   struct mgos_neopixel *pixel_;
 
   Output *chained_led_;
+
+  const struct mgos_config_led *cfg_;
 
   StatusLED(const StatusLED &other) = delete;
 };

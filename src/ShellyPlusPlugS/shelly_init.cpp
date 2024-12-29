@@ -31,8 +31,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, 4, 1));
 
-  outputs->emplace_back(new StatusLED(2, 25, 2, MGOS_NEOPIXEL_ORDER_GRB, nullptr));
-  outputs->emplace_back(new StatusLED(3, 26, 2, MGOS_NEOPIXEL_ORDER_GRB, FindOutput(2)));
+  outputs->emplace_back(new StatusLED(2, 25, 2, MGOS_NEOPIXEL_ORDER_GRB,
+                                      nullptr, mgos_sys_config_get_led()));
+  outputs->emplace_back(new StatusLED(3, 26, 2, MGOS_NEOPIXEL_ORDER_GRB,
+                                      FindOutput(2),
+                                      mgos_sys_config_get_led()));
 
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 10 /* CF */, 22 /* CF1 */, 19 /* SEL */, 2,

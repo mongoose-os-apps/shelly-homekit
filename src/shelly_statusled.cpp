@@ -20,8 +20,13 @@
 namespace shelly {
 
 StatusLED::StatusLED(int id, int pin, int num_pixel,
-                     enum mgos_neopixel_order pixel_type, Output *chained_led)
-    : Output(id), pin_(pin), num_pixel_(num_pixel), chained_led_(chained_led) {
+                     enum mgos_neopixel_order pixel_type, Output *chained_led,
+                     const struct mgos_config_led *cfg)
+    : Output(id),
+      pin_(pin),
+      num_pixel_(num_pixel),
+      chained_led_(chained_led),
+      cfg_(cfg) {
   pixel_ = mgos_neopixel_create(pin_, num_pixel_, pixel_type);
   value_ = false;
 }
@@ -45,13 +50,17 @@ struct rgb {
 };
 
 Status StatusLED::SetState(bool on, const char *source) {
-  if(chained_led_ != nullptr) {
+  if (chained_led_ != nullptr) {
     chained_led_->SetState(on, source);
   }
   value_ = on;
   // get color from config
-  struct rgb colorOn = {0, 0, 255};
-  struct rgb colorOff = {255, 0, 0};
+  struct rgb colorOn = {(cfg_->color_on >> 16) & 0xFF,
+                        (cfg_->color_on >> 8) & 0xFF,
+                        (cfg_->color_on >> 0) & 0xFF};
+  struct rgb colorOff = {(cfg_->color_off >> 16) & 0xFF,
+                         (cfg_->color_off >> 8) & 0xFF,
+                         (cfg_->color_off >> 0) & 0xFF};
 
   struct rgb color = on ? colorOn : colorOff;
 
