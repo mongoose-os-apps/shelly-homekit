@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
+#include "mgos_config.h"
+
+#ifdef MGOS_CONFIG_HAVE_LED
+
 #pragma once
 
 #include "shelly_output.hpp"
 
-#include "mgos_config.h"
 #include "mgos_neopixel.h"
 
 namespace shelly {
@@ -59,3 +62,5 @@ class StatusLED : public Output {
 };
 
 }  // namespace shelly
+
+#endif

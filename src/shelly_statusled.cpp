@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "shelly_statusled.hpp"
+
+#ifdef MGOS_CONFIG_HAVE_LED
 
 namespace shelly {
 
@@ -72,3 +73,5 @@ Status StatusLED::SetState(bool on, const char *source) {
 }
 
 }  // namespace shelly
+
+#endif
