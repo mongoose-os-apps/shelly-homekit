@@ -618,6 +618,8 @@ conds:
           ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+      libs:
+        - location: https://github.com/mongoose-os-libs/neopixel
       cdefs:
         LED_GPIO: 25
         LED_ON: 1
