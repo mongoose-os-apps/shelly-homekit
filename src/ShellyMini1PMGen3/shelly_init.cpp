@@ -56,7 +56,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 
 void PrintCalibrationData() {
   mgos_config_factory *c = &(mgos_sys_config.factory);
-  LOG(LL_INFO, ("calibration.done %Q", c->calib.done));
+  LOG(LL_INFO, ("calibration.done %b", c->calib.done));
   mgos_config_scales *s = &c->calib.scales0;
   LOG(LL_INFO, ("gains vs: %f cs: %f ps: %f es: %f", s->voltage_scale,
                 s->current_scale, s->apower_scale, s->aenergy_scale));
