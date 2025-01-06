@@ -22,18 +22,19 @@ jobs:
           - ShellyColorBulb
           - ShellyDuo
           - ShellyI3
+          - ShellyMini1Gen3
+          - ShellyMini1PMGen3
           - ShellyPlug
           - ShellyPlugS
           - ShellyPlus1
+          - ShellyPlus1Mini
           - ShellyPlus1PM
+          - ShellyPlus1PMMini
           - ShellyPlus2PM
           - ShellyPlusI4
           - ShellyPlusPlugS
           - ShellyPlusRGBWPM
-          - ShellyPlus1Mini
-          - ShellyPlus1PMMini
-          - ShellyMini1Gen3
-          - ShellyMini1PMGen3
+          - ShellyPlusUni
           - ShellyRGBW2
           - ShellyUNI
           - ShellyVintage

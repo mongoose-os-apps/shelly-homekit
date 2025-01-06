@@ -1179,16 +1179,25 @@ conds:
   - when: build_vars.MODEL == "ShellyUNI"
     apply:
       name: uni
+      sources:
+        - src/DS18XXX
+        - src/DHT
       libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
-        - location: https://github.com/mongoose-os-libs/ade7953
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
         BOOT_CONFIG_ADDR: 0x1000
         MGOS_ROOT_FS_TYPE: SPIFFS
       cdefs:
+        RELAY1_GPIO: 15
+        RELAY2_GPIO: 4
+        SWITCH1_GPIO: 12
+        SWITCH2_GPIO: 13
+        SENSOR_GPIO: 5
         LED_GPIO: 0
         LED_ON: 0
         BTN_GPIO: 2
@@ -1212,6 +1221,74 @@ conds:
         - ["in2.sensor.name", "Shelly S2"]
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
+
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
+
+  - when: build_vars.MODEL == "ShellyPlusUni"
+    apply:
+      name: PlusUni
+      sources:
+        - src/DS18XXX
+        - src/DHT
+        - src/ShellyUNI
+      libs:
+        - location: https://github.com/mongoose-os-libs/onewire
+        - location: https://github.com/mongoose-os-libs/dht
+        - location: https://github.com/mongoose-os-libs/mongoose
+      build_vars:
+        ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
+        ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
+        ESP_IDF_SDKCONFIG_OPTS: >
+          ${build_vars.ESP_IDF_SDKCONFIG_OPTS}
+            CONFIG_FREERTOS_UNICORE=y
+            CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+      cdefs:
+        LED_GPIO: 18
+        LED_ON: 0
+        BTN_GPIO: -1
+        BTN_DOWN: 0
+        RELAY1_GPIO: 21
+        RELAY2_GPIO: 19
+        SWITCH1_GPIO: 37
+        SWITCH2_GPIO: 38
+        SENSOR_GPIO: 13
+        PRODUCT_HW_REV: "0.1.4"
+        STOCK_FW_MODEL: PlusUni
+        MAX_NUM_HAP_SESSIONS: 16
+      config_schema:
+        - ["device.id", "ShellyPlusUni-????????????"]
+        - ["shelly.name", "ShellyPlusUni--????????????"]
+        - ["wifi.ap.ssid", "ShellyPlusUni--????????????"]
+
+        - ["sw1", "sw", {title: "SW1 settings"}]
+        - ["sw1.name", "Shelly SW1"]
+        - ["in1", "in", {title: "Input 1 settings"}]
+        - ["in1.ssw.name", "Shelly SSW1"]
+        - ["in1.sensor.name", "Shelly S1"]
+        - ["sw2", "sw", {title: "SW2 settings"}]
+        - ["sw2.name", "Shelly SW2"]
+        - ["in2", "in", {title: "Input 2 settings"}]
+        - ["in2.ssw.name", "Shelly SSW2"]
+        - ["in2.sensor.name", "Shelly S2"]
+        - ["gdo1", "gdo", {title: "GDO1 settings"}]
+        - ["gdo1.name", "Garage Door"]
+
+        - ["ts1", "ts", {title: "TS1 settings"}]
+        - ["ts1.name", "Shelly TS1"]
+        - ["ts2", "ts", {title: "TS2 settings"}]
+        - ["ts2.name", "Shelly TS2"]
+        - ["ts3", "ts", {title: "TS3 settings"}]
+        - ["ts3.name", "Shelly TS3"]
+        - ["ts4", "ts", {title: "TS4 settings"}]
+        - ["ts4.name", "Shelly TS4"]
+        - ["ts5", "ts", {title: "TS5 settings"}]
+        - ["ts5.name", "Shelly TS5"]
+
 
   - when: build_vars.MODEL == "ShellyVintage"
     apply:
