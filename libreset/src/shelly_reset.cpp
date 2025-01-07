@@ -34,8 +34,16 @@ extern "C" uint32_t rtc_get_reset_reason(void);
 // so we can repurpose this location for failsafe flag.
 #define RTC_SCRATCH_ADDR 0x600011fc
 #elif CS_PLATFORM == CS_P_ESP32
-#include "esp32/rom/rtc.h"
+
+#include "sdkconfig.h"
 #define RTC_SCRATCH_ADDR 0x50001ffc
+
+#ifdef CONFIG_IDF_TARGET_ESP32
+#include "esp32/rom/rtc.h"
+#elif CONFIG_IDF_TARGET_ESP32C3
+#include "esp32c3/rom/rtc.h"
+#endif
+
 #endif
 
 #define FF_MODE_MAGIC 0x18365472
@@ -168,7 +176,7 @@ bool IsSoftReboot() {
   return (ri->reason == REASON_SOFT_RESTART);
 #elif CS_PLATFORM == CS_P_ESP32
   RESET_REASON rr = rtc_get_reset_reason(0 /* core */);
-  return (rr == SW_RESET || rr == SW_CPU_RESET);
+  return (rr == (int) RESET_REASON_CORE_SW || rr == (int) RESET_REASON_CPU0_SW);
 #else
   return false;
 #endif
