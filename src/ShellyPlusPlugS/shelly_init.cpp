@@ -23,23 +23,35 @@
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
+#ifdef UART_TX_GPIO
+#include "shelly_pm_bl0942.hpp"
+#endif
+
 namespace shelly {
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::vector<std::unique_ptr<Output>> *outputs,
                        std::vector<std::unique_ptr<PowerMeter>> *pms,
                        std::unique_ptr<TempSensor> *sys_temp) {
-  outputs->emplace_back(new OutputPin(1, 4, 1));
+  outputs->emplace_back(new OutputPin(1, RELAY_GPIO, 1));
 
-  outputs->emplace_back(new StatusLED(2, 25, 2, MGOS_NEOPIXEL_ORDER_GRB,
+  outputs->emplace_back(new StatusLED(2, NEOPX_GPIO, 2, MGOS_NEOPIXEL_ORDER_GRB,
                                       nullptr, mgos_sys_config_get_led()));
-  outputs->emplace_back(new StatusLED(3, 26, 2, MGOS_NEOPIXEL_ORDER_GRB,
-                                      FindOutput(2),
+#ifdef NEOPX1_GPIO
+  outputs->emplace_back(new StatusLED(3, NEOPX1_GPIO, 2,
+                                      MGOS_NEOPIXEL_ORDER_GRB, FindOutput(2),
                                       mgos_sys_config_get_led()));
+#endif
 
+#ifndef UART_TX_GPIO
   std::unique_ptr<PowerMeter> pm(
       new BL0937PowerMeter(1, 10 /* CF */, 22 /* CF1 */, 19 /* SEL */, 2,
                            mgos_sys_config_get_bl0937_power_coeff()));
+#else
+  std::unique_ptr<PowerMeter> pm(
+      new BL0942PowerMeter(1, UART_TX_GPIO, UART_RX_GPIO, 1, 1));
+#endif
+
   const Status &st = pm->Init();
   if (st.ok()) {
     pms->emplace_back(std::move(pm));
@@ -47,7 +59,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     const std::string &s = st.ToString();
     LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
   }
-  sys_temp->reset(new TempSensorSDNT1608X103F3950(33, 3.3f, 10000.0f));
+  sys_temp->reset(new TempSensorSDNT1608X103F3950(ADC_GPIO, 3.3f, 10000.0f));
 
   InitSysLED(LED_GPIO, LED_ON);
   InitSysBtn(BTN_GPIO, BTN_DOWN);
