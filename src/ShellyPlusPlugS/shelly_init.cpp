@@ -38,8 +38,8 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   outputs->emplace_back(new StatusLED(2, NEOPX_GPIO, 2, MGOS_NEOPIXEL_ORDER_GRB,
                                       nullptr, mgos_sys_config_get_led()));
 #ifdef NEOPX1_GPIO
-  outputs->emplace_back(new StatusLED(3, NEOPX1_GPIO, 2, MGOS_NEOPIXEL_ORDER_GRB,
-                                      FindOutput(2),
+  outputs->emplace_back(new StatusLED(3, NEOPX1_GPIO, 2,
+                                      MGOS_NEOPIXEL_ORDER_GRB, FindOutput(2),
                                       mgos_sys_config_get_led()));
 #endif
 
