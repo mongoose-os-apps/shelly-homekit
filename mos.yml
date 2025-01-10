@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.13.4-alpha1
+version: 2.13.4-alpha2
 
 libs_version: latest
 modules_version: latest
@@ -909,6 +909,7 @@ conds:
         - src/BL0942
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/mongoose-os-libs/neopixel
       build_vars:
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
@@ -948,6 +949,8 @@ conds:
         - ["sw1.svc_type", 1]  # Outlet
         - ["sw1.initial_state", 2]
         - ["sw1.state_led_en", 1]
+        - ["led.color_on", "i", 0x00FF00, {title: "LED color when on"}]
+        - ["led.color_off", "i", 0xFF0000, {title: "LED color when off"}]
 
   - when: build_vars.MODEL == "Shelly1PMGen3"
     apply:
