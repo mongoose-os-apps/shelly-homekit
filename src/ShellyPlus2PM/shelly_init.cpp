@@ -64,11 +64,15 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
       .current_pga_gain_1 = 0,  // MGOS_ADE7953_PGA_GAIN_8,
   };
 
+  bool new_rev = false;
   mgos_config_factory *c = &(mgos_sys_config.factory);
+  if (c->model != NULL && strcmp(c->model, "SNSW-102P16EU") == 0) {
+    new_rev = true;
+  }
 
   int reset_pin = -1;
   bool conf_changed = false;
-  if (c->model != NULL && strcmp(c->model, "SNSW-102P16EU") == 0) {
+  if (new_rev) {
     if (mgos_sys_config_get_i2c_sda_gpio() != 26) {
       mgos_sys_config_set_i2c_sda_gpio(26);
       conf_changed = true;
@@ -120,9 +124,11 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
   }
 
   Status st;
-  std::unique_ptr<PowerMeter> pm1(new ADE7953PowerMeter(1, s_ade7953, 0));
+  std::unique_ptr<PowerMeter> pm1(
+      new ADE7953PowerMeter(1, s_ade7953, (new_rev ? 0 : 1)));
   if (!(st = pm1->Init()).ok()) return st;
-  std::unique_ptr<PowerMeter> pm2(new ADE7953PowerMeter(2, s_ade7953, 1));
+  std::unique_ptr<PowerMeter> pm2(
+      new ADE7953PowerMeter(2, s_ade7953, (new_rev ? 1 : 0)));
   if (!(st = pm2->Init()).ok()) return st;
 
   pms->emplace_back(std::move(pm1));
