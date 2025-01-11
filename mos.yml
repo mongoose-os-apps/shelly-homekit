@@ -162,9 +162,18 @@ cdefs:
 
 libs:
   - location: ./libreset
-  - location: https://github.com/markirb/core
+
+  #for remapping deps to correct ones
+  #esp8266 needs old mbedtls
+  - location: https://github.com/shelly-homekit-mos/core
+  - location: https://github.com/shelly-homekit-mos/rpc-common
+  - location: https://github.com/shelly-homekit-mos/ota-common
+  - location: https://github.com/shelly-homekit-mos/vfs-common
+  - location: https://github.com/shelly-homekit-mos/mongoose
+
+  - location: https://github.com/shelly-homekit-mos/homekit-adk
+
   - location: https://github.com/mongoose-os-libs/file-logger
-  - location: https://github.com/mongoose-os-libs/homekit-adk
   - location: https://github.com/mongoose-os-libs/http-server
   - location: https://github.com/mongoose-os-libs/ota-http-server
   - location: https://github.com/mongoose-os-libs/rpc-service-config
@@ -172,6 +181,7 @@ libs:
   - location: https://github.com/mongoose-os-libs/rpc-uart
   - location: https://github.com/mongoose-os-libs/rpc-ws
   - location: https://github.com/mongoose-os-libs/sntp
+
   # Not enough space on 2.5
   # - location: https://github.com/mongoose-os-libs/rpc-mqtt
   # - location: https://github.com/mongoose-os-libs/rpc-service-ota
@@ -179,20 +189,15 @@ libs:
   # - location: https://github.com/mongoose-os-libs/rpc-service-gpio
 
 conds:
-  - when: mos.platform == "esp32c3"
-    apply:
-      libs:
-        - location: https://github.com/markirb/adc
+
   - when: mos.platform == "esp32"
     apply:
       libs:
-        - location: https://github.com/mongoose-os-libs/adc
         - location: https://github.com/shelly-homekit-mos/pwm
 
   - when: mos.platform == "esp8266"
     apply:
       libs:
-        - location: https://github.com/mongoose-os-libs/adc
         - location: https://github.com/shelly-homekit-mos/pwm
 
   - when: mos.platform != "ubuntu"
@@ -200,6 +205,9 @@ conds:
       sources:
         - src/noisy_input_pin
         - src/wifi_config
+      libs:
+        - location: https://github.com/shelly-homekit-mos/adc
+        - location: https://github.com/shelly-homekit-mos/wifi
       config_schema:
         - ["wifi.ap.pass", ""]
         - ["wifi.ap.ip", "192.168.33.1"]
@@ -214,8 +222,6 @@ conds:
         # This is believed to be fixed, default has been flipped back to 0 in 2.11.0.
         # Consider removing in later releases.
         - ["shelly.wifi_connect_reboot_timeout", "i", 0, {title: "If not connected for this long when supposed to be, reboot"}]
-      libs:
-        - location: https://github.com/mongoose-os-libs/wifi
       cdefs:
         # Size fine-tuning, saves substantial amount of RAM vs defaults.
         HAP_SESSION_SIZE: 392
@@ -661,8 +667,6 @@ conds:
   - when: build_vars.MODEL == "ShellyPlusRGBWPM"
     apply:
       name: PlusRGBWPM
-      libs:
-        - location: https://github.com/mongoose-os-libs/mongoose
       sources:
         - src/ShellyRGBW2
       build_vars:
@@ -726,8 +730,6 @@ conds:
       sources:
         - src/ShellyMini1PMGen3
         - src/BL0942
-      libs:
-        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_SIZE: 0x60000
         APP_SLOT_SIZE: 0x190000
@@ -1062,8 +1064,7 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
-        - location: https://github.com/markirb/ade7953
-        - location: https://github.com/mongoose-os-libs/mongoose
+        - location: https://github.com/shelly-homekit-mos/ade7953
       build_vars:
         PARTITION_TABLE_OFFSET: 0x10000
         OTA_DATA_ADDR: 0x11000
@@ -1149,8 +1150,6 @@ conds:
   - when: build_vars.MODEL == "ShellyMini1PMGen3"
     apply:
       name: Mini1PMG3
-      libs:
-        - location: https://github.com/mongoose-os-libs/mongoose
       sources:
         - src/BL0942
       build_vars:
@@ -1205,8 +1204,6 @@ conds:
   - when: build_vars.MODEL == "ShellyMini1Gen3"
     apply:
       name: Mini1G3
-      libs:
-        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
@@ -1249,8 +1246,6 @@ conds:
       name: Plus1Mini
       sources:
         - src/ShellyMini1Gen3
-      libs:
-        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         MGOS_ROOT_FS_TYPE: LFS
         MGOS_ROOT_FS_SIZE: 0x60000
@@ -1296,7 +1291,6 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
-        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
@@ -1357,7 +1351,6 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
-        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
@@ -1426,7 +1419,7 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
-        - location: https://github.com/mongoose-os-libs/ade7953
+        - location: https://github.com/shelly-homekit-mos/ade7953
       build_vars:
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
@@ -1670,7 +1663,6 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
-        - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
