@@ -25,15 +25,15 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ### Plus devices
 
-|                                            |[+1]|[+1Mini]|[+1PMMini]|[+1PM]|[+2PM]|+i4 [AC]/[DC]|[+Plug S]
-|-                                           |-   |-       |-         |-     |-     |-            |-     
-|Switch & Co.<sup>1</sup>                    |✓   |✓       |✓         |✓     |✓     |✗            |✓     
-|Stateless Input<sup>2</sup>                 |✓   |✓       |✓         |✓     |✓     |✓            |✗    
-|Sensors<sup>3</sup>                         |✓   |✓       |✓         |✓     |✓     |✓            |✗     
-|Garage door opener                          |✓   |✓       |✓         |✓     |✓     |✗            |✗     
-|Roller shutter mode                         |✗   |✗       |✗         |✗     |✓     |✗            |✗     
-|Power measurement                           |✗   |✗       |-         |✓     |✓     |✗            |✓     
-|Temperature/Humidity measurement<sup>4</sup>|✓   |✗       |✗         |✓     |✓     |✓            |✗     
+|                                            |[+1]|[+1Mini]|[+1PMMini]|[+1PM]|[+2PM]|+i4 [AC]/[DC]|[+Plug S|[+Uni]
+|-                                           |-   |-       |-         |-     |-     |-            |-       |-     
+|Switch & Co.<sup>1</sup>                    |✓   |✓       |✓         |✓     |✓     |✗            |✓       |✓     
+|Stateless Input<sup>2</sup>                 |✓   |✓       |✓         |✓     |✓     |✓            |✗       |✓    
+|Sensors<sup>3</sup>                         |✓   |✓       |✓         |✓     |✓     |✓            |✗       |✓     
+|Garage door opener                          |✓   |✓       |✓         |✓     |✓     |✗            |✗       |✓    
+|Roller shutter mode                         |✗   |✗       |✗         |✗     |✓     |✗            |✗       |✗     
+|Power measurement                           |✗   |✗       |-         |✓     |✓     |✗            |✓       |✗     
+|Temperature/Humidity measurement<sup>4</sup>|✓   |✗       |✗         |✓     |✓     |✓            |✗       |✓     
 
 ### Light Controllers
 
@@ -57,7 +57,7 @@ Currently not supported.
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✗|✓|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✗|✗|✓|✓|✓|✓|
 |Sensors<sup>3</sup>|✓|✓|✓|✗|✗|✓|✓|✓|✓|
-|Temperature/Humidity measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|-|
+|Temperature/Humidity measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✓|
 |Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✓|
 |Roller shutter mode|✗|✗|✗|✗|✗|✗|✓|✗|✗|
 |Power measurement|✗|✓|-|✓|✓|✗|✓|✗|✗|
@@ -184,6 +184,7 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [+1]: https://www.shelly.cloud/en/products/shop/shelly-plus-1
 [+1Mini]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-mini
 [+1PMMini]: https://www.shelly.cloud/en/products/shop/shelly-plus-1pm-mini
+[+Uni]: https://www.shelly.cloud/en/products/shop/shelly-plus-uni
 [Mini1 G3]: https://www.shelly.cloud/en/products/shop/shelly-1-mini-gen-3
 [Mini1PM G3]: https://www.shelly.cloud/en/products/shop/shelly-1-pm-mini-gen3
 [2PM G3]: https://www.shelly.cloud/en/products/shop/shelly-2pm-gen3
