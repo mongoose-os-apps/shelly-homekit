@@ -797,9 +797,9 @@ conds:
         RELAY1_GPIO: 5
         SWITCH1_GPIO: 10
         ADC_GPIO: 3
-        ADDON_OUT_GPIO: -1
-        ADDON_IN_GPIO: -1
-        ADDON_DIG_GPIO: -1
+        ADDON_OUT_GPIO: -1 #most likely: 8
+        ADDON_IN_GPIO: -1  #most likely: 21
+        ADDON_DIG_GPIO: -1 #most likely: 9
       config_schema:
         - ["device.id", "Shelly1Gen3-??????"]
         - ["shelly.name", "Shelly1Gen3-??????"]
