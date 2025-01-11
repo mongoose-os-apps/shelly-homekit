@@ -174,7 +174,7 @@ ifneq "$(ALLOW_DIRTY_FS)" "1"
 	@[ -z "$(wildcard fs/conf*.json fs/kvs.json)" ] || { echo; echo "XXX No configs in fs allowed, or set ALLOW_DIRTY_FS=1"; echo; exit 1; }
 endif
 	$(MOS) build --platform=$(PLATFORM) --build-var=MODEL=$* \
-	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL) --repo https://github.com/markirb/mongoose-os
+	  --build-dir=$(BUILD_DIR) --binary-libs-dir=./binlibs $(MOS_BUILD_FLAGS_FINAL) --repo https://github.com/shelly-homekit-mos/mongoose-os
 ifeq "$(RELEASE)" "1"
 	[ $(PLATFORM) = ubuntu ] || \
 	  (dir=releases/`jq -r .build_version $(BUILD_DIR)/gen/build_info.json`$(RELEASE_SUFFIX) && \

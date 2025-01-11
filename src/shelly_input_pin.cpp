@@ -19,7 +19,7 @@
 
 #include "mgos.hpp"
 
-#if CS_PLATFORM != CS_P_ESP8266
+#if CS_PLATFORM == CS_P_ESP32
 #include "driver/gpio.h"
 #endif
 
@@ -43,7 +43,7 @@ void InputPin::Init() {
   mgos_gpio_setup_input(cfg_.pin, cfg_.pull);
   mgos_gpio_set_button_handler(cfg_.pin, cfg_.pull, MGOS_GPIO_INT_EDGE_ANY, 20,
                                GPIOIntHandler, this);
-#if CS_PLATFORM != CS_P_ESP8266
+#if CS_PLATFORM == CS_P_ESP32
   gpio_hold_dis((gpio_num_t) cfg_.pin);
 #endif
   bool state = GetState();
@@ -58,7 +58,7 @@ void InputPin::SetInvert(bool invert) {
 
 InputPin::~InputPin() {
   mgos_gpio_remove_int_handler(cfg_.pin, nullptr, nullptr);
-#if CS_PLATFORM != CS_P_ESP8266
+#if CS_PLATFORM == CS_P_ESP32
   gpio_hold_en((gpio_num_t) cfg_.pin);
 #endif
 }
