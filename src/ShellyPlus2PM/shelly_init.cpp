@@ -124,10 +124,10 @@ static Status PowerMeterInit(std::vector<std::unique_ptr<PowerMeter>> *pms) {
 
   Status st;
   std::unique_ptr<PowerMeter> pm1(
-      new ADE7953PowerMeter(1, s_ade7953, (new_rev ? 0 : 1)));
+      new ADE7953PowerMeter(1, s_ade7953, (new_rev ? 0 : PM_CH0)));
   if (!(st = pm1->Init()).ok()) return st;
   std::unique_ptr<PowerMeter> pm2(
-      new ADE7953PowerMeter(2, s_ade7953, (new_rev ? 1 : 0)));
+      new ADE7953PowerMeter(2, s_ade7953, (new_rev ? 1 : PM_CH1)));
   if (!(st = pm2->Init()).ok()) return st;
 
   pms->emplace_back(std::move(pm1));
