@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.13.4-alpha2
+version: 2.14.0-alpha3
 
 libs_version: latest
 modules_version: latest
@@ -1080,6 +1080,8 @@ conds:
         I2C_RST_GPIO: 0
         PM_CH0: 0
         PM_CH1: 1
+        MGOS_CONFIG_DEV_6: "shelly"
+        MGOS_CONFIG_DEV_7: "shelly,4096"
       config_schema:
         - ["device.id",    "Shelly2PMG3-??????"]
         - ["shelly.name",  "Shelly2PMG3-??????"]
