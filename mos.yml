@@ -1130,6 +1130,7 @@ conds:
       sources:
         - src/BL0942
       build_vars:
+        PARTITION_TABLE_OFFSET: 0xF000
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
         NVS_ADDR: 0x14000
@@ -1145,6 +1146,7 @@ conds:
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
             CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+            CONFIG_PARTITION_TABLE_OFFSET=0xF000
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
