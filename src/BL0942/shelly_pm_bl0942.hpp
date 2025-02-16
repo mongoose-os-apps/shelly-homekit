@@ -21,9 +21,17 @@
 
 namespace shelly {
 
+struct bl0942_cfg {
+  float voltage_scale;
+  float current_scale;
+  float apower_scale;
+  float aenergy_scale;
+};
+
 class BL0942PowerMeter : public PowerMeter {
  public:
-  BL0942PowerMeter(int id, int tx_pin, int rx_pin, int meas_time, int uart_no);
+  BL0942PowerMeter(int id, int tx_pin, int rx_pin, int meas_time, int uart_no,
+                   const bl0942_cfg &cfg);
   virtual ~BL0942PowerMeter();
 
   Status Init() override;
@@ -34,6 +42,7 @@ class BL0942PowerMeter : public PowerMeter {
   void MeasureTimerCB();
 
   const int tx_pin_, rx_pin_, meas_time_, uart_no_;
+  const bl0942_cfg cfg_;
 
   float apa_ = 0;  // Last active power reading, W.
   float aea_ = 0;  // Accumulated active energy, Wh.

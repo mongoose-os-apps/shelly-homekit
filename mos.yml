@@ -9,7 +9,6 @@ mongoose_os_version: latest
 sources:
   - src
   - src/mock
-  - src/BL0937
   - src/${build_vars.MODEL}
 
 includes:
@@ -136,10 +135,11 @@ config_schema:
   - ["gains.phcalb", "f", 0, {title: ""}]
 
   - ["scales", "o", {title: "", abstract: true}]
-  - ["scales.voltage_scale", "f", 1, {title: ""}]
-  - ["scales.current_scale", "f", 1, {title: ""}]
-  - ["scales.aenergy_scale", "f", 1, {title: ""}]
-  - ["scales.apower_scale",  "f", 1, {title: ""}]
+  - ["scales.voltage_scale", "f", 0, {title: ""}]
+  - ["scales.current_scale", "f", 0, {title: ""}]
+  - ["scales.aenergy_scale", "f", 0, {title: ""}]
+  - ["scales.apower_scale",  "f", 0, {title: ""}]
+  - ["scales.current_gain", "f", 0, {title: ""}]  
 
 build_vars:
   # BLE disabled for most models.
@@ -286,6 +286,8 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
+      sources:
+        - src/BL0937
       build_vars:
         FLASH_SIZE: 2097152
         FS_SIZE: 262144
@@ -325,6 +327,7 @@ conds:
       sources:
         - src/DS18XXX
         - src/DHT
+        - src/BL0937
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
@@ -549,6 +552,8 @@ conds:
   - when: build_vars.MODEL == "ShellyPlug"
     apply:
       name: shelly-plug2 # To allow OTA from stock fw.
+      sources:
+        - src/BL0937
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
@@ -579,6 +584,8 @@ conds:
   - when: build_vars.MODEL == "ShellyPlugS"
     apply:
       name: shelly-plug-s # To allow OTA from stock fw.
+      sources:
+        - src/BL0937
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: esp8266-nossl
@@ -611,6 +618,8 @@ conds:
   - when: build_vars.MODEL == "ShellyPlusPlugS"
     apply:
       name: PlusPlugS
+      sources:
+        - src/BL0937
       build_vars:
         ESP_IDF_EXTRA_PARTITION: "aux,0x55,0x00,0x3f0000,48K"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x3fc000,16K,encrypted"
@@ -939,6 +948,8 @@ conds:
         PRODUCT_HW_REV: "?"
         STOCK_FW_MODEL: PlugSG3
         MAX_NUM_HAP_SESSIONS: 16
+        MGOS_CONFIG_DEV_6: "shelly"
+        MGOS_CONFIG_DEV_7: "shelly,4096"
       config_schema:
         - ["device.id", "ShellyPlugSG3-??????"]
         - ["shelly.name", "ShellyPlugSG3-??????"]
@@ -952,6 +963,13 @@ conds:
         - ["led.color_on", "i", 0x00FF00, {title: "LED color when on"}]
         - ["led.color_off", "i", 0xFF0000, {title: "LED color when off"}]
 
+        - ["factory", "o", {title: ""}]
+        - ["factory.batch", "s", "", {title: ""}]
+        - ["factory.model", "s", "", {title: ""}]
+        - ["factory.version", "i", 0, {title: ""}]
+        - ["factory.calib", "o", {title: "Factory calib settings"}]
+        - ["factory.calib.done", "b", false, {title: ""}]
+        - ["factory.calib.scales0", "scales", {title: ""}]
   - when: build_vars.MODEL == "Shelly1PMGen3"
     apply:
       name: S1PMG3
@@ -996,6 +1014,8 @@ conds:
         ADDON_DIG_GPIO: -1
         UART_TX_GPIO: 6
         UART_RX_GPIO: 7
+        MGOS_CONFIG_DEV_6: "shelly"
+        MGOS_CONFIG_DEV_7: "shelly,4096"
       config_schema:
         - ["device.id", "Shelly1PMGen3-??????"]
         - ["shelly.name", "Shelly1PMGen3-??????"]
@@ -1011,11 +1031,7 @@ conds:
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
-        # Calibration values from stock
-        - ["bl0937_0", "o", {title: "BL0937 calibration"}]
-        - ["bl0937_0.apower_scale", "f", 2.028531, {title: "BL0937 apower scale"}]
-        - ["bl0937_0.voltage_scale", "f", 0.15510, {title: "BL0937 voltage scale"}]
-        - ["bl0937_0.current_scale", "f", 0.01287, {title: "BL0937 current scale"}]
+
         - ["ts1", "ts", {title: "TS1 settings"}]
         - ["ts1.name", "Shelly TS1"]
         - ["ts2", "ts", {title: "TS2 settings"}]
@@ -1026,6 +1042,14 @@ conds:
         - ["ts4.name", "Shelly TS4"]
         - ["ts5", "ts", {title: "TS5 settings"}]
         - ["ts5.name", "Shelly TS5"]
+
+        - ["factory", "o", {title: ""}]
+        - ["factory.batch", "s", "", {title: ""}]
+        - ["factory.model", "s", "", {title: ""}]
+        - ["factory.version", "i", 0, {title: ""}]
+        - ["factory.calib", "o", {title: "Factory calib settings"}]
+        - ["factory.calib.done", "b", false, {title: ""}]
+        - ["factory.calib.scales0", "scales", {title: ""}]
 
   - when: build_vars.MODEL == "Shelly2PMGen3"
     apply:
@@ -1132,7 +1156,7 @@ conds:
       sources:
         - src/BL0942
       build_vars:
-        PARTITION_TABLE_OFFSET: 0xF000
+        #PARTITION_TABLE_OFFSET: 0xF000 correct but problems with upgrade
         OTA_DATA_ADDR: 0x10000
         OTA_DATA_SIZE: 0x4000
         NVS_ADDR: 0x14000
@@ -1148,7 +1172,7 @@ conds:
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
             CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
-            CONFIG_PARTITION_TABLE_OFFSET=0xF000
+        #CONFIG_PARTITION_TABLE_OFFSET=0xF000
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
@@ -1331,6 +1355,7 @@ conds:
       sources:
         - src/DS18XXX
         - src/DHT
+        - src/BL0937
       libs:
         - location: https://github.com/mongoose-os-libs/onewire
         - location: https://github.com/mongoose-os-libs/dht
@@ -1376,6 +1401,7 @@ conds:
         - ["bl0937_0.apower_scale", "f", 2.028531, {title: "BL0937 apower scale"}]
         - ["bl0937_0.voltage_scale", "f", 0.15510, {title: "BL0937 voltage scale"}]
         - ["bl0937_0.current_scale", "f", 0.01287, {title: "BL0937 current scale"}]
+
         # Only for backward compatibility (config <= v3).
         - ["ssw1", "ssw", {title: "SSW1 settings"}]
         - ["ssw1.name", "Input"]

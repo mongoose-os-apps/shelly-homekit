@@ -40,7 +40,22 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   sys_temp->reset(new TempSensorSDNT1608X103F3950(3, 3.3f, 10000.0f));
 #endif
 
-  std::unique_ptr<PowerMeter> pm(new BL0942PowerMeter(1, 6, 7, 1, 1));
+  struct bl0942_cfg cfg = {
+      .voltage_scale = (73989 / (1.218 * 4)),
+      .current_scale = (305978 / (1.218)),
+      .apower_scale = (3537 / (1.218 * 1.218 * 4)),
+      .aenergy_scale = ((3537 / (1.218 * 1.218 * 4)) * 3600 / (1638.4 * 256))};
+
+  mgos_config_factory *c = &(mgos_sys_config.factory);
+  if (c->calib.done) {
+    mgos_config_scales *g = &c->calib.scales0;
+    cfg.voltage_scale = g->voltage_scale / 500;
+    cfg.current_scale = g->current_scale / 2;
+    cfg.apower_scale = 1e11 / g->apower_scale;
+    cfg.aenergy_scale = 1e11 / g->aenergy_scale;
+  }
+
+  std::unique_ptr<PowerMeter> pm(new BL0942PowerMeter(1, 6, 7, 1, 1, cfg));
   // BL0942 GPIO6 TX GPIO7 RX
   const Status &st = pm->Init();
   if (st.ok()) {
@@ -54,19 +69,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   InitSysBtn(BTN_GPIO, BTN_DOWN);
 }
 
-void PrintCalibrationData() {
-  mgos_config_factory *c = &(mgos_sys_config.factory);
-  LOG(LL_INFO, ("calibration.done %b", c->calib.done));
-  mgos_config_scales *s = &c->calib.scales0;
-  LOG(LL_INFO, ("gains vs: %f cs: %f ps: %f es: %f", s->voltage_scale,
-                s->current_scale, s->apower_scale, s->aenergy_scale));
-}
-
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
-  void PrintCalibrationData();
-
   bool gdo_mode = mgos_sys_config_get_shelly_mode() == (int) Mode::kGarageDoor;
   if (gdo_mode) {
     hap::CreateHAPGDO(1, FindInput(1), FindInput(2), FindOutput(1),

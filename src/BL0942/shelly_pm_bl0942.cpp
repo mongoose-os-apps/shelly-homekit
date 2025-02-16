@@ -39,12 +39,14 @@ struct packet {
 namespace shelly {
 
 BL0942PowerMeter::BL0942PowerMeter(int id, int tx_pin, int rx_pin,
-                                   int meas_time, int uart_no)
+                                   int meas_time, int uart_no,
+                                   const bl0942_cfg &cfg)
     : PowerMeter(id),
       tx_pin_(tx_pin),
       rx_pin_(rx_pin),
       meas_time_(meas_time),
       uart_no_(uart_no),
+      cfg_(cfg),
       meas_timer_(std::bind(&BL0942PowerMeter::MeasureTimerCB, this)) {
 }
 
@@ -54,6 +56,7 @@ BL0942PowerMeter::~BL0942PowerMeter() {
 #define BL_READ 0x58
 #define BL_WRITE 0xA8
 
+#define BL_WA_CREEP 0x14
 #define BL_SOFT_RESET 0x1C
 #define BL_USR_WRPROT 0x1D
 #define BL_MODE 0x19
@@ -89,10 +92,11 @@ Status BL0942PowerMeter::Init() {
   LOG(LL_INFO, ("BL0942 @ %d/%d", rx_pin_, tx_pin_));
 
   this->WriteReg(BL_SOFT_RESET, 0x5a5a5a);
-  // this->WriteReg(BL_USR_WRPROT, 0x550000);
-  // this->WriteReg(BL_MODE, 0x001000);
-  // this->WriteReg(BL_TPS_CTRL, 0xFF4700);
-  // this->WriteReg(BL_I_FAST_RMS_CTRL, 0x1C1800);
+
+  // this is what stock does
+  this->WriteReg(BL_USR_WRPROT, 0x550000);
+  this->WriteReg(BL_MODE, 0x8F0000);
+  this->WriteReg(BL_WA_CREEP, 0x330000);
 
   return Status::OK();
 }
@@ -172,9 +176,10 @@ void BL0942PowerMeter::MeasureTimerCB() {
       }
       cf_cnt = cf;
 
-      float wref = (3537 / (1.218 * 1.218 * 4));
-      float vref = (73989 / (1.218 * 4));
-      float iref = (305978 / (1.218));
+      float vref = cfg_.voltage_scale;
+      float iref = cfg_.current_scale;
+      float wref = cfg_.apower_scale;
+      float eref = cfg_.aenergy_scale;
 
       float vo = convert_le24(rx_buf.v_rms) / vref;
       float vi = convert_le24(rx_buf.i_rms) / iref;
@@ -186,10 +191,10 @@ void BL0942PowerMeter::MeasureTimerCB() {
       float fr = 1000000.0 / (float) convert_le16(rx_buf.frequency);
 
       apa_ = wa;
-      aea_ = cf / (wref * 3600 / (1638.4 * 256));
+      aea_ = cf / eref;
 
-      LOG(LL_INFO, ("vo: %.1f wa: %.2f i: %.2f fr: %.2f ae: %.2f", vo, wa, vi,
-                    fr, aea_));
+      LOG(LL_DEBUG, ("vo: %.1f wa: %.2f i: %.2f fr: %.2f ae: %.2f", vo, wa, vi,
+                     fr, aea_));
     }
   }
 }
