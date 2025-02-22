@@ -15,7 +15,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 |                                            |[Mini1G3]|[Mini1PMG3]| 1, 1PM, 2PM, i4, Plugs Gen3
 |-                                           |-        |-          | -
-|Switch & Co.<sup>1</sup>                    |✓        |✓          | [alpha version](https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.14.0-alpha2)
+|Switch & Co.<sup>1</sup>                    |✓        |✓          | [alpha version](https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.14.0-alpha3)
 |Stateless Input<sup>2</sup>                 |✓        |✓          |
 |Garage door opener                          |✓        |✓          |
 |Power measurement                           |✗        |-          |
