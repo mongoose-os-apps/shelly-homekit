@@ -384,8 +384,8 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
   // Power
   power_char_ = new mgos::hap::FloatCharacteristic(
       (*iid)++, &kHAPCharacteristic_EveConsumption, 0.0f, 65535.0f, 0.1f,
-      [this](HAPAccessoryServerRef *,
-             const HAPFloatCharacteristicReadRequest *, float *value) {
+      [this](HAPAccessoryServerRef *, const HAPFloatCharacteristicReadRequest *,
+             float *value) {
         auto power = out_pm_->GetPowerW();
         if (!power.ok()) return kHAPError_Busy;
         *value = power.ValueOrDie();
@@ -396,8 +396,8 @@ void ShellySwitch::AddPowerMeter(uint16_t *iid) {
   // Energy
   total_power_char_ = new mgos::hap::FloatCharacteristic(
       (*iid)++, &kHAPCharacteristic_EveTotalConsumption, 0.0f, 65535.0f, 0.1f,
-      [this](HAPAccessoryServerRef *,
-             const HAPFloatCharacteristicReadRequest *, float *value) {
+      [this](HAPAccessoryServerRef *, const HAPFloatCharacteristicReadRequest *,
+             float *value) {
         auto energy = out_pm_->GetEnergyWH();
         if (!energy.ok()) return kHAPError_Busy;
         *value = energy.ValueOrDie() / 1000.0f;
@@ -414,15 +414,15 @@ void ShellySwitch::PowerMeterTimerCB() {
   auto current_power = out_pm_->GetPowerW();
   auto current_total_power = out_pm_->GetEnergyWH();
 
-  // if (current_power.ok() && current_power.ValueOrDie() != last_power_) {
-    // last_power_ = current_power.ValueOrDie();
+  if (current_power.ok() && current_power.ValueOrDie() != last_power_) {
+    last_power_ = current_power.ValueOrDie();
     power_char_->RaiseEvent();
-  // }
-  // if (current_total_power.ok() &&
-  //     current_total_power.ValueOrDie() != last_total_power_) {
-    // last_total_power_ = current_total_power.ValueOrDie();
+  }
+  if (current_total_power.ok() &&
+      current_total_power.ValueOrDie() != last_total_power_) {
+    last_total_power_ = current_total_power.ValueOrDie();
     total_power_char_->RaiseEvent();
-  // }
+  }
 }
 
 }  // namespace shelly
