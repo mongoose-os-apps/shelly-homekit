@@ -30,8 +30,9 @@ namespace hap {
 
 WindowCovering::WindowCovering(int id, Input *in0, Input *in1, Output *out0,
                                Output *out1, PowerMeter *pm0, PowerMeter *pm1,
-                               struct mgos_config_wc *cfg)
+                               struct mgos_config_wc *cfg, ServiceType type)
     : Component(id),
+      service_type_(type),
       Service((SHELLY_HAP_IID_BASE_WINDOW_COVERING +
                (SHELLY_HAP_IID_STEP_WINDOW_COVERING * (id - 1))),
               &kHAPServiceType_WindowCovering,
@@ -59,6 +60,15 @@ WindowCovering::WindowCovering(int id, Input *in0, Input *in1, Output *out0,
     pm_open_ = pm1;
     pm_close_ = pm0;
   }
+
+  uint8_t service_type = (service_type_ == ServiceType::WINDOW) ? 
+                        kHAPServiceType_Window : 
+                        kHAPServiceType_WindowCovering;
+                        
+  svc_.service.iid = iid++;
+  svc_.service.serviceType = service_type;
+  svc_.service.debugDescription = service_type == kHAPServiceType_Window ? 
+                                 "Window" : "WindowCovering";
 }
 
 WindowCovering::~WindowCovering() {
