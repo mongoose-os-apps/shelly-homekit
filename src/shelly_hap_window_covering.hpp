@@ -22,6 +22,7 @@
 
 #include "mgos_hap.hpp"
 #include "mgos_sys_config.h"
+#include "mgos_config.h"
 #include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
@@ -49,7 +50,8 @@ class WindowCovering : public Component, public mgos::hap::Service {
   };
 
   WindowCovering(int id, Input *in0, Input *in1, Output *out0, Output *out1,
-                 PowerMeter *pm0, PowerMeter *pm1, struct mgos_config_wc *cfg, ServiceType type = ServiceType::WINDOW_COVERING);
+                 PowerMeter *pm0, PowerMeter *pm1, struct mgos_config_wc *cfg,
+                 ServiceType type = ServiceType::WINDOW_COVERING);
   virtual ~WindowCovering();
 
   // Component interface impl.
@@ -125,15 +127,15 @@ class WindowCovering : public Component, public mgos::hap::Service {
 
   Input::HandlerID in_open_handler_ = Input::kInvalidHandlerID;
   Input::HandlerID in_close_handler_ = Input::kInvalidHandlerID;
+
+  float cur_pos_ = kNotSet;
+  float tgt_pos_ = kNotSet;
   mgos::Timer state_timer_;
 
   mgos::hap::Characteristic *cur_pos_char_ = nullptr;
   mgos::hap::Characteristic *tgt_pos_char_ = nullptr;
   mgos::hap::Characteristic *pos_state_char_ = nullptr;
   mgos::hap::Characteristic *obst_char_ = nullptr;
-
-  float cur_pos_ = kNotSet;
-  float tgt_pos_ = kNotSet;
 
   State state_ = State::kIdle;
   State tgt_state_ = State::kNone;

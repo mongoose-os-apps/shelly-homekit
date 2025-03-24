@@ -32,16 +32,20 @@ WindowCovering::WindowCovering(int id, Input *in0, Input *in1, Output *out0,
                                Output *out1, PowerMeter *pm0, PowerMeter *pm1,
                                struct mgos_config_wc *cfg, ServiceType type)
     : Component(id),
-      service_type_(type),
       Service((SHELLY_HAP_IID_BASE_WINDOW_COVERING +
                (SHELLY_HAP_IID_STEP_WINDOW_COVERING * (id - 1))),
-              &kHAPServiceType_WindowCovering,
-              kHAPServiceDebugDescription_WindowCovering),
+              (type == ServiceType::WINDOW ? 
+               &kHAPServiceType_Window :
+               &kHAPServiceType_WindowCovering),
+              (type == ServiceType::WINDOW ? 
+               kHAPServiceDebugDescription_Window :
+               kHAPServiceDebugDescription_WindowCovering)),
       cfg_(cfg),
-      state_timer_(std::bind(&WindowCovering::RunOnce, this)),
       cur_pos_(cfg_->current_pos),
       tgt_pos_(cfg_->current_pos),
-      move_ms_per_pct_(cfg_->move_time_ms / 100.0) {
+      state_timer_(std::bind(&WindowCovering::RunOnce, this)),
+      move_ms_per_pct_(cfg_->move_time_ms / 100.0),
+      service_type_(type) {
   if (!cfg_->swap_inputs) {
     in_open_ = in0;
     in_close_ = in1;
@@ -60,15 +64,7 @@ WindowCovering::WindowCovering(int id, Input *in0, Input *in1, Output *out0,
     pm_open_ = pm1;
     pm_close_ = pm0;
   }
-
-  uint8_t service_type = (service_type_ == ServiceType::WINDOW) ? 
-                        kHAPServiceType_Window : 
-                        kHAPServiceType_WindowCovering;
-                        
-  svc_.service.iid = iid++;
-  svc_.service.serviceType = service_type;
-  svc_.service.debugDescription = service_type == kHAPServiceType_Window ? 
-                                 "Window" : "WindowCovering";
+  set_primary(true);
 }
 
 WindowCovering::~WindowCovering() {
@@ -752,8 +748,12 @@ void CreateHAPWC(int id, Input *in1, Input *in2, Output *out1, Output *out2,
                  std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                  HAPAccessoryServerRef *svr) {
   auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
+  // Determine service type based on display_type configuration
+  auto service_type = (wc_cfg->display_type == 1 ? 
+                      hap::WindowCovering::ServiceType::WINDOW :
+                      hap::WindowCovering::ServiceType::WINDOW_COVERING);
   std::unique_ptr<hap::WindowCovering> wc(new hap::WindowCovering(
-      id, in1, in2, out1, out2, pm1, pm2, (struct mgos_config_wc *) wc_cfg));
+      id, in1, in2, out1, out2, pm1, pm2, (struct mgos_config_wc *) wc_cfg, service_type));
   if (wc == nullptr || !wc->Init().ok()) {
     return;
   }
@@ -763,7 +763,9 @@ void CreateHAPWC(int id, Input *in1, Input *in2, Output *out1, Output *out2,
     case hap::WindowCovering::InMode::kSeparateToggle: {
       // Single accessory with a single primary service.
       mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-      pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
+      pri_acc->SetCategory(service_type == hap::WindowCovering::ServiceType::WINDOW ?
+                          kHAPAccessoryCategory_Windows :
+                          kHAPAccessoryCategory_WindowCoverings);
       pri_acc->AddService(wc.get());
       break;
     }
