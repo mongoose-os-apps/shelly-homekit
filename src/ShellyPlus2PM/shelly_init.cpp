@@ -185,10 +185,12 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
       sensors = DiscoverDHTSensors(pin_in, pin_out);
     }
 
-    auto *in_digital =
-        new InputPin(3, ADDON_DIG_GPIO, 0, MGOS_GPIO_PULL_NONE, false);
-    in_digital->Init();
-    inputs->emplace_back(in_digital);
+    if (ADDON_DIG_GPIO != -1) {
+      auto *in_digital =
+          new InputPin(3, ADDON_DIG_GPIO, 0, MGOS_GPIO_PULL_NONE, false);
+      in_digital->Init();
+      inputs->emplace_back(in_digital);
+    }
 
   } else {
     RestoreUART();
