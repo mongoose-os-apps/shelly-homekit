@@ -205,11 +205,12 @@ StatusOr<std::string> WindowCovering::GetInfoJSON() const {
       "{id: %d, type: %d, name: %Q, "
       "in_mode: %d, swap_inputs: %B, swap_outputs: %B, "
       "cal_done: %B, move_time_ms: %d, move_power: %d, "
-      "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d}",
+      "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d, "
+      "display_type: %d}",
       id(), type(), cfg_->name, cfg_->in_mode, cfg_->swap_inputs,
       cfg_->swap_outputs, cfg_->calibrated, cfg_->move_time_ms,
       (int) cfg_->move_power, (int) state_, StateStr(state_), (int) cur_pos_,
-      (int) tgt_pos_);
+      (int) tgt_pos_, (int) service_type_);
 }
 
 Status WindowCovering::SetConfig(const std::string &config_json,
@@ -218,9 +219,10 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   cfg.name = nullptr;
   int in_mode = -1;
   int8_t swap_inputs = -1, swap_outputs = -1;
+  int display_type = -1;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, in_mode: %d, swap_inputs: %B, swap_outputs: %B}",
-             &cfg.name, &in_mode, &swap_inputs, &swap_outputs);
+             "{name: %Q, in_mode: %d, swap_inputs: %B, swap_outputs: %B, display_type: %d}",
+             &cfg.name, &in_mode, &swap_inputs, &swap_outputs, &display_type);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -229,6 +231,9 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   }
   if (in_mode > 3) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
+  }
+  if (display_type > 1) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "display_type");
   }
   // Apply.
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
@@ -248,6 +253,11 @@ Status WindowCovering::SetConfig(const std::string &config_json,
     // As movement direction is now reversed, position is now incorrect too.
     // Let's re-calibrate.
     cfg_->calibrated = false;
+    *restart_required = true;
+  }
+  if (display_type != -1) {
+    service_type_ = static_cast<ServiceType>(display_type);
+    cfg_->display_type = display_type;
     *restart_required = true;
   }
   return Status::OK();
