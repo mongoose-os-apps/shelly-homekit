@@ -169,6 +169,7 @@ libs:
   - location: https://github.com/mongoose-os-libs/ota-http-server
   - location: https://github.com/mongoose-os-libs/rpc-service-config
   - location: https://github.com/mongoose-os-libs/rpc-service-fs
+  - location: https://github.com/mongoose-os-libs/rpc-service-gpio
   - location: https://github.com/mongoose-os-libs/rpc-uart
   - location: https://github.com/mongoose-os-libs/rpc-ws
   - location: https://github.com/mongoose-os-libs/sntp
@@ -808,7 +809,7 @@ conds:
         ADC_GPIO: 3
         ADDON_OUT_GPIO: 9
         ADDON_IN_GPIO: 21
-        ADDON_DIG_GPIO: 8
+        ADDON_DIG_GPIO: 19
       config_schema:
         - ["device.id", "Shelly1G3-????????????"]
         - ["shelly.name", "Shelly1G3-????????????"]
