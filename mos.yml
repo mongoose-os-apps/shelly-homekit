@@ -809,7 +809,7 @@ conds:
         ADC_GPIO: 3
         ADDON_OUT_GPIO: 9
         ADDON_IN_GPIO: 21
-        ADDON_DIG_GPIO: 19
+        ADDON_DIG_GPIO: 6
       config_schema:
         - ["device.id", "Shelly1G3-????????????"]
         - ["shelly.name", "Shelly1G3-????????????"]
@@ -1271,9 +1271,9 @@ conds:
         STOCK_FW_MODEL: Plus1Mini
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
-        - ["device.id", "ShellyPlus1Mini-??????"]
-        - ["shelly.name", "ShellyPlus1Mini-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus1Mini-??????"]
+        - ["device.id", "ShellyPlus1Mini-????????????"]
+        - ["shelly.name", "ShellyPlus1Mini-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1Mini-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -1318,9 +1318,9 @@ conds:
         ADDON_IN_GPIO: 1
         ADDON_DIG_GPIO: 19
       config_schema:
-        - ["device.id", "ShellyPlus1-??????"]
-        - ["shelly.name", "ShellyPlus1-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus1-??????"]
+        - ["device.id", "ShellyPlus1-????????????"]
+        - ["shelly.name", "ShellyPlus1-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -1379,9 +1379,9 @@ conds:
         ADDON_IN_GPIO: 1
         ADDON_DIG_GPIO: 19
       config_schema:
-        - ["device.id", "ShellyPlus1PM-??????"]
-        - ["shelly.name", "ShellyPlus1PM-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus1PM-??????"]
+        - ["device.id", "ShellyPlus1PM-????????????"]
+        - ["shelly.name", "ShellyPlus1PM-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1PM-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -1457,9 +1457,9 @@ conds:
         PM_CH0: 1
         PM_CH1: 0
       config_schema:
-        - ["device.id", "ShellyPlus2PM-??????"]
-        - ["shelly.name", "ShellyPlus2PM-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus2PM-??????"]
+        - ["device.id", "ShellyPlus2PM-????????????"]
+        - ["shelly.name", "ShellyPlus2PM-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus2PM-????????????"]
         - ["i2c.enable", true]
         - ["i2c.sda_gpio", 33]
         - ["i2c.scl_gpio", 25]
@@ -1537,8 +1537,8 @@ conds:
         ADDON_IN_GPIO: 1
         ADDON_DIG_GPIO: 19
       config_schema:
-        - ["device.id", "ShellyPlusI4-??????"]
-        - ["shelly.name", "ShellyPlusI4-??????"]
+        - ["device.id", "ShellyPlusI4-????????????"]
+        - ["shelly.name", "ShellyPlusI4-????????????"]
         - ["wifi.ap.ssid", "ShellyPlusI4-????????????"]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
