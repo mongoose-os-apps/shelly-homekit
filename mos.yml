@@ -169,6 +169,7 @@ libs:
   - location: https://github.com/mongoose-os-libs/ota-http-server
   - location: https://github.com/mongoose-os-libs/rpc-service-config
   - location: https://github.com/mongoose-os-libs/rpc-service-fs
+  - location: https://github.com/mongoose-os-libs/rpc-service-gpio
   - location: https://github.com/mongoose-os-libs/rpc-uart
   - location: https://github.com/mongoose-os-libs/rpc-ws
   - location: https://github.com/mongoose-os-libs/sntp
@@ -806,13 +807,13 @@ conds:
         RELAY1_GPIO: 5
         SWITCH1_GPIO: 10
         ADC_GPIO: 3
-        ADDON_OUT_GPIO: -1 #most likely: 8
-        ADDON_IN_GPIO: -1  #most likely: 21
-        ADDON_DIG_GPIO: -1 #most likely: 9
+        ADDON_OUT_GPIO: 9
+        ADDON_IN_GPIO: 21
+        ADDON_DIG_GPIO: 6
       config_schema:
-        - ["device.id", "Shelly1Gen3-??????"]
-        - ["shelly.name", "Shelly1Gen3-??????"]
-        - ["wifi.ap.ssid", "Shelly1Gen3-??????"]
+        - ["device.id", "Shelly1G3-????????????"]
+        - ["shelly.name", "Shelly1G3-????????????"]
+        - ["wifi.ap.ssid", "Shelly1G3-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -824,11 +825,7 @@ conds:
         - ["gdo1", "gdo", {title: "GDO1 settings"}]
         - ["gdo1.name", "Garage Door"]
         - ["gdo1.open_sensor_mode", -1]
-        # Calibration values from stock
-        - ["bl0937_0", "o", {title: "BL0937 calibration"}]
-        - ["bl0937_0.apower_scale", "f", 2.028531, {title: "BL0937 apower scale"}]
-        - ["bl0937_0.voltage_scale", "f", 0.15510, {title: "BL0937 voltage scale"}]
-        - ["bl0937_0.current_scale", "f", 0.01287, {title: "BL0937 current scale"}]
+        
         - ["ts1", "ts", {title: "TS1 settings"}]
         - ["ts1.name", "Shelly TS1"]
         - ["ts2", "ts", {title: "TS2 settings"}]
@@ -880,12 +877,12 @@ conds:
         SWITCH3_GPIO: 6
         SWITCH4_GPIO: 5
         ADC_GPIO: 3
-        ADDON_OUT_GPIO: -1
-        ADDON_IN_GPIO: -1
+        ADDON_OUT_GPIO: 9
+        ADDON_IN_GPIO: 21
         ADDON_DIG_GPIO: -1
       config_schema:
-        - ["device.id", "ShellyI4G3-??????"]
-        - ["shelly.name", "ShellyI4G3-??????"]
+        - ["device.id", "ShellyI4G3-????????????"]
+        - ["shelly.name", "ShellyI4G3-????????????"]
         - ["wifi.ap.ssid", "ShellyI4G3-????????????"]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
@@ -951,9 +948,9 @@ conds:
         MGOS_CONFIG_DEV_6: "shelly"
         MGOS_CONFIG_DEV_7: "shelly,4096"
       config_schema:
-        - ["device.id", "ShellyPlugSG3-??????"]
-        - ["shelly.name", "ShellyPlugSG3-??????"]
-        - ["wifi.ap.ssid", "ShellyPlugSG3-??????"]
+        - ["device.id", "ShellyPlugSG3-????????????"]
+        - ["shelly.name", "ShellyPlugSG3-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlugSG3-????????????"]
         - ["sw1", "sw", {title: "Plug settings"}]
         - ["sw1.name", "Shelly Plus Plug S"]
         - ["sw1.in_mode", -1]
@@ -1009,17 +1006,17 @@ conds:
         RELAY1_GPIO: 4
         SWITCH1_GPIO: 10
         ADC_GPIO: 3
-        ADDON_OUT_GPIO: -1
-        ADDON_IN_GPIO: -1
+        ADDON_OUT_GPIO: 9
+        ADDON_IN_GPIO: 21
         ADDON_DIG_GPIO: -1
         UART_TX_GPIO: 6
         UART_RX_GPIO: 7
         MGOS_CONFIG_DEV_6: "shelly"
         MGOS_CONFIG_DEV_7: "shelly,4096"
       config_schema:
-        - ["device.id", "Shelly1PMGen3-??????"]
-        - ["shelly.name", "Shelly1PMGen3-??????"]
-        - ["wifi.ap.ssid", "Shelly1PMGen3-??????"]
+        - ["device.id", "Shelly1PMG3-????????????"]
+        - ["shelly.name", "Shelly1PMG3-????????????"]
+        - ["wifi.ap.ssid", "Shelly1PMG3-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -1098,8 +1095,8 @@ conds:
         SWITCH2_GPIO: 10
         ADC_GPIO: 4
         SDA_GPIO: 6
-        ADDON_OUT_GPIO: -1
-        ADDON_IN_GPIO: -1
+        ADDON_OUT_GPIO: 9
+        ADDON_IN_GPIO: 21
         ADDON_DIG_GPIO: -1
         I2C_RST_GPIO: 0
         PM_CH0: 0
@@ -1107,9 +1104,9 @@ conds:
         MGOS_CONFIG_DEV_6: "shelly"
         MGOS_CONFIG_DEV_7: "shelly,4096"
       config_schema:
-        - ["device.id",    "Shelly2PMG3-??????"]
-        - ["shelly.name",  "Shelly2PMG3-??????"]
-        - ["wifi.ap.ssid", "Shelly2PMG3-??????"]
+        - ["device.id",    "Shelly2PMG3-????????????"]
+        - ["shelly.name",  "Shelly2PMG3-????????????"]
+        - ["wifi.ap.ssid", "Shelly2PMG3-????????????"]
         - ["i2c.enable", true]
         - ["i2c.sda_gpio", 6]
         - ["i2c.scl_gpio", 7]
@@ -1234,9 +1231,9 @@ conds:
         STOCK_FW_MODEL: Mini1G3
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
-        - ["device.id", "ShellyMini1G3-??????"]
-        - ["shelly.name", "ShellyMini1G3-??????"]
-        - ["wifi.ap.ssid", "ShellyMini1G3-??????"]
+        - ["device.id", "ShellyMini1G3-????????????"]
+        - ["shelly.name", "ShellyMini1G3-????????????"]
+        - ["wifi.ap.ssid", "ShellyMini1G3-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -1274,9 +1271,9 @@ conds:
         STOCK_FW_MODEL: Plus1Mini
         MAX_NUM_HAP_SESSIONS: 16
       config_schema:
-        - ["device.id", "ShellyPlus1Mini-??????"]
-        - ["shelly.name", "ShellyPlus1Mini-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus1Mini-??????"]
+        - ["device.id", "ShellyPlus1Mini-????????????"]
+        - ["shelly.name", "ShellyPlus1Mini-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1Mini-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -1321,9 +1318,9 @@ conds:
         ADDON_IN_GPIO: 1
         ADDON_DIG_GPIO: 19
       config_schema:
-        - ["device.id", "ShellyPlus1-??????"]
-        - ["shelly.name", "ShellyPlus1-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus1-??????"]
+        - ["device.id", "ShellyPlus1-????????????"]
+        - ["shelly.name", "ShellyPlus1-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -1382,9 +1379,9 @@ conds:
         ADDON_IN_GPIO: 1
         ADDON_DIG_GPIO: 19
       config_schema:
-        - ["device.id", "ShellyPlus1PM-??????"]
-        - ["shelly.name", "ShellyPlus1PM-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus1PM-??????"]
+        - ["device.id", "ShellyPlus1PM-????????????"]
+        - ["shelly.name", "ShellyPlus1PM-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus1PM-????????????"]
         - ["sw1", "sw", {title: "SW1 settings"}]
         - ["sw1.name", "Shelly SW"]
         - ["in1", "in", {title: "Input 1 settings"}]
@@ -1460,9 +1457,9 @@ conds:
         PM_CH0: 1
         PM_CH1: 0
       config_schema:
-        - ["device.id", "ShellyPlus2PM-??????"]
-        - ["shelly.name", "ShellyPlus2PM-??????"]
-        - ["wifi.ap.ssid", "ShellyPlus2PM-??????"]
+        - ["device.id", "ShellyPlus2PM-????????????"]
+        - ["shelly.name", "ShellyPlus2PM-????????????"]
+        - ["wifi.ap.ssid", "ShellyPlus2PM-????????????"]
         - ["i2c.enable", true]
         - ["i2c.sda_gpio", 33]
         - ["i2c.scl_gpio", 25]
@@ -1540,8 +1537,8 @@ conds:
         ADDON_IN_GPIO: 1
         ADDON_DIG_GPIO: 19
       config_schema:
-        - ["device.id", "ShellyPlusI4-??????"]
-        - ["shelly.name", "ShellyPlusI4-??????"]
+        - ["device.id", "ShellyPlusI4-????????????"]
+        - ["shelly.name", "ShellyPlusI4-????????????"]
         - ["wifi.ap.ssid", "ShellyPlusI4-????????????"]
         - ["in1", "in", {title: "Input 1 settings"}]
         - ["in1.ssw.name", "Shelly SSW1"]
