@@ -185,13 +185,13 @@ conds:
     apply:
       libs:
         - location: https://github.com/mongoose-os-libs/adc
-        - location: https://github.com/mongoose-os-libs/pwm
+        - location: https://github.com/shelly-homekit-mos/pwm
 
   - when: mos.platform == "esp8266"
     apply:
       libs:
         - location: https://github.com/mongoose-os-libs/adc
-        - location: https://github.com/mongoose-os-libs/pwm
+        - location: https://github.com/shelly-homekit-mos/pwm
 
   - when: mos.platform != "ubuntu"
     apply:
