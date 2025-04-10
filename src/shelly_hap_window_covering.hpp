@@ -20,9 +20,9 @@
 #include <memory>
 #include <vector>
 
+#include "mgos_config.h"
 #include "mgos_hap.hpp"
 #include "mgos_sys_config.h"
-#include "mgos_config.h"
 #include "mgos_timers.hpp"
 
 #include "shelly_common.hpp"
@@ -46,7 +46,7 @@ class WindowCovering : public Component, public mgos::hap::Service {
 
   enum class ServiceType {
     WINDOW_COVERING = 0,  // Default HAP Window Covering
-    WINDOW = 1,          // HAP Window service type
+    WINDOW = 1,           // HAP Window service type
   };
 
   WindowCovering(int id, Input *in0, Input *in1, Output *out0, Output *out1,
