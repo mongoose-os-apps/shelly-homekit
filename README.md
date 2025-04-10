@@ -21,7 +21,7 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 |Garage door opener                          |✓        |✓        |✓        |✗        |✓         |✓           |✗  
 |Roller shutter mode                         |✗        |✗        |✓        |✗        |✗         |✗           |✗  
 |Power measurement                           |✗        |✓        |✓        |✗        |✗         |✓           |✓
-|Temperature/Humidity measurement<sup>4</sup>|-        |-        |-        |-        |✗         |✗           |✗ 
+|Temperature/Humidity measurement<sup>4</sup>|✓        |✓        |✓        |✓        |✗         |✗           |✗ 
 
 ### Plus devices
 
