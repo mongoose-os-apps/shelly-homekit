@@ -470,6 +470,7 @@ function wcSetConfig(c, cfg, spinner) {
     }
     cfg = {
       name: name,
+      display_type: parseInt(el(c, "display_type").value),
       in_mode: parseInt(el(c, "in_mode").value),
       swap_inputs: el(c, "swap_inputs").checked,
       swap_outputs: el(c, "swap_outputs").checked,
@@ -833,6 +834,7 @@ function updateComponent(cd) {
     case Component_Type.kWindowCovering: {
       updateInnerText(el(c, "head"), cd.name);
       setValueIfNotModified(el(c, "name"), cd.name);
+      selectIfNotModified(el(c, "display_type"), cd.display_type);
       updateInnerText(el(c, "state"), cd.state_str);
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       checkIfNotModified(el(c, "swap_inputs"), cd.swap_inputs);
