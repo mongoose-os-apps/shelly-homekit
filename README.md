@@ -89,7 +89,7 @@ Features that are not yet supported:
 
 ### Updating from stock firmware
 
-  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit (1.4 or later on Plus Devices).
+  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit (1.5.1 or later on Plus/Gen3 Devices).
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
@@ -157,7 +157,6 @@ Features that are not yet supported:
         * Shelly 1PM Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1PMGen3.zip`
     
         * Shelly 2PM Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly2PMGen3.zip`
-          _Note: The Shelly must be on firmware 1.5.1beta or newer to flash_
        
         * Shelly I4 Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyI4Gen3.zip` 
 
