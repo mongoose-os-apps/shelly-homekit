@@ -1437,7 +1437,6 @@ conds:
       cdefs:
         LED_GPIO: 0
         LED_ON: 0
-        BTN_GPIO: 27
         BTN_DOWN: 0
         PRODUCT_HW_REV: "0.1.9"
         STOCK_FW_MODEL: Plus2PM

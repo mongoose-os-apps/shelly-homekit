@@ -197,7 +197,11 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
     InitSysLED(LED_GPIO, LED_ON);
   }
 
-  InitSysBtn(new_rev ? 4 : BTN_GPIO, BTN_DOWN);
+#if BTN_GPIO >= 0
+  InitSysBtn(BTN_GPIO, BTN_DOWN);
+#else
+  InitSysBtn(new_rev ? 4 : 27, BTN_DOWN);
+#endif
 }
 
 void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
