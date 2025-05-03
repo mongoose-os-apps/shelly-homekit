@@ -80,6 +80,8 @@ optional arguments:
   --save-config SAVE_CONFIG
                         Save current options to config file.
   --save-defaults       Save current options as new defaults.
+  --no-colors           Do not use ANSI colors for output.
+  --json-format         Output full device's data in JSON format instead of regular logging.
 """
 
 import argparse
@@ -829,6 +831,8 @@ class Main:
     self.listener = None
     self.security_data = {}
     self.tmp_flags = None
+    self.no_ansi_colors = None
+    self.json_format = None
     self.defaults = {
       'device_name_filter': 'all',
       'do_all': False,
@@ -856,7 +860,9 @@ class Main:
       'verbose': 3,
       'version': '',
       'force': False,
-      'user': 'admin'
+      'user': 'admin',
+      'no_ansi_colors': False,
+      'json_format': False
     }
 
   def check_fw(self, device, version):
@@ -998,8 +1004,11 @@ class Main:
 
   @staticmethod
   def setup_logger(args):
+    # NOTE: By default, logging.StreamHandler() uses sys.stderr, not sys.stdout, so even one pipes stdout,
+    #       stderr still goes directly to the console. This is why we explicitly specify stream=sys.stdout here.
+
     # setup output logging.
-    sh = MStreamHandler()
+    sh = MStreamHandler(stream=sys.stdout)
     sh.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(sh)
     sh.setLevel(log_level[args.get('verbose')])
@@ -1042,6 +1051,8 @@ class Main:
     self.ipv4_dns = args.get('ipv4_dns')
     self.username = args.get('user')
     self.password = args.get('password')
+    self.no_ansi_colors = args.get('no_ansi_colors')
+    self.json_format = args.get('json_format')
 
     # Windows and log file do not support acsii colours
     if self.log_filename or arch.startswith('Win'):
@@ -1086,6 +1097,8 @@ class Main:
     logger.debug(f"ipv4_gw: {self.ipv4_gw}")
     logger.debug(f"ipv4_dns: {self.ipv4_dns}")
     logger.debug(f"log_filename: {self.log_filename}")
+    logger.debug(f"no_ansi_colors: {self.no_ansi_colors}")
+    logger.debug(f"json_format: {self.json_format}")
 
   def handle_invalid_args(self):
     # handle invalid options from commandline.
@@ -1154,6 +1167,8 @@ class Main:
     self.parser.add_argument('--config', default=None, help="Load options from config file.")
     self.parser.add_argument('--save-config', default=None, help="Save current options to config file.")
     self.parser.add_argument('--save-defaults', action="store_true", default=None, help="Save current options as new defaults.")
+    self.parser.add_argument('--no-colors', action="store_true", dest='no_ansi_colors', default=None, help="Do not use ANSI colors for output.")
+    self.parser.add_argument('--json', action="store_true", dest='json_format', default=None, help="Output full device's data in JSON format instead of regular logging.")
     args = self.parser.parse_args()
     self.tmp_flags = vars(args)
     flags = {k: v for k, v in self.tmp_flags.items() if v is not None}  # clear out defaults, just leave commandline arguments (we need these later).
@@ -1170,6 +1185,11 @@ class Main:
       self.run_action = 'list'  # handle commandline argument '-l / --list'
     else:
       self.run_action = 'flash'  # handle commandline argument '-f / --flash', required to allow commandline override any saved defaults, and handle commandline default to '--flash'.
+
+    # Conditional dependency check
+    if args.get('json_format') and not args.get('list'):
+      self.parser.error("--json requires --list to be set")
+
     return args
 
   def run_app(self):  # main run of the script, handles commandline arguments.
@@ -1189,6 +1209,22 @@ class Main:
     self.set_vars(args)  # store args as local variables.
     self.show_debug_info(args)  # show debug info as debug logger.
     self.handle_invalid_args()  # handle invalid options from commandline.
+
+    if self.no_ansi_colors:
+      global WHITE
+      global RED
+      global GREEN
+      global YELLOW
+      global BLUE
+      global PURPLE
+      global NC
+      WHITE = ''
+      RED = ''
+      GREEN = ''
+      YELLOW = ''
+      BLUE = ''
+      PURPLE = ''
+      NC = ''
 
     atexit.register(self.exit_app)  # handle safe exit (user break CTRL-C).
 
@@ -1429,7 +1465,7 @@ class Main:
       latest_fw_label = flash_fw_version
 
     flash_fw_newer = self.is_newer(flash_fw_version, current_fw_version)
-    if (not self.quiet_run or flash_fw_newer or force_flash and flash_fw_version != '0.0.0') and self.requires_upgrade != 'Done':
+    if (not self.quiet_run or flash_fw_newer or force_flash and flash_fw_version != '0.0.0') and self.requires_upgrade != 'Done' and not self.json_format:
       logger.info(f"")
       logger.info(f"{WHITE}Host: {NC}http://{host}")
       if self.info_level > 1 or device_name != friendly_host:
@@ -1465,6 +1501,9 @@ class Main:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version} \u279c {YELLOW}{flash_fw_type_str} {latest_fw_label}{NC}")
       elif current_fw_type == self.flash_mode:
         logger.info(f"{WHITE}Firmware: {NC}{current_fw_type_str} {current_fw_version}")
+
+    if self.json_format:
+      logger.info(json.dumps(device.info))
 
     if download_url and (force_flash or self.requires_upgrade is True or current_fw_type != self.flash_mode or flash_fw_newer) and device.already_processed is False:
       self.upgradeable_devices += 1
@@ -1686,7 +1725,8 @@ class Main:
 
   def device_scan(self):  # handle devices found from DNS scanner.
     logger.debug(f"{PURPLE}[Device Scan] automatic scan{NC}")
-    logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
+    if not self.json_format:
+      logger.info(f"{WHITE}Scanning for Shelly devices...{NC}")
     self.zc = zeroconf.Zeroconf()
     self.listener = ServiceListener()
     zeroconf.ServiceBrowser(zc=self.zc, type_='_http._tcp.local.', listener=self.listener)
@@ -1713,15 +1753,16 @@ class Main:
 
   def exit_app(self):  # exit script.
     logger.info(f"")
-    if self.run_action == 'flash':
-      if self.failed_flashed_devices > 0:
-        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC} {RED}Failed: {self.failed_flashed_devices}{NC}")
-      else:
-        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC}")
-    elif self.total_devices > 0:
-      logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices}{NC}")
-    if self.log_filename:
-      logger.info(f"Log file created: {self.log_filename}")
+    if not self.json_format:
+      if self.run_action == 'flash':
+        if self.failed_flashed_devices > 0:
+          logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC} {RED}Failed: {self.failed_flashed_devices}{NC}")
+        else:
+          logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices} Flashed: {self.flashed_devices}{NC}")
+      elif self.total_devices > 0:
+        logger.info(f"{GREEN}Devices found: {self.total_devices} Upgradeable: {self.upgradeable_devices}{NC}")
+      if self.log_filename:
+        logger.info(f"Log file created: {self.log_filename}")
     self.stop_webserver()
 
 
