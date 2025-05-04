@@ -655,8 +655,8 @@ conds:
         - ["sw1.state_led_en", 1]
         - ["bl0937.power_coeff", "f", 0, {title: "BL0937 counts -> watts conversion coefficient"}]
         - ["bl0937.power_coeff", 1.64358469]  # (16 + 1010 + 1935) / (9.55 + 617 + 1175)
-        - ["led.color_on", "i", 0x00FF00, {title: "LED color when on"}]
-        - ["led.color_off", "i", 0xFF0000, {title: "LED color when off"}]
+        - ["led.color_on", "i", 0x0000FF, {title: "LED color when on"}]
+        - ["led.color_off", "i", 0x000000, {title: "LED color when off"}]
 
   - when: build_vars.MODEL == "ShellyPlusRGBWPM"
     apply:
