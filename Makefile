@@ -195,3 +195,8 @@ check-format: format
 
 upload:
 	rsync -azv releases/* rojer.me:www/files/shelly/
+
+clean:
+	rm -rf build_* releases binlibs deps fs/index.html.gz
+
+all: build
