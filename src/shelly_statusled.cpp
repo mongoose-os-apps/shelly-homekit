@@ -66,9 +66,11 @@ Status StatusLED::SetState(bool on, const char *source) {
   struct rgb color = on ? colorOn : colorOff;
 
   for (int i = 0; i < num_pixel_; i++) {
+    mgos_neopixel_clear(pixel_);
     mgos_neopixel_set(pixel_, i, color.r, color.g, color.b);
+    mgos_neopixel_show(pixel_);
   }
-  mgos_neopixel_show(pixel_);
+
   return Status::OK();
 }
 
