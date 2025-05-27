@@ -1099,7 +1099,7 @@ conds:
         SDA_GPIO: 6
         ADDON_OUT_GPIO: 9
         ADDON_IN_GPIO: 21
-        ADDON_DIG_GPIO: -1
+        ADDON_DIG_GPIO: 1
         I2C_RST_GPIO: 0
         PM_CH0: 0
         PM_CH1: 1
