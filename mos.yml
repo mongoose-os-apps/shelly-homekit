@@ -1790,6 +1790,7 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
           variant: ubuntu-nossl
+        - location: https://github.com/mongoose-os-libs/neopixel
       cdefs:
         PRODUCT_HW_REV: "1.0"
         STOCK_FW_MODEL: XXX
@@ -1812,6 +1813,9 @@ conds:
         - ["in2", "in", {title: "Input 2 settings"}]
         - ["in2.ssw.name", "ShellyU SSW2"]
         - ["in2.sensor.name", "ShellyU S2"]
+
+        - ["led.color_on", "i", 0x00FF00, {title: "LED color when on"}]
+        - ["led.color_off", "i", 0xFF0000, {title: "LED color when off"}]
 
   - when: build_vars.MODEL == "ShellyUDuo"
     apply:

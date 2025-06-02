@@ -16,6 +16,8 @@
  */
 #include "shelly_statusled.hpp"
 
+#include "mgos.hpp"
+
 #ifdef MGOS_CONFIG_HAVE_LED
 
 namespace shelly {
@@ -71,6 +73,41 @@ Status StatusLED::SetState(bool on, const char *source) {
     mgos_neopixel_show(pixel_);
   }
 
+  return Status::OK();
+}
+
+StatusLEDComponent::StatusLEDComponent(StatusLED *output)
+    : Component(output->id()) {
+  cfg_ = output->GetConfig();
+}
+
+StatusLEDComponent::~StatusLEDComponent() {
+}
+
+StatusOr<std::string> StatusLEDComponent::GetInfoJSON() const {
+  return mgos::JSONPrintStringf(
+      "{id: %d, type: %d, on_color: %d, off_color: %d}", this->Component::id(),
+      type(), cfg_->color_on, cfg_->color_off);
+}
+
+Status StatusLEDComponent::SetConfig(const std::string &config_json,
+                                     bool *restart_required) {
+  int color_on = -1, color_off = -1;
+  json_scanf(config_json.c_str(), config_json.size(),
+             "{on_color: %d, off_color: %d}", &color_on, &color_off);
+
+  // Now copy over.
+  if (color_off != -1) {
+    cfg_->color_off = color_off;
+  }
+  if (color_on != -1) {
+    cfg_->color_on = color_on;
+  }
+  return Status::OK();
+  *restart_required = false;
+}
+
+Status StatusLEDComponent::Init() {
   return Status::OK();
 }
 

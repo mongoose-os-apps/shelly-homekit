@@ -42,6 +42,7 @@ class Component {
     kSmokeSensor = 14,
     kCarbonMonoxideSensor = 15,
     kCarbonDioxideSensor = 16,
+    kStatusLED = 17,
     kMax,
   };
 

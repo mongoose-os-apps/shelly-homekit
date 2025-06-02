@@ -780,6 +780,42 @@
       </div>
     </div>
 
+    <div class="container" id="led_template" style="display: none">
+      <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Sensor-Settings"
+        target="_blank">?</a>
+      <h1 id="head">LED Status</h1>
+      <div class="form">
+        <div>
+          <div class="form-control" id="color_on_container">
+            <label>On Color:</label>
+            <span id="color_preview"></span>
+            <span id="color_name"></span>
+          </div>
+          <div class="form-control" id="hue_container">
+            <label>Hue:</label>
+            <input type="range" id="hue" min="0" max="360"><span id="hue_value"></span>
+          </div>
+          <div class="form-control" id="saturation_container">
+            <label>Saturation:</label>
+            <input type="range" id="saturation" min="0" max="100"><span id="saturation_value"></span>
+          </div>
+          <div class="form-control" id="color_temperature_container">
+            <label>Color Temperature:</label>
+            <input type="range" id="color_temperature" min="50" max="400"><span id="color_temperature_value"></span>
+          </div>
+          <div class="form-control">
+            <label>Brightness:</label>
+            <input type="range" id="brightness" min="0" max="100"><span id="brightness_value"></span>
+          </div>
+          <div class="button-container">
+            <button id="save_btn">
+              <label><span id="save_spinner"></span>Save</label>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+            
     <div class="container" id="gdo_template" style="display: none">
       <a class="helpbadge" href="https://github.com/mongoose-os-apps/shelly-homekit/wiki/Garage-Door-Opener-Settings"
         target="_blank">?</a>

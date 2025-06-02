@@ -27,6 +27,7 @@
 #include "shelly_main.hpp"
 #include "shelly_mock.hpp"
 #include "shelly_output.hpp"
+#include "shelly_statusled.hpp"
 
 namespace shelly {
 
@@ -45,6 +46,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   inputs->emplace_back(in2);
 
   outputs->emplace_back(new OutputPin(1, 34, 1));
+
+  outputs->emplace_back(new StatusLED(2, 2, 2, MGOS_NEOPIXEL_ORDER_GRB, nullptr,
+                                      mgos_sys_config_get_led()));
 
   g_mock_sys_temp_sensor = new MockTempSensor(33);
   sys_temp->reset(g_mock_sys_temp_sensor);
@@ -74,6 +78,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
       CreateHAPSensors(&sensors, comps, accs, svr);
     }
   }
+
+  comps->emplace_back(new StatusLEDComponent((StatusLED *) (FindOutput(2))));
 }
 
 }  // namespace shelly

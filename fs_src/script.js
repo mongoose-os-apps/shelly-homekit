@@ -62,7 +62,8 @@ class Component_Type {
   static kSmokeSensor = 14;
   static kCarbonMonoxideSensor = 15;
   static kCarbonDioxideSensor = 16;
-  static kMax = 17;
+  static kStatusLED = 17;
+  static kMax = 18;
 };
 
 // Keep in sync with shelly::LightBulbController::BulbType.
@@ -600,6 +601,21 @@ function findOrAddContainer(cd) {
       el(c, "save_btn").onclick = function() {
         diSetConfig(c);
       };
+      break;
+    case Component_Type.kStatusLED:
+      c = el("led_template").cloneNode(true);
+      c.id = elId;
+      el(c, "save_btn").onclick = function() {
+        ledSetConfig(c);
+      };
+      el(c, "hue").onchange = el(c, "saturation").onchange =
+          el(c, "color_temperature").onchange =
+              el(c, "brightness").onchange = function(ev) {
+                setComponentState(
+                    c, rgbState(c, c.data.state), el(c, "toggle_spinner"));
+                setPreviewColor(c, LightBulbController_BulbType.kRGBW);
+                markInputChanged(ev);
+              };
       break;
     case Component_Type.kMotionSensor:
     case Component_Type.kOccupancySensor:
