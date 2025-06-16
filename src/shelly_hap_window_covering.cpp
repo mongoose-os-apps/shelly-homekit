@@ -63,7 +63,6 @@ WindowCovering::WindowCovering(int id, Input *in0, Input *in1, Output *out0,
     pm_open_ = pm1;
     pm_close_ = pm0;
   }
-  set_primary(true);
 }
 
 WindowCovering::~WindowCovering() {
@@ -768,7 +767,9 @@ void CreateHAPWC(int id, Input *in1, Input *in2, Output *out1, Output *out2,
   if (wc == nullptr || !wc->Init().ok()) {
     return;
   }
-  wc->set_primary(true);
+  if (service_type == hap::WindowCovering::ServiceType::WINDOW) {
+      wc->set_primary(true);
+  }
   switch (im) {
     case hap::WindowCovering::InMode::kSeparateMomentary:
     case hap::WindowCovering::InMode::kSeparateToggle: {
