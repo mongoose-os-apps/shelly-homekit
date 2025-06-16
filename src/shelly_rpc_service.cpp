@@ -144,13 +144,13 @@ static void AppendWifiInfoExt(std::string *res) {
   uint32_t digest[8];
   mbedtls_sha256_context ctx;
   mbedtls_sha256_init(&ctx);
-  mbedtls_sha256_starts_ret(&ctx, 0 /* is224 */);
-  mbedtls_sha256_update_ret(&ctx, (uint8_t *) device_id, strlen(device_id));
-  mbedtls_sha256_update_ret(&ctx, (uint8_t *) wc.sta.ssid.data(),
-                            wc.sta.ssid.length());
-  mbedtls_sha256_update_ret(&ctx, (uint8_t *) wc.sta.pass.data(),
-                            wc.sta.pass.length());
-  mbedtls_sha256_finish_ret(&ctx, (uint8_t *) digest);
+  mbedtls_sha256_starts(&ctx, 0 /* is224 */);
+  mbedtls_sha256_update(&ctx, (uint8_t *) device_id, strlen(device_id));
+  mbedtls_sha256_update(&ctx, (uint8_t *) wc.sta.ssid.data(),
+                        wc.sta.ssid.length());
+  mbedtls_sha256_update(&ctx, (uint8_t *) wc.sta.pass.data(),
+                        wc.sta.pass.length());
+  mbedtls_sha256_finish(&ctx, (uint8_t *) digest);
   mbedtls_sha256_free(&ctx);
   std::string wifi_pass = ScreenPassword(wc.sta.pass);
   std::string wifi1_pass = ScreenPassword(wc.sta1.pass);

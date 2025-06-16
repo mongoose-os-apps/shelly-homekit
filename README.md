@@ -13,24 +13,27 @@ Reverting to stock firmware is also possible [see here](https://github.com/mongo
 
 ### Gen 3 Devices
 
-|                                            |[Mini1G3]|[Mini1PMG3]| 1, 1PM, 2PM, i4, Plugs Gen3
-|-                                           |-        |-          | -
-|Switch & Co.<sup>1</sup>                    |✓        |✓          | [alpha version](https://github.com/mongoose-os-apps/shelly-homekit/releases/tag/2.14.0-alpha4)
-|Stateless Input<sup>2</sup>                 |✓        |✓          |
-|Garage door opener                          |✓        |✓          |
-|Power measurement                           |✗        |-          |
+|                                            |[1 G3]   |[1PM G3] |[2PM G3] |[I4 G3]  |[Mini1 G3]|[Mini1PM G3]|[PlugS G3]
+|-                                           |-        |-        |-        |-        |-         |-           |-   
+|Switch & Co.<sup>1</sup>                    |✓        |✓        |✓        |✗        |✓         |✓           |✓
+|Stateless Input<sup>2</sup>                 |✓        |✓        |✓        |✓        |✓         |✓           |✗  
+|Sensors<sup>3</sup>                         |✓        |✓        |✓        |✓        |✓         |✓           |✗  
+|Garage door opener                          |✓        |✓        |✓        |✗        |✓         |✓           |✗  
+|Roller shutter mode                         |✗        |✗        |✓        |✗        |✗         |✗           |✗  
+|Power measurement                           |✗        |✓        |✓        |✗        |✗         |✓           |✓
+|Temperature/Humidity measurement<sup>4</sup>|✓        |✓        |✓        |✓        |✗         |✗           |✗ 
 
 ### Plus devices
 
-|                                            |[+1]|[+1Mini]|[+1PMMini]|[+1PM]|[+2PM]|+i4 [AC]/[DC]|[+Plug S]
-|-                                           |-   |-       |-         |-     |-     |-            |-     
-|Switch & Co.<sup>1</sup>                    |✓   |✓       |✓         |✓     |✓     |✗            |✓     
-|Stateless Input<sup>2</sup>                 |✓   |✓       |✓         |✓     |✓     |✓            |✗    
-|Sensors<sup>3</sup>                         |✓   |✗       |✗         |✓     |✓     |✓            |✗     
-|Garage door opener                          |✓   |✓       |✓         |✓     |✓     |✗            |✗     
-|Roller shutter mode                         |✗   |✗       |✗         |✗     |✓     |✗            |✗     
-|Power measurement                           |✗   |✗       |-         |✓     |✓     |✗            |✓     
-|Temperature/Humidity measurement<sup>4</sup>|✓   |✗       |✗         |✓     |✓     |✓            |✗     
+|                                            |[+1]|[+1Mini]|[+1PMMini]|[+1PM]|[+2PM]|+i4 [AC]/[DC]|[+Plug S]|[+Uni]
+|-                                           |-   |-       |-         |-     |-     |-            |-        |-     
+|Switch & Co.<sup>1</sup>                    |✓   |✓       |✓         |✓     |✓     |✗            |✓        |✓     
+|Stateless Input<sup>2</sup>                 |✓   |✓       |✓         |✓     |✓     |✓            |✗        |✓    
+|Sensors<sup>3</sup>                         |✓   |✓       |✓         |✓     |✓     |✓            |✗        |✓     
+|Garage door opener                          |✓   |✓       |✓         |✓     |✓     |✗            |✗        |✓    
+|Roller shutter mode                         |✗   |✗       |✗         |✗     |✓     |✗            |✗        |✗     
+|Power measurement                           |✗   |✗       |-         |✓     |✓     |✗            |✓        |✗     
+|Temperature/Humidity measurement<sup>4</sup>|✓   |✗       |✗         |✓     |✓     |✓            |✗        |✓     
 
 ### Light Controllers
 
@@ -54,7 +57,7 @@ Currently not supported.
 |Switch & Co.<sup>1</sup>|✓|✓|✓|✓|✓|✓|✓|✗|✓|
 |Stateless Input<sup>2</sup>|✓|✓|✓|✗|✗|✓|✓|✓|✓|
 |Sensors<sup>3</sup>|✓|✓|✓|✗|✗|✓|✓|✓|✓|
-|Temperature/Humidity measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|-|
+|Temperature/Humidity measurement|✓<sup>4</sup>|✓<sup>4</sup>|✗|✗|✗|✗|✗|✗|✓|
 |Garage door opener|✓|✓|✗|✗|✗|✓|✓|✗|✓|
 |Roller shutter mode|✗|✗|✗|✗|✗|✗|✓|✗|✗|
 |Power measurement|✗|✓|-|✓|✓|✗|✓|✗|✗|
@@ -86,7 +89,7 @@ Features that are not yet supported:
 
 ### Updating from stock firmware
 
-  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit (1.4 or later on Plus Devices).
+  * **Important:** Please update to the latest stock firmware prior to converting to Shelly-HomeKit (1.5.1 or later on Plus/Gen3 Devices).
 
   * Watch a 2 minute [video](https://www.youtube.com/watch?v=BZc-kp4dDRw).
 
@@ -95,52 +98,73 @@ Features that are not yet supported:
     <details>
      
       <summary>If that doesn't work (did you remember to have the stock firmware at the correct version), try the link for a specific model</summary>
-  
-      * Shelly 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
 
-      * Shelly 1L: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1L.zip`
+      * Gen 1 Devices:
+      
+        * Shelly 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1.zip`
 
-      * Shelly 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1PM.zip`
+        * Shelly 1L: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1L.zip`
 
-      * Shelly 2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly2.zip`  
+        * Shelly 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1PM.zip`
+
+        * Shelly 2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly2.zip`  
         _Note: Not for Shelly Dimmer 2!_
 
-      * Shelly 2.5: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip`
+        * Shelly 2.5: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly25.zip`
 
-      * Shelly Duo: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyDuo.zip`
+        * Shelly Duo: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyDuo.zip`
 
-      * Shelly Duo RGBW (ColorBulb): `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyColorBulb.zip`
+        * Shelly Duo RGBW (ColorBulb): `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyColorBulb.zip`
 
-      * Shelly i3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyI3.zip`
+        * Shelly i3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyI3.zip`
+       
+        * Shelly Plug: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlug.zip`
 
-      * Shelly Mini 1 Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyMini1Gen3.zip`
-   
-      * Shelly Mini 1 PM Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyMini1PMGen3.zip`
-
-      * Shelly Plug: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlug.zip`
-
-      * Shelly Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip`
-
-      * Shelly Plus 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1.zip`
-
-      * Shelly Plus 1 Mini: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1Mini.zip`
-
-      * Shelly Plus 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PM.zip`
-      
-      * Shelly Plus 2PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus2PM.zip`
-   
-      * Shelly Plus Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusPlugS.zip`
-   
-      * Shelly Plus RGBWPM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusRGBWPM.zip`
-
-      * Shelly Plus I4 AC & DC: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusI4.zip`
-
-      * Shelly RGBW2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyRGBW2.zip`  
+        * Shelly Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlugS.zip`
+       
+        * Shelly RGBW2: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyRGBW2.zip`  
         _Note: The Shelly must be in color mode to flash, flashing in white mode is not supported!_
 
-      * Shelly UNI: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyUNI.zip`
+        * Shelly UNI: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyUNI.zip`
 
-      * Shelly Vintage: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyVintage.zip`
+        * Shelly Vintage: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyVintage.zip`
+
+
+      * Gen 2 Devices
+
+        * Shelly Plus 1: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1.zip`
+
+        * Shelly Plus 1 Mini: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1Mini.zip`
+
+        * Shelly Plus 1PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PM.zip`
+   
+        * Shelly Plus 1PM Mini: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus1PMMini.zip`
+      
+        * Shelly Plus 2PM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlus2PM.zip`
+   
+        * Shelly Plus Plug S: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusPlugS.zip`
+   
+        * Shelly Plus RGBWPM: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusRGBWPM.zip`
+
+        * Shelly Plus I4 AC & DC: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusI4.zip`
+
+        * Shelly Plus UNI: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyPlusUni.zip`
+
+      * Gen 3 Devices
+   
+        * Shelly 1 Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1Gen3.zip`
+       
+        * Shelly 1PM Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly1PMGen3.zip`
+    
+        * Shelly 2PM Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-Shelly2PMGen3.zip`
+       
+        * Shelly I4 Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyI4Gen3.zip` 
+
+        * Shelly Mini 1 Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyMini1Gen3.zip`
+   
+        * Shelly Mini 1 PM Gen3: `http://A.B.C.D/ota?url=http://rojer.me/files/shelly/shelly-homekit-ShellyMini1PMGen3.zip`
+
+
      </details>
 
   * See [here](https://github.com/mongoose-os-apps/shelly-homekit/wiki/Flashing#updating-from-stock-firmware) for detailed instructions.
@@ -181,8 +205,14 @@ This firmware is free software and is distributed under [Apache 2.0 license](LIC
 [+1]: https://www.shelly.cloud/en/products/shop/shelly-plus-1
 [+1Mini]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-mini
 [+1PMMini]: https://www.shelly.cloud/en/products/shop/shelly-plus-1pm-mini
-[Mini1G3]: https://www.shelly.cloud/en/products/shop/shelly-1-mini-gen-3
-[Mini1PMG3]: https://www.shelly.cloud/en/products/shop/shelly-1-pm-mini-gen3
+[+Uni]: https://www.shelly.cloud/en/products/shop/shelly-plus-uni
+[Mini1 G3]: https://www.shelly.cloud/en/products/shop/shelly-1-mini-gen-3
+[Mini1PM G3]: https://www.shelly.cloud/en/products/shop/shelly-1-pm-mini-gen3
+[2PM G3]: https://www.shelly.cloud/en/products/shop/shelly-2pm-gen3
+[1PM G3]: https://www.shelly.cloud/en/products/shop/shelly-1pm-gen3
+[1 G3]: https://www.shelly.cloud/en/products/shop/shelly-1-gen3
+[I4 G3]: https://www.shelly.cloud/en/products/shop/shelly-i4-gen3
+[PlugS G3]: https://www.shelly.com/products/shelly-plug-s-gen3
 [+1PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-1-pm-2-pack/shelly-plus-1-pm
 [+2PM]: https://www.shelly.cloud/en/products/shop/shelly-plus-2-pm
 [+RGBWPM]: https://www.shelly.cloud/en/products/shop/shelly-plus-rgbw-pm

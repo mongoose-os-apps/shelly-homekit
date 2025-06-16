@@ -19,6 +19,7 @@
 #include "shelly_hap_input.hpp"
 #include "shelly_input_pin.hpp"
 #include "shelly_main.hpp"
+#include "shelly_pm_bl0942.hpp"
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
 
@@ -35,20 +36,34 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
   in->Init();
   inputs->emplace_back(in);
 
-// not yet compatible
 #ifdef MGOS_HAVE_ADC
   sys_temp->reset(new TempSensorSDNT1608X103F3950(3, 3.3f, 10000.0f));
 #endif
 
-  // std::unique_ptr<PowerMeter> pm()
+  struct bl0942_cfg cfg = {
+      .voltage_scale = (73989 / (1.218 * 4)),
+      .current_scale = (305978 / (1.218)),
+      .apower_scale = (3537 / (1.218 * 1.218 * 4)),
+      .aenergy_scale = ((3537 / (1.218 * 1.218 * 4)) * 3600 / (1638.4 * 256))};
+
+  mgos_config_factory *c = &(mgos_sys_config.factory);
+  if (c->calib.done) {
+    mgos_config_scales *g = &c->calib.scales0;
+    cfg.voltage_scale = g->voltage_scale / 500;
+    cfg.current_scale = g->current_scale / 2;
+    cfg.apower_scale = 1e11 / g->apower_scale;
+    cfg.aenergy_scale = 1e11 / g->aenergy_scale;
+  }
+
+  std::unique_ptr<PowerMeter> pm(new BL0942PowerMeter(1, 6, 7, 1, 1, cfg));
   // BL0942 GPIO6 TX GPIO7 RX
-  // const Status &st = pm->Init();
-  // if (st.ok()) {
-  //   pms->emplace_back(std::move(pm));
-  // } else {
-  //   const std::string &s = st.ToString();
-  //   LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
-  // }
+  const Status &st = pm->Init();
+  if (st.ok()) {
+    pms->emplace_back(std::move(pm));
+  } else {
+    const std::string &s = st.ToString();
+    LOG(LL_ERROR, ("PM init failed: %s", s.c_str()));
+  }
 
   InitSysLED(LED_GPIO, LED_ON);
   InitSysBtn(BTN_GPIO, BTN_DOWN);

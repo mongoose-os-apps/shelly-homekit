@@ -70,7 +70,7 @@ static IRAM void GPIOHWTimerCB(void *arg) {
   for (i = 0; i < NUM_SAMPLES; i++) {
     if (s_gpio_vals[i] != gpio_vals) return;
   }
-  s_meas_cnt++;
+  s_meas_cnt = s_meas_cnt + 1;
   // Has anything changed?
   if (s_gpio_last == gpio_vals) return;
   s_gpio_last = gpio_vals;

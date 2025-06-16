@@ -55,7 +55,7 @@ std::vector<std::unique_ptr<TempSensor>> Onewire::DiscoverAll() {
   std::vector<std::unique_ptr<TempSensor>> sensors;
   mgos_onewire_search_clean(ow_);
   std::unique_ptr<TempSensor> sensor;
-  while (sensor = NextAvailableSensor(0)) {
+  while ((sensor = NextAvailableSensor(0))) {
     sensors.push_back(std::move(sensor));
   }
   LOG(LL_INFO, ("Found %i sensors", sensors.size()));

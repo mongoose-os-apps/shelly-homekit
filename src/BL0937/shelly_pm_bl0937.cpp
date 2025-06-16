@@ -98,7 +98,8 @@ void BL0937PowerMeter::MeasureTimerCB() {
                  (int) cf_count, cfps, (int) cf1_count, cf1ps, apa_, aea_));
   // Start new measurement cycle.
   mgos_ints_disable();
-  cf_count_ = cf1_count_ = 0;
+  cf_count_ = 0;
+  cf1_count_ = 0;
   meas_start_ = mgos_uptime_micros();
   mgos_ints_enable();
 }

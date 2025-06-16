@@ -5,31 +5,41 @@ on:
 jobs:
   build:
     name: Build ${{ matrix.model }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/markirb/mos:latest
+      volumes:
+        - /home/runner/work:/home/runner/work
     strategy:
       fail-fast: false
       matrix:
         model:
           - Shelly1
+          - Shelly1Gen3
           - Shelly1L
           - Shelly1PM
+          - Shelly1PMGen3
           - Shelly2
           - Shelly25
+          - Shelly2PMGen3
           - ShellyColorBulb
           - ShellyDuo
           - ShellyI3
+          - ShellyI4Gen3
+          - ShellyMini1Gen3
+          - ShellyMini1PMGen3
           - ShellyPlug
           - ShellyPlugS
+          - ShellyPlugSGen3
           - ShellyPlus1
+          - ShellyPlus1Mini
           - ShellyPlus1PM
+          - ShellyPlus1PMMini
           - ShellyPlus2PM
           - ShellyPlusI4
           - ShellyPlusPlugS
           - ShellyPlusRGBWPM
-          - ShellyPlus1Mini
-          - ShellyPlus1PMMini
-          - ShellyMini1Gen3
-          - ShellyMini1PMGen3
+          - ShellyPlusUni
           - ShellyRGBW2
           - ShellyUNI
           - ShellyVintage
@@ -38,15 +48,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Build docker image # remove if newer mos docker image is available
-        if: ${{ contains( matrix.model , 'Plus') || contains( matrix.model , 'Gen3') }}
-        run: docker build -t mgos/esp32-build:4.4.1-r7 -f .github/workflows/Dockerfile-esp32-build .
-      - name: Install mos build tool
-        run: |
-          sudo add-apt-repository -y ppa:mongoose-os/mos
-          sudo apt -q install -y mos-latest
       - name: Build
-        run: make ${{ matrix.model }} RELEASE=1 RELEASE_SUFFIX=$(.github/version.py --suffix)       
+        run: | 
+          cd /home/runner/work/shelly-homekit/shelly-homekit
+          git config --global --add safe.directory /home/runner/work/shelly-homekit/shelly-homekit
+          make ${{ matrix.model }} LOCAL=1 RELEASE=1 RELEASE_SUFFIX=$(.github/version.py --suffix)
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
