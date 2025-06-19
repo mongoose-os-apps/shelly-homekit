@@ -72,6 +72,7 @@ config_schema:
 
   - ["wc", "o", {title: "Roller shutter settings", abstract: true}]
   - ["wc.name", "s", "Shutter 1", {title: "Accessory name"}]
+  - ["wc.display_type", "i", 0, {title: "Display type: 0 - Roller Shutter, 1 - Window"}]
   - ["wc.in_mode", "i", 0, {title: "Input mode: 0 - separate, momentary; 0 - separate, toggle; 2 - single, momentary; 3 - detached"}]
   - ["wc.swap_inputs", "b", false, {title: "Swap inputs (2 - open, 1 - close)"}]
   - ["wc.swap_outputs", "b", false, {title: "Swap outputs (2 - open, 1 - close)"}]

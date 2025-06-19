@@ -30,17 +30,21 @@ namespace hap {
 
 WindowCovering::WindowCovering(int id, Input *in0, Input *in1, Output *out0,
                                Output *out1, PowerMeter *pm0, PowerMeter *pm1,
-                               struct mgos_config_wc *cfg)
+                               struct mgos_config_wc *cfg, ServiceType type)
     : Component(id),
       Service((SHELLY_HAP_IID_BASE_WINDOW_COVERING +
                (SHELLY_HAP_IID_STEP_WINDOW_COVERING * (id - 1))),
-              &kHAPServiceType_WindowCovering,
-              kHAPServiceDebugDescription_WindowCovering),
+              (type == ServiceType::WINDOW ? &kHAPServiceType_Window
+                                           : &kHAPServiceType_WindowCovering),
+              (type == ServiceType::WINDOW
+                   ? kHAPServiceDebugDescription_Window
+                   : kHAPServiceDebugDescription_WindowCovering)),
       cfg_(cfg),
-      state_timer_(std::bind(&WindowCovering::RunOnce, this)),
       cur_pos_(cfg_->current_pos),
       tgt_pos_(cfg_->current_pos),
-      move_ms_per_pct_(cfg_->move_time_ms / 100.0) {
+      state_timer_(std::bind(&WindowCovering::RunOnce, this)),
+      move_ms_per_pct_(cfg_->move_time_ms / 100.0),
+      service_type_(type) {
   if (!cfg_->swap_inputs) {
     in_open_ = in0;
     in_close_ = in1;
@@ -199,11 +203,12 @@ StatusOr<std::string> WindowCovering::GetInfoJSON() const {
       "{id: %d, type: %d, name: %Q, "
       "in_mode: %d, swap_inputs: %B, swap_outputs: %B, "
       "cal_done: %B, move_time_ms: %d, move_power: %d, "
-      "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d}",
+      "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d, "
+      "display_type: %d}",
       id(), type(), cfg_->name, cfg_->in_mode, cfg_->swap_inputs,
       cfg_->swap_outputs, cfg_->calibrated, cfg_->move_time_ms,
       (int) cfg_->move_power, (int) state_, StateStr(state_), (int) cur_pos_,
-      (int) tgt_pos_);
+      (int) tgt_pos_, (int) service_type_);
 }
 
 Status WindowCovering::SetConfig(const std::string &config_json,
@@ -212,9 +217,11 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   cfg.name = nullptr;
   int in_mode = -1;
   int8_t swap_inputs = -1, swap_outputs = -1;
+  int display_type = -1;
   json_scanf(config_json.c_str(), config_json.size(),
-             "{name: %Q, in_mode: %d, swap_inputs: %B, swap_outputs: %B}",
-             &cfg.name, &in_mode, &swap_inputs, &swap_outputs);
+             "{name: %Q, in_mode: %d, swap_inputs: %B, swap_outputs: %B, "
+             "display_type: %d}",
+             &cfg.name, &in_mode, &swap_inputs, &swap_outputs, &display_type);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -223,6 +230,9 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   }
   if (in_mode > 3) {
     return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "in_mode");
+  }
+  if (display_type > 1) {
+    return mgos::Errorf(STATUS_INVALID_ARGUMENT, "invalid %s", "display_type");
   }
   // Apply.
   if (cfg.name != nullptr && strcmp(cfg_->name, cfg.name) != 0) {
@@ -242,6 +252,11 @@ Status WindowCovering::SetConfig(const std::string &config_json,
     // As movement direction is now reversed, position is now incorrect too.
     // Let's re-calibrate.
     cfg_->calibrated = false;
+    *restart_required = true;
+  }
+  if (display_type != -1) {
+    service_type_ = static_cast<ServiceType>(display_type);
+    cfg_->display_type = display_type;
     *restart_required = true;
   }
   return Status::OK();
@@ -742,18 +757,28 @@ void CreateHAPWC(int id, Input *in1, Input *in2, Output *out1, Output *out2,
                  std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                  HAPAccessoryServerRef *svr) {
   auto im = static_cast<hap::WindowCovering::InMode>(wc_cfg->in_mode);
-  std::unique_ptr<hap::WindowCovering> wc(new hap::WindowCovering(
-      id, in1, in2, out1, out2, pm1, pm2, (struct mgos_config_wc *) wc_cfg));
+  // Determine service type based on display_type configuration
+  auto service_type = (wc_cfg->display_type == 1
+                           ? hap::WindowCovering::ServiceType::WINDOW
+                           : hap::WindowCovering::ServiceType::WINDOW_COVERING);
+  std::unique_ptr<hap::WindowCovering> wc(
+      new hap::WindowCovering(id, in1, in2, out1, out2, pm1, pm2,
+                              (struct mgos_config_wc *) wc_cfg, service_type));
   if (wc == nullptr || !wc->Init().ok()) {
     return;
   }
-  wc->set_primary(true);
+  if (service_type == hap::WindowCovering::ServiceType::WINDOW) {
+    wc->set_primary(true);
+  }
   switch (im) {
     case hap::WindowCovering::InMode::kSeparateMomentary:
     case hap::WindowCovering::InMode::kSeparateToggle: {
       // Single accessory with a single primary service.
       mgos::hap::Accessory *pri_acc = (*accs)[0].get();
-      pri_acc->SetCategory(kHAPAccessoryCategory_WindowCoverings);
+      pri_acc->SetCategory(service_type ==
+                                   hap::WindowCovering::ServiceType::WINDOW
+                               ? kHAPAccessoryCategory_Windows
+                               : kHAPAccessoryCategory_WindowCoverings);
       pri_acc->AddService(wc.get());
       break;
     }
