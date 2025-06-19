@@ -768,7 +768,7 @@ void CreateHAPWC(int id, Input *in1, Input *in2, Output *out1, Output *out2,
     return;
   }
   if (service_type == hap::WindowCovering::ServiceType::WINDOW) {
-      wc->set_primary(true);
+    wc->set_primary(true);
   }
   switch (im) {
     case hap::WindowCovering::InMode::kSeparateMomentary:
