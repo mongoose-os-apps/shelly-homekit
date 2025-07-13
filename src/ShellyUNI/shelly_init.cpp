@@ -37,11 +37,17 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, RELAY1_GPIO, 1));
   outputs->emplace_back(new OutputPin(2, RELAY2_GPIO, 1));
+#ifdef SWITCH_NOISY
   auto *in1 = new NoisyInputPin(1, SWITCH1_GPIO, 1, MGOS_GPIO_PULL_NONE, true);
+  auto *in2 = new NoisyInputPin(2, SWITCH2_GPIO, 1, MGOS_GPIO_PULL_NONE, false);
+#else
+  auto *in1 = new InputPin(1, SWITCH1_GPIO, 1, MGOS_GPIO_PULL_NONE, true);
+  auto *in2 = new InputPin(2, SWITCH2_GPIO, 1, MGOS_GPIO_PULL_NONE, false);
+#endif
   in1->AddHandler(std::bind(&HandleInputResetSequence, in1, LED_GPIO, _1, _2));
   in1->Init();
   inputs->emplace_back(in1);
-  auto *in2 = new NoisyInputPin(2, SWITCH2_GPIO, 1, MGOS_GPIO_PULL_NONE, false);
+
   in2->Init();
   inputs->emplace_back(in2);
 

@@ -1626,6 +1626,7 @@ conds:
       cdefs:
         RELAY1_GPIO: 15
         RELAY2_GPIO: 4
+        SWITCH_NOISY: 1
         SWITCH1_GPIO: 12
         SWITCH2_GPIO: 13
         SENSOR_GPIO: 5
