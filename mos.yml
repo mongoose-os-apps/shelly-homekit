@@ -1684,8 +1684,8 @@ conds:
         LED_ON: 0
         BTN_GPIO: -1
         BTN_DOWN: 0
-        RELAY1_GPIO: 21
-        RELAY2_GPIO: 19
+        RELAY1_GPIO: 19
+        RELAY2_GPIO: 21
         SWITCH1_GPIO: 37
         SWITCH2_GPIO: 38
         SENSOR_GPIO: 13
