@@ -47,6 +47,7 @@ class WindowCovering : public Component, public mgos::hap::Service {
   enum class ServiceType {
     WINDOW_COVERING = 0,  // Default HAP Window Covering
     WINDOW = 1,           // HAP Window service type
+    GARAGE_DOOR = 2,
   };
 
   WindowCovering(int id, Input *in0, Input *in1, Output *out0, Output *out1,
@@ -136,6 +137,14 @@ class WindowCovering : public Component, public mgos::hap::Service {
   mgos::hap::Characteristic *tgt_pos_char_ = nullptr;
   mgos::hap::Characteristic *pos_state_char_ = nullptr;
   mgos::hap::Characteristic *obst_char_ = nullptr;
+  mgos::hap::Characteristic *cur_state_char_ = nullptr;
+  mgos::hap::Characteristic *tgt_state_char_ = nullptr;
+
+  static constexpr uint8_t DOOR_STATE_CLOSED = 0;
+  static constexpr uint8_t DOOR_STATE_OPEN = 1;
+  static constexpr uint8_t DOOR_STATE_OPENING = 2;
+  static constexpr uint8_t DOOR_STATE_CLOSING = 3;
+  static constexpr uint8_t DOOR_STATE_STOPPED = 4;
 
   State state_ = State::kIdle;
   State tgt_state_ = State::kNone;
