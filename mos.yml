@@ -783,14 +783,15 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
-        OTA_DATA_ADDR: 0x10000
+        #PARTITION_TABLE_OFFSET: 0xF000 correct but problems with upgrade?
+        OTA_DATA_ADDR: 0x11000
         OTA_DATA_SIZE: 0x4000
         NVS_ADDR: 0x14000
         NVS_SIZE: 0xC000
         APP_OFFSET: 0x20000
-        APP_SLOT_SIZE: 0x280000
+        APP_SLOT_SIZE: 0x2A0000
         MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 1048576
+        MGOS_ROOT_FS_SIZE: 0xE0000
         ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -851,14 +852,15 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
-        OTA_DATA_ADDR: 0x10000
+        #PARTITION_TABLE_OFFSET: 0xF000 correct but problems with upgrade?
+        OTA_DATA_ADDR: 0x11000
         OTA_DATA_SIZE: 0x4000
         NVS_ADDR: 0x14000
         NVS_SIZE: 0xC000
         APP_OFFSET: 0x20000
         APP_SLOT_SIZE: 0x280000
         MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 1048576
+        MGOS_ROOT_FS_SIZE: 0x100000
         ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -982,14 +984,15 @@ conds:
         - location: https://github.com/mongoose-os-libs/dht
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
-        OTA_DATA_ADDR: 0x10000
+        #PARTITION_TABLE_OFFSET: 0xF000 correct but problems with upgrade?
+        OTA_DATA_ADDR: 0x11000
         OTA_DATA_SIZE: 0x4000
         NVS_ADDR: 0x14000
         NVS_SIZE: 0xC000
         APP_OFFSET: 0x20000
-        APP_SLOT_SIZE: 0x280000
+        APP_SLOT_SIZE: 0x2A0000
         MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 1048576
+        MGOS_ROOT_FS_SIZE: 0xE0000
         ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -1072,9 +1075,9 @@ conds:
         NVS_ADDR: 0x14000
         NVS_SIZE: 0xC000
         APP_OFFSET: 0x20000
-        APP_SLOT_SIZE: 0x2a0000
+        APP_SLOT_SIZE: 0x2C0000
         MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 0xe0000
+        MGOS_ROOT_FS_SIZE: 0xC0000
         ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -1155,15 +1158,15 @@ conds:
       sources:
         - src/BL0942
       build_vars:
-        #PARTITION_TABLE_OFFSET: 0xF000 correct but problems with upgrade
-        OTA_DATA_ADDR: 0x10000
+        #PARTITION_TABLE_OFFSET: 0xF000 correct but problems with upgrade?
+        OTA_DATA_ADDR: 0x11000
         OTA_DATA_SIZE: 0x4000
         NVS_ADDR: 0x14000
         NVS_SIZE: 0xC000
         APP_OFFSET: 0x20000
-        APP_SLOT_SIZE: 0x280000
+        APP_SLOT_SIZE: 0x2A0000
         MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 1048576
+        MGOS_ROOT_FS_SIZE: 0xE0000
         ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
@@ -1209,14 +1212,15 @@ conds:
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
       build_vars:
-        OTA_DATA_ADDR: 0x10000
+        #PARTITION_TABLE_OFFSET: 0xF000 correct but problems with upgrade?
+        OTA_DATA_ADDR: 0x11000
         OTA_DATA_SIZE: 0x4000
         NVS_ADDR: 0x14000
         NVS_SIZE: 0xC000
         APP_OFFSET: 0x20000
-        APP_SLOT_SIZE: 0x280000
+        APP_SLOT_SIZE: 0x2A0000
         MGOS_ROOT_FS_TYPE: LFS
-        MGOS_ROOT_FS_SIZE: 1048576
+        MGOS_ROOT_FS_SIZE: 0xE0000
         ESP_IDF_EXTRA_PARTITION: "scratch,data,0x80,0x720000,0x80000,encrypted"
         ESP_IDF_EXTRA_PARTITION_2: "shelly,data,0x88,0x7F0000,64K,encrypted"
         ESP_IDF_SDKCONFIG_OPTS: >
