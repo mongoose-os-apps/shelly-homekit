@@ -135,6 +135,7 @@ bool DetectAddon(int pin_in, int pin_out) {
   if (pin_in == -1 || pin_out == -1) {
     return false;
   }
+  /* Deactivate case, does not seem to be reliable
   // case 1: input with pull up
   mgos_gpio_setup_input(pin_in, MGOS_GPIO_PULL_UP);
   // check if pulled by something external, not check output to input yet
@@ -143,6 +144,7 @@ bool DetectAddon(int pin_in, int pin_out) {
     // something is pulling us low, we might have an addon with switchss
     return true;
   }
+     */
 
   // Try to pull low via addon
   mgos_gpio_setup_output(pin_out, 0 /* LOW */);
