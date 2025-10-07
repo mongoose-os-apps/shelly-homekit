@@ -120,6 +120,10 @@ ShellyMini1Gen3: PLATFORM=esp32c3
 ShellyMini1Gen3: build-ShellyMini1Gen3
 	@true
 
+Ogemray25: PLATFORM=esp32c3
+Ogemray25: build-Ogemray25
+	@true
+
 ShellyMini1PMGen3: PLATFORM=esp32c3
 ShellyMini1PMGen3: build-ShellyMini1PMGen3
 	@true
