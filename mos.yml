@@ -1425,8 +1425,8 @@ conds:
   - when: build_vars.MODEL == "Ogemray25"
     apply:
       name: Ogemray25
-      sources:
-        - src/ShellyMini1PMGen3
+      sources: 
+        - src/ShellyPlus1PM
         - src/BL0942
       libs:
         - location: https://github.com/mongoose-os-libs/mongoose
@@ -1448,18 +1448,18 @@ conds:
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
             CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
       cdefs:
-        LED_GPIO: 0
+        LED_GPIO: 3
         LED_ON: 0
-        BTN_GPIO: 25
+        BTN_GPIO: 4
         BTN_DOWN: 0
-        UART_TX_GPIO: 8
-        UART_RX_GPIO: 10
+        UART_TX_GPIO: 10
+        UART_RX_GPIO: 5
         PRODUCT_HW_REV: "?"
         STOCK_FW_MODEL: Ogemray25
         MAX_NUM_HAP_SESSIONS: 16
         RELAY1_GPIO: 7
         SWITCH1_GPIO: 6
-        ADC_GPIO: 1
+        ADC_GPIO: 2
       config_schema:
         - ["device.id",    "Ogemray25-????????????"]
         - ["shelly.name",  "Ogemray25-????????????"]

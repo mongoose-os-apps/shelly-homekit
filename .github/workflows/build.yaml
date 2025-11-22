@@ -43,6 +43,7 @@ jobs:
           - ShellyRGBW2
           - ShellyUNI
           - ShellyVintage
+          - Ogemray25
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
