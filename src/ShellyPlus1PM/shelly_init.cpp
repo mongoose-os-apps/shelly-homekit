@@ -17,7 +17,10 @@
 
 #include "mgos.hpp"
 
+#ifdef ADDON_OUT_GPIO
 #include "shelly_dht_sensor.hpp"
+#endif
+
 #include "shelly_hap_garage_door_opener.hpp"
 #include "shelly_hap_input.hpp"
 #include "shelly_hap_temperature_sensor.hpp"
@@ -26,7 +29,10 @@
 
 #include "shelly_sys_led_btn.hpp"
 #include "shelly_temp_sensor_ntc.hpp"
+
+#ifdef ADDON_OUT_GPIO
 #include "shelly_temp_sensor_ow.hpp"
+#endif
 
 #ifdef UART_TX_GPIO
 #include "shelly_pm_bl0942.hpp"
@@ -36,7 +42,9 @@
 
 namespace shelly {
 
+#ifdef ADDON_OUT_GPIO
 static std::unique_ptr<Onewire> s_onewire;
+#endif
 static std::vector<std::unique_ptr<TempSensor>> sensors;
 
 void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
@@ -82,6 +90,7 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
 
   sys_temp->reset(new TempSensorSDNT1608X103F3950(ADC_GPIO, 3.3f, 10000.0f));
 
+#ifdef ADDON_OUT_GPIO
   int pin_out = ADDON_OUT_GPIO;
   int pin_in = ADDON_IN_GPIO;
 
@@ -99,8 +108,9 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
       in2->Init();
       inputs->emplace_back(in2);
     }
-
-  } else {
+  } else
+#endif
+  {
     RestoreUART();
     InitSysLED(LED_GPIO, LED_ON);
   }
@@ -125,12 +135,14 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                     comps, accs, svr, single_accessory);
   }
 
+#ifdef ADDON_OUT_GPIO
   if (!sensors.empty()) {
     CreateHAPSensors(&sensors, comps, accs, svr);
   }
   if (addon_input) {
     hap::CreateHAPInput(2, mgos_sys_config_get_in2(), comps, accs, svr);
   }
+#endif
 }
 
 }  // namespace shelly
