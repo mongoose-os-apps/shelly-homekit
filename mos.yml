@@ -1447,6 +1447,7 @@ conds:
             CONFIG_FREERTOS_UNICORE=y
             CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
             CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+            CONFIG_PARTITION_TABLE_OFFSET=0x10000
       cdefs:
         LED_GPIO: 3
         LED_ON: 0
