@@ -739,6 +739,17 @@
               <span class="slider round"></span>
             </label>
           </div>
+          <div class="form-control">
+            <label>Manual Calibration:</label>
+            <label class="switch">
+              <input type="checkbox" id="man_cal">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="form-control" id="man_cal_time_container" style="display: none">
+            <label>Movement Time (ms):</label>
+            <input type="number" id="man_cal_time" style="width: 5em; min-width: 5em" min="1000" max="300000">
+          </div>
           <div class="button-container" id="btns">
             <button id="save_btn">
               <label><span id="save_spinner"></span>Save</label>
