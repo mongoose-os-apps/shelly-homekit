@@ -596,11 +596,12 @@ function findOrAddContainer(cd) {
         setComponentState(c, {state: 10}, null);
         el(c, "cal_spinner").className = "spin";
       };
-      el(c, "man_cal").onchange = function() {
+      el(c, "man_cal").onchange = function(ev) {
         el(c, "man_cal_time_container").style.display =
             el(c, "man_cal").checked ? "block" : "none";
         el(c, "cal_btn").style.display =
             el(c, "man_cal").checked ? "none" : "";
+        markInputChanged(ev);
       };
       break;
     case Component_Type.kGarageDoorOpener:
@@ -858,7 +859,7 @@ function updateComponent(cd) {
       checkIfNotModified(el(c, "swap_inputs"), cd.swap_inputs);
       checkIfNotModified(el(c, "swap_outputs"), cd.swap_outputs);
       checkIfNotModified(el(c, "man_cal"), cd.man_cal);
-      let isManCal = cd.man_cal == 1;
+      let isManCal = el(c, "man_cal").checked;
       el(c, "man_cal_time_container").style.display =
           isManCal ? "block" : "none";
       el(c, "cal_btn").style.display = isManCal ? "none" : "";
