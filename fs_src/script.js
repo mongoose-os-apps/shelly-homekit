@@ -27,6 +27,9 @@ let infoLevel = 0;
 let host = null;
 let socket = null;
 let isConnected = false;
+let useHttpFallback = false;
+let wsFailCount = 0;
+const wsMaxRetries = 2;
 
 let pauseAutoRefresh = false;
 let pendingGetInfo = false;
@@ -1249,8 +1252,17 @@ function connectWebSocket() {
       let error = `[close] Connection died (code ${event.code})`;
       if (isConnected) {
         console.log(error);
+      } else {
+        wsFailCount++;
+        if (wsFailCount >= wsMaxRetries) {
+          console.log("WebSocket failed, switching to HTTP fallback");
+          useHttpFallback = true;
+          el("notify_disconnected").style.display = "none";
+        }
       }
-      el("notify_disconnected").style.display = "inline";
+      if (!useHttpFallback) {
+        el("notify_disconnected").style.display = "inline";
+      }
       let pr = pendingRequests;
       pendingRequests = {};
       for (let id in pr) {
@@ -1269,6 +1281,8 @@ function connectWebSocket() {
       console.log("[open] Connection established");
       el("notify_disconnected").style.display = "none";
       isConnected = true;
+      useHttpFallback = false;
+      wsFailCount = 0;
       resolve(socket);
     };
 
@@ -1434,7 +1448,61 @@ function callDeviceAuth(method, params, ar) {
   });
 }
 
+function callDeviceHttp(method, params, ar) {
+  let id = nextRequestID++;
+  let frame = {
+    "id": id,
+    "method": method,
+  };
+  if (params) frame.params = params;
+  if (ar) {
+    frame.auth = ar.rpcAuth;
+  } else if (rpcAuth) {
+    frame.auth = rpcAuth;
+  }
+  console.log("[->http]", frame);
+  return fetch(`http://${host}/rpc`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(frame),
+  })
+  .then(function(resp) { return resp.json(); })
+  .then(function(resp) {
+    console.log("[<-http]", resp);
+    if (resp.error) {
+      if (resp.error.code == 401) {
+        rpcAuth = null;
+        let authReq = JSON.parse(resp.error.message);
+        if (!ar) {
+          authRealm = authReq.realm;
+          let newAr = getAuthResp(authReq);
+          if (newAr) {
+            return callDeviceHttp(method, params, newAr);
+          }
+        }
+        if (lastInfo !== null) {
+          reloadPage();
+        } else {
+          pauseAutoRefresh = true;
+          el("auth_container").style.display = "block";
+          el("auth_pass").focus();
+        }
+        throw new Error("Please log in");
+      }
+      throw resp.error;
+    }
+    if (ar) {
+      el("auth_container").style.display = "none";
+      pauseAutoRefresh = false;
+      setVar(authInfoKey, ar.ai, maxAuthAge);
+      rpcAuth = ar.rpcAuth;
+    }
+    return resp.result;
+  });
+}
+
 function callDevice(method, params) {
+  if (useHttpFallback) return callDeviceHttp(method, params, null);
   return callDeviceAuth(method, params, null);
 }
 
@@ -1528,9 +1596,26 @@ let connectStarted = 0;
 function refreshUI() {
   // if the socket is open and connected and the page is visible to the user
   if (document.hidden) return;
+  if (useHttpFallback) {
+    if (pauseAutoRefresh) return;
+    getInfo()
+        .then(function(info) {
+          if (lastFwBuild && info.fw_build != lastFwBuild) {
+            reloadPage();
+            return;
+          } else {
+            lastFwBuild = info.fw_build;
+          }
+          checkUpdateIfNeeded(info);
+        })
+        .catch((err) => {});
+    return;
+  }
   if (!socket) {
     connectStarted = (new Date()).getTime();
-    connectWebSocket().then(() => refreshUI()).catch(() => {});
+    connectWebSocket().then(() => refreshUI()).catch(() => {
+      if (useHttpFallback) refreshUI();
+    });
     return;
   }
   if (socket.readyState !== 1) {
