@@ -36,8 +36,15 @@ void CreatePeripherals(std::vector<std::unique_ptr<Input>> *inputs,
                        std::unique_ptr<TempSensor> *sys_temp) {
   outputs->emplace_back(new OutputPin(1, RELAY_GPIO, 1));
 
-  outputs->emplace_back(new StatusLED(2, NEOPX_GPIO, 2, MGOS_NEOPIXEL_ORDER_GRB,
-                                      nullptr, mgos_sys_config_get_led()));
+#ifdef NEOPX1_GPIO
+  int num_led = 2;
+#else
+  int num_led = 4;
+#endif
+
+  outputs->emplace_back(new StatusLED(2, NEOPX_GPIO, num_led,
+                                      MGOS_NEOPIXEL_ORDER_GRB, nullptr,
+                                      mgos_sys_config_get_led()));
 #ifdef NEOPX1_GPIO
   outputs->emplace_back(new StatusLED(3, NEOPX1_GPIO, 2,
                                       MGOS_NEOPIXEL_ORDER_GRB, FindOutput(2),
@@ -86,7 +93,8 @@ void CreateComponents(std::vector<std::unique_ptr<Component>> *comps,
                       std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
                       HAPAccessoryServerRef *svr) {
   CreateHAPSwitch(1, mgos_sys_config_get_sw1(), nullptr, comps, accs, svr,
-                  true /* to_pri_acc */, FindOutput(3));
+                  true /* to_pri_acc */,
+                  FindOutput(3) != nullptr ? FindOutput(3) : FindOutput(2));
 }
 
 }  // namespace shelly
