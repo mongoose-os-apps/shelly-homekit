@@ -45,7 +45,7 @@ jobs:
           - ShellyVintage
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Build
@@ -54,7 +54,7 @@ jobs:
           git config --global --add safe.directory /home/runner/work/shelly-homekit/shelly-homekit
           make ${{ matrix.model }} LOCAL=1 RELEASE=1 RELEASE_SUFFIX=$(.github/version.py --suffix)
       - name: Upload firmware artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.model }}
           path: releases/**/shelly-homekit-${{ matrix.model }}.zip
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
+        uses: actions/upload-artifact/merge@v7
         with:
            name: all-releases
            pattern: release-*
