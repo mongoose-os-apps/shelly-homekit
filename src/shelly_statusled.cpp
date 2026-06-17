@@ -33,6 +33,9 @@ StatusLED::StatusLED(int id, int pin, int num_pixel,
       chained_led_(chained_led),
       cfg_(cfg) {
   value_ = false;
+  mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
+  /* Keep in reset */
+  mgos_gpio_write(pin, 0);
 }
 
 StatusLED::~StatusLED() {
