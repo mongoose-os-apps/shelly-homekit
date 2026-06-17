@@ -1,6 +1,6 @@
 author: Shelly-HomeKit contributors
 description: A HomeKit firmware for Shelly switches
-version: 2.15.0-alpha1
+version: 2.15.0
 
 libs_version: latest
 modules_version: latest

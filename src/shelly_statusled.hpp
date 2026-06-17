@@ -52,8 +52,6 @@ class StatusLED : public Output {
 
   bool value_;
 
-  struct mgos_neopixel *pixel_;
-
   Output *chained_led_;
 
   const struct mgos_config_led *cfg_;

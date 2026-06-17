@@ -18,6 +18,10 @@
 
 #ifdef MGOS_CONFIG_HAVE_LED
 
+#include "mgos_bitbang.h"
+#include "mgos_gpio.h"
+#include "mgos_system.h"
+
 namespace shelly {
 
 StatusLED::StatusLED(int id, int pin, int num_pixel,
@@ -28,12 +32,10 @@ StatusLED::StatusLED(int id, int pin, int num_pixel,
       num_pixel_(num_pixel),
       chained_led_(chained_led),
       cfg_(cfg) {
-  pixel_ = mgos_neopixel_create(pin_, num_pixel_, pixel_type);
   value_ = false;
 }
 
 StatusLED::~StatusLED() {
-  mgos_neopixel_free(pixel_);
 }
 
 bool StatusLED::GetState() {
@@ -45,9 +47,9 @@ int StatusLED::pin() const {
 }
 
 struct rgb {
-  int r;
-  int g;
-  int b;
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
 };
 
 Status StatusLED::SetState(bool on, const char *source) {
@@ -56,20 +58,34 @@ Status StatusLED::SetState(bool on, const char *source) {
   }
   value_ = on;
   // get color from config
-  struct rgb colorOn = {(cfg_->color_on >> 16) & 0xFF,
-                        (cfg_->color_on >> 8) & 0xFF,
-                        (cfg_->color_on >> 0) & 0xFF};
-  struct rgb colorOff = {(cfg_->color_off >> 16) & 0xFF,
-                         (cfg_->color_off >> 8) & 0xFF,
-                         (cfg_->color_off >> 0) & 0xFF};
+  uint8_t mask = 0xFF;
+  struct rgb colorOn = {(uint8_t) ((cfg_->color_on >> 16) & mask),
+                        (uint8_t) ((cfg_->color_on >> 8) & mask),
+                        (uint8_t) ((cfg_->color_on >> 0) & mask)};
+  struct rgb colorOff = {(uint8_t) ((cfg_->color_off >> 16) & mask),
+                         (uint8_t) ((cfg_->color_off >> 8) & mask),
+                         (uint8_t) ((cfg_->color_off >> 0) & mask)};
 
   struct rgb color = on ? colorOn : colorOff;
 
+  uint8_t data[num_pixel_ * 3];
   for (int i = 0; i < num_pixel_; i++) {
-    mgos_neopixel_clear(pixel_);
-    mgos_neopixel_set(pixel_, i, color.r, color.g, color.b);
-    mgos_neopixel_show(pixel_);
+    data[i * 3 + 0] = color.g;
+    data[i * 3 + 1] = color.r;
+    data[i * 3 + 2] = color.b;
   }
+
+  mgos_gpio_write(pin_, 0);
+  mgos_usleep(300);
+  // first pixel seems still get first wrong bit, unknown reason so far
+  // original code is 3 8 8 3, but it seems that 4 10 10 4 works better for
+  // WS2812B, other timings do not make a difference, also setting gpio to 1
+  // before does not work
+  mgos_bitbang_write_bits(pin_, MGOS_DELAY_100NSEC, 4, 10, 10, 4, data,
+                          num_pixel_ * 3);
+  mgos_gpio_write(pin_, 0);
+  mgos_usleep(300);
+  mgos_gpio_write(pin_, 1);
   return Status::OK();
 }
 
