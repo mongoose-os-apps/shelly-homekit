@@ -948,8 +948,8 @@ conds:
         RELAY_GPIO: 4
         NEOPX_GPIO: 5
         ADC_GPIO: 3
-        UART_TX_GPIO: 6
-        UART_RX_GPIO: 7
+        UART_TX_GPIO: 7
+        UART_RX_GPIO: 6
         PRODUCT_HW_REV: "?"
         STOCK_FW_MODEL: PlugSG3
         MAX_NUM_HAP_SESSIONS: 16
