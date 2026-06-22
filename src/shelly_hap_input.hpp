@@ -64,10 +64,14 @@ class ShellyInput : public Component {
   ShellyInput(const ShellyInput &other) = delete;
 };
 
+// If existing_acc is non-null, the input service is added to it instead of
+// creating a new accessory. Used to combine doorbell + lock on the same
+// accessory so iOS shows the lock tile in the doorbell notification.
 void CreateHAPInput(int id, const struct mgos_config_in *cfg,
                     std::vector<std::unique_ptr<Component>> *comps,
                     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
-                    HAPAccessoryServerRef *svr);
+                    HAPAccessoryServerRef *svr,
+                    mgos::hap::Accessory *existing_acc = nullptr);
 
 }  // namespace hap
 }  // namespace shelly

@@ -278,9 +278,18 @@ void CreateHAPSwitch(int id, const struct mgos_config_sw *sw_cfg,
                                  sw_cfg->name, GetIdentifyCB(), svr));
     acc->AddHAPService(&mgos_hap_accessory_information_service);
     acc->AddService(sw2);
+    if (sw_cfg->in_mode == (int) InMode::kDetached &&
+        in_cfg->type == (int) Component::Type::kDoorbell &&
+        sw_cfg->svc_type == 2 /* Lock */) {
+      // Add doorbell service to the same accessory as the lock.
+      // This makes iOS show the lock tile in the doorbell notification.
+      hap::CreateHAPInput(id, in_cfg, comps, accs, svr, acc.get());
+    }
     accs->push_back(std::move(acc));
   }
-  if (sw_cfg->in_mode == (int) InMode::kDetached) {
+  if (sw_cfg->in_mode == (int) InMode::kDetached &&
+      (in_cfg->type != (int) Component::Type::kDoorbell ||
+       sw_cfg->svc_type != 2)) {
     hap::CreateHAPInput(id, in_cfg, comps, accs, svr);
   }
 }
