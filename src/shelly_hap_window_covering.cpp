@@ -224,7 +224,10 @@ Status WindowCovering::Init() {
     case InMode::kDetached:
       break;
   }
-  if (cfg_->calibrated) {
+  if (cfg_->man_cal) {
+    LOG(LL_INFO, ("WC %d: manual cal, mt_ms %d, cur_pos %.2f", id(),
+                  cfg_->move_time_ms, cur_pos_));
+  } else if (cfg_->calibrated) {
     LOG(LL_INFO, ("WC %d: mp %.2f, mt_ms %d, cur_pos %.2f", id(),
                   cfg_->move_power, cfg_->move_time_ms, cur_pos_));
   } else {
@@ -254,11 +257,11 @@ StatusOr<std::string> WindowCovering::GetInfoJSON() const {
   return mgos::JSONPrintStringf(
       "{id: %d, type: %d, name: %Q, "
       "in_mode: %d, swap_inputs: %B, swap_outputs: %B, "
-      "cal_done: %B, move_time_ms: %d, move_power: %d, "
+      "cal_done: %B, man_cal: %B, move_time_ms: %d, move_power: %d, "
       "state: %d, state_str: %Q, cur_pos: %d, tgt_pos: %d, "
       "display_type: %d}",
       id(), type(), cfg_->name, cfg_->in_mode, cfg_->swap_inputs,
-      cfg_->swap_outputs, cfg_->calibrated, cfg_->move_time_ms,
+      cfg_->swap_outputs, cfg_->calibrated, cfg_->man_cal, cfg_->move_time_ms,
       (int) cfg_->move_power, (int) state_, StateStr(state_), (int) cur_pos_,
       (int) tgt_pos_, (int) service_type_);
 }
@@ -269,11 +272,14 @@ Status WindowCovering::SetConfig(const std::string &config_json,
   cfg.name = nullptr;
   int in_mode = -1;
   int8_t swap_inputs = -1, swap_outputs = -1;
+  int8_t man_cal = -1;
+  int move_time_ms = -1;
   int display_type = -1;
   json_scanf(config_json.c_str(), config_json.size(),
              "{name: %Q, in_mode: %d, swap_inputs: %B, swap_outputs: %B, "
-             "display_type: %d}",
-             &cfg.name, &in_mode, &swap_inputs, &swap_outputs, &display_type);
+             "display_type: %d, man_cal: %B, move_time_ms: %d}",
+             &cfg.name, &in_mode, &swap_inputs, &swap_outputs, &display_type,
+             &man_cal, &move_time_ms);
   mgos::ScopedCPtr name_owner((void *) cfg.name);
   // Validate.
   if (cfg.name != nullptr && strlen(cfg.name) > 64) {
@@ -310,6 +316,18 @@ Status WindowCovering::SetConfig(const std::string &config_json,
     service_type_ = static_cast<ServiceType>(display_type);
     cfg_->display_type = display_type;
     *restart_required = true;
+  }
+  if (man_cal != -1 && man_cal != cfg_->man_cal) {
+    cfg_->man_cal = man_cal;
+    if (man_cal && move_time_ms > 0) {
+      cfg_->move_time_ms = move_time_ms;
+      move_ms_per_pct_ = cfg_->move_time_ms / 100.0;
+    }
+    *restart_required = true;
+  } else if (move_time_ms > 0 && move_time_ms != cfg_->move_time_ms &&
+             cfg_->man_cal) {
+    cfg_->move_time_ms = move_time_ms;
+    move_ms_per_pct_ = cfg_->move_time_ms / 100.0;
   }
   return Status::OK();
 }
@@ -490,7 +508,9 @@ void WindowCovering::HAPSetTgtPos(float value) {
 WindowCovering::Direction WindowCovering::GetDesiredMoveDirection() {
   if (tgt_pos_ == kNotSet) return Direction::kNone;
   float pos_diff = tgt_pos_ - cur_pos_;
-  if (!cfg_->calibrated || std::abs(pos_diff) < 0.5) {
+  bool can_move = cfg_->calibrated ||
+                  (cfg_->man_cal && cfg_->move_time_ms > 0);
+  if (!can_move || std::abs(pos_diff) < 0.5) {
     return Direction::kNone;
   }
   return (pos_diff > 0 ? Direction::kOpen : Direction::kClose);
@@ -499,7 +519,7 @@ WindowCovering::Direction WindowCovering::GetDesiredMoveDirection() {
 void WindowCovering::Move(Direction dir) {
   const char *ss = StateStr(state_);
   bool want_open = false, want_close = false;
-  if (cfg_->calibrated) {
+  if (cfg_->calibrated || cfg_->man_cal) {
     switch (dir) {
       case Direction::kNone:
         break;
@@ -640,6 +660,11 @@ void WindowCovering::RunOnce() {
       break;
     }
     case State::kRampUp: {
+      if (cfg_->man_cal) {
+        // Manual cal: skip power ramp-up check, go straight to moving.
+        SetInternalState(State::kMoving);
+        break;
+      }
       auto *pm = (moving_dir_ == Direction::kOpen ? pm_open_ : pm_close_);
       auto pmv = pm->GetPowerW();
       float p = -1;
@@ -671,9 +696,37 @@ void WindowCovering::RunOnce() {
       float new_cur_pos =
           (moving_dir_ == Direction::kOpen ? move_start_pos_ + pos_diff
                                            : move_start_pos_ - pos_diff);
+      float p = -1;
+      if (cfg_->man_cal) {
+        // Manual cal: time-based position tracking only, no power monitoring.
+        p = 0;
+        SetCurPos(new_cur_pos, p);
+        Direction want_move_dir = GetDesiredMoveDirection();
+        bool reverse =
+            (want_move_dir != moving_dir_ && want_move_dir != Direction::kNone);
+        // At limit positions, stop after full move_time_ms.
+        if (((tgt_pos_ == kFullyOpen && moving_dir_ == Direction::kOpen) ||
+             (tgt_pos_ == kFullyClosed && moving_dir_ == Direction::kClose)) &&
+            !reverse) {
+          if (moving_time_ms < cfg_->move_time_ms) {
+            break;  // Still moving.
+          }
+          float pos =
+              (moving_dir_ == Direction::kOpen ? kFullyOpen : kFullyClosed);
+          SetCurPos(pos, p);
+        } else if (want_move_dir == moving_dir_) {
+          break;  // Still moving.
+        } else {
+          if (std::abs(tgt_pos_ - cur_pos_) < 1) {
+            SetTgtPos(cur_pos_, "fixup");
+          }
+        }
+        Move(Direction::kNone);
+        SetInternalState(State::kStop);
+        break;
+      }
       auto *pm = (moving_dir_ == Direction::kOpen ? pm_open_ : pm_close_);
       auto pmv = pm->GetPowerW();
-      float p = -1;
       if (pmv.ok()) {
         p = pmv.ValueOrDie();
       } else {
@@ -738,6 +791,11 @@ void WindowCovering::RunOnce() {
       break;
     }
     case State::kStopping: {
+      if (cfg_->man_cal) {
+        // Manual cal: no power monitoring, transition immediately.
+        SetInternalState(State::kIdle);
+        break;
+      }
       float p0 = 0, p1 = 0;
       auto p0v = pm_open_->GetPowerW();
       if (p0v.ok()) p0 = p0v.ValueOrDie();
@@ -759,7 +817,7 @@ void WindowCovering::RunOnce() {
 
 void WindowCovering::HandleInputEvent01(Direction dir, Input::Event ev,
                                         bool state) {
-  if (!cfg_->calibrated) {
+  if (!cfg_->calibrated && !cfg_->man_cal) {
     HandleInputEventNotCalibrated();
     return;
   }
@@ -787,7 +845,7 @@ void WindowCovering::HandleInputEvent01(Direction dir, Input::Event ev,
 }
 
 void WindowCovering::HandleInputEvent2(Input::Event ev, bool state) {
-  if (!cfg_->calibrated) {
+  if (!cfg_->calibrated && !cfg_->man_cal) {
     HandleInputEventNotCalibrated();
     return;
   }

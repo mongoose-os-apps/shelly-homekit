@@ -468,13 +468,25 @@ function wcSetConfig(c, cfg, spinner) {
       alert("Name must not be empty");
       return;
     }
+    let manCal = el(c, "man_cal").checked;
+    let moveTimeMs = parseInt(el(c, "man_cal_time").value);
+    if (manCal) {
+      if (isNaN(moveTimeMs) || moveTimeMs < 1000 || moveTimeMs > 300000) {
+        alert("Movement time must be between 1000 and 300000 ms");
+        return;
+      }
+    }
     cfg = {
       name: name,
       display_type: parseInt(el(c, "display_type").value),
       in_mode: parseInt(el(c, "in_mode").value),
       swap_inputs: el(c, "swap_inputs").checked,
       swap_outputs: el(c, "swap_outputs").checked,
+      man_cal: manCal,
     };
+    if (manCal) {
+      cfg.move_time_ms = moveTimeMs;
+    }
   }
   setComponentConfig(c, cfg, spinner);
 }
@@ -583,6 +595,13 @@ function findOrAddContainer(cd) {
       el(c, "cal_btn").onclick = function() {
         setComponentState(c, {state: 10}, null);
         el(c, "cal_spinner").className = "spin";
+      };
+      el(c, "man_cal").onchange = function(ev) {
+        el(c, "man_cal_time_container").style.display =
+            el(c, "man_cal").checked ? "block" : "none";
+        el(c, "cal_btn").style.display =
+            el(c, "man_cal").checked ? "none" : "";
+        markInputChanged(ev);
       };
       break;
     case Component_Type.kGarageDoorOpener:
@@ -839,8 +858,24 @@ function updateComponent(cd) {
       selectIfNotModified(el(c, "in_mode"), cd.in_mode);
       checkIfNotModified(el(c, "swap_inputs"), cd.swap_inputs);
       checkIfNotModified(el(c, "swap_outputs"), cd.swap_outputs);
+      checkIfNotModified(el(c, "man_cal"), cd.man_cal);
+      let isManCal = el(c, "man_cal").checked;
+      el(c, "man_cal_time_container").style.display =
+          isManCal ? "block" : "none";
+      el(c, "cal_btn").style.display = isManCal ? "none" : "";
+      if (isManCal) {
+        setValueIfNotModified(el(c, "man_cal_time"), cd.move_time_ms);
+      }
       let posText, calText;
-      if (cd.cal_done == 1) {
+      if (isManCal && cd.move_time_ms > 0) {
+        if (cd.cur_pos != cd.tgt_pos) {
+          posText = `${cd.cur_pos} -> ${cd.tgt_pos}`;
+        } else {
+          posText = cd.cur_pos;
+        }
+        calText = `manual: ${cd.move_time_ms / 1000} s`;
+        el(c, "pos_ctl").style.display = "block";
+      } else if (cd.cal_done == 1) {
         if (cd.cur_pos != cd.tgt_pos) {
           posText = `${cd.cur_pos} -> ${cd.tgt_pos}`;
         } else {
@@ -1613,6 +1648,7 @@ function resetLastSetValue() {
 }
 
 function updateInnerText(e, newInnerText) {
+  if (e === null || newInnerText === null || newInnerText === undefined) return;
   newInnerText = newInnerText.toString();
   if (e.innerText === newInnerText) return;
   e.innerText = newInnerText;
