@@ -357,6 +357,15 @@ void ShellySwitch::InputEventHandler(Input::Event ev, bool state) {
             auto_off_timer_.Reset(cfg_->auto_off_delay * 1000, 0);
           }
           break;
+        case InMode::kActivationOnce:
+          // On 0 -> 1 we turn on output and arm auto off timer.
+          // on 1 -> 1 we do nothing
+          // on 0 -> 0 we do nothing
+          // on 1 -> 0 we do nothing
+          if (state && !GetOutputState()) {
+            SetOutputState(true, "ext_act_once");
+          }
+          break;
         case InMode::kAbsent:
         case InMode::kDetached:
         case InMode::kMax:
