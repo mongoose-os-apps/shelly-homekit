@@ -275,7 +275,8 @@ bool ShellyInput::IsValidType(int type) {
 void CreateHAPInput(int id, const struct mgos_config_in *cfg,
                     std::vector<std::unique_ptr<Component>> *comps,
                     std::vector<std::unique_ptr<mgos::hap::Accessory>> *accs,
-                    HAPAccessoryServerRef *svr) {
+                    HAPAccessoryServerRef *svr,
+                    mgos::hap::Accessory *existing_acc) {
   Input *in = FindInput(id);
   if (in == nullptr) return;
   std::unique_ptr<ShellyInput> sin(
@@ -287,12 +288,16 @@ void CreateHAPInput(int id, const struct mgos_config_in *cfg,
     return;
   }
   if (sin->GetService() != nullptr) {
-    std::unique_ptr<mgos::hap::Accessory> acc(new mgos::hap::Accessory(
-        sin->GetAIDBase() + id, kHAPAccessoryCategory_BridgedAccessory,
-        sin->name(), GetIdentifyCB(), svr));
-    acc->AddHAPService(&mgos_hap_accessory_information_service);
-    acc->AddService(sin->GetService());
-    accs->push_back(std::move(acc));
+    if (existing_acc != nullptr) {
+      existing_acc->AddService(sin->GetService());
+    } else {
+      std::unique_ptr<mgos::hap::Accessory> acc(new mgos::hap::Accessory(
+          sin->GetAIDBase() + id, kHAPAccessoryCategory_BridgedAccessory,
+          sin->name(), GetIdentifyCB(), svr));
+      acc->AddHAPService(&mgos_hap_accessory_information_service);
+      acc->AddService(sin->GetService());
+      accs->push_back(std::move(acc));
+    }
   }
   comps->push_back(std::move(sin));
 }
