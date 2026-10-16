@@ -503,7 +503,7 @@ static void StatusTimerCB(void *arg) {
     static int64_t s_last_connected = 0;
     int64_t now = mgos_uptime_micros();
     const WifiInfo &wi = GetWifiInfo();
-    if (!wi.sta_connected) {
+    if (wi.sta_connected) {
       s_last_connected = now;
     } else if (AllComponentsIdle()) {  // Only if all components are idle.
       int64_t timeout_micros =
@@ -515,6 +515,29 @@ static void StatusTimerCB(void *arg) {
     }
   }
 #endif  // MGOS_SYS_CONFIG_HAVE_SHELLY_WIFI_CONNECT_REBOOT_TIMEOUT
+#if CS_PLATFORM == CS_P_ESP8266
+  // Low-heap watchdog: if free heap stays below threshold for a while
+  // (e.g. after a STA reconnect), reboot cleanly instead of limping along
+  // with failing allocations and dropping off the network.
+  {
+    static int s_low_heap_secs = 0;
+    const size_t thr = SHELLY_LOW_HEAP_THRESHOLD;
+    if (mgos_get_free_heap_size() < thr) {
+      if (++s_low_heap_secs == 1) {
+        LOG(LL_WARN, ("Low heap: %lu < %lu",
+                      (unsigned long) mgos_get_free_heap_size(),
+                      (unsigned long) thr));
+      }
+      if (s_low_heap_secs >= SHELLY_LOW_HEAP_REBOOT_SECS &&
+          AllComponentsIdle()) {
+        LOG(LL_ERROR, ("Heap low for %d s, rebooting", s_low_heap_secs));
+        mgos_system_restart_after(500);
+      }
+    } else {
+      s_low_heap_secs = 0;
+    }
+  }
+#endif
   (void) arg;
 }
 
