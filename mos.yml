@@ -160,6 +160,8 @@ cdefs:
   RST_GPIO_INIT: -1
   SHELLY_HAVE_DUAL_INPUT_MODES: 0
   MAX_NUM_HAP_SESSIONS: 12
+  SHELLY_LOW_HEAP_THRESHOLD: 4096
+  SHELLY_LOW_HEAP_REBOOT_SECS: 60
 
 libs:
   - location: ./libreset
@@ -192,6 +194,10 @@ conds:
 
   - when: mos.platform == "esp8266"
     apply:
+      cdefs:
+        # Each HAP session costs several KB of heap once paired/encrypted;
+        # 12 does not fit in ~26 KB free. Fewer sessions = earlier eviction.
+        MAX_NUM_HAP_SESSIONS: 8
       libs:
         - location: https://github.com/mongoose-os-libs/adc
         - location: https://github.com/shelly-homekit-mos/pwm
